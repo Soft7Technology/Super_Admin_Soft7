@@ -1,0 +1,6 @@
+[00:00:01.429] Server  LOG     ✓ Ready in 929ms
+[00:00:12.967] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:13.872] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'v')
+[00:00:25.333] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'v')
+[00:00:34.726] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[112:37:32.808] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
