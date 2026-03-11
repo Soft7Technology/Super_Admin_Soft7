@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
 
@@ -20,7 +21,7 @@ const STATS: StatCard[] = [
 export default function DashboardPage() {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
-
+const router = useRouter();
   return (
     <div style={{ padding:"28px 28px 48px", background:t.bg, minHeight:"100%", transition:"background 0.3s ease" }}>
       {/* Header */}
@@ -34,8 +35,12 @@ export default function DashboardPage() {
           </p>
         </div>
         <div style={{ display:"flex", gap:"10px", paddingTop:"4px" }}>
-          <Btn variant="outline" label="📤 Export" />
-          <Btn variant="primary" label="+ Add Company" />
+         
+         <Btn
+  variant="primary"
+  label="Add Company"
+  onClick={() => router.push("/user/dashboard/create")}
+/>
         </div>
       </div>
 
@@ -57,18 +62,32 @@ export default function DashboardPage() {
   );
 }
 
-function Btn({ variant, label }: { variant:"outline"|"primary"; label:string }) {
+function Btn({
+  variant,
+  label,
+  onClick
+}: {
+  variant:"outline"|"primary";
+  label:string;
+  onClick?: () => void;
+}) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [hov, setHov] = useState(false);
   if (variant === "primary") return (
-    <button onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+   <button
+  onClick={onClick}
+  onMouseEnter={()=>setHov(true)}
+  onMouseLeave={()=>setHov(false)}
       style={{ display:"inline-flex", alignItems:"center", gap:"7px", padding:"9px 20px", borderRadius:"9px", fontSize:"0.875rem", fontWeight:600, cursor:"pointer", border:"none", background: hov?"linear-gradient(135deg,#2f4dc7,#5a35c0)":"linear-gradient(135deg,#3b5bdb,#6741d9)", color:"#fff", boxShadow: hov?"0 4px 20px rgba(59,91,219,0.4)":"0 2px 8px rgba(59,91,219,0.2)", transition:"all 0.15s", fontFamily:"inherit" }}>
       {label}
     </button>
   );
   return (
-    <button onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+   <button
+  onClick={onClick}
+  onMouseEnter={()=>setHov(true)}
+  onMouseLeave={()=>setHov(false)}
       style={{ display:"inline-flex", alignItems:"center", gap:"7px", padding:"9px 20px", borderRadius:"9px", fontSize:"0.875rem", fontWeight:600, cursor:"pointer", border:`1px solid ${hov?t.accent:t.border}`, background: hov?t.accentBg:"transparent", color: hov?t.accent:t.textMuted, transition:"all 0.15s", fontFamily:"inherit" }}>
       {label}
     </button>
