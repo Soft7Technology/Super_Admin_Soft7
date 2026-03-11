@@ -5,7 +5,7 @@ import { useTheme, tokens } from "../context/ThemeContext";
 
 const NAV = [
   { icon:"⊞",  label:"Dashboard",        route:"/user/dashboard",         bg:"#3b5bdb" },
-  { icon:"🏢", label:"Manage Companies",  route:"/user/manage-companies",  bg:"#1971c2", badge:12 },
+  { icon:"🏢", label:"Manage Companies",  route:"/user/manage-companies",  bg:"#1971c2" },
   { icon:"👥", label:"All User",          route:"/user/all-user",          bg:"#0ca678" },
   { icon:"💳", label:"Subscription",      route:"/user/subscription",      bg:"#6741d9" },
   { icon:"📋", label:"Audit Logs",        route:"/user/audit-logs",        bg:"#862e9c" },
@@ -24,16 +24,16 @@ export default function Sidebar({
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const router   = useRouter();
-  const pathname = usePathname();  // ← detects current URL automatically
+  const pathname = usePathname();  
 
-  // Derive active label from current URL path if activeItem not passed
+ 
   const currentActive =
     activeItem ??
     (NAV.find(n => pathname?.startsWith(n.route))?.label ?? "Dashboard");
 
   const handleNav = (item: typeof NAV[0]) => {
     onNavigate?.(item.label);
-    router.push(item.route);       // ← navigate to the page
+    router.push(item.route);       
   };
 
   return (
