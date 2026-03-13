@@ -15,7 +15,11 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     "Profile":"Profile","Support Tickets":"Support Tickets",
   };
   return (
-    <div style={{ display:"flex", minHeight:"100vh", background:t.bg, transition:"background 0.3s ease" }}>
+    // ✅ FIX: added data-theme here — this makes ALL CSS [data-theme="light"] selectors work
+    <div
+      data-theme={isDark ? "dark" : "light"}
+      style={{ display:"flex", minHeight:"100vh", background:t.bg, transition:"background 0.3s ease" }}
+    >
       <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
       <div style={{ marginLeft:"250px", flex:1, display:"flex", flexDirection:"column", minHeight:"100vh" }}>
         <Topbar title={titles[activeNav] ?? activeNav} />
