@@ -1,4 +1,9 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
-  "/user/dashboard/page": "app/user/dashboard/page.js"
+  "/user/all-user/page": "app/user/all-user/page.js",
+  "/user/audit-logs/page": "app/user/audit-logs/page.js",
+  "/user/dashboard/page": "app/user/dashboard/page.js",
+  "/user/manage-companies/page": "app/user/manage-companies/page.js",
+  "/user/subscription/page": "app/user/subscription/page.js"
 }
