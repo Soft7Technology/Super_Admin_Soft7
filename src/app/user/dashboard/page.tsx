@@ -38,7 +38,7 @@ const router = useRouter();
          
          <Btn
   variant="primary"
-  label="Add Company"
+  label="Add Company Logo"
   onClick={() => router.push("/user/dashboard/create")}
 />
         </div>
