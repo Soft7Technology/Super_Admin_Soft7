@@ -45,10 +45,55 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/user/all-user/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/user/all-user">> = Specific
+  const handler = {} as typeof import("../../../src/app/user/all-user/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/user/audit-logs/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/user/audit-logs">> = Specific
+  const handler = {} as typeof import("../../../src/app/user/audit-logs/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/user/dashboard/create/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/user/dashboard/create">> = Specific
+  const handler = {} as typeof import("../../../src/app/user/dashboard/create/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/user/dashboard/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/user/dashboard">> = Specific
   const handler = {} as typeof import("../../../src/app/user/dashboard/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/user/manage-companies/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/user/manage-companies">> = Specific
+  const handler = {} as typeof import("../../../src/app/user/manage-companies/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/user/subscription/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/user/subscription">> = Specific
+  const handler = {} as typeof import("../../../src/app/user/subscription/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
