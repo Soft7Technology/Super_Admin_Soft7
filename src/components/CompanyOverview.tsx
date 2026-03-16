@@ -1,23 +1,35 @@
-"use client";
+﻿"use client";
 import React, { useState } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 
-const ST: Record<string,{bg:string;color:string;dot:string}> = {
-  Active:   {bg:"rgba(34,197,94,0.12)",  color:"#16a34a", dot:"#4ade80"},
-  Inactive: {bg:"rgba(148,163,184,0.1)", color:"#64748b", dot:"#94a3b8"},
-  Trial:    {bg:"rgba(251,191,36,0.12)", color:"#d97706", dot:"#fbbf24"},
-};
-const DATA = [
-  {id:"1",name:"Acme Corp",   ini:"AC",col:"linear-gradient(135deg,#3b5bdb,#6741d9)",status:"Active",  plan:"Enterprise",users:320},
-  {id:"2",name:"Nexus Ltd",   ini:"NX",col:"linear-gradient(135deg,#0ca678,#2f9e44)",status:"Active",  plan:"Pro",       users:148},
-  {id:"3",name:"SkyLine Inc", ini:"SK",col:"linear-gradient(135deg,#f59f00,#e67700)",status:"Trial",   plan:"Starter",   users:42 },
-  {id:"4",name:"Vertex Co",   ini:"VT",col:"linear-gradient(135deg,#e03131,#c92a2a)",status:"Inactive",plan:"Basic",     users:87 },
-  {id:"5",name:"Zenith Group",ini:"ZN",col:"linear-gradient(135deg,#6741d9,#862e9c)",status:"Active",  plan:"Enterprise",users:510},
-];
+interface Company {
+  id:     string;
+  name:   string;
+  ini:    string;
+  col:    string;
+  status: string;
+  plan:   string;
+  users:  number;
+}
 
-export default function CompanyOverview() {
+const ST: Record<string, { bg: string; color: string; dot: string }> = {
+  Active:   { bg:"rgba(34,197,94,0.12)",  color:"#16a34a", dot:"#4ade80" },
+  Inactive: { bg:"rgba(148,163,184,0.1)", color:"#64748b", dot:"#94a3b8" },
+  Trial:    { bg:"rgba(251,191,36,0.12)", color:"#d97706", dot:"#fbbf24" },
+};
+
+export default function CompanyOverview({
+  companies = [],
+  loading = false,
+  error = null,
+}: {
+  companies?: Company[];
+  loading?: boolean;
+  error?: string | null;
+}) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
+
   return (
     <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:"14px", overflow:"hidden", transition:"background 0.3s,border-color 0.3s" }}>
       <div style={{ padding:"18px 20px 14px", borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -26,27 +38,36 @@ export default function CompanyOverview() {
           View All <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </span>
       </div>
-      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.85rem" }}>
-        <thead>
-          <tr style={{ background:t.tableHead }}>
-            {["COMPANY NAME","STATUS","PLAN","USERS"].map(h=>(
-              <th key={h} style={{ padding:"10px 20px", textAlign:"left", fontSize:"0.68rem", color:t.textFaint, letterSpacing:"0.08em", fontWeight:700, borderBottom:`1px solid ${t.border}` }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {DATA.map((co,i) => <Row key={co.id} co={co} last={i===DATA.length-1} t={t} />)}
-        </tbody>
-      </table>
+      {loading ? (
+        <div style={{ padding:"24px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>Loading...</div>
+      ) : error ? (
+        <div style={{ padding:"24px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>{error}</div>
+      ) : (
+        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.85rem" }}>
+          <thead>
+            <tr style={{ background:t.tableHead }}>
+              {["COMPANY NAME","STATUS","PLAN","USERS"].map(h => (
+                <th key={h} style={{ padding:"10px 20px", textAlign:"left", fontSize:"0.68rem", color:t.textFaint, letterSpacing:"0.08em", fontWeight:700, borderBottom:`1px solid ${t.border}` }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {companies.map((co, i) => <Row key={co.id} co={co} last={i === companies.length - 1} t={t} />)}
+            {companies.length === 0 && (
+              <tr><td colSpan={4} style={{ padding:"20px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>No companies found</td></tr>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
 
-function Row({ co, last, t }: any) {
+function Row({ co, last, t }: { co: Company; last: boolean; t: Record<string, string> }) {
   const [hov, setHov] = useState(false);
-  const s = ST[co.status];
+  const s = ST[co.status] ?? ST["Inactive"];
   return (
-    <tr onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+    <tr onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ borderBottom:last?"none":`1px solid ${t.border}`, background:hov?t.rowHover:"transparent", transition:"background 0.12s", cursor:"pointer" }}>
       <td style={{ padding:"13px 20px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>

@@ -1,22 +1,18 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./all-user.css";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "PENDING";
-type UserRole   = "Admin" | "User";
-type UserPlan   = "Starter" | "Basic" | "Pro" | "Enterprise";
-
 interface User {
   id:        number;
   name:      string;
   email:     string;
   phone:     string;
-  role:      UserRole;
-  status:    UserStatus;
+  role:      string;
+  status:    string;
   company:   string;
-  plan:      UserPlan;
+  plan:      string;
   av:        string;
   login:     string;
   joined:    string;
@@ -26,44 +22,47 @@ interface User {
   pro:       boolean;
 }
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
-const USERS: User[] = [
-  { id:1, name:"James Doe",   email:"james@acmecorp.com", phone:"+91 98765 00001", role:"Admin", status:"ACTIVE",    company:"Acme Corp",    plan:"Enterprise", av:"#6C5CE7", login:"2 mins ago",   joined:"Jan 12, 2024", msgs:1240, campaigns:18, chatbots:5, pro:true  },
-  { id:8, name:"Emma Wilson", email:"emma@orbitsys.tech", phone:"+91 98765 00008", role:"User",  status:"SUSPENDED", company:"Orbit Systems", plan:"Starter",    av:"#FD79A8", login:"2 months ago", joined:"Jun 1, 2024",  msgs:4,    campaigns:0,  chatbots:0, pro:false },
-];
+interface UserStats {
+  totalUsers:   number;
+  activeUsers:  number;
+  adminUsers:   number;
+  premiumUsers: number;
+}
 
 // ─── LOOKUP MAPS ──────────────────────────────────────────────────────────────
-const STATUS_CSS: Record<UserStatus, string> = {
+const STATUS_CSS: Record<string, string> = {
   ACTIVE:    "au-badge--active",
   INACTIVE:  "au-badge--inactive",
   SUSPENDED: "au-badge--suspended",
   PENDING:   "au-badge--pending",
 };
 
-const STATUS_DOT: Record<UserStatus, string> = {
+const STATUS_DOT: Record<string, string> = {
   ACTIVE:    "au-status-dot--active",
   INACTIVE:  "au-status-dot--other",
   SUSPENDED: "au-status-dot--suspended",
   PENDING:   "au-status-dot--other",
 };
 
-const PLAN_COLOR: Record<UserPlan, string> = {
+const PLAN_COLOR: Record<string, string> = {
   Enterprise: "#A29BFE",
   Pro:        "#6C5CE7",
   Basic:      "#FDCB6E",
   Starter:    "#00CBA4",
 };
+function planColor(plan: string) { return PLAN_COLOR[plan] ?? "#94a3b8"; }
 
-const ROLE_COLOR: Record<UserRole, string> = {
+const ROLE_COLOR: Record<string, string> = {
   Admin: "#A29BFE",
   User:  "#475569",
 };
+function roleColor(role: string) { return ROLE_COLOR[role] ?? "#94a3b8"; }
 
 // ─── BADGE ────────────────────────────────────────────────────────────────────
-function Badge({ status }: { status: UserStatus }) {
-  const label = status === "PENDING" ? "Pending" : status[0] + status.slice(1).toLowerCase();
+function Badge({ status }: { status: string }) {
+  const label = status[0] + status.slice(1).toLowerCase();
   return (
-    <span className={`au-badge ${STATUS_CSS[status]}`}>
+    <span className={`au-badge ${STATUS_CSS[status] ?? "au-badge--inactive"}`}>
       <span className="au-badge__dot" />
       {label}
     </span>
@@ -71,8 +70,8 @@ function Badge({ status }: { status: UserStatus }) {
 }
 
 // ─── KPI CARD ─────────────────────────────────────────────────────────────────
-function KPI({ label, value, delta, icon, color, up = true }: {
-  label: string; value: string; delta?: string; icon: string; color: string; up?: boolean;
+function KPI({ label, value, icon, color, up = true }: {
+  label: string; value: string; icon: string; color: string; up?: boolean;
 }) {
   return (
     <div className="au-kpi-card">
@@ -82,11 +81,6 @@ function KPI({ label, value, delta, icon, color, up = true }: {
         <div className="au-kpi-card__icon" style={{ background: `${color}18` }}>{icon}</div>
       </div>
       <div className="au-kpi-card__value">{value}</div>
-      {delta && (
-        <div className={`au-kpi-card__delta ${up ? "au-kpi-card__delta--up" : "au-kpi-card__delta--down"}`}>
-          {up ? "↑" : "↓"} {delta}
-        </div>
-      )}
     </div>
   );
 }
@@ -99,32 +93,30 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
     <div className="au-panel">
       <div className="au-panel__header">
         <span className="au-panel__title">User Details</span>
-        <button className="au-panel__close" onClick={onClose}>×</button>
+        <button className="au-panel__close" onClick={onClose}>x</button>
       </div>
 
       <div className="au-panel__body">
-        {/* Avatar + identity */}
         <div className="au-panel__identity">
           <div className="au-panel__avatar-wrap">
             <div className="au-avatar au-avatar--62" style={{ background: user.av }}>
-              {user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+              {user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
             </div>
-            <div className={`au-status-dot au-status-dot--panel ${STATUS_DOT[user.status]}`} />
+            <div className={`au-status-dot au-status-dot--panel ${STATUS_DOT[user.status] ?? "au-status-dot--other"}`} />
           </div>
           <div className="au-panel__name">{user.name}</div>
           <div className="au-panel__email">{user.email}</div>
           <div className="au-panel__badges">
             <Badge status={user.status} />
-            <span className="au-role-chip" style={{ background: `${ROLE_COLOR[user.role]}18`, color: ROLE_COLOR[user.role] }}>
+            <span className="au-role-chip" style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}>
               {user.role}
             </span>
-            {user.pro && <span className="au-pro-badge--lg">⭐ PRO</span>}
+            {user.pro && <span className="au-pro-badge--lg">PRO</span>}
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="au-panel__tabs">
-          {([["info", "📋 Info"], ["stats", "📊 Stats"]] as [string, string][]).map(([k, l]) => (
+          {([["info", "Info"], ["stats", "Stats"]] as [string, string][]).map(([k, l]) => (
             <button
               key={k}
               onClick={() => setTab(k as "info" | "stats")}
@@ -135,21 +127,20 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           ))}
         </div>
 
-        {/* Info tab */}
         {tab === "info" && (
           <div>
             {([
-              ["Company",    user.company, ""],
-              ["Plan",       user.plan,    "plan"],
-              ["Phone",      user.phone,   ""],
-              ["Joined",     user.joined,  ""],
-              ["Last Login", user.login,   ""],
+              ["Company",    user.company,    ""],
+              ["Plan",       user.plan,       "plan"],
+              ["Phone",      user.phone || "-", ""],
+              ["Joined",     user.joined,     ""],
+              ["Last Login", user.login,      ""],
             ] as [string, string, string][]).map(([label, value, type]) => (
               <div key={label} className="au-info-row">
                 <span className="au-info-row__label">{label}</span>
                 <span
                   className="au-info-row__value"
-                  style={type === "plan" ? { color: PLAN_COLOR[value as UserPlan] } : undefined}
+                  style={type === "plan" ? { color: planColor(value) } : undefined}
                 >
                   {value}
                 </span>
@@ -158,7 +149,6 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           </div>
         )}
 
-        {/* Stats tab */}
         {tab === "stats" && (
           <div className="au-stats-grid">
             {([
@@ -175,13 +165,12 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           </div>
         )}
 
-        {/* Actions */}
         <div className="au-panel__actions">
-          <button className="au-btn au-btn--primary">✏️ Edit User</button>
-          <button className="au-btn au-btn--ghost">🔑 Reset Password</button>
+          <button className="au-btn au-btn--primary">Edit User</button>
+          <button className="au-btn au-btn--ghost">Reset Password</button>
           {user.status === "SUSPENDED"
-            ? <button className="au-btn au-btn--success">✅ Restore Account</button>
-            : <button className="au-btn au-btn--danger">⛔ Suspend User</button>
+            ? <button className="au-btn au-btn--success">Restore Account</button>
+            : <button className="au-btn au-btn--danger">Suspend User</button>
           }
         </div>
       </div>
@@ -193,13 +182,13 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
 function InviteModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="au-overlay" onClick={onClose}>
-      <div className="au-modal" onClick={e => e.stopPropagation()}>
+      <div className="au-modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <div className="au-modal__header">
           <div>
             <div className="au-modal__title">Invite New User</div>
             <div className="au-modal__subtitle">Send an invitation to join the platform.</div>
           </div>
-          <button className="au-modal__close" onClick={onClose}>×</button>
+          <button className="au-modal__close" onClick={onClose}>x</button>
         </div>
 
         <div className="au-modal__body">
@@ -222,25 +211,16 @@ function InviteModal({ onClose }: { onClose: () => void }) {
               <div key={label}>
                 <div className="au-field-label">{label}</div>
                 <select className="au-field-select">
-                  {options.map(o => <option key={o}>{o}</option>)}
+                  {options.map((o: string) => <option key={o}>{o}</option>)}
                 </select>
               </div>
             ))}
           </div>
 
-          <div>
-            <div className="au-field-label">COMPANY</div>
-            <select className="au-field-select">
-              {["Acme Corp","Nexus Ltd","SkyLine Inc","Zenith Group","Prism Analytics"].map(o => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </div>
-
           <div className="au-modal__divider" />
 
           <div className="au-modal__footer">
-            <button className="au-modal__send" onClick={onClose}>📨 Send Invite</button>
+            <button className="au-modal__send" onClick={onClose}>Send Invite</button>
             <button className="au-modal__cancel" onClick={onClose}>Cancel</button>
           </div>
         </div>
@@ -255,14 +235,13 @@ function UserCard({ user, isSelected, onClick }: {
 }) {
   return (
     <div onClick={onClick} className={`au-card ${isSelected ? "au-card--selected" : ""}`}>
-      {/* Top row */}
       <div className="au-card__top">
         <div className="au-card__identity">
           <div className="au-avatar-wrap">
             <div className="au-avatar au-avatar--38" style={{ background: user.av }}>
-              {user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+              {user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
             </div>
-            <div className={`au-status-dot au-status-dot--card ${STATUS_DOT[user.status]}`} />
+            <div className={`au-status-dot au-status-dot--card ${STATUS_DOT[user.status] ?? "au-status-dot--other"}`} />
           </div>
           <div>
             <div className="au-card__name-row">
@@ -275,40 +254,36 @@ function UserCard({ user, isSelected, onClick }: {
         <Badge status={user.status} />
       </div>
 
-      {/* Email */}
       <div className="au-card__email">
-        <span>✉</span> {user.email}
+        <span>@</span> {user.email}
       </div>
 
-      {/* Role + Plan chips */}
       <div className="au-card__meta">
-        <span className="au-chip" style={{ background: `${ROLE_COLOR[user.role]}18`, color: ROLE_COLOR[user.role] }}>
+        <span className="au-chip" style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}>
           {user.role}
         </span>
-        <span className="au-chip" style={{ background: `${PLAN_COLOR[user.plan]}18`, color: PLAN_COLOR[user.plan] }}>
+        <span className="au-chip" style={{ background: `${planColor(user.plan)}18`, color: planColor(user.plan) }}>
           {user.plan}
         </span>
       </div>
 
-      {/* Mini stats */}
       <div className="au-card__stats">
         {([
-          ["💬", user.msgs.toLocaleString(), "msgs"],
-          ["📢", String(user.campaigns),     "camps"],
-          ["🤖", String(user.chatbots),      "bots"],
-        ] as [string, string, string][]).map(([icon, val, lbl]) => (
-          <div key={lbl} className="au-stat-box">
-            <div className="au-stat-box__val">{icon} {val}</div>
+          ["msgs",      user.msgs.toLocaleString(), "msgs"],
+          ["campaigns", String(user.campaigns),     "camps"],
+          ["chatbots",  String(user.chatbots),      "bots"],
+        ] as [string, string, string][]).map(([key, val, lbl]) => (
+          <div key={key} className="au-stat-box">
+            <div className="au-stat-box__val">{val}</div>
             <div className="au-stat-box__lbl">{lbl}</div>
           </div>
         ))}
       </div>
 
-      {/* Footer */}
       <div className="au-card__footer">
-        <span className="au-card__login">🕐 {user.login}</span>
+        <span className="au-card__login">{user.login}</span>
         <span className={isSelected ? "au-card__cta--sel" : "au-card__cta"}>
-          {isSelected ? "▼ Selected" : "▶ Details"}
+          {isSelected ? "Selected" : "Details"}
         </span>
       </div>
     </div>
@@ -317,27 +292,85 @@ function UserCard({ user, isSelected, onClick }: {
 
 // ─── PAGE COMPONENT ───────────────────────────────────────────────────────────
 export default function AllUsers() {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [role,   setRole]   = useState("ALL");
-  const [sort,   setSort]   = useState("name");
-  const [detail, setDetail] = useState<User | null>(null);
-  const [invite, setInvite] = useState(false);
+  const [search, setSearch]   = useState("");
+  const [status, setStatus]   = useState("ALL");
+  const [role,   setRole]     = useState("ALL");
+  const [sort,   setSort]     = useState("name");
+  const [detail, setDetail]   = useState<User | null>(null);
+  const [invite, setInvite]   = useState(false);
+  const [users,   setUsers]   = useState<User[]>([]);
+  const [stats,   setStats]   = useState<UserStats>({ totalUsers: 0, activeUsers: 0, adminUsers: 0, premiumUsers: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
-  const filtered = USERS
-    .filter(u =>
-      (status === "ALL" || u.status === status) &&
-      (role   === "ALL" || u.role   === role)   &&
-      (u.name.toLowerCase().includes(search.toLowerCase())    ||
-       u.email.toLowerCase().includes(search.toLowerCase())   ||
-       u.company.toLowerCase().includes(search.toLowerCase()))
-    )
-    .sort((a, b) => sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name));
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUsers() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch("/api/admin/users");
+        const data = await res.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(data.error ?? `Server error ${res.status}`);
+        }
+
+        setUsers(data.users ?? []);
+        setStats(data.stats ?? { totalUsers: 0, activeUsers: 0, adminUsers: 0, premiumUsers: 0 });
+        setError(data.error ?? null);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Unknown error");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadUsers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredUsers = [...users]
+    .filter((user) => {
+      const matchesSearch =
+        user.name.toLowerCase().includes(search.toLowerCase()) ||
+        user.email.toLowerCase().includes(search.toLowerCase()) ||
+        user.company.toLowerCase().includes(search.toLowerCase());
+
+      const matchesStatus =
+        status === "ALL"
+          ? true
+          : status === "ADMIN"
+            ? user.role.toLowerCase() === "admin"
+            : user.status === status;
+      const matchesRole = role === "ALL" || user.role.toLowerCase() === role.toLowerCase();
+
+      return matchesSearch && matchesStatus && matchesRole;
+    })
+    .sort((left, right) => {
+      if (sort === "msgs") {
+        return right.msgs - left.msgs;
+      }
+
+      return left.name.localeCompare(right.name);
+    });
 
   return (
     <div className="au-root">
 
-      {/* ── HEADER ── */}
       <div className="au-header">
         <div>
           <h1 className="au-header__title">All Users</h1>
@@ -348,31 +381,29 @@ export default function AllUsers() {
         </button>
       </div>
 
-      {/* ── KPI ROW ── */}
       <div className="au-kpi-grid">
-        <KPI label="Total Users"   value="5,831" delta="8.4% this month" icon="👥" color="#6C5CE7" />
-        <KPI label="Active"        value="4,982" delta="6.1% growth"     icon="🟢" color="#00CBA4" />
-        <KPI label="Suspended"     value="421"   delta="1.2% increase"   icon="🔴" color="#FF6B6B" up={false} />
-        <KPI label="Premium Users" value="2,104" delta="14% this month"  icon="⭐" color="#FDCB6E" />
+        <KPI label="Total Users"   value={stats.totalUsers.toLocaleString()}   icon="Users"  color="#6C5CE7" />
+        <KPI label="Active Users"  value={stats.activeUsers.toLocaleString()}  icon="Active" color="#00CBA4" />
+        <KPI label="Admin Users"   value={stats.adminUsers.toLocaleString()}   icon="Admin"  color="#FF6B6B" up={false} />
+        <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon="Pro"    color="#FDCB6E" />
       </div>
 
-      {/* ── FILTER BAR ── */}
       <div className="au-filter-bar">
         <div className="au-search-wrap">
-          <span className="au-search-icon">🔍</span>
+          <span className="au-search-icon">Search</span>
           <input
             className="au-search-input"
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search name, email, company…"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            placeholder="Search name, email, company..."
           />
         </div>
 
         <div className="au-filter-group">
-          {["ALL","ACTIVE","INACTIVE","SUSPENDED","PENDING"].map(f => (
+          {["ALL","ACTIVE","INACTIVE","ADMIN","PENDING"].map(f => (
             <button key={f} onClick={() => setStatus(f)}
               className={`au-filter-pill ${status === f ? "au-filter-pill--active" : ""}`}>
-              {f === "ALL" ? "All" : f[0] + f.slice(1).toLowerCase()}
+              {f === "ALL" ? "All" : f === "ADMIN" ? "Admin Users" : f[0] + f.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
@@ -386,18 +417,30 @@ export default function AllUsers() {
           ))}
         </div>
 
-        <select className="au-sort-select" value={sort} onChange={e => setSort(e.target.value)}>
-          <option value="name">Sort: Name A–Z</option>
+        <select className="au-sort-select" value={sort} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSort(e.target.value)}>
+          <option value="name">Sort: Name A-Z</option>
           <option value="msgs">Sort: Most Messages</option>
         </select>
 
-        <span className="au-filter-count">{filtered.length} users</span>
+        <span className="au-filter-count">{loading ? "..." : `${filteredUsers.length} users`}</span>
       </div>
 
-      {/* ── MAIN CONTENT ── */}
       <div className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"}`}>
         <div className="au-cards-grid">
-          {filtered.map(u => (
+          {loading && (
+            <div className="au-empty">
+              <div className="au-empty__icon">Loading</div>
+              <div className="au-empty__title">Loading users...</div>
+            </div>
+          )}
+          {!loading && error && (
+            <div className="au-empty">
+              <div className="au-empty__icon">Error</div>
+              <div className="au-empty__title">Could not load users</div>
+              <div className="au-empty__desc">{error}</div>
+            </div>
+          )}
+          {!loading && !error && filteredUsers.map(u => (
             <UserCard
               key={u.id}
               user={u}
@@ -405,9 +448,9 @@ export default function AllUsers() {
               onClick={() => setDetail(detail?.id === u.id ? null : u)}
             />
           ))}
-          {filtered.length === 0 && (
+          {!loading && !error && filteredUsers.length === 0 && (
             <div className="au-empty">
-              <div className="au-empty__icon">🔍</div>
+              <div className="au-empty__icon">Search</div>
               <div className="au-empty__title">No users found</div>
               <div className="au-empty__desc">Try adjusting your search or filters.</div>
             </div>
