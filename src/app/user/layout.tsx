@@ -3,9 +3,11 @@ import React, { useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import { useTheme, tokens } from "../../context/ThemeContext";
+import { useRedirectOnRefresh } from "../../hooks/useRedirectOnRefresh";
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const [activeNav, setActiveNav] = useState("Dashboard");
+  useRedirectOnRefresh();
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const titles: Record<string,string> = {
