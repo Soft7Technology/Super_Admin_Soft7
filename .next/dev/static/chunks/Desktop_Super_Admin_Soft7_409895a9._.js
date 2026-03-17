@@ -28,8 +28,15 @@ const ThemeProvider = ({ children })=>{
         "ThemeProvider.useEffect": ()=>{
             try {
                 const saved = localStorage.getItem("sa-theme");
-                if (saved === "light" || saved === "dark") setTheme(saved);
-            } catch  {}
+                if (saved === "light" || saved === "dark") {
+                    setTheme(saved);
+                    document.documentElement.setAttribute("data-theme", saved); // ✅ FIX: apply saved theme to <html>
+                } else {
+                    document.documentElement.setAttribute("data-theme", "dark"); // ✅ FIX: apply default dark theme
+                }
+            } catch  {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
         }
     }["ThemeProvider.useEffect"], []);
     const toggleTheme = ()=>setTheme((prev)=>{
@@ -37,6 +44,7 @@ const ThemeProvider = ({ children })=>{
             try {
                 localStorage.setItem("sa-theme", next);
             } catch  {}
+            document.documentElement.setAttribute("data-theme", next); // ✅ FIX: update <html> on every toggle
             return next;
         });
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Super_Admin_Soft7$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ThemeContext.Provider, {
@@ -48,7 +56,7 @@ const ThemeProvider = ({ children })=>{
         children: children
     }, void 0, false, {
         fileName: "[project]/Desktop/Super_Admin_Soft7/src/context/ThemeContext.tsx",
-        lineNumber: 22,
+        lineNumber: 33,
         columnNumber: 10
     }, ("TURBOPACK compile-time value", void 0));
 };
