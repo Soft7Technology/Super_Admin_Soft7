@@ -1,13 +1,41 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import { useTheme, tokens } from "../../context/ThemeContext";
 import { useRedirectOnRefresh } from "../../hooks/useRedirectOnRefresh";
 
+const pathMappings: Record<string, string> = {
+  "/user/dashboard": "Dashboard",
+  "/user/manage-companies": "Manage Companies",
+  "/user/all-user": "All User",
+  "/user/subscription": "Subscription",
+  "/user/audit-logs": "Audit Logs",
+  "/user/system": "System",
+  "/user/profile": "Profile",
+  "/user/support-tickets": "Support Tickets",
+};
+
+function getNavFromPath(pathname: string | null): string {
+  if (!pathname) return "Dashboard";
+  for (const [path, navName] of Object.entries(pathMappings)) {
+    if (pathname.startsWith(path)) {
+      return navName;
+    }
+  }
+  return "Dashboard";
+}
+
 export default function UserLayout({ children }: { children: React.ReactNode }) {
-  const [activeNav, setActiveNav] = useState("Dashboard");
+  const pathname = usePathname();
+  const [activeNav, setActiveNav] = useState(() => getNavFromPath(pathname));
   useRedirectOnRefresh();
+
+  // Update activeNav when pathname changes
+  useEffect(() => {
+    setActiveNav(getNavFromPath(pathname));
+  }, [pathname]);
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const titles: Record<string,string> = {
