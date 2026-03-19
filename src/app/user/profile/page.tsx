@@ -8,7 +8,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <div className={`pf-toggle ${on ? "pf-toggle--on" : ""}`} onClick={() => onChange(!on)}>
       <div className="pf-toggle__knob" />
-    </div>
+    </div>    
   );
 }
 
