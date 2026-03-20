@@ -142,11 +142,11 @@ function Pager({ page, total, size, onChange }: { page: number; total: number; s
   const from = total === 0 ? 0 : (page - 1) * size + 1;
   const to = Math.min(page * size, total);
 
-  return (
+  return ( 
     <div className="st-pager">
       <span className="st-pager__info">
         {from}–{to} of {total}
-      </span>
+      </span> 
       <div className="st-pager__btns">
         <button className="st-pager__btn" onClick={() => onChange(1)} disabled={page === 1}>
           «
@@ -157,9 +157,9 @@ function Pager({ page, total, size, onChange }: { page: number; total: number; s
         {withDots.map((value, index) =>
           value === "…" ? (
             <span key={`dots-${index}`} className="st-pager__dots">
-              …
-            </span>
-          ) : (
+              … 
+            </span> 
+          ) : ( 
             <button
               key={value}
               onClick={() => onChange(value as number)}
@@ -176,7 +176,7 @@ function Pager({ page, total, size, onChange }: { page: number; total: number; s
           »
         </button>
       </div>
-      <span className="st-pager__info">
+      <span className="st-pager__info"> 
         p{page}/{pages}
       </span>
     </div>
@@ -348,7 +348,7 @@ function ConvPanel({
             onKeyDown={(event) => {
               if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
                 void send();
-              }
+              }   
             }}
             placeholder="Type your reply… (Ctrl+Enter to send)"
             rows={3}
