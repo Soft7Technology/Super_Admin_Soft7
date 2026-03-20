@@ -49,6 +49,40 @@ function KPI({ label,value,delta,icon,color,up=true }:{ label:string; value:stri
 
 // ─── MODALS ───────────────────────────────────────────────────────────────────
 function CompanyModal({ company, onClose }: { company: Company|null; onClose:()=>void }) {
+  const [name, setName] = useState(company?.name || "");
+  const [domain, setDomain] = useState(company?.domain || "");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [status, setStatus] = useState<Status>(company?.status || "ACTIVE");
+  const [plan, setPlan] = useState<Plan>(company?.plan || "Starter");
+
+
+  const handleSubmit = async () => {
+    try{
+      const res =  await fetch ("/api/admin/companies",{
+        method : "POST",
+        headers : {
+          "Content-Type" : "application/json",
+        },
+      body : JSON.stringify({
+        name,
+        domain,
+        adminEmail,
+        status,
+        plan,
+      })
+      })
+      const data = await res.json();
+      if(!res.ok){
+        throw new Error (data.message||"Failed to create company");
+      }
+      console.log("✅ Created:", data);
+      alert("Company created successfully!");
+      onClose();
+    }catch(err){
+      console.log("Error:",err)
+    }
+  };
+   
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
       <div className="mc-modal" onClick={e=>e.stopPropagation()}>
@@ -62,20 +96,40 @@ function CompanyModal({ company, onClose }: { company: Company|null; onClose:()=
         <div className="mc-modal__body">
           <div className="mc-field">
             <div className="mc-field__label">COMPANY NAME</div>
-            <input className="mc-input" placeholder="e.g. Acme Corp" defaultValue={company?.name} />
+            <input 
+             className="mc-input"
+             placeholder="Enter your company name"
+             value={name} 
+             onChange={(e)=> setName(e.target.value)}
+              />
           </div>
           <div className="mc-field">
             <div className="mc-field__label">DOMAIN</div>
-            <input className="mc-input" placeholder="e.g. acme.com" defaultValue={company?.domain} />
+            <input
+             className="mc-input"
+             placeholder="Enter your domain name"
+             value={domain}
+             onChange={(e) => setDomain(e.target.value)} 
+             />
           </div>
           <div className="mc-field">
             <div className="mc-field__label">ADMIN EMAIL</div>
-            <input className="mc-input" type="email" placeholder="admin@company.com" />
+            <input 
+            className="mc-input" 
+            type="email" 
+            placeholder="Enter your adminEmail" 
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
+            />
           </div>
           <div className="mc-modal__grid-2">
             <div className="mc-field">
               <div className="mc-field__label">STATUS</div>
-              <select className="mc-select" defaultValue={company?.status??"ACTIVE"}>
+              <select
+                className="mc-select"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status)}
+                >
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
                 <option value="SUSPENDED">Suspended</option>
@@ -84,14 +138,18 @@ function CompanyModal({ company, onClose }: { company: Company|null; onClose:()=
             </div>
             <div className="mc-field">
               <div className="mc-field__label">PLAN</div>
-              <select className="mc-select" defaultValue={company?.plan??"Starter"}>
+              <select 
+              className="mc-select" 
+              value={plan}
+              onChange= {(e) => setPlan(e.target.value as Plan)}
+              >
                 <option>Starter</option><option>Basic</option><option>Pro</option><option>Enterprise</option>
               </select>
             </div>
           </div>
           <div className="mc-modal__divider" />
           <div className="mc-modal__actions">
-            <button className="mc-btn mc-btn--primary" onClick={onClose}>{company?"Save Changes":"Create Company"}</button>
+            <button className="mc-btn mc-btn--primary" onClick={handleSubmit}>{company?"Save Changes":"Create Company"}</button>
             <button className="mc-btn mc-btn--ghost" onClick={onClose}>Cancel</button>
           </div>
         </div>

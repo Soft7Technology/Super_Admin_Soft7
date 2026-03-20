@@ -20,7 +20,7 @@ function avatarCol(id: number) {
 
 export async function GET() {
   try {
-    const companies = await prisma.companies.findMany({
+    const companies = await prisma.company.findMany({
       select: {
         id:     true,
         name:   true,
@@ -59,3 +59,31 @@ export async function GET() {
     return NextResponse.json({ companies: [], error: "Failed to fetch companies." }, { status: 500 });
   }
 }
+
+  export async function POST(req:Request) {
+    try{
+      const body= await req.json();
+      const {name,domain,adminEmail,status} = body;
+      if(!name||!adminEmail){
+        return NextResponse.json(
+          {message:"Name and Admin Email are required"},
+          {status:400}
+        );
+      }
+      const company = await prisma.company.create({
+        data:{
+          name,
+          domain,
+          adminEmail,
+          status:status||"ACTIVE",
+        }
+      });
+      return NextResponse.json(company,{status:201})
+    }catch(err){
+      console.log("Error",err);
+      return NextResponse.json(
+        {message: "Internal Server Error"},
+        {status:500}
+      );
+    }
+  }
