@@ -1,6 +1,21 @@
 {
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
+  "/api/admin/audit-logs/route": "/api/admin/audit-logs",
+  "/api/admin/companies/route": "/api/admin/companies",
+  "/api/admin/dashboard/route": "/api/admin/dashboard",
+  "/api/admin/subscriptions/analytics/route": "/api/admin/subscriptions/analytics",
+  "/api/admin/support-tickets/ingest/route": "/api/admin/support-tickets/ingest",
+  "/api/admin/support-tickets/route": "/api/admin/support-tickets",
+  "/api/admin/users/route": "/api/admin/users",
   "/page": "/",
-  "/user/dashboard/page": "/user/dashboard"
+  "/user/all-user/page": "/user/all-user",
+  "/user/audit-logs/page": "/user/audit-logs",
+  "/user/dashboard/create/page": "/user/dashboard/create",
+  "/user/dashboard/page": "/user/dashboard",
+  "/user/manage-companies/page": "/user/manage-companies",
+  "/user/profile/page": "/user/profile",
+  "/user/subscription/page": "/user/subscription",
+  "/user/support-tickets/page": "/user/support-tickets",
+  "/user/system/page": "/user/system"
 }

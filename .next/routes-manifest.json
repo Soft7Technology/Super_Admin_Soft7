@@ -41,10 +41,100 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
+      "page": "/api/admin/audit-logs",
+      "regex": "^/api/admin/audit\\-logs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/audit\\-logs(?:/)?$"
+    },
+    {
+      "page": "/api/admin/companies",
+      "regex": "^/api/admin/companies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/companies(?:/)?$"
+    },
+    {
+      "page": "/api/admin/dashboard",
+      "regex": "^/api/admin/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/dashboard(?:/)?$"
+    },
+    {
+      "page": "/api/admin/subscriptions/analytics",
+      "regex": "^/api/admin/subscriptions/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/subscriptions/analytics(?:/)?$"
+    },
+    {
+      "page": "/api/admin/support-tickets",
+      "regex": "^/api/admin/support\\-tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/support\\-tickets(?:/)?$"
+    },
+    {
+      "page": "/api/admin/support-tickets/ingest",
+      "regex": "^/api/admin/support\\-tickets/ingest(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/support\\-tickets/ingest(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users",
+      "regex": "^/api/admin/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/users(?:/)?$"
+    },
+    {
+      "page": "/user/all-user",
+      "regex": "^/user/all\\-user(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/all\\-user(?:/)?$"
+    },
+    {
+      "page": "/user/audit-logs",
+      "regex": "^/user/audit\\-logs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/audit\\-logs(?:/)?$"
+    },
+    {
       "page": "/user/dashboard",
       "regex": "^/user/dashboard(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/user/dashboard(?:/)?$"
+    },
+    {
+      "page": "/user/dashboard/create",
+      "regex": "^/user/dashboard/create(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/dashboard/create(?:/)?$"
+    },
+    {
+      "page": "/user/manage-companies",
+      "regex": "^/user/manage\\-companies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/manage\\-companies(?:/)?$"
+    },
+    {
+      "page": "/user/profile",
+      "regex": "^/user/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/profile(?:/)?$"
+    },
+    {
+      "page": "/user/subscription",
+      "regex": "^/user/subscription(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/subscription(?:/)?$"
+    },
+    {
+      "page": "/user/support-tickets",
+      "regex": "^/user/support\\-tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/support\\-tickets(?:/)?$"
+    },
+    {
+      "page": "/user/system",
+      "regex": "^/user/system(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/system(?:/)?$"
     }
   ],
   "dataRoutes": [],

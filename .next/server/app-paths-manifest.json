@@ -1,6 +1,21 @@
 {
   "/_global-error/page": "app/_global-error/page.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/admin/audit-logs/route": "app/api/admin/audit-logs/route.js",
+  "/api/admin/companies/route": "app/api/admin/companies/route.js",
+  "/api/admin/dashboard/route": "app/api/admin/dashboard/route.js",
+  "/api/admin/subscriptions/analytics/route": "app/api/admin/subscriptions/analytics/route.js",
+  "/api/admin/support-tickets/ingest/route": "app/api/admin/support-tickets/ingest/route.js",
+  "/api/admin/support-tickets/route": "app/api/admin/support-tickets/route.js",
+  "/api/admin/users/route": "app/api/admin/users/route.js",
   "/page": "app/page.js",
-  "/user/dashboard/page": "app/user/dashboard/page.js"
+  "/user/all-user/page": "app/user/all-user/page.js",
+  "/user/audit-logs/page": "app/user/audit-logs/page.js",
+  "/user/dashboard/create/page": "app/user/dashboard/create/page.js",
+  "/user/dashboard/page": "app/user/dashboard/page.js",
+  "/user/manage-companies/page": "app/user/manage-companies/page.js",
+  "/user/profile/page": "app/user/profile/page.js",
+  "/user/subscription/page": "app/user/subscription/page.js",
+  "/user/support-tickets/page": "app/user/support-tickets/page.js",
+  "/user/system/page": "app/user/system/page.js"
 }
