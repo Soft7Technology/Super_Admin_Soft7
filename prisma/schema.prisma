@@ -161,7 +161,7 @@ model User {
   messages           Message[]
   optKeywords        OptKeyword[]        @relation("UserOptKeywords")
   tags               Tag[]
-  company            companies?          @relation(fields: [companyId], references: [id])
+  company            Company?          @relation(fields: [companyId], references: [id])
   User               User?               @relation("UserToUser", fields: [createdBy], references: [id])
   other_User         User[]              @relation("UserToUser")
   UserSubscription   UserSubscription[]
@@ -227,6 +227,7 @@ model Campaign {
   delaySeconds     Int       @default(5)
   audienceData     Json?
   userId           Int
+  whatsappAccountId Int?
   variableMapping  Json?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -598,17 +599,20 @@ model IncomingWebhook {
   @@index([status])
 }
 
-model companies {
+model Company {
   id                 Int                  @id @default(autoincrement())
   name               String
   domain             String?              @unique
+  adminEmail         String             
   status             CompanyStatus        @default(ACTIVE)
   logo               String?
   createdAt          DateTime             @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime             @updatedAt
   users              User[]
   UserSubscription   UserSubscription[]
   subscription_plans subscription_plans[]
+
+  @@map("companies")
 }
 
 model features {
@@ -653,7 +657,7 @@ model subscription_plans {
   updatedAt        DateTime
   UserSubscription UserSubscription[]
   plan_features    plan_features[]
-  companies        companies          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companies        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -705,7 +709,7 @@ model UserSubscription {
   autoRenew          Boolean            @default(true)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime
-  companies          companies          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companies          Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   subscription_plans subscription_plans @relation(fields: [planId], references: [id], onDelete: Cascade)
   User               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
