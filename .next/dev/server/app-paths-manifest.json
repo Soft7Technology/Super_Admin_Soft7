@@ -1,11 +1,8 @@
 {
-  "/page": "app/page.js",
+  "/api/admin/dashboard/route": "app/api/admin/dashboard/route.js",
+  "/api/admin/subscriptions/analytics/route": "app/api/admin/subscriptions/analytics/route.js",
+  "/api/admin/users/route": "app/api/admin/users/route.js",
   "/user/all-user/page": "app/user/all-user/page.js",
-  "/user/audit-logs/page": "app/user/audit-logs/page.js",
   "/user/dashboard/page": "app/user/dashboard/page.js",
-  "/user/manage-companies/page": "app/user/manage-companies/page.js",
-  "/user/profile/page": "app/user/profile/page.js",
-  "/user/subscription/page": "app/user/subscription/page.js",
-  "/user/support-tickets/page": "app/user/support-tickets/page.js",
-  "/user/system/page": "app/user/system/page.js"
+  "/user/manage-companies/page": "app/user/manage-companies/page.js"
 }
