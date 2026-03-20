@@ -1,3 +1,37 @@
-[00:00:03.616] Server  LOG     ✓ Ready in 2.6s
-[00:00:25.153] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:25.610] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'v')
+[00:00:01.669] Server  LOG     ✓ Ready in 1109ms
+[00:00:07.129] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:07.875] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:07.991] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:16.789] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:16.860] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:16.926] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:28.060] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:28.153] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:29.407] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:29.481] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:29.647] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:29.715] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:29.779] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
+[00:00:29.948] Server  ERROR   ⨯ PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
+It should have this form: { url: "CONNECTION_STRING" }
+Read more at https://pris.ly/d/client-constructor
