@@ -18,47 +18,47 @@ function avatarCol(id: number) {
   return AVATAR_PALETTE[id % AVATAR_PALETTE.length];
 }
 
-export async function GET() {
-  try {
-    const companies = await prisma.company.findMany({
-      select: {
-        id:     true,
-        name:   true,
-        status: true,
-        _count: { select: { users: true } },
-        subscription_plans: {
-          select: { name: true },
-          take: 1,
-          orderBy: { createdAt: "desc" },
-        },
-      },
-      take: 5,
-      orderBy: { createdAt: "desc" },
-    });
+// export async function GET() {
+//   try {
+//     const companies = await prisma.company.findMany({
+//       select: {
+//         id:     true,
+//         name:   true,
+//         status: true,
+//         _count: { select: { users: true } },
+//         subscription_plans: {
+//           select: { name: true },
+//           take: 1,
+//           orderBy: { createdAt: "desc" },
+//         },
+//       },
+//       take: 5,
+//       orderBy: { createdAt: "desc" },
+//     });
 
-    const serialized = companies.map((c) => ({
-      id:     String(c.id),
-      name:   c.name,
-      ini:    c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
-      col:    avatarCol(c.id),
-      status: c.status === "ACTIVE" ? "Active" : c.status === "INACTIVE" ? "Inactive" : "Trial",
-      plan:   c.subscription_plans[0]?.name ?? "—",
-      users:  c._count.users,
-    }));
+//     const serialized = companies.map((c) => ({
+//       id:     String(c.id),
+//       name:   c.name,
+//       ini:    c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+//       col:    avatarCol(c.id),
+//       status: c.status === "ACTIVE" ? "Active" : c.status === "INACTIVE" ? "Inactive" : "Trial",
+//       plan:   c.subscription_plans[0]?.name ?? "—",
+//       users:  c._count.users,
+//     }));
 
-    return NextResponse.json({ companies: serialized, error: null });
-  } catch (error) {
-    const connectionMessage = getPrismaConnectionErrorMessage(error);
+//     return NextResponse.json({ companies: serialized, error: null });
+//   } catch (error) {
+//     const connectionMessage = getPrismaConnectionErrorMessage(error);
 
-    if (connectionMessage) {
-      console.warn(`[admin/companies] ${connectionMessage}`);
-      return NextResponse.json({ companies: [], error: connectionMessage });
-    }
+//     if (connectionMessage) {
+//       console.warn(`[admin/companies] ${connectionMessage}`);
+//       return NextResponse.json({ companies: [], error: connectionMessage });
+//     }
 
-    console.error("[admin/companies] error:", error);
-    return NextResponse.json({ companies: [], error: "Failed to fetch companies." }, { status: 500 });
-  }
-}
+//     console.error("[admin/companies] error:", error);
+//     return NextResponse.json({ companies: [], error: "Failed to fetch companies." }, { status: 500 });
+//   }
+// }
 
   export async function POST(req:Request) {
     try{
@@ -87,3 +87,20 @@ export async function GET() {
       );
     }
   }
+
+
+export async function GET() {
+  try {
+    const companies = await prisma.company.findMany({
+      orderBy: { createdAt: "desc" }, 
+    });
+
+    return NextResponse.json(companies);
+  } catch (error) {
+    console.error("GET companies error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch companies" },
+      { status: 500 }
+    );
+  }
+}
