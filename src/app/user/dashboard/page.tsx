@@ -106,6 +106,17 @@ export default function DashboardPage() {
       });
   }, []);
 
+  const handleStatCardClick = (stat: StatCard) => {
+    if (stat.label === "Total Companies") {
+      router.push("/user/dashboard/companies");
+      return;
+    }
+
+    if (stat.label === "Active Users") {
+      router.push("/user/dashboard/users");
+    }
+  };
+
   return (
     <div style={{ padding:"28px 28px 48px", background:t.bg, minHeight:"100%", transition:"background 0.3s ease" }}>
       {/* Header */}
@@ -128,7 +139,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <StatCards stats={stats} />
+      <StatCards
+        stats={stats}
+        onCardClick={handleStatCardClick}
+        isCardClickable={(stat) => stat.label === "Total Companies" || stat.label === "Active Users"}
+      />
 
       {error && (
         <div style={{ marginBottom:"18px", padding:"12px 14px", borderRadius:"10px", border:`1px solid ${t.border}`, background:t.surface, color:t.textMuted, fontSize:"0.85rem" }}>
