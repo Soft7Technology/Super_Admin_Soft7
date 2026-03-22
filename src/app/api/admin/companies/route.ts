@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../../lib/prisma";
 import { getPrismaConnectionErrorMessage } from "../../../../lib/prisma-errors";
 
@@ -18,7 +18,43 @@ function avatarCol(id: number) {
   return AVATAR_PALETTE[id % AVATAR_PALETTE.length];
 }
 
-export async function GET() {
+function formatCompanyStatus(status: string) {
+  if (status === "ACTIVE") {
+    return "Active";
+  }
+
+  if (status === "INACTIVE") {
+    return "Inactive";
+  }
+
+  if (status === "SUSPENDED") {
+    return "Suspended";
+  }
+
+  return "Trial";
+}
+
+function parseTake(limit: string | null, fallback: number) {
+  if (!limit) {
+    return fallback;
+  }
+
+  if (limit.toLowerCase() === "all") {
+    return undefined;
+  }
+
+  const parsed = Number(limit);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.min(Math.floor(parsed), 2000);
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const take = parseTake(searchParams.get("limit"), 5);
+
   try {
     const companies = await prisma.companies.findMany({
       select: {
@@ -32,7 +68,7 @@ export async function GET() {
           orderBy: { createdAt: "desc" },
         },
       },
-      take: 5,
+      ...(typeof take === "number" ? { take } : {}),
       orderBy: { createdAt: "desc" },
     });
 
@@ -41,7 +77,7 @@ export async function GET() {
       name:   c.name,
       ini:    c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
       col:    avatarCol(c.id),
-      status: c.status === "ACTIVE" ? "Active" : c.status === "INACTIVE" ? "Inactive" : "Trial",
+      status: formatCompanyStatus(c.status),
       plan:   c.subscription_plans[0]?.name ?? "—",
       users:  c._count.users,
     }));

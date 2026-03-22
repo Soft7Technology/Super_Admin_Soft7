@@ -23,25 +23,43 @@ const LIGHT_TEXT: Record<StatCard["accent"],string> = {
   blue:"#1d4ed8", green:"#15803d", purple:"#6d28d9", orange:"#c2410c", red:"#b91c1c", teal:"#0f766e",
 };
 
-export default function StatCards({ stats }: { stats: StatCard[] }) {
+export default function StatCards({
+  stats,
+  onCardClick,
+  isCardClickable,
+}: {
+  stats: StatCard[];
+  onCardClick?: (stat: StatCard) => void;
+  isCardClickable?: (stat: StatCard) => boolean;
+}) {
   return (
     <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"16px", marginBottom:"24px" }}>
-      {stats.map((s,i) => <Card key={i} stat={s} />)}
+      {stats.map((s,i) => {
+        const clickable = isCardClickable ? isCardClickable(s) : Boolean(onCardClick);
+        return (
+          <Card
+            key={i}
+            stat={s}
+            onClick={clickable && onCardClick ? () => onCardClick(s) : undefined}
+          />
+        );
+      })}
     </div>
   );
 }
 
-function Card({ stat }: { stat: StatCard }) {
+function Card({ stat, onClick }: { stat: StatCard; onClick?: () => void }) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const s = isDark ? DARK[stat.accent] : LIGHT[stat.accent];
   const [hov, setHov] = useState(false);
   const textColor = isDark ? "#fff" : LIGHT_TEXT[stat.accent];
+  const clickable = Boolean(onClick);
 
   return (
-    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onClick}
       style={{ background:s.bg, border:`1px solid ${s.border}`, borderRadius:"14px", padding:"20px", overflow:"hidden", position:"relative",
-        transform:hov?"translateY(-3px)":"translateY(0)", boxShadow:hov?"0 8px 24px rgba(0,0,0,0.18)":"0 2px 8px rgba(0,0,0,0.06)", transition:"all 0.2s", cursor:"default" }}>
+        transform:hov?"translateY(-3px)":"translateY(0)", boxShadow:hov?"0 8px 24px rgba(0,0,0,0.18)":"0 2px 8px rgba(0,0,0,0.06)", transition:"all 0.2s", cursor:clickable?"pointer":"default" }}>
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"14px" }}>
         <div style={{ fontSize:"0.8rem", color: isDark?"#94a3b8":textColor, fontWeight:600, maxWidth:"130px", lineHeight:1.3, opacity:isDark?1:0.75 }}>{stat.label}</div>
         <div style={{ width:"42px", height:"42px", borderRadius:"10px", background:s.iconBg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.2rem", flexShrink:0 }}>{stat.icon}</div>
