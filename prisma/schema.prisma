@@ -168,6 +168,7 @@ model User {
   webhookEndpoints   WebhookEndpoint[]   @relation("UserWebhookEndpoints")
   WhatsAppAccount    WhatsAppAccount[]
   whatsappFlows      WhatsappFlow[]      @relation("UserWhatsappFlows")
+  admin_profile_meta admin_profile_meta?
   contactReminders   ContactReminder[]
   contacts           Contact[]
   notifications      Notification[]
@@ -217,31 +218,33 @@ model Lead {
 }
 
 model Campaign {
-  id               String    @id @default(cuid())
-  name             String
-  description      String?
-  type             String
-  status           String    @default("draft")
-  startDate        DateTime?
-  leadsCount       Int       @default(0)
-  delaySeconds     Int       @default(5)
-  audienceData     Json?
-  userId           Int
-  variableMapping  Json?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  failedCount      Int       @default(0)
-  sentCount        Int       @default(0)
-  deliveredCount   Int?      @default(0)
-  endDate          DateTime?
-  messageTemplate  String?
-  readCount        Int?      @default(0)
-  selectedTemplate String?
-  headerMediaUrl   String?
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages         Message[]
+  id                String    @id @default(cuid())
+  name              String
+  description       String?
+  type              String
+  status            String    @default("draft")
+  startDate         DateTime?
+  leadsCount        Int       @default(0)
+  delaySeconds      Int       @default(5)
+  audienceData      Json?
+  userId            Int
+  variableMapping   Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  failedCount       Int       @default(0)
+  sentCount         Int       @default(0)
+  deliveredCount    Int?      @default(0)
+  endDate           DateTime?
+  messageTemplate   String?
+  readCount         Int?      @default(0)
+  selectedTemplate  String?
+  headerMediaUrl    String?
+  whatsappAccountId Int?
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages          Message[]
 
   @@index([userId])
+  @@index([whatsappAccountId])
 }
 
 model Media {
@@ -387,20 +390,23 @@ model AiAssistant {
 }
 
 model Chatbot {
-  id          String        @id @default(cuid())
-  userId      Int?
-  name        String
-  description String?
-  status      UserStatus
-  published   Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  sessions    ChatSession[]
-  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  edges       ChatbotEdge[]
-  nodes       ChatbotNode[]
+  id                String           @id @default(cuid())
+  userId            Int?
+  name              String
+  description       String?
+  status            UserStatus
+  published         Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  whatsappAccountId Int?
+  sessions          ChatSession[]
+  user              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  WhatsAppAccount   WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: Cascade)
+  edges             ChatbotEdge[]
+  nodes             ChatbotNode[]
 
   @@index([userId])
+  @@index([whatsappAccountId])
 }
 
 model ChatbotNode {
@@ -559,6 +565,7 @@ model WhatsAppAccount {
   twoStepVerificationPin    String?
   flowEndpointPrivateKeyPem String?
   flowEndpointPublicKeyPem  String?
+  Chatbot                   Chatbot[]
   User                      User               @relation(fields: [userId], references: [id])
   templates                 WhatsAppTemplate[]
 
@@ -606,6 +613,7 @@ model companies {
   logo               String?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime
+  adminEmail         String               @unique
   users              User[]
   UserSubscription   UserSubscription[]
   subscription_plans subscription_plans[]
@@ -727,6 +735,24 @@ model walletTransaction {
   @@index([userId])
 }
 
+model admin_profile_meta {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  bio                String?
+  location           String?
+  website            String?
+  timezone           String?
+  language           String?
+  weekStart          String?
+  emailNotifications Boolean  @default(true)
+  smsNotifications   Boolean  @default(false)
+  darkMode           Boolean  @default(true)
+  compactUI          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+  User               User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_profile_meta_user_fk")
+}
+
 enum TicketStatus {
   PENDING
   IN_PROGRESS
@@ -750,6 +776,7 @@ enum CompanyStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
+  TRIAL
 }
 
 enum SubscriptionStatus {

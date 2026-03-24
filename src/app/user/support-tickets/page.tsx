@@ -76,142 +76,7 @@ const INIT_TICKETS: Ticket[] = [
       { id:4, sender:"USER",  name:"Sara Rivera",  avatar:"SR", content:"Still no updates? We have a live campaign running — this is really urgent.", time:"Mar 11, 10:45 AM", read:false },
       { id:5, sender:"USER",  name:"Sara Rivera",  avatar:"SR", content:"It's been over an hour. Can someone please help?", time:"Mar 11, 11:30 AM", read:false },
     ],
-  },
-  {
-    id: 1002, subject: "Unable to export billing report for Q1 2026",
-    company: "Prism Analytics", companyLogo: "PA", companyCol: "#00B894",
-    user: "Priya Sharma", userEmail: "priya@prism.co",
-    status: "IN_PROGRESS", priority: "HIGH", category: "Billing",
-    created: "Mar 10, 2026 03:00 PM", updated: "1 hr ago", unread: 0,
-    messages: [
-      { id:1, sender:"USER",  name:"Priya Sharma", avatar:"PS", content:"The billing report export keeps failing with a timeout error. I need this for our board meeting tomorrow morning.", time:"Mar 10, 03:00 PM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Hi Priya! Your Q1 dataset has over 50,000 records which is hitting our export timeout. I'm running a manual export right now and will email it directly to you.", time:"Mar 10, 03:20 PM", read:true },
-      { id:3, sender:"USER",  name:"Priya Sharma", avatar:"PS", content:"Thank you! Also, can you look into why the automated February report didn't generate?", time:"Mar 10, 04:00 PM", read:true },
-      { id:4, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Found a bug in our scheduled report job — fixed in our latest deploy. Q1 export emailed to priya@prism.co", time:"Mar 10, 05:30 PM", read:true },
-    ],
-  },
-  {
-    id: 1003, subject: "2FA setup not working on new device",
-    company: "Zenith Group", companyLogo: "ZN", companyCol: "#A29BFE",
-    user: "Anya Patel", userEmail: "anya@zenith.in",
-    status: "WAITING", priority: "MEDIUM", category: "Account",
-    created: "Mar 9, 2026 11:00 AM", updated: "Yesterday", unread: 1,
-    messages: [
-      { id:1, sender:"USER",  name:"Anya Patel",   avatar:"AP", content:"I got a new MacBook and the 2FA codes from my authenticator app aren't working. I'm completely locked out.", time:"Mar 9, 11:00 AM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Hi Anya! This typically happens when the authenticator app time is out of sync. Please sync time in the app settings.", time:"Mar 9, 11:15 AM", read:true },
-      { id:3, sender:"USER",  name:"Anya Patel",   avatar:"AP", content:"Synced the time but still not working. Please send the recovery code.", time:"Mar 9, 11:45 AM", read:false },
-    ],
-  },
-  {
-    id: 1004, subject: "Chatbot flow not triggering on keyword match",
-    company: "Acme Corp", companyLogo: "AC", companyCol: "#6C5CE7",
-    user: "James Doe", userEmail: "james@acme.com",
-    status: "IN_PROGRESS", priority: "HIGH", category: "Technical",
-    created: "Mar 8, 2026 02:00 PM", updated: "2 days ago", unread: 0,
-    messages: [
-      { id:1, sender:"USER",  name:"James Doe",    avatar:"JD", content:"Our chatbot isn't triggering when customers type 'help' or 'support'. The flow is configured correctly and worked fine last week.", time:"Mar 8, 02:00 PM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Hi James! I can see your flow config — the keyword matching is set to case-sensitive. Can you confirm customers type 'help' (lowercase) vs 'Help'?", time:"Mar 8, 02:30 PM", read:true },
-      { id:3, sender:"USER",  name:"James Doe",    avatar:"JD", content:"Even 'HELP' doesn't work, so it's broader than case sensitivity.", time:"Mar 8, 03:00 PM", read:true },
-      { id:4, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Found a regex parsing bug in v2.14.1. Fix rolling out now, ETA 2 hours.", time:"Mar 8, 04:00 PM", read:true },
-    ],
-  },
-  {
-    id: 1005, subject: "API rate limit errors during bulk campaign send",
-    company: "Prism Analytics", companyLogo: "PA", companyCol: "#00B894",
-    user: "Priya Sharma", userEmail: "priya@prism.co",
-    status: "RESOLVED", priority: "MEDIUM", category: "Integration",
-    created: "Mar 7, 2026 09:00 AM", updated: "3 days ago", unread: 0,
-    messages: [
-      { id:1, sender:"USER",  name:"Priya Sharma", avatar:"PS", content:"Getting 429 Too Many Requests errors when sending bulk campaigns — around 5,000 messages per minute.", time:"Mar 7, 09:00 AM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"WhatsApp API limits 1,000 msg/min per phone number. Enabling burst mode on your account now.", time:"Mar 7, 09:30 AM", read:true },
-      { id:3, sender:"USER",  name:"Priya Sharma", avatar:"PS", content:"Fixed! Thank you.", time:"Mar 7, 11:00 AM", read:true },
-      { id:4, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Glad to hear it! Marking resolved!", time:"Mar 7, 12:00 PM", read:true },
-    ],
-  },
-  {
-    id: 1006, subject: "Plan upgrade not reflecting in dashboard",
-    company: "SkyLine Inc", companyLogo: "SK", companyCol: "#00CBA4",
-    user: "Tom King", userEmail: "tom@skyline.co",
-    status: "OPEN", priority: "HIGH", category: "Subscription",
-    created: "Mar 11, 2026 08:00 AM", updated: "3 hrs ago", unread: 2,
-    messages: [
-      { id:1, sender:"USER",  name:"Tom King",     avatar:"TK", content:"We upgraded from Starter to Pro 3 hours ago and the payment was charged, but our dashboard still shows Starter limits.", time:"Mar 11, 08:00 AM", read:true },
-      { id:2, sender:"USER",  name:"Tom King",     avatar:"TK", content:"Payment receipt shows ₹2499 charged. Order ID: ORD-2026-03-1142. Please help!", time:"Mar 11, 08:15 AM", read:false },
-    ],
-  },
-  {
-    id: 1007, subject: "Custom domain SSL certificate error",
-    company: "Vertex Co", companyLogo: "VT", companyCol: "#FF6B6B",
-    user: "Mike Loren", userEmail: "mike@vertexco.com",
-    status: "CLOSED", priority: "LOW", category: "Technical",
-    created: "Mar 5, 2026 01:00 PM", updated: "5 days ago", unread: 0,
-    messages: [
-      { id:1, sender:"USER",  name:"Mike Loren",   avatar:"ML", content:"Our custom domain chat.vertexco.com shows SSL certificate errors for some users.", time:"Mar 5, 01:00 PM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Certificate renewal issue on our CDN — renewed and propagated.", time:"Mar 5, 01:45 PM", read:true },
-      { id:3, sender:"USER",  name:"Mike Loren",   avatar:"ML", content:"All good now, thanks!", time:"Mar 5, 04:00 PM", read:true },
-      { id:4, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Glad to hear it! Closing this ticket.", time:"Mar 5, 04:15 PM", read:true },
-    ],
-  },
-  {
-    id: 1008, subject: "Dashboard slow loading — taking 15+ seconds",
-    company: "Delta Forge", companyLogo: "DF", companyCol: "#E17055",
-    user: "Ravi Kumar", userEmail: "ravi@deltaforge.in",
-    status: "OPEN", priority: "URGENT", category: "Performance",
-    created: "Mar 11, 2026 07:30 AM", updated: "30 mins ago", unread: 4,
-    messages: [
-      { id:1, sender:"USER",  name:"Ravi Kumar",   avatar:"RK", content:"The main dashboard is taking over 15 seconds to load since this morning.", time:"Mar 11, 07:30 AM", read:true },
-      { id:2, sender:"USER",  name:"Ravi Kumar",   avatar:"RK", content:"Still slow. Network is fine on our end.", time:"Mar 11, 08:00 AM", read:false },
-      { id:3, sender:"USER",  name:"Ravi Kumar",   avatar:"RK", content:"Now taking 20 seconds. Is there a server issue?", time:"Mar 11, 08:45 AM", read:false },
-      { id:4, sender:"USER",  name:"Ravi Kumar",   avatar:"RK", content:"Please respond ASAP — this is blocking our whole team.", time:"Mar 11, 09:00 AM", read:false },
-    ],
-  },
-  {
-    id: 1009, subject: "Bulk contact import failing for CSV > 10,000 rows",
-    company: "Nexus Ltd", companyLogo: "NX", companyCol: "#FDCB6E",
-    user: "Leila Hassan", userEmail: "leila@nexus.io",
-    status: "IN_PROGRESS", priority: "MEDIUM", category: "Technical",
-    created: "Mar 10, 2026 10:00 AM", updated: "Yesterday", unread: 0,
-    messages: [
-      { id:1, sender:"USER",  name:"Leila Hassan", avatar:"LH", content:"When we import a contact CSV with more than 10,000 rows, the import fails silently.", time:"Mar 10, 10:00 AM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Confirmed the bug — working on chunked imports. ETA 2 business days.", time:"Mar 10, 11:00 AM", read:true },
-    ],
-  },
-  {
-    id: 1010, subject: "Invoice not generated for December 2025",
-    company: "Acme Corp", companyLogo: "AC", companyCol: "#6C5CE7",
-    user: "James Doe", userEmail: "james@acme.com",
-    status: "RESOLVED", priority: "LOW", category: "Billing",
-    created: "Mar 3, 2026 09:00 AM", updated: "1 week ago", unread: 0,
-    messages: [
-      { id:1, sender:"USER",  name:"James Doe",    avatar:"JD", content:"The December 2025 invoice is missing from our billing portal.", time:"Mar 3, 09:00 AM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Regenerated and uploaded to your billing portal now!", time:"Mar 3, 10:00 AM", read:true },
-      { id:3, sender:"USER",  name:"James Doe",    avatar:"JD", content:"Got it, thank you!", time:"Mar 3, 10:30 AM", read:true },
-    ],
-  },
-  {
-    id: 1011, subject: "Email notifications not reaching users",
-    company: "Zenith Group", companyLogo: "ZN", companyCol: "#A29BFE",
-    user: "Anya Patel", userEmail: "anya@zenith.in",
-    status: "WAITING", priority: "MEDIUM", category: "Technical",
-    created: "Mar 9, 2026 03:00 PM", updated: "2 days ago", unread: 1,
-    messages: [
-      { id:1, sender:"USER",  name:"Anya Patel",   avatar:"AP", content:"Several users are not receiving email notifications for new messages.", time:"Mar 9, 03:00 PM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"SMTP update looks fine on our end. Can you check if emails land in spam?", time:"Mar 9, 03:30 PM", read:true },
-      { id:3, sender:"USER",  name:"Anya Patel",   avatar:"AP", content:"Checked spam — not there. Domain is zenith.in. SPF and DKIM both configured.", time:"Mar 9, 04:00 PM", read:false },
-    ],
-  },
-  {
-    id: 1012, subject: "Campaign analytics showing wrong open rates",
-    company: "SkyLine Inc", companyLogo: "SK", companyCol: "#00CBA4",
-    user: "Tom King", userEmail: "tom@skyline.co",
-    status: "CLOSED", priority: "LOW", category: "Other",
-    created: "Mar 1, 2026 11:00 AM", updated: "1 week ago", unread: 0,
-    messages: [
-      { id:1, sender:"USER",  name:"Tom King",     avatar:"TK", content:"Campaign open rates are showing 100% — our actual rate should be around 35%.", time:"Mar 1, 11:00 AM", read:true },
-      { id:2, sender:"ADMIN", name:"Support Team", avatar:"ST", content:"Recalculated: 'Spring Sale' now shows 34.2% open rate.", time:"Mar 1, 12:30 PM", read:true },
-      { id:3, sender:"USER",  name:"Tom King",     avatar:"TK", content:"34.2% sounds right. Thanks!", time:"Mar 1, 01:00 PM", read:true },
-    ],
-  },
+  }
 ];
 
 const PAGE_SIZE = 8;
@@ -499,10 +364,10 @@ export default function SupportTickets() {
 
       {/* KPI ROW */}
       <div className="st-kpi-grid">
-        <KPI label="Open Tickets"  value={String(openCount)} sub={`${urgent} urgent`}  icon="🎫" color="#74B9FF" />
-        <KPI label="In Progress"   value={String(inProg)}    sub="being handled"        icon="⚙️" color="#FDCB6E" />
-        <KPI label="Resolved (7d)" value={String(resolved)}  sub="closed this week"     icon="✅" color="#00CBA4" />
-        <KPI label="Avg Response"  value="18m"               sub="across all tickets"   icon="⚡" color="#6C5CE7" />
+        <KPI label="Open Tickets"  value="0" sub={`0 urgent`}  icon="🎫" color="#74B9FF" />
+        <KPI label="In Progress"   value="0"    sub="being handled"        icon="⚙️" color="#FDCB6E" />
+        <KPI label="Resolved (7d)" value="0" sub="closed this week"     icon="✅" color="#00CBA4" />
+        <KPI label="Avg Response"  value="0"               sub="across all tickets"   icon="⚡" color="#6C5CE7" />
       </div>
 
       {/* MAIN GRID */}
@@ -612,11 +477,11 @@ export default function SupportTickets() {
             <div className="st-conv-empty__chips">
               <div className="st-conv-empty__chip">
                 <span className="st-conv-empty__chip-dot" style={{ background: "var(--st-info)" }} />
-                <span className="st-conv-empty__chip-text">{openCount} open</span>
+                <span className="st-conv-empty__chip-text">0 open</span>
               </div>
               <div className="st-conv-empty__chip">
                 <span className="st-conv-empty__chip-dot" style={{ background: "var(--st-danger)" }} />
-                <span className="st-conv-empty__chip-text">{urgent} urgent</span>
+                <span className="st-conv-empty__chip-text">0 urgent</span>
               </div>
             </div>
           </div>

@@ -7,8 +7,20 @@ import { useRedirectOnRefresh } from "../../hooks/useRedirectOnRefresh";
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const [activeNav, setActiveNav] = useState("Dashboard");
+
+  const [isMobile, setIsMobile] = useState(false);
+
+React.useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth <= 768);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
+
+
   useRedirectOnRefresh();
   const { isDark } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const t = isDark ? tokens.dark : tokens.light;
   const titles: Record<string,string> = {
     "Dashboard":"Dashboard","Manage Companies":"Manage Companies",
@@ -16,17 +28,83 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     "Audit Logs":"Audit Logs","System":"System",
     "Profile":"Profile","Support Tickets":"Support Tickets",
   };
-  return (
-    // ✅ FIX: added data-theme here — this makes ALL CSS [data-theme="light"] selectors work
+ return (
+  <div
+    data-theme={isDark ? "dark" : "light"}
+    style={{ minHeight: "100vh", background: t.bg }}
+  >
+
+    {/* ✅ DESKTOP SIDEBAR */}
+    {!isMobile && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "250px",
+      height: "100vh"
+    }}
+  >
+    <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+  </div>
+)}
+
+    {/* ✅ MOBILE SIDEBAR */}
+    {isMobile && (
+      <>
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
+              zIndex: 100
+            }}
+          />
+        )}
+
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: sidebarOpen ? "0" : "-250px",
+            width: "250px",
+            height: "100vh",
+            zIndex: 200,
+            transition: "left 0.3s ease"
+          }}
+        >
+          <Sidebar
+            activeItem={activeNav}
+            onNavigate={(val) => {
+              setActiveNav(val);
+              setSidebarOpen(false);
+            }}
+          />
+        </div>
+      </>
+    )}
+
+    {/* ✅ MAIN CONTENT */}
     <div
-      data-theme={isDark ? "dark" : "light"}
-      style={{ display:"flex", minHeight:"100vh", background:t.bg, transition:"background 0.3s ease" }}
+      style={{
+        marginLeft: isMobile ? "0px" : "250px", // only for desktop
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column"
+      }}
     >
-      <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
-      <div style={{ marginLeft:"250px", flex:1, display:"flex", flexDirection:"column", minHeight:"100vh" }}>
-        <Topbar title={titles[activeNav] ?? activeNav} />
-        <main style={{ flex:1, background:t.bg, transition:"background 0.3s ease" }}>{children}</main>
+      <Topbar
+        title={titles[activeNav] ?? activeNav}
+        onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
+      />
+
+      {/* THIS fixes scroll issue */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {children}
       </div>
     </div>
-  );
+  </div>
+);
 }
