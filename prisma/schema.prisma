@@ -161,7 +161,7 @@ model User {
   messages           Message[]
   optKeywords        OptKeyword[]        @relation("UserOptKeywords")
   tags               Tag[]
-  company            Company?          @relation(fields: [companyId], references: [id])
+  company            Company?            @relation(fields: [companyId], references: [id])
   User               User?               @relation("UserToUser", fields: [createdBy], references: [id])
   other_User         User[]              @relation("UserToUser")
   UserSubscription   UserSubscription[]
@@ -217,32 +217,33 @@ model Lead {
 }
 
 model Campaign {
-  id               String    @id @default(cuid())
-  name             String
-  description      String?
-  type             String
-  status           String    @default("draft")
-  startDate        DateTime?
-  leadsCount       Int       @default(0)
-  delaySeconds     Int       @default(5)
-  audienceData     Json?
-  userId           Int
+  id                String    @id @default(cuid())
+  name              String
+  description       String?
+  type              String
+  status            String    @default("draft")
+  startDate         DateTime?
+  leadsCount        Int       @default(0)
+  delaySeconds      Int       @default(5)
+  audienceData      Json?
+  userId            Int
+  variableMapping   Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  failedCount       Int       @default(0)
+  sentCount         Int       @default(0)
+  deliveredCount    Int?      @default(0)
+  endDate           DateTime?
+  messageTemplate   String?
+  readCount         Int?      @default(0)
+  selectedTemplate  String?
+  headerMediaUrl    String?
   whatsappAccountId Int?
-  variableMapping  Json?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  failedCount      Int       @default(0)
-  sentCount        Int       @default(0)
-  deliveredCount   Int?      @default(0)
-  endDate          DateTime?
-  messageTemplate  String?
-  readCount        Int?      @default(0)
-  selectedTemplate String?
-  headerMediaUrl   String?
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages         Message[]
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages          Message[]
 
   @@index([userId])
+  @@index([whatsappAccountId])
 }
 
 model Media {
@@ -388,20 +389,23 @@ model AiAssistant {
 }
 
 model Chatbot {
-  id          String        @id @default(cuid())
-  userId      Int?
-  name        String
-  description String?
-  status      UserStatus
-  published   Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  sessions    ChatSession[]
-  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  edges       ChatbotEdge[]
-  nodes       ChatbotNode[]
+  id                String           @id @default(cuid())
+  userId            Int?
+  name              String
+  description       String?
+  status            UserStatus
+  published         Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  whatsappAccountId Int?
+  sessions          ChatSession[]
+  user              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  WhatsAppAccount   WhatsAppAccount? @relation(fields: [whatsappAccountId], references: [id], onDelete: Cascade)
+  edges             ChatbotEdge[]
+  nodes             ChatbotNode[]
 
   @@index([userId])
+  @@index([whatsappAccountId])
 }
 
 model ChatbotNode {
@@ -560,6 +564,7 @@ model WhatsAppAccount {
   twoStepVerificationPin    String?
   flowEndpointPrivateKeyPem String?
   flowEndpointPublicKeyPem  String?
+  Chatbot                   Chatbot[]
   User                      User               @relation(fields: [userId], references: [id])
   templates                 WhatsAppTemplate[]
 
@@ -603,7 +608,7 @@ model Company {
   id                 Int                  @id @default(autoincrement())
   name               String
   domain             String?              @unique
-  adminEmail         String             
+  adminEmail         String               @unique
   status             CompanyStatus        @default(ACTIVE)
   logo               String?
   createdAt          DateTime             @default(now())
@@ -657,7 +662,7 @@ model subscription_plans {
   updatedAt        DateTime
   UserSubscription UserSubscription[]
   plan_features    plan_features[]
-  companies        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companies        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -709,7 +714,7 @@ model UserSubscription {
   autoRenew          Boolean            @default(true)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime
-  companies          Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companies          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   subscription_plans subscription_plans @relation(fields: [planId], references: [id], onDelete: Cascade)
   User               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -754,6 +759,7 @@ enum CompanyStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
+  TRIAL
 }
 
 enum SubscriptionStatus {

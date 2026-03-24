@@ -1,7 +1,14 @@
+# ---------- PACKAGE GROUPS (Synced with package.json) ----------
+
+PACKAGES = @prisma/client @radix-ui/react-select @tanstack/react-query axios bcryptjs cookie-parser cors dotenv express gsap ioredis jose jsonwebtoken libphonenumber-js lucide-react morgan multer next nodemailer react react-dom react-hot-toast redis twilio uuid
+
+DEV_PACKAGES = @types/node @types/nodemailer @types/react @types/react-dom autoprefixer nodemon postcss prisma tailwindcss typescript
+
 # ---------- INSTALL ----------
 install:
-	npm install
-	@echo "✅ Dependencies installed"
+	npm install $(PACKAGES) --save
+	npm install $(DEV_PACKAGES) --save-dev
+	@echo "✅ All packages installed (synced with package.json)"
 
 # ---------- DEV ----------
 dev:
@@ -30,24 +37,19 @@ prisma-generate:
 prisma-migrate:
 	npx prisma migrate dev
 
-# ---------- CLEAN / RESET ----------
+# ---------- CLEAN ----------
 clean:
 	npx rimraf node_modules package-lock.json
 	@echo "🧹 Cleaned project"
 
+# ---------- RESET ----------
 reset: clean
-	npm install
+	make install
 	@echo "♻️ Fresh install completed"
 
-# ---------- FULL SETUP ----------
+# ---------- SETUP ----------
 setup:
 	@echo "⚙️ Setting up project..."
 	make install
 	make prisma-generate
-	@echo "🚀 Setup done. Starting dev server..."
-	make dev
-
-# ---------- MASTER COMMAND ----------
-all: install prisma-generate
-	@echo "🚀 Setup complete. Starting app..."
 	make dev

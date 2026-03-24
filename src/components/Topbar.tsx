@@ -1,12 +1,28 @@
 "use client";
 import React, { useState } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
+import { useRouter } from "next/navigation";
 
 export default function Topbar({ title="Dashboard", adminName="Admin" }: { title?:string; adminName?:string }) {
   const { isDark, toggleTheme } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [sf, setSf] = useState(false);
   const [dd, setDd] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        router.push("/auth");
+        router.refresh();
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <header style={{ height:"64px", background:t.surface, borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", padding:"0 24px", gap:"16px", position:"sticky", top:0, zIndex:50, transition:"background 0.3s,border-color 0.3s" }}>
@@ -56,7 +72,17 @@ export default function Topbar({ title="Dashboard", adminName="Admin" }: { title
           {dd && (
             <div style={{ position:"absolute", top:"calc(100%+8px)", right:0, background:t.surface, border:`1px solid ${t.border}`, borderRadius:"12px", minWidth:"175px", overflow:"hidden", zIndex:200, boxShadow:`0 12px 40px ${t.shadow}`, marginTop:"8px" }}>
               {[{icon:"👤",label:"Profile"},{icon:"⚙️",label:"Settings"},{icon:"🚪",label:"Logout",red:true}].map((item,i,arr)=>(
-                <div key={item.label} style={{ padding:"10px 16px", display:"flex", alignItems:"center", gap:"10px", fontSize:"0.85rem", color: item.red?"#f03e3e":t.textSub, cursor:"pointer", borderBottom:i<arr.length-1?`1px solid ${t.border}`:"none" }}>
+                <div 
+                  key={item.label} 
+                  onClick={() => {
+                    if (item.label === "Logout") {
+                      handleLogout();
+                    } else {
+                      setDd(false);
+                    }
+                  }}
+                  style={{ padding:"10px 16px", display:"flex", alignItems:"center", gap:"10px", fontSize:"0.85rem", color: item.red?"#f03e3e":t.textSub, cursor:"pointer", borderBottom:i<arr.length-1?`1px solid ${t.border}`:"none" }}
+                >
                   {item.icon} {item.label}
                 </div>
               ))}
