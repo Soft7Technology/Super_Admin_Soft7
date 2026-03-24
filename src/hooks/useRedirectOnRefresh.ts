@@ -43,10 +43,7 @@ export function useRedirectOnRefresh(targetPath = "/user/dashboard") {
       return;
     }
 
-    if (pathname === targetPath) {
-      return;
-    }
-
-    router.replace(targetPath);
+    // Don't redirect on page refresh - preserve current page
+    return;
   }, [pathname, router, targetPath]);
 }
