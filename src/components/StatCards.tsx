@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { StatCard } from "../types";
 
@@ -23,9 +23,21 @@ const LIGHT_TEXT: Record<StatCard["accent"],string> = {
   blue:"#1d4ed8", green:"#15803d", purple:"#6d28d9", orange:"#c2410c", red:"#b91c1c", teal:"#0f766e",
 };
 
+
+
+
 export default function StatCards({ stats }: { stats: StatCard[] }) {
+
+  const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth <= 1024);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"16px", marginBottom:"24px" }}>
+    <div style={{ display:"grid",  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap:"16px", marginBottom:"24px" }}>
       {stats.map((s,i) => <Card key={i} stat={s} />)}
     </div>
   );

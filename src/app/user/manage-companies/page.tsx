@@ -15,13 +15,7 @@ interface Company {
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const COMPANIES: Company[] = [
   { id:1, name:"Acme Corp",       domain:"acme.com",           logo:"AC", col:"#6C5CE7", status:"ACTIVE",    plan:"Enterprise", users:320, mrr:7999, end:"Dec 31, 2026" },
-  { id:2, name:"Nexus Ltd",       domain:"nexusltd.io",        logo:"NX", col:"#FDCB6E", status:"ACTIVE",    plan:"Pro",        users:148, mrr:2499, end:"Jun 30, 2026" },
-  { id:3, name:"SkyLine Inc",     domain:"skyline.co",         logo:"SK", col:"#00CBA4", status:"TRIAL",     plan:"Starter",    users:42,  mrr:0,    end:"Mar 15, 2026" },
-  { id:4, name:"Vertex Co",       domain:"vertexco.com",       logo:"VT", col:"#FF6B6B", status:"INACTIVE",  plan:"Basic",      users:87,  mrr:999,  end:"Dec 1, 2025"  },
-  { id:5, name:"Zenith Group",    domain:"zenithgroup.net",    logo:"ZN", col:"#A29BFE", status:"ACTIVE",    plan:"Enterprise", users:510, mrr:7999, end:"Jan 31, 2027" },
-  { id:6, name:"Orbit Systems",   domain:"orbitsys.tech",      logo:"OS", col:"#FD79A8", status:"SUSPENDED", plan:"Starter",    users:23,  mrr:0,    end:"Nov 1, 2025"  },
-  { id:7, name:"Prism Analytics", domain:"prismanalytics.com", logo:"PA", col:"#00B894", status:"ACTIVE",    plan:"Pro",        users:195, mrr:2499, end:"Sep 15, 2026" },
-  { id:8, name:"Delta Forge",     domain:"deltaforge.io",      logo:"DF", col:"#E17055", status:"ACTIVE",    plan:"Basic",      users:67,  mrr:999,  end:"Jul 20, 2026" },
+  
 ];
 
 // ─── SHARED ───────────────────────────────────────────────────────────────────
@@ -237,10 +231,10 @@ export default function ManageCompanies() {
 
       {/* KPIs */}
       <div className="mc-kpi-grid">
-        <KPI label="Total Companies" value="248" delta="12% vs last month" icon="🏢" color="#6C5CE7" />
-        <KPI label="Active"          value="198" delta="5 new this week"   icon="✅" color="#00CBA4" />
-        <KPI label="Suspended"       value="18"  delta="2 this month"      icon="⛔" color="#FF6B6B" up={false} />
-        <KPI label="On Trial"        value="31"  delta="8 expiring soon"   icon="⏳" color="#FDCB6E" />
+        <KPI label="Total Companies" value="0" delta="— vs last month" icon="🏢" color="#6C5CE7" />
+        <KPI label="Active"          value="0" delta="— new this week"   icon="✅" color="#00CBA4" />
+        <KPI label="Suspended"       value="0"  delta="— this month"      icon="⛔" color="#FF6B6B" up={false} />
+        <KPI label="On Trial"        value="0"  delta="— expiring soon"   icon="⏳" color="#FDCB6E" />
       </div>
 
       {/* FILTER BAR */}

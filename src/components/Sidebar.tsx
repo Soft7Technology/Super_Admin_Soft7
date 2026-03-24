@@ -28,8 +28,7 @@ export default function Sidebar({
 
  
   const currentActive =
-    activeItem ??
-    (NAV.find(n => pathname?.startsWith(n.route))?.label ?? "Dashboard");
+  NAV.find(n => pathname?.includes(n.route))?.label ?? "Dashboard";
 
   const handleNav = (item: typeof NAV[0]) => {
     onNavigate?.(item.label);
@@ -37,11 +36,18 @@ export default function Sidebar({
   };
 
   return (
-    <aside style={{ width:"250px", background:t.surface, borderRight:`1px solid ${t.border}`, display:"flex", flexDirection:"column", height:"100vh", position:"fixed", left:0, top:0, zIndex:100, transition:"background 0.3s,border-color 0.3s" }}>
+    <aside style={{
+  width:"250px",
+  height:"100vh",
+  background:t.surface,
+  borderRight:`1px solid ${t.border}`,
+  display:"flex",
+  flexDirection:"column",
+}}>
 
       {/* Logo */}
       <div style={{ padding:"20px", borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", gap:"12px" }}>
-        <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:"linear-gradient(135deg,#3b5bdb,#6741d9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.1rem", boxShadow:"0 4px 14px rgba(59,91,219,0.35)", flexShrink:0 }}>🛡</div>
+        <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:"linear-gradient(135deg,#3b5bdb,#6741d9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.1rem", color: "#ffffff" , boxShadow:"0 4px 14px rgba(59,91,219,0.35)", flexShrink:0 }}>🛡</div>
         <div>
           <div style={{ fontWeight:800, fontSize:"1rem", color:t.text, letterSpacing:"-0.02em", transition:"color 0.3s" }}>
             Super<span style={{ color:t.accent }}>Admin</span>

@@ -580,10 +580,113 @@
   .sb-kpi-grid, .sb-plans-grid { grid-template-columns:repeat(2,1fr); }
   .sb-overview { grid-template-columns:1fr; }
 }
-@media (max-width:768px) {
-  .sb-root { padding:16px; }
-  .sb-kpi-grid { grid-template-columns:1fr 1fr; }
-  .sb-plans-grid { grid-template-columns:1fr; }
-  .sb-hist-table__head, .sb-hist-row { grid-template-columns:2fr 1fr 1fr 1fr; }
-  .sb-detail__grid { grid-template-columns:1fr 1fr; }
+@media (max-width: 768px) {
+
+  /* hide table header */
+  .sb-history .sb-hist-table__head {
+    display: none;
+  }
+
+  /* row becomes card */
+  .sb-history .sb-hist-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--sb-border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+
+  /* company full width */
+  .sb-history .sb-hist-row__co {
+    grid-column: 1 / -1;
+    padding-right: 80px;
+  }
+
+  /* status to top right */
+  .sb-history .sb-txn-chip {
+    grid-column: 2;
+    justify-self: end;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  }
+
+  /* plan */
+  .sb-history .sb-plan-chip {
+    grid-column: 1;
+  }
+
+  /* amount */
+  .sb-history .sb-hist-row__amt {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  /* type */
+  .sb-history .sb-type-chip {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  /* date */
+  .sb-history .sb-hist-row__date {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  /* ✅ FIXED: Scoped BOX STYLE */
+  .sb-history .sb-plan-chip,
+  .sb-history .sb-hist-row__amt,
+  .sb-history .sb-type-chip,
+  .sb-history .sb-hist-row__date {
+    background: var(--sb-surf2);
+    border: 1px solid var(--sb-border);
+    border-radius: 10px;
+    padding: 10px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 55px;
+  }
+ 
+  
+
+  /* LABELS */
+  .sb-history .sb-plan-chip::before {
+    content: "Plan";
+    font-size: 10px;
+    color: var(--sb-muted);
+  }
+
+  .sb-history .sb-hist-row__amt::before {
+    content: "Amount";
+    font-size: 10px;
+    color: var(--sb-muted);
+  }
+
+  .sb-history .sb-type-chip::before {
+    content: "Type";
+    font-size: 10px;
+    color: var(--sb-muted);
+  }
+
+  .sb-history .sb-hist-row__date::before {
+    content: "Date";
+    font-size: 10px;
+    color: var(--sb-muted);
+  }
+  .sb-history .sb-hist-row .sb-plan-chip { 
+    width: 100% !important; 
+    border-radius: 10px !important; 
+    padding: 10px !important; 
+    display: flex !important; 
+    flex-direction: column; 
+    gap: 3px; 
+    background: var(--sb-surf2) !important; 
+    border: 1px solid var(--sb-border) !important; }
 }
+
