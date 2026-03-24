@@ -456,10 +456,78 @@
   .al-kpi-grid         { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 900px) {
+
   .al-root             { padding: 16px; }
   .al-main-grid--split { grid-template-columns: 1fr; }
   .al-kpi-grid         { grid-template-columns: repeat(2,1fr); }
-  .al-table__head,
-  .al-log-row__main    { grid-template-columns: 28px 1fr 0.7fr 0.55fr 70px; }
-  .al-changes-grid     { grid-template-columns: repeat(2,1fr); }
+
+  /* hide header */
+  .al-table__head {
+    display: none;
+  }
+
+  /* MAIN GRID (IMPORTANT) */
+  .al-log-row__main {
+    display: grid; 
+    grid-template-columns: 20px 1fr 1fr;
+    gap: 10px 12px;
+    padding: 14px;
+    align-items: start;
+  }
+
+  /* card */
+  .al-log-row {
+    border: 1px solid var(--al-border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* dot */
+  .al-log-row__dot {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: start;
+    margin-top: 6px;
+  }
+
+  /* event */
+  .al-log-row__event {
+     grid-column: 2;
+  grid-row: 1;
+  }
+
+  /* actor */
+  .al-log-row__actor {
+    grid-column: 2;
+  }
+
+  /* resource */
+  .al-log-row__main > div:nth-child(4) {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  /* action */
+  .al-log-row__main > div:nth-child(5) {
+    grid-column: 2;
+  }
+
+  /* severity */
+  .al-log-row__main > div:nth-child(6) {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  /* time */
+  .al-log-row__time-col {
+    grid-column: 3;       
+  grid-row: 1;           
+  justify-self: end;
+  align-self: center;
+  }
+
+  .al-changes-grid {
+    grid-template-columns: repeat(2,1fr);
+  }
 }

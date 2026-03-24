@@ -17,13 +17,6 @@ interface CustomPlan  { id:number; name:string; price:number; yearPrice:number; 
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const INIT_SUBS: SubRow[] = [
   { id:1, company:"Acme Corp",       logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE",    start:"Jan 1, 2026",  end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
-  { id:2, company:"Nexus Ltd",       logo:"NX", col:"#FDCB6E", plan:"Pro",        status:"ACTIVE",    start:"Jul 1, 2025",  end:"Jun 30, 2026", amt:2499, users:148, seats:200 },
-  { id:3, company:"SkyLine Inc",     logo:"SK", col:"#00CBA4", plan:"Starter",    status:"TRIAL",     start:"Mar 1, 2026",  end:"Mar 15, 2026", amt:0,    users:42,  seats:50  },
-  { id:4, company:"Vertex Co",       logo:"VT", col:"#FF6B6B", plan:"Basic",      status:"EXPIRED",   start:"Jan 1, 2025",  end:"Dec 1, 2025",  amt:999,  users:87,  seats:100 },
-  { id:5, company:"Zenith Group",    logo:"ZN", col:"#A29BFE", plan:"Enterprise", status:"ACTIVE",    start:"Feb 1, 2026",  end:"Jan 31, 2027", amt:7999, users:510, seats:500 },
-  { id:6, company:"Orbit Systems",   logo:"OS", col:"#FD79A8", plan:"Starter",    status:"SUSPENDED", start:"Aug 1, 2025",  end:"Nov 1, 2025",  amt:0,    users:23,  seats:50  },
-  { id:7, company:"Prism Analytics", logo:"PA", col:"#00B894", plan:"Pro",        status:"ACTIVE",    start:"Oct 1, 2025",  end:"Sep 30, 2026", amt:2499, users:195, seats:200 },
-  { id:8, company:"Delta Forge",     logo:"DF", col:"#E17055", plan:"Basic",      status:"ACTIVE",    start:"Aug 1, 2025",  end:"Jul 31, 2026", amt:999,  users:67,  seats:100 },
 ];
 
 const INIT_PLANS: PlanRow[] = [
@@ -35,13 +28,6 @@ const INIT_PLANS: PlanRow[] = [
 
 const HISTORY: Transaction[] = [
   { id:1, company:"Acme Corp",       logo:"AC", col:"#6C5CE7", plan:"Enterprise", amount:7999, date:"Jan 1, 2026",  type:"Renewal", status:"SUCCESS"  },
-  { id:2, company:"Nexus Ltd",       logo:"NX", col:"#FDCB6E", plan:"Pro",        amount:2499, date:"Dec 28, 2025", type:"Renewal", status:"SUCCESS"  },
-  { id:3, company:"Zenith Group",    logo:"ZN", col:"#A29BFE", plan:"Enterprise", amount:7999, date:"Feb 1, 2026",  type:"New",     status:"SUCCESS"  },
-  { id:4, company:"Vertex Co",       logo:"VT", col:"#FF6B6B", plan:"Basic",      amount:999,  date:"Nov 30, 2025", type:"Failed",  status:"FAILED"   },
-  { id:5, company:"Prism Analytics", logo:"PA", col:"#00B894", plan:"Pro",        amount:2499, date:"Oct 1, 2025",  type:"Upgrade", status:"SUCCESS"  },
-  { id:6, company:"Delta Forge",     logo:"DF", col:"#E17055", plan:"Basic",      amount:999,  date:"Aug 1, 2025",  type:"New",     status:"SUCCESS"  },
-  { id:7, company:"SkyLine Inc",     logo:"SK", col:"#00CBA4", plan:"Starter",    amount:0,    date:"Mar 1, 2026",  type:"Trial",   status:"SUCCESS"  },
-  { id:8, company:"Orbit Systems",   logo:"OS", col:"#FD79A8", plan:"Starter",    amount:499,  date:"Oct 5, 2025",  type:"Refund",  status:"REFUNDED" },
 ];
 
 const TYPE_COLOR: Record<TxnType, string> = {
@@ -574,7 +560,7 @@ function History() {
   const rev = HISTORY.filter(h=>h.status==="SUCCESS").reduce((a,h)=>a+h.amount,0);
 
   return (
-    <div>
+    <div className="sb-history">
       <div className="sb-hist-kpi-grid">
         {([
           ["Total Revenue",`₹${rev.toLocaleString()}`,"var(--sb-success)","💰"],
@@ -655,10 +641,10 @@ export default function Subscription() {
 
       {/* KPIs */}
       <div className="sb-kpi-grid">
-        <KPI label="Active Subscriptions" value="194"   delta="3.1% this month"  icon="💳" color="#6C5CE7" />
-        <KPI label="Monthly Revenue"      value="₹8.4L" delta="12% vs last month" icon="📈" color="#00CBA4" up />
-        <KPI label="On Trial"             value="31"    delta="8 expiring soon"   icon="⏳" color="#FDCB6E" />
-        <KPI label="Churned (30d)"        value="7"     delta="2 more than last"  icon="📉" color="#FF6B6B" up={false} />
+        <KPI label="Active Subscriptions" value="0"   delta="— this month"  icon="💳" color="#6C5CE7" />
+        <KPI label="Monthly Revenue"      value="₹0.0L" delta="— vs last month" icon="📈" color="#00CBA4" up />
+        <KPI label="On Trial"             value="0"    delta="— expiring soon"   icon="⏳" color="#FDCB6E" />
+        <KPI label="Churned (30d)"        value="0"     delta="—s more than last"  icon="📉" color="#FF6B6B" up={false} />
       </div>
 
       {/* Tabs */}
