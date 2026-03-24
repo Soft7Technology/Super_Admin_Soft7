@@ -42,17 +42,6 @@ const SEVERITY_WARN_COLORS: Record<SeverityType, string> = {
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const LOGS: LogEntry[] = [
   { id:1,  action:"CREATE",  actor:"James Doe",    actorRole:"Admin",   resource:"Company",      detail:"Created new company: Orbit Analytics",        ip:"192.168.1.10",  time:"2 mins ago",  date:"Mar 11, 2026 10:42 AM", severity:"SUCCESS",  company:"Acme Corp",       changes:{ Name:"Orbit Analytics",  Plan:"Pro",       Seats:"100",      Status:"ACTIVE"       } },
-  { id:2,  action:"DELETE",  actor:"Sara Rivera",  actorRole:"Admin",   resource:"User",         detail:"Deleted user account: tom@skyline.co",        ip:"10.0.0.45",     time:"15 mins ago", date:"Mar 11, 2026 10:30 AM", severity:"CRITICAL", company:"Nexus Ltd",       changes:{ User:"Tom King",         Email:"tom@skyline.co", Role:"Manager", Action:"Permanent Delete" } },
-  { id:3,  action:"UPDATE",  actor:"Anya Patel",   actorRole:"Manager", resource:"Subscription", detail:"Upgraded plan: Basic → Pro",                  ip:"172.16.0.5",    time:"1 hr ago",    date:"Mar 11, 2026 09:45 AM", severity:"INFO",     company:"Zenith Group",    changes:{ OldPlan:"Basic",         NewPlan:"Pro",    Price:"₹999→₹2499", Billing:"Monthly"    } },
-  { id:4,  action:"LOGIN",   actor:"Mike Loren",   actorRole:"User",    resource:"Auth",         detail:"Failed login attempt (3rd try)",              ip:"203.0.113.55",  time:"2 hrs ago",   date:"Mar 11, 2026 08:55 AM", severity:"WARNING",  company:"Vertex Co",       changes:{ Attempts:"3",            Method:"Password", Status:"FAILED",  IP:"203.0.113.55"     } },
-  { id:5,  action:"EXPORT",  actor:"Priya Sharma", actorRole:"Manager", resource:"Report",       detail:"Exported user data CSV (847 records)",        ip:"10.0.1.22",     time:"3 hrs ago",   date:"Mar 11, 2026 07:30 AM", severity:"WARNING",  company:"Prism Analytics", changes:{ Format:"CSV",            Records:"847",    Size:"2.4MB",     Scope:"All Users"     } },
-  { id:6,  action:"SUSPEND", actor:"James Doe",    actorRole:"Admin",   resource:"Company",      detail:"Suspended company: Orbit Systems",            ip:"192.168.1.10",  time:"5 hrs ago",   date:"Mar 11, 2026 06:00 AM", severity:"CRITICAL", company:"Acme Corp",       changes:{ Company:"Orbit Systems", Reason:"Payment Failed", OldStatus:"ACTIVE", NewStatus:"SUSPENDED" } },
-  { id:7,  action:"UPDATE",  actor:"Ravi Kumar",   actorRole:"Manager", resource:"User",         detail:"Updated user role: User → Manager",           ip:"172.16.0.8",    time:"Yesterday",   date:"Mar 10, 2026 04:15 PM", severity:"INFO",     company:"Acme Corp",       changes:{ User:"Carlos Mendes",   OldRole:"User",   NewRole:"Manager", UpdatedBy:"Ravi Kumar"} },
-  { id:8,  action:"CREATE",  actor:"Leila Hassan", actorRole:"Admin",   resource:"Chatbot",      detail:"Created chatbot: SupportBot v2",              ip:"10.0.2.14",     time:"Yesterday",   date:"Mar 10, 2026 02:00 PM", severity:"SUCCESS",  company:"Nexus Ltd",       changes:{ Name:"SupportBot v2",   Type:"Support",   Language:"English", Status:"Active"       } },
-  { id:9,  action:"DELETE",  actor:"Sara Rivera",  actorRole:"Admin",   resource:"Campaign",     detail:"Deleted campaign: Summer Sale 2025",          ip:"10.0.0.45",     time:"2 days ago",  date:"Mar 9, 2026 11:00 AM",  severity:"CRITICAL", company:"Nexus Ltd",       changes:{ Campaign:"Summer Sale 2025", Messages:"12,400", Status:"Deleted", Reason:"Completed" } },
-  { id:10, action:"LOGIN",   actor:"Anya Patel",   actorRole:"Admin",   resource:"Auth",         detail:"Successful login from new device",            ip:"198.51.100.22", time:"2 days ago",  date:"Mar 9, 2026 09:00 AM",  severity:"WARNING",  company:"Zenith Group",    changes:{ Device:"MacBook Pro",   Location:"Mumbai, IN", Method:"2FA", Status:"SUCCESS"  } },
-  { id:11, action:"EXPORT",  actor:"Priya Sharma", actorRole:"Manager", resource:"Subscription", detail:"Exported billing report Q1 2026",            ip:"10.0.1.22",     time:"3 days ago",  date:"Mar 8, 2026 03:30 PM",  severity:"INFO",     company:"Prism Analytics", changes:{ Period:"Q1 2026",        Format:"PDF",     Size:"1.1MB",     Scope:"Billing"       } },
-  { id:12, action:"UPDATE",  actor:"James Doe",    actorRole:"Admin",   resource:"Settings",     detail:"Updated SMTP settings",                      ip:"192.168.1.10",  time:"4 days ago",  date:"Mar 7, 2026 10:00 AM",  severity:"INFO",     company:"Acme Corp",       changes:{ Setting:"SMTP Host",    Old:"smtp.old.com", New:"smtp.sendgrid.net", Port:"587" } },
 ];
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
@@ -278,10 +267,10 @@ export default function AuditLogs() {
 
       {/* KPI ROW */}
       <div className="al-kpi-grid">
-        <KPI label="Total Events"    value={String(LOGS.length)}   delta="18% this month"       icon="📋" color="#6C5CE7" />
-        <KPI label="Today"           value={String(todayCount)}    delta="3 more than avg"      icon="📅" color="#74B9FF" />
-        <KPI label="Critical Events" value={String(criticalCount)} delta="review required"      icon="🔴" color="#FF6B6B" up={false} />
-        <KPI label="Unique Actors"   value={String(actorCount)}    delta="across all companies" icon="👤" color="#FDCB6E" />
+        <KPI label="Total Events"    value="0"   delta="— this month"       icon="📋" color="#6C5CE7" />
+        <KPI label="Today"           value="0"    delta="— more than avg"      icon="📅" color="#74B9FF" />
+        <KPI label="Critical Events" value="0" delta="review required"      icon="🔴" color="#FF6B6B" up={false} />
+        <KPI label="Unique Actors"   value="0"    delta="across all companies" icon="👤" color="#FDCB6E" />
       </div>
 
       {/* FILTER BAR */}
@@ -331,6 +320,7 @@ export default function AuditLogs() {
       <div className={`al-main-grid ${selected ? "al-main-grid--split" : "al-main-grid--full"}`}>
 
         {/* LOG TABLE */}
+        
         <div className="al-table">
           <div className="al-table__head">
             {["", "Event", "Actor", "Resource", "Action", "Severity", "Time"].map(h => (

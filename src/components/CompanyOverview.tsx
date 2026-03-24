@@ -43,7 +43,7 @@ export default function CompanyOverview({
       ) : error ? (
         <div style={{ padding:"24px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>{error}</div>
       ) : (
-        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.85rem" }}>
+        <table style={{ width:"100%",tableLayout:"fixed", borderCollapse:"collapse", fontSize:"0.85rem" }}>
           <thead>
             <tr style={{ background:t.tableHead }}>
               {["COMPANY NAME","STATUS","PLAN","USERS"].map(h => (

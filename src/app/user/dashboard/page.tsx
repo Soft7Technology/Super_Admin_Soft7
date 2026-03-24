@@ -55,6 +55,28 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth <= 768);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
+
+const [isHalfScreen, setIsHalfScreen] = useState(false);
+
+useEffect(() => {
+  const handleResize = () => {
+    setIsHalfScreen(window.innerWidth <= 1100);
+  };
+
+  handleResize(); // run once
+  window.addEventListener("resize", handleResize);
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
+
   useEffect(() => {
     fetch("/api/admin/dashboard")
       .then((r) => r.json())
@@ -109,7 +131,7 @@ export default function DashboardPage() {
   return (
     <div style={{ padding:"28px 28px 48px", background:t.bg, minHeight:"100%", transition:"background 0.3s ease" }}>
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"28px" }}>
+      <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row",alignItems: isMobile ? "flex-start" : "center",justifyContent: "space-between",gap: "12px",marginBottom: "28px" }}>
         <div>
           <h1 style={{ fontWeight:800, fontSize:"1.6rem", color:t.text, margin:0, letterSpacing:"-0.02em", transition:"color 0.3s" }}>
             Dashboard Overview
@@ -118,7 +140,10 @@ export default function DashboardPage() {
             Welcome back! Here&apos;s what&apos;s happening with your platform.
           </p>
         </div>
-        <div style={{ display:"flex", gap:"10px", paddingTop:"4px" }}>
+        <div style={{ width: isMobile ? "100%" : "auto",
+      display: "flex",
+      justifyContent: isMobile ? "flex-start" : "flex-end"
+    }}>
           <Btn
             variant="primary"
             label="Add Company Logo"
@@ -137,16 +162,29 @@ export default function DashboardPage() {
       )}
 
       {/* Row 2 */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"18px", marginBottom:"18px" }}>
-        <CompanyOverview companies={companies} loading={loading} error={error} />
-        <UserManagement users={users} loading={loading} error={error} />
-      </div>
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr",
+    gap: "18px",
+    marginBottom: "18px",
+  }}
+>
+  <CompanyOverview companies={companies} loading={loading} error={error} />
+  <UserManagement users={users} loading={loading} error={error} />
+</div>
 
-      {/* Row 3 */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"18px" }}>
-        <SubscriptionChart />
-        <AuditLogs logs={logs} loading={loading} error={error} />
-      </div>
+{/* Row 3 */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr",
+    gap: "18px",
+  }}
+>
+  <SubscriptionChart />
+  <AuditLogs logs={logs} loading={loading} error={error} />
+</div>
     </div>
   );
 }
