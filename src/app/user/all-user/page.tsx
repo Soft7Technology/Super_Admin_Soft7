@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./all-user.css";
 
+
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface User {
   id:        number;
@@ -390,7 +391,7 @@ export default function AllUsers() {
 
       <div className="au-filter-bar">
         <div className="au-search-wrap">
-          <span className="au-search-icon">Search</span>
+         <span className="mc-search-icon">🔍</span>
           <input
             className="au-search-input"
             value={search}

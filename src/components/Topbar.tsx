@@ -1,9 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
-export default function Topbar({ title="Dashboard", adminName="Admin" }: { title?:string; adminName?:string }) {
+export default function Topbar({ title="Dashboard", adminName="Admin", onMenuClick  }: { title?:string; adminName?:string; onMenuClick?: () => void; }) {
   const { isDark, toggleTheme } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [sf, setSf] = useState(false);
@@ -23,17 +23,170 @@ export default function Topbar({ title="Dashboard", adminName="Admin" }: { title
       console.error("Logout error:", error);
     }
   };
+  const [search, setSearch] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const handleResize = () => {
+    setIsMobile(window.innerWidth < 640);
+  };
+
+  handleResize();
+  window.addEventListener("resize", handleResize);
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
+  
+  const pages = [
+  { name: "Dashboard", route: "/user/dashboard" },
+  { name: "Manage Companies", route: "/user/manage-companies" },
+    { name: "All User", route: "/user/all-user" },
+    { name: "Subscription", route: "/user/subscription" },
+    { name: "Audit Logs", route: "/user/audit-logs" },
+  { name: "Settings", route: "/user/system" },
+  { name: "Profile", route: "/user/profile" },
+    { name: "Support Tickets", route: "/user/support-tickets" },
+  
+];
+
+const pathname = usePathname();
+useEffect(() => {
+  setSearch("");
+}, [pathname]);
+  const getTitle = () => {
+  if (pathname.includes("dashboard")) return "Dashboard";
+  if (pathname.includes("profile")) return "Profile";
+  if (pathname.includes("system")) return "Settings";
+  if (pathname.includes("subscription")) return "Subscription";
+  if (pathname.includes("manage-companies")) return "Manage Companies";
+  if (pathname.includes("all-user")) return "All User";
+  if (pathname.includes("audit-logs")) return "Audit Logs";
+  if (pathname.includes("support-tickets")) return "Support Tickets";
+  return "Dashboard";
+};
+
+const filteredPages = pages.filter((p) =>
+  p.name.toLowerCase().includes(search.toLowerCase())
+);
 
   return (
     <header style={{ height:"64px", background:t.surface, borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", padding:"0 24px", gap:"16px", position:"sticky", top:0, zIndex:50, transition:"background 0.3s,border-color 0.3s" }}>
-      <div style={{ fontWeight:700, fontSize:"1.05rem", color:t.text, minWidth:"120px", flexShrink:0, transition:"color 0.3s" }}>{title}</div>
+      {onMenuClick && (
+  <button
+    onClick={onMenuClick}
+    style={{
+      fontSize: "20px",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      marginRight: "10px",
+      color:t.text
+    }}
+  >
+    ☰
+  </button>
+)}
+
+      <div style={{ fontWeight:700, fontSize:"1.05rem", color:t.text, minWidth:"120px", flexShrink:0, transition:"color 0.3s" }}>{getTitle()}</div>
 
       {/* Search */}
-      <div style={{ flex:1, maxWidth:"420px", background:t.inputBg, border:`1px solid ${sf?t.accent:t.border}`, borderRadius:"10px", display:"flex", alignItems:"center", gap:"10px", padding:"0 14px", height:"40px", transition:"all 0.2s", boxShadow:sf?`0 0 0 3px ${t.accentBg}`:"none" }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textFaint} strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" placeholder="Search users, campaigns, leads..." onFocus={()=>setSf(true)} onBlur={()=>setSf(false)}
-          style={{ background:"none", border:"none", outline:"none", color:t.textSub, fontSize:"0.875rem", fontFamily:"inherit", width:"100%" }} />
-      </div>
+      <div style={{ position: "relative", flex:1, maxWidth:"420px" }}>
+  <div
+    style={{
+      background: t.inputBg,
+      border: `1px solid ${sf ? t.accent : t.border}`,
+      borderRadius: "10px",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      padding: "0 14px",
+      height: "40px",
+    }}
+  >
+    <svg
+  width="14"
+  height="14"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke={t.textFaint}
+  strokeWidth="2"
+>
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
+
+    <input
+      type="text"
+      value={search}
+      placeholder="Search pages..."
+      onFocus={() => setSf(true)}
+      onBlur={() => setTimeout(() => setSf(false), 150)}
+      onChange={(e) => setSearch(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && filteredPages.length > 0) {
+          router.push(filteredPages[0].route);
+        }
+      }}
+      style={{
+        background: "none",
+        border: "none",
+        outline: "none",
+        color: t.textSub,
+        fontSize: isMobile ? "0.75rem" : "0.875rem",
+        width: "100%",
+      }}
+    />
+  </div>
+
+  {/* Suggestions Dropdown */}
+  {sf && search && (
+    <div
+      style={{
+       position: "absolute",
+  top: "100%",            
+  left: 0,
+  width: "100%",        
+  marginTop: "6px",
+  background: t.surface,
+  border: `1px solid ${t.border}`,
+  borderRadius: "10px",
+  boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+  zIndex: 999,
+  overflow: "auto"
+  
+      }}
+    >
+      {filteredPages.length > 0 ? (
+        filteredPages.map((item) => (
+          <div
+            key={item.name}
+           onMouseDown={() => {
+              router.push(item.route);
+              setSearch("");
+              setSf(false);
+            }}
+            style={{
+  padding: isMobile ? "8px 10px" : "10px 14px",
+  cursor: "pointer",
+  borderBottom: `1px solid ${t.border}`,
+  fontSize: isMobile ? "0.75rem" : "0.875rem",
+}}
+          >
+            🔍 {item.name}
+          </div>
+        ))
+      ) : (
+        <div style={{
+  padding: "10px 14px",
+  color: t.textMuted,
+  fontSize: isMobile ? "0.75rem" : "0.875rem",
+}}>
+          No results found
+        </div>
+      )}
+    </div>
+  )}
+</div>
 
       <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:"8px" }}>
         {/* Theme toggle button */}
@@ -71,18 +224,15 @@ export default function Topbar({ title="Dashboard", adminName="Admin" }: { title
 
           {dd && (
             <div style={{ position:"absolute", top:"calc(100%+8px)", right:0, background:t.surface, border:`1px solid ${t.border}`, borderRadius:"12px", minWidth:"175px", overflow:"hidden", zIndex:200, boxShadow:`0 12px 40px ${t.shadow}`, marginTop:"8px" }}>
-              {[{icon:"👤",label:"Profile"},{icon:"⚙️",label:"Settings"},{icon:"🚪",label:"Logout",red:true}].map((item,i,arr)=>(
-                <div 
-                  key={item.label} 
-                  onClick={() => {
-                    if (item.label === "Logout") {
-                      handleLogout();
-                    } else {
-                      setDd(false);
-                    }
-                  }}
-                  style={{ padding:"10px 16px", display:"flex", alignItems:"center", gap:"10px", fontSize:"0.85rem", color: item.red?"#f03e3e":t.textSub, cursor:"pointer", borderBottom:i<arr.length-1?`1px solid ${t.border}`:"none" }}
-                >
+              {[{icon:"👤",label:"Profile",route:"/user/profile" },{icon:"⚙️",label:"Settings", route:"/user/system" },{icon:"🚪",label:"Logout",red:true}].map((item,i,arr)=>(
+                <div
+    key={item.label}
+    onClick={() => {
+      if (item.route) {
+        router.push(item.route); 
+        setDd(false);              
+      }
+    }} style={{ padding:"10px 16px", display:"flex", alignItems:"center", gap:"10px", fontSize:"0.85rem", color: item.red?"#f03e3e":t.textSub, cursor:"pointer", borderBottom:i<arr.length-1?`1px solid ${t.border}`:"none" }}>
                   {item.icon} {item.label}
                 </div>
               ))}
