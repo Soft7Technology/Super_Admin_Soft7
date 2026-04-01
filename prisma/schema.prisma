@@ -168,6 +168,7 @@ model User {
   webhookEndpoints   WebhookEndpoint[]   @relation("UserWebhookEndpoints")
   WhatsAppAccount    WhatsAppAccount[]
   whatsappFlows      WhatsappFlow[]      @relation("UserWhatsappFlows")
+  admin_profile_meta admin_profile_meta?
   contactReminders   ContactReminder[]
   contacts           Contact[]
   notifications      Notification[]
@@ -734,6 +735,24 @@ model walletTransaction {
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model admin_profile_meta {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  bio                String?
+  location           String?
+  website            String?
+  timezone           String?
+  language           String?
+  weekStart          String?
+  emailNotifications Boolean  @default(true)
+  smsNotifications   Boolean  @default(false)
+  darkMode           Boolean  @default(true)
+  compactUI          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+  User               User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_profile_meta_user_fk")
 }
 
 enum TicketStatus {
