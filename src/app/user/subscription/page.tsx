@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./subscription.css";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -342,11 +342,11 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
 }
 
 // ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
-function Overview() {
+function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boolean;activeCount:number }) {
   const [sel, setSel] = useState<SubRow|null>(null);
-  const active = INIT_SUBS.filter(s=>s.status==="ACTIVE");
+  const active = subs.filter(s => s.status === "ACTIVE");
   const mrr    = active.reduce((a,s)=>a+s.amt,0);
-  const exp    = INIT_SUBS.filter(s=>s.status==="TRIAL"||s.status==="EXPIRED");
+  const exp    = subs.filter(s=>s.status!=="ACTIVE");
 
   return (
     <div className="sb-overview">
@@ -357,13 +357,13 @@ function Overview() {
             <span className="sb-sub-table__head-title">All Subscriptions</span>
             <span className="sb-sub-table__head-count">{active.length} active</span>
           </div>
-          {INIT_SUBS.map(s=>(
+          {subs.map(s=>(
             <div key={s.id} className={`sb-sub-row ${sel?.id===s.id?"sb-sub-row--active":""}`}
               onClick={()=>setSel(sel?.id===s.id?null:s)}>
               <div className="sb-sub-row__logo" style={{ background:s.col }}>{s.logo}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div className="sb-sub-row__name">{s.company}</div>
-                <div className="sb-sub-row__meta">Renews {s.end} · {s.users}/{s.seats} seats</div>
+                <div className="sb-sub-row__meta">Renews on {s.end} · {s.users}/{s.seats} seats</div>
               </div>
               <span className={`sb-plan-chip sb-plan-chip--${s.plan}`} style={{ marginRight:6, fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700, background:`var(--sb-plan-${s.plan.toLowerCase()})18` }}>{s.plan}</span>
               <Badge status={s.status} />
@@ -371,6 +371,7 @@ function Overview() {
             </div>
           ))}
         </div>
+       
         {/* Detail panel */}
         {sel && (
           <div className="sb-detail">
@@ -426,7 +427,7 @@ function Overview() {
         {/* Plan distribution */}
         <div className="sb-dist-card">
           <div className="sb-dist-card__title">Plan Distribution</div>
-          {INIT_PLANS.map(p=>{ const cnt=INIT_SUBS.filter(s=>s.plan===p.name).length; return (
+          {INIT_PLANS.map(p=>{ const cnt=subs.filter(s=>s.plan===p.name).length; return (
             <div key={p.id} className="sb-dist-row">
               <div className="sb-dist-row__top">
                 <span className="sb-dist-row__name">{p.icon} {p.name}</span>
@@ -621,9 +622,86 @@ export default function Subscription() {
   const [showModal,   setShowModal]   = useState(false);
   const [customPlans, setCustomPlans] = useState<CustomPlan[]>([]);
 
+  const [subs, setSubs] = useState<SubRow[]>([]);
+  const [activeCount, setActiveCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
   const openModal  = () => { setTab("plans"); setShowModal(true); };
   const savePlan   = (p: CustomPlan) => setCustomPlans(prev=>[...prev, p]);
   const removePlan = (id: number) => setCustomPlans(prev=>prev.filter(p=>p.id!==id));
+
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const [usersRes, countRes] = await Promise.all([
+        fetch("/api/admin/subscriptions/users"),
+        fetch("/api/admin/subscriptions/active-count"),
+      ]);
+
+      const usersData = await usersRes.json();
+      const countData = await countRes.json();
+
+    const mapped: SubRow[] = (usersData.data || []).map((u: any) => {
+  const isActive = u.isActive;
+
+const validStatuses: SubStatus[] = ["ACTIVE","TRIAL","EXPIRED","SUSPENDED","CANCELLED"];
+
+const status: SubStatus = u.isActive
+  ? "ACTIVE"
+  : (validStatuses.includes(u.status) ? u.status : "EXPIRED");
+
+const planMap: Record<string, PlanName> = {
+  starter: "Starter",
+  basic: "Basic",
+  pro: "Pro",
+  enterprise: "Enterprise",
+};
+
+const formattedPlan: PlanName =
+  planMap[u.plan?.toLowerCase()] || "Starter";
+
+  return {
+    id: u.id,
+    company: u.name || "N/A",
+    logo: (u.name || "U")[0],
+    col: "#6C5CE7",
+
+    plan: formattedPlan as PlanName,
+    status,
+
+    start: u.startDate
+      ? new Date(u.startDate).toDateString()
+      : "—",
+
+    end: u.renewalDate
+      ? new Date(u.renewalDate).toDateString()
+      : "—",
+
+    amt: u.price || 0,
+    users: 0,
+    seats: 0,
+  };
+});
+
+      if (mapped.length === 0) {
+      // fallback to mock data
+      setSubs(INIT_SUBS);
+    } else {
+      setSubs(mapped);
+    }
+      setActiveCount(countData.activeSubscribers);
+    } catch (err) {
+      console.error("Failed to fetch subscription data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
 
   return (
     <div className="sb-root">
@@ -641,7 +719,13 @@ export default function Subscription() {
 
       {/* KPIs */}
       <div className="sb-kpi-grid">
-        <KPI label="Active Subscriptions" value="0"   delta="— this month"  icon="💳" color="#6C5CE7" />
+        <KPI
+          label="Active Subscriptions"
+          value={loading ? "..." : String(activeCount)}
+          delta="Live data"
+          icon="💳"
+          color="#6C5CE7"
+        />
         <KPI label="Monthly Revenue"      value="₹0.0L" delta="— vs last month" icon="📈" color="#00CBA4" up />
         <KPI label="On Trial"             value="0"    delta="— expiring soon"   icon="⏳" color="#FDCB6E" />
         <KPI label="Churned (30d)"        value="0"     delta="—s more than last"  icon="📉" color="#FF6B6B" up={false} />
@@ -654,7 +738,7 @@ export default function Subscription() {
         ))}
       </div>
 
-      {tab==="overview" && <Overview />}
+      {tab==="overview" && <Overview  subs= {subs} loading= {loading}  activeCount= {activeCount}/>}
       {tab==="plans"    && <Plans onOpenModal={()=>setShowModal(true)} customPlans={customPlans} onRemoveCustom={removePlan} />}
       {tab==="history"  && <History />}
 
