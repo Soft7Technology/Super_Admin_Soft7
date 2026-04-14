@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
+import { axiosInstance } from "@/lib/axiosInstance";
 
 import StatCards from "../../../components/StatCards";
 import CompanyOverview from "../../../components/CompanyOverview";
@@ -78,9 +79,10 @@ useEffect(() => {
 }, []);
 
   useEffect(() => {
-    fetch("/api/admin/dashboard")
-      .then((r) => r.json())
-      .then((data) => {
+    const loadDashboard = async () => {
+      try {
+        const { data } = await axiosInstance.get("/api/admin/dashboard");
+
         setError(data.error ?? null);
         setStats([
           {
@@ -119,13 +121,14 @@ useEffect(() => {
         setCompanies(data.companies ?? []);
         setUsers(data.users ?? []);
         setLogs(data.logs ?? []);
-      })
-      .catch(() => {
+      } catch {
         setError("Failed to load dashboard data.");
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    void loadDashboard();
   }, []);
 
   return (

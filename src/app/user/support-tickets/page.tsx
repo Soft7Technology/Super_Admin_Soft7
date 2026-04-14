@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { axiosInstance } from "@/lib/axiosInstance";
 import "./support-tickets.css";
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING";
@@ -412,18 +413,17 @@ export default function SupportTickets() {
       setApiError(null);
 
       try {
-        const response = await fetch("/api/admin/support-tickets", { cache: "no-store" });
-        const data = await response.json();
+        const { data } = await axiosInstance.get<Ticket[] | { error?: string }>("/api/admin/support-tickets");
 
         if (!active) return;
 
-        if (!response.ok) {
+        if (!Array.isArray(data)) {
           setApiError(typeof data?.error === "string" ? data.error : "Failed to load support tickets.");
           setTickets([]);
           return;
         }
 
-        setTickets(Array.isArray(data) ? (data as Ticket[]) : []);
+        setTickets(data);
       } catch {
         if (!active) return;
         setApiError("Unable to load support tickets right now.");
@@ -489,15 +489,12 @@ export default function SupportTickets() {
     setApiError(null);
 
     try {
-      const response = await fetch("/api/admin/support-tickets", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketId: id, status }),
-      });
+      const { data: payload } = await axiosInstance.patch<{ ticket?: Ticket; error?: string }>(
+        "/api/admin/support-tickets",
+        { ticketId: id, status }
+      );
 
-      const payload = (await response.json().catch(() => null)) as { ticket?: Ticket; error?: string } | null;
-
-      if (!response.ok || !payload?.ticket) {
+      if (!payload?.ticket) {
         throw new Error(payload?.error ?? "Failed to update ticket status.");
       }
 
@@ -511,20 +508,14 @@ export default function SupportTickets() {
     setApiError(null);
 
     try {
-      const response = await fetch("/api/admin/support-tickets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketId: id, message: text }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as {
+      const { data: payload } = await axiosInstance.post<{
         ticket?: Ticket;
         error?: string;
         emailSent?: boolean;
         emailError?: string | null;
-      } | null;
+      }>("/api/admin/support-tickets", { ticketId: id, message: text });
 
-      if (!response.ok || !payload?.ticket) {
+      if (!payload?.ticket) {
         return {
           ok: false,
           error: payload?.error ?? "Failed to send reply.",

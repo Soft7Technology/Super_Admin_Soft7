@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
+import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
 
 
@@ -312,15 +313,14 @@ export default function AllUsers() {
       setError(null);
 
       try {
-        const res = await fetch("/api/admin/users");
-        const data = await res.json();
+        const { data } = await axiosInstance.get<{
+          users?: User[];
+          stats?: UserStats;
+          error?: string | null;
+        }>("/api/admin/users");
 
         if (cancelled) {
           return;
-        }
-
-        if (!res.ok) {
-          throw new Error(data.error ?? `Server error ${res.status}`);
         }
 
         setUsers(data.users ?? []);

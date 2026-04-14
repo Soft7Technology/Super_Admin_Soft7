@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { axiosInstance } from "@/lib/axiosInstance";
 
 export type SubscriptionAnalyticsRange =
   | "yesterday"
@@ -36,21 +37,15 @@ export function useSubscriptionAnalytics(initialRange: SubscriptionAnalyticsRang
       setError(null);
 
       try {
-        const response = await fetch(`/api/admin/subscriptions/analytics?range=${range}`, {
-          cache: "no-store",
+        const { data: payload } = await axiosInstance.get<ApiResponse>("/api/admin/subscriptions/analytics", {
+          params: { range },
           signal: controller.signal,
         });
-
-        const payload = (await response.json()) as ApiResponse;
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? `Server error ${response.status}`);
-        }
 
         setData(payload.data ?? []);
         setError(payload.error ?? null);
       } catch (err) {
-        if ((err as Error).name === "AbortError") {
+        if ((err as { code?: string }).code === "ERR_CANCELED") {
           return;
         }
 
