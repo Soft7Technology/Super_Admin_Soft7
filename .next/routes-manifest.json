@@ -1,0 +1,206 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/admin/audit-logs",
+      "regex": "^/api/admin/audit\\-logs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/audit\\-logs(?:/)?$"
+    },
+    {
+      "page": "/api/admin/companies",
+      "regex": "^/api/admin/companies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/companies(?:/)?$"
+    },
+    {
+      "page": "/api/admin/dashboard",
+      "regex": "^/api/admin/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/dashboard(?:/)?$"
+    },
+    {
+      "page": "/api/admin/subscriptions/analytics",
+      "regex": "^/api/admin/subscriptions/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/subscriptions/analytics(?:/)?$"
+    },
+    {
+      "page": "/api/admin/support-tickets",
+      "regex": "^/api/admin/support\\-tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/support\\-tickets(?:/)?$"
+    },
+    {
+      "page": "/api/admin/support-tickets/ingest",
+      "regex": "^/api/admin/support\\-tickets/ingest(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/support\\-tickets/ingest(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users",
+      "regex": "^/api/admin/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/users(?:/)?$"
+    },
+    {
+      "page": "/api/auth/login",
+      "regex": "^/api/auth/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/login(?:/)?$"
+    },
+    {
+      "page": "/api/auth/logout",
+      "regex": "^/api/auth/logout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/logout(?:/)?$"
+    },
+    {
+      "page": "/api/auth/refresh",
+      "regex": "^/api/auth/refresh(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/refresh(?:/)?$"
+    },
+    {
+      "page": "/api/auth/registration",
+      "regex": "^/api/auth/registration(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/registration(?:/)?$"
+    },
+    {
+      "page": "/api/auth/reset-password",
+      "regex": "^/api/auth/reset\\-password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/reset\\-password(?:/)?$"
+    },
+    {
+      "page": "/api/auth/send-otp",
+      "regex": "^/api/auth/send\\-otp(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/send\\-otp(?:/)?$"
+    },
+    {
+      "page": "/api/auth/verify-otp",
+      "regex": "^/api/auth/verify\\-otp(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/verify\\-otp(?:/)?$"
+    },
+    {
+      "page": "/auth",
+      "regex": "^/auth(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth(?:/)?$"
+    },
+    {
+      "page": "/user/all-user",
+      "regex": "^/user/all\\-user(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/all\\-user(?:/)?$"
+    },
+    {
+      "page": "/user/audit-logs",
+      "regex": "^/user/audit\\-logs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/audit\\-logs(?:/)?$"
+    },
+    {
+      "page": "/user/dashboard",
+      "regex": "^/user/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/dashboard(?:/)?$"
+    },
+    {
+      "page": "/user/dashboard/create",
+      "regex": "^/user/dashboard/create(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/dashboard/create(?:/)?$"
+    },
+    {
+      "page": "/user/manage-companies",
+      "regex": "^/user/manage\\-companies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/manage\\-companies(?:/)?$"
+    },
+    {
+      "page": "/user/profile",
+      "regex": "^/user/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/profile(?:/)?$"
+    },
+    {
+      "page": "/user/subscription",
+      "regex": "^/user/subscription(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/subscription(?:/)?$"
+    },
+    {
+      "page": "/user/support-tickets",
+      "regex": "^/user/support\\-tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/support\\-tickets(?:/)?$"
+    },
+    {
+      "page": "/user/system",
+      "regex": "^/user/system(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/system(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
