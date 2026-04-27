@@ -34,7 +34,13 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Super_Admin_Soft7
 function RootPage() {
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Super_Admin_Soft7$2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Super_Admin_Soft7$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        router.replace("/user/dashboard");
+        // Check if accessToken cookie exists
+        const hasToken = document.cookie.split(";").some((c)=>c.trim().startsWith("accessToken="));
+        if (hasToken) {
+            router.replace("/user/dashboard");
+        } else {
+            router.replace("/auth");
+        }
     }, [
         router
     ]);
@@ -60,20 +66,20 @@ function RootPage() {
                 }
             }, void 0, false, {
                 fileName: "[project]/Desktop/Super_Admin_Soft7/src/app/page.tsx",
-                lineNumber: 9,
+                lineNumber: 17,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Desktop$2f$Super_Admin_Soft7$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("style", {
                 children: `@keyframes spin{to{transform:rotate(360deg)}}`
             }, void 0, false, {
                 fileName: "[project]/Desktop/Super_Admin_Soft7/src/app/page.tsx",
-                lineNumber: 10,
+                lineNumber: 18,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/Desktop/Super_Admin_Soft7/src/app/page.tsx",
-        lineNumber: 8,
+        lineNumber: 16,
         columnNumber: 5
     }, this);
 }

@@ -100,7 +100,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "C:\\Users\\Administrator",
+    "outputFileTracingRoot": "C:\\Users\\Administrator\\Desktop\\Super_Admin_Soft7",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -293,12 +293,12 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.js",
     "turbopack": {
-      "root": "C:\\Users\\Administrator"
+      "root": "C:\\Users\\Administrator\\Desktop\\Super_Admin_Soft7"
     },
     "distDirRoot": ".next"
   },
   "appDir": "C:\\Users\\Administrator\\Desktop\\Super_Admin_Soft7",
-  "relativeAppDir": "Desktop\\Super_Admin_Soft7",
+  "relativeAppDir": "",
   "files": [
     ".next\\routes-manifest.json",
     ".next\\server\\pages-manifest.json",
