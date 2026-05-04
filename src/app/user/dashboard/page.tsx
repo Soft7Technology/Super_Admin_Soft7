@@ -77,56 +77,77 @@ useEffect(() => {
   return () => window.removeEventListener("resize", handleResize);
 }, []);
 
-  useEffect(() => {
-    fetch("/api/admin/dashboard")
-      .then((r) => r.json())
-      .then((data) => {
-        setError(data.error ?? null);
-        setStats([
-          {
-            label: "Total Companies",
-            value: Number(data.totalCompanies ?? 0).toLocaleString(),
-            icon: "🏢",
-            change: data.companyChange ?? "—",
-            changeType: "up",
-            accent: "blue",
-          },
-          {
-            label: "Active Users",
-            value: Number(data.activeUsers ?? 0).toLocaleString(),
-            icon: "👥",
-            change: data.userChange ?? "—",
-            changeType: "up",
-            accent: "green",
-          },
-          {
-            label: "Subscriptions",
-            value: Number(data.activeSubscriptions ?? 0).toLocaleString(),
-            icon: "💳",
-            change: "—",
-            changeType: "up",
-            accent: "purple",
-          },
-          {
-            label: "Support Tickets",
-            value: Number(data.auditLogCount ?? 0).toLocaleString(),
-            icon: "📋",
-            change: "—",
-            changeType: "down",
-            accent: "orange",
-          },
-        ]);
-        setCompanies(data.companies ?? []);
-        setUsers(data.users ?? []);
-        setLogs(data.logs ?? []);
-      })
-      .catch(() => {
-        setError("Failed to load dashboard data.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+useEffect(() => {
+   const token = localStorage.getItem("accessToken"); // ⚠️ use correct key
+
+  if (!token) {
+    console.error("No token found");
+    setError("Unauthorized");
+    setLoading(false);
+    return;
+  }
+
+  fetch("https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/dashboard", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`, 
+    },
+    credentials: "include", 
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      console.log("API DATA:", data); // 🔍 first thing—inspect shape
+
+      setError(data.error ?? null);
+
+      setStats([
+        {
+          label: "Total Companies",
+          value: Number(data.totalCompanies ?? 0).toLocaleString(),
+          icon: "🏢",
+          change: data.companyChange ?? "—",
+          changeType: "up",
+          accent: "blue",
+        },
+        {
+          label: "Active Users",
+          value: Number(data.activeUsers ?? 0).toLocaleString(),
+          icon: "👥",
+          change: data.userChange ?? "—",
+          changeType: "up",
+          accent: "green",
+        },
+        {
+          label: "Subscriptions",
+          value: Number(data.activeSubscriptions ?? 0).toLocaleString(),
+          icon: "💳",
+          change: data.subscriptionChange ?? "—", 
+          changeType: "up",
+          accent: "purple",
+        },
+        {
+          label: "Support Tickets",
+          value: Number(data.totalTickets ?? 0).toLocaleString(), 
+          icon: "📋",
+          change: data.ticketChange ?? "—",
+          changeType: "down",
+          accent: "orange",
+        },
+      ]);
+
+      setCompanies(data.companies ?? []);
+      setUsers(data.users ?? []);
+      setLogs(data.logs ?? []);
+    })
+    .catch((err) => {
+      console.error(err);
+      setError("Failed to load dashboard data.");
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+}, []);
 
   return (
     <div style={{ padding:"28px 28px 48px", background:t.bg, minHeight:"100%", transition:"background 0.3s ease" }}>
