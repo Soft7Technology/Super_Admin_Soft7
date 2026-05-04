@@ -7,7 +7,7 @@ interface ThemeContextType { theme: Theme; toggleTheme: () => void; isDark: bool
 const ThemeContext = createContext<ThemeContextType>({ theme: "dark", toggleTheme: () => {}, isDark: true });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     try {
@@ -19,7 +19,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         document.documentElement.setAttribute("data-theme", "dark"); // ✅ FIX: apply default dark theme
       }
     } catch {
-      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.setAttribute("data-theme", "light");
     }
   }, []);
 
@@ -38,8 +38,8 @@ export const useTheme = () => useContext(ThemeContext);
 export const tokens = {
   dark: {
     bg: "#070b14", surface: "#0d1117", surface2: "#0a0e17",
-    border: "#1c2333", text: "#ffffff", textSub: "#e2e8f0",
-    textMuted: "#8b949e", textFaint: "#4b5563",
+    border: "#1c2333", text: "#ffffff", textSub: "#e5e7eb",
+    textMuted: "#b6c2d1", textFaint: "#7c8aa0",
     accent: "#4dabf7", accentBg: "rgba(59,91,219,0.15)",
     inputBg: "#161b27", tableHead: "#0a0e17",
     navActive: "linear-gradient(135deg,rgba(59,91,219,0.4),rgba(103,65,217,0.3))",

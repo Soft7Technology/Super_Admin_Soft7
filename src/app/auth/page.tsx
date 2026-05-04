@@ -944,10 +944,10 @@ export default function AuthPage() {
                     type="submit"
                     className="btn-anim text-white!"
                     style={buttonStyle}
-                    disabled={registerMutation.isPending}
-                  >
-                    {registerMutation.isPending ? "Registering..." : "Register"}
-                  </button>
+                    disabled={loginMutation?.isPending}
+              >
+                {loginMutation?.isPending ? "Logging in..." : "Login"}
+              </button>
                 </div>
 
                 <div

@@ -14,7 +14,7 @@
   --mc-accent:   #6C5CE7;
   --mc-accent2:  #A29BFE;
   --mc-text:     #E2E4F0;
-  --mc-muted:    #565875;
+  --mc-muted:    #aab3c5;
   --mc-title:    #ffffff;
   --mc-success:  #00CBA4;
   --mc-danger:   #FF6B6B;
@@ -180,7 +180,7 @@
 .mc-search-wrap  { position:relative; flex:1; min-width:220px; }
 .mc-search-icon  { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--mc-muted); font-size:14px; pointer-events:none; }
 .mc-search-input {
-  width:100%; background:var(--mc-surf);
+  width:70%; background:var(--mc-surf);
   border:1px solid var(--mc-border); color:var(--mc-text);
   padding:9px 14px 9px 35px; border-radius:10px; font-size:12px; outline:none;
   transition:border-color 0.2s, background 0.3s, color 0.3s;
@@ -270,11 +270,39 @@
 }
 .mc-input:focus { border-color:var(--mc-accent); }
 .mc-select {
-  width:100%; background:var(--mc-select-bg);
-  border:1px solid var(--mc-border); color:var(--mc-text);
-  padding:9px 12px; border-radius:9px; font-size:12px; outline:none;
-  transition:background 0.3s, color 0.3s, border-color 0.3s;
+  width: 100%;
+  background: var(--mc-select-bg);
+  border: 1px solid var(--mc-border);
+  color: var(--mc-text);
+  padding: 9px 12px;
+  padding-right: 36px; /* space for icon */
+  border-radius: 9px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
 }
+/* DARK MODE */
+.dark .mc-select,
+[data-theme="dark"] .mc-select {
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='14' viewBox='0 0 20 20' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M5 7l5 5 5-5z'/></svg>");
+}
+
+/* LIGHT MODE */
+.light .mc-select,
+[data-theme="light"] .mc-select {
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' viewBox='0 0 20 20' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M5 7l5 5 5-5z'/></svg>");
+}
+
 .mc-select:focus { border-color:var(--mc-accent); }
 .mc-modal__grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
 .mc-modal__divider { height:1px; background:var(--mc-border); transition:background 0.3s; }
