@@ -1,0 +1,7 @@
+{
+  "/api/admin/dashboard/route": "app/api/admin/dashboard/route.js",
+  "/api/admin/subscriptions/analytics/route": "app/api/admin/subscriptions/analytics/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/auth/page": "app/auth/page.js",
+  "/user/dashboard/page": "app/user/dashboard/page.js"
+}
