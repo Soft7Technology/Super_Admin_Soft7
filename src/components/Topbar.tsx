@@ -2,13 +2,29 @@
 import React, { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
+import NotificationModal from "./NotificationModal";
 
 export default function Topbar({ title="Dashboard", adminName="Super Admin", onMenuClick  }: { title?:string; adminName?:string; onMenuClick?: () => void; }) {
   const { isDark, toggleTheme } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [sf, setSf] = useState(false);
   const [dd, setDd] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        router.push("/auth");
+        router.refresh();
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
@@ -57,7 +73,7 @@ const filteredPages = pages.filter((p) =>
 );
 
   return (
-    <header style={{ height:"64px", background:t.surface, borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", padding:"0 24px", gap:"16px", position:"sticky", top:0, zIndex:50, transition:"background 0.3s,border-color 0.3s" }}>
+    <header style={{ height:"78px", background:t.surface, borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", padding:"0 24px", gap:"16px", position:"sticky", top:0, zIndex:50, transition:"background 0.3s,border-color 0.3s" }}>
       {onMenuClick && (
   <button
     onClick={onMenuClick}
@@ -189,7 +205,7 @@ const filteredPages = pages.filter((p) =>
 
         {/* Bell */}
         <div style={{ position:"relative" }}>
-          <div style={{ width:"36px", height:"36px", borderRadius:"8px", background:t.iconBox, border:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:t.textMuted }}>
+          <div onClick={() => setNotificationOpen(!notificationOpen)} style={{ width:"36px", height:"36px", borderRadius:"8px", background:t.iconBox, border:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:t.textMuted, transition:"all 0.2s" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           </div>
           <span style={{ position:"absolute", top:"7px", right:"7px", width:"7px", height:"7px", borderRadius:"50%", background:"#f03e3e", border:`2px solid ${t.surface}` }} />
@@ -215,8 +231,18 @@ const filteredPages = pages.filter((p) =>
               {[{icon:"👤",label:"Profile",route:"/user/profile" },{icon:"⚙️",label:"Settings", route:"/user/system" },{icon:"🚪",label:"Logout",red:true}].map((item,i,arr)=>(
                 <div
     key={item.label}
-    onClick={() => {
-      if (item.route) {
+    onClick={async () => {
+      if (item.label === "Logout") {
+        try {
+          const response = await fetch("/api/auth/logout", { method: "POST" });
+          if (response.ok) {
+            router.push("/auth");
+            setDd(false);
+          }
+        } catch (error) {
+          console.error("Logout failed:", error);
+        }
+      } else if (item.route) {
         router.push(item.route); 
         setDd(false);              
       }
@@ -228,6 +254,9 @@ const filteredPages = pages.filter((p) =>
           )}
         </div>
       </div>
+
+      {/* Notification Modal */}
+      <NotificationModal isOpen={notificationOpen} onClose={() => setNotificationOpen(false)} />
     </header>
   );
 }

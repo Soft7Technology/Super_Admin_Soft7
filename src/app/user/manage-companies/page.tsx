@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import "./manage-companies.css";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -8,15 +8,10 @@ type Status = "ACTIVE"|"INACTIVE"|"SUSPENDED"|"TRIAL";
 type Plan   = "Starter"|"Basic"|"Pro"|"Enterprise";
 
 interface Company {
-  id:number; name:string; domain:string; logo:string; col:string;
+  id:string; name:string; domain:string; logo:string; col:string;
   status:Status; plan:Plan; users:number; mrr:number; end:string;
 }
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
-const COMPANIES: Company[] = [
-  { id:1, name:"Acme Corp",       domain:"acme.com",           logo:"AC", col:"#6C5CE7", status:"ACTIVE",    plan:"Enterprise", users:320, mrr:7999, end:"Dec 31, 2026" },
-  
-];
 
 // ─── SHARED ───────────────────────────────────────────────────────────────────
 function Badge({ status }: { status: Status }) {
@@ -42,7 +37,58 @@ function KPI({ label,value,delta,icon,color,up=true }:{ label:string; value:stri
 }
 
 // ─── MODALS ───────────────────────────────────────────────────────────────────
-function CompanyModal({ company, onClose }: { company: Company|null; onClose:()=>void }) {
+function CompanyModal({ company, onClose, onSuccess }: { 
+  company: Company | null; 
+  onClose: () => void; 
+  onSuccess: () => void;
+}) {
+  const [name, setName] = useState(company?.name || "");
+  const [domain, setDomain] = useState(company?.domain || "");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [status, setStatus] = useState<Status>(company?.status || "ACTIVE");
+  const [plan, setPlan] = useState<Plan>(company?.plan || "Starter");
+
+  useEffect(() => {
+  setName(company?.name || "");
+  setDomain(company?.domain || "");
+  setStatus(company?.status || "ACTIVE");
+  setPlan(company?.plan || "Starter");
+}, [company]);
+
+const handleSubmit = async () => {
+  try {
+    const method = company ? "PUT" : "POST";
+
+    const res = await fetch("/api/admin/companies", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: company?.id,
+        name,
+        domain,
+        adminEmail,
+        status,
+        plan,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed");
+    }
+
+  onSuccess();
+  setName("");
+  setDomain("");
+  setAdminEmail("");
+  onClose();
+
+  } catch (err) {
+    console.error("Error:", err);
+  }
+};
+   
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
       <div className="mc-modal" onClick={e=>e.stopPropagation()}>
@@ -56,20 +102,40 @@ function CompanyModal({ company, onClose }: { company: Company|null; onClose:()=
         <div className="mc-modal__body">
           <div className="mc-field">
             <div className="mc-field__label">COMPANY NAME</div>
-            <input className="mc-input" placeholder="e.g. Acme Corp" defaultValue={company?.name} />
+            <input 
+             className="mc-input"
+             placeholder="Enter your company name"
+             value={name} 
+             onChange={(e)=> setName(e.target.value)}
+              />
           </div>
           <div className="mc-field">
             <div className="mc-field__label">DOMAIN</div>
-            <input className="mc-input" placeholder="e.g. acme.com" defaultValue={company?.domain} />
+            <input
+             className="mc-input"
+             placeholder="Enter your domain name"
+             value={domain}
+             onChange={(e) => setDomain(e.target.value)} 
+             />
           </div>
           <div className="mc-field">
             <div className="mc-field__label">ADMIN EMAIL</div>
-            <input className="mc-input" type="email" placeholder="admin@company.com" />
+            <input 
+            className="mc-input" 
+            type="email" 
+            placeholder="Enter your adminEmail" 
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
+            />
           </div>
           <div className="mc-modal__grid-2">
             <div className="mc-field">
               <div className="mc-field__label">STATUS</div>
-              <select className="mc-select" defaultValue={company?.status??"ACTIVE"}>
+              <select
+                className="mc-select"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status)}
+                >
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
                 <option value="SUSPENDED">Suspended</option>
@@ -78,14 +144,21 @@ function CompanyModal({ company, onClose }: { company: Company|null; onClose:()=
             </div>
             <div className="mc-field">
               <div className="mc-field__label">PLAN</div>
-              <select className="mc-select" defaultValue={company?.plan??"Starter"}>
-                <option>Starter</option><option>Basic</option><option>Pro</option><option>Enterprise</option>
-              </select>
+                        <select 
+              className="mc-select" 
+              value={plan}
+              onChange={(e) => setPlan(e.target.value as Plan)}
+            >
+              <option value="Starter">Starter</option>
+              <option value="Basic">Basic</option>
+              <option value="Pro">Pro</option>
+              <option value="Enterprise">Enterprise</option>
+            </select>
             </div>
           </div>
           <div className="mc-modal__divider" />
           <div className="mc-modal__actions">
-            <button className="mc-btn mc-btn--primary" onClick={onClose}>{company?"Save Changes":"Create Company"}</button>
+            <button className="mc-btn mc-btn--primary" onClick={handleSubmit}>{company?"Save Changes":"Create Company"}</button>
             <button className="mc-btn mc-btn--ghost" onClick={onClose}>Cancel</button>
           </div>
         </div>
@@ -182,7 +255,11 @@ function CompanyCard({ company, onEdit, onView }: { company:Company; onEdit:(c:C
           <div key={label} className="mc-metric">
             <div className="mc-metric__label">{icon} {label}</div>
             <div className={`mc-metric__value ${label==="PLAN"?`mc-plan-chip--${company.plan}`:""}`}
-              style={label==="PLAN"?{ color:`var(--mc-plan-${company.plan.toLowerCase()})` }:{}}>
+              style={
+                label === "PLAN"
+                  ? { color: `var(--mc-plan-${(company.plan || "starter").toLowerCase()})` }
+                  : {}
+              }>
               {value}
             </div>
           </div>
@@ -204,21 +281,65 @@ function CompanyCard({ company, onEdit, onView }: { company:Company; onEdit:(c:C
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function ManageCompanies() {
   const [search,     setSearch]     = useState("");
-  const [filter,     setFilter]     = useState("ALL");
+  const [filter, setFilter] = useState<"ALL" | Status>("ALL");
   const [showModal,  setShowModal]  = useState(false);
   const [editTarget, setEditTarget] = useState<Company|null>(null);
   const [viewTarget, setViewTarget] = useState<Company|null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = COMPANIES.filter(c=>
-    (filter==="ALL"||c.status===filter) &&
-    (c.name.toLowerCase().includes(search.toLowerCase())||c.domain.includes(search.toLowerCase()))
-  );
+  
+  useEffect(() => {
+  fetchCompanies();
+}, []);
+const fetchCompanies = async () => {
+  try {
+    setLoading(true);
+    const res = await fetch("/api/admin/companies");
+
+    if (!res.ok) throw new Error("Failed to fetch");
+
+    const data = await res.json();
+    setCompanies(data);
+
+  } catch (err) {
+    console.error("Failed to fetch companies:", err);
+    setCompanies([]); 
+  } finally {
+    setLoading(false);
+  }
+};
+const FILTERS: ("ALL" | Status)[] = [
+  "ALL",
+  "ACTIVE",
+  "TRIAL",
+  "SUSPENDED",
+  "INACTIVE",
+];
+
+const enrichedCompanies = companies.map((c) => ({
+  ...c,
+  plan: c.plan || "Starter", 
+  logo: c.name ? c.name.slice(0, 2).toUpperCase() : "NA",
+  col: "#6C5CE7",
+  users: 0,
+  mrr: 0,
+  end: "N/A",
+}));
+const filtered = enrichedCompanies.filter((c) =>
+  (filter === "ALL" || c.status === filter) &&
+  (
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.domain.toLowerCase().includes(search.toLowerCase())
+  )
+);
 
   const openAdd  = ()           => { setEditTarget(null); setShowModal(true); };
   const openEdit = (c:Company)  => { setEditTarget(c);    setShowModal(true); };
   const openView = (c:Company)  => setViewTarget(c);
 
   return (
+    
     <div className="mc-root">
       {/* HEADER */}
       <div className="mc-header">
@@ -231,12 +352,11 @@ export default function ManageCompanies() {
 
       {/* KPIs */}
       <div className="mc-kpi-grid">
-        <KPI label="Total Companies" value="0" delta="— vs last month" icon="🏢" color="#6C5CE7" />
-        <KPI label="Active"          value="0" delta="— new this week"   icon="✅" color="#00CBA4" />
-        <KPI label="Suspended"       value="0"  delta="— this month"      icon="⛔" color="#FF6B6B" up={false} />
-        <KPI label="On Trial"        value="0"  delta="— expiring soon"   icon="⏳" color="#FDCB6E" />
-      </div>
-
+      <KPI label="Total Companies" value={String(companies.length)} icon="🏢" color="#6C5CE7" />
+      <KPI label="Active" value={String(companies.filter(c => c.status==="ACTIVE").length)} icon="✅" color="#00CBA4" />
+      <KPI label="Suspended" value={String(companies.filter(c => c.status==="SUSPENDED").length)} icon="⛔" color="#FF6B6B" />
+      <KPI label="On Trial" value={String(companies.filter(c => c.status==="TRIAL").length)} icon="⏳" color="#FDCB6E" />
+     </div>
       {/* FILTER BAR */}
       <div className="mc-filter-bar">
         <div className="mc-search-wrap">
@@ -247,7 +367,7 @@ export default function ManageCompanies() {
             autoComplete="off" />
         </div>
         <div className="mc-filter-group">
-          {["ALL","ACTIVE","TRIAL","SUSPENDED","INACTIVE"].map(f=>(
+          {FILTERS.map(f=>(
             <button key={f} onClick={()=>setFilter(f)} className={`mc-filter-btn ${filter===f?"mc-filter-btn--active":""}`}>
               {f==="ALL"?"All":f[0]+f.slice(1).toLowerCase()}
             </button>
@@ -257,15 +377,30 @@ export default function ManageCompanies() {
       </div>
 
       {/* GRID */}
-      <div className="mc-grid">
-        {filtered.map(c=>(
-          <CompanyCard key={c.id} company={c} onEdit={openEdit} onView={openView} />
-        ))}
-      </div>
+     {loading ? (
+  <div className="mc-empty">Loading companies...</div>
+) : filtered.length === 0 ? (
+  <div className="mc-empty">
+    No companies found. Start by adding one 🚀
+  </div>
+) : (
+  <div className="mc-grid">
+    {filtered.map(c => (
+      <CompanyCard key={c.id} company={c} onEdit={openEdit} onView={openView} />
+    ))}
+  </div>
+)}
 
       {/* MODALS */}
-      {showModal  && <CompanyModal company={editTarget} onClose={()=>setShowModal(false)} />}
-      {viewTarget && <CompanyDetailModal company={viewTarget} onClose={()=>setViewTarget(null)} onEdit={c=>{ setViewTarget(null); openEdit(c); }} />}
+      {showModal  && <CompanyModal
+       company={editTarget} 
+       onClose={()=>setShowModal(false) } 
+       onSuccess={fetchCompanies}
+
+       />}
+      {viewTarget && <CompanyDetailModal company={viewTarget} 
+      onClose={()=>setViewTarget(null)}
+      onEdit={c=>{ setViewTarget(null); openEdit(c); }} />}
     </div>
   );
 }
