@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       subscriptionEnd: user.subscriptionEnd ? user.subscriptionEnd.toISOString() : undefined,
     };
 
-    const accessToken = await new SignJWT(accessTokenPayload).setProtectedHeader({alg: 'HS256'}).setExpirationTime("15m").sign(ACCESS_SECRET);
+    const accessToken = await new SignJWT(accessTokenPayload).setProtectedHeader({alg: 'HS256'}).setExpirationTime("7d").sign(ACCESS_SECRET);
     const refreshToken = await new SignJWT({id: user.id, email: user.email, role: user.role}).setProtectedHeader({alg: 'HS256'}).setExpirationTime("7d").sign(REFRESH_SECRET);
 
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 15 * 60,
+      maxAge: 7 * 24 * 60 * 60,
     });
 
     response.cookies.set("refreshToken", refreshToken, {

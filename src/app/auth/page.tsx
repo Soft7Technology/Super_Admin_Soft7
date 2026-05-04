@@ -670,6 +670,7 @@ export default function AuthPage() {
                   right: isRegisterActive ? "50%" : isTablet ? "-200px" : "-300px",
                   transform: isRegisterActive ? "translateX(50%)" : "none",
                   transition: "1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                  
                 }}
                 className="bg-shape left-shape"
               ></div>
@@ -1005,10 +1006,10 @@ export default function AuthPage() {
                       setLoginErrors({});
                     }}
                     style={{
-                      fontSize: isMobile ? "13px" : "14px",
-                      color: "rgba(255,255,255,0.8)",
-                      cursor: "pointer",
-                      textDecoration: "underline",
+                    fontSize: isMobile ? "13px" : "14px",
+                    color: "rgba(0,0,0,0.7)",
+                    cursor: "pointer",
+                    textDecoration: "underline",
                     }}
                   >
                     Forgot password?
@@ -1655,6 +1656,9 @@ export default function AuthPage() {
                   fontSize: "17px",
                   color: "var(--text-secondary)",
                   lineHeight: 1.7,
+                  maxWidth: "280px",
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
                   transition: "0.8s 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
                   transform: isRegisterActive
                     ? "translateX(0)"
