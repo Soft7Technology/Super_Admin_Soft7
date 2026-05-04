@@ -1,62 +1,55 @@
-# ---------- CONFIG ----------
+# ---------- PACKAGE GROUPS (Synced with package.json) ----------
 
-# Main dependencies
-PACKAGES = react react-dom zod jose reactflow next is-mobile lucide-react antd react-icons firebase swr tailwind-merge tailwindcss @tailwindcss/postcss postcss autoprefixer @prisma/client prisma next-themes
+PACKAGES = @prisma/client @radix-ui/react-select @tanstack/react-query axios bcryptjs cookie-parser cors dotenv express gsap ioredis jose jsonwebtoken libphonenumber-js lucide-react morgan multer next nodemailer react react-dom react-hot-toast redis twilio uuid
 
-#  Dev dependencies
-DEV_PACKAGES = @types/react @types/react-dom
+DEV_PACKAGES = @types/node @types/nodemailer @types/react @types/react-dom autoprefixer nodemon postcss prisma tailwindcss typescript
 
-# Install all dependencies
+# ---------- INSTALL ----------
 install:
-	npm install $(PACKAGES) --save && npm install $(DEV_PACKAGES) --save-dev
-	@echo "All packages installed!"
+	npm install $(PACKAGES) --save
+	npm install $(DEV_PACKAGES) --save-dev
+	@echo "✅ All packages installed (synced with package.json)"
 
 # ---------- DEV ----------
 dev:
-  npm run dev
- 
+	npm run dev
+
 dev-backend:
-  npm run dev:backend
- 
+	npm run dev:backend
+
 dev-frontend:
-  npm run dev:frontend
- 
+	npm run dev:frontend
+
 dev-all:
-  npx concurrently "npm run dev:backend" "npm run dev:frontend"
- 
+	npx concurrently "npm run dev:backend" "npm run dev:frontend"
+
 # ---------- BUILD ----------
 build:
-  npm run build
- 
+	npm run build
+
 start:
-  npm run next:start
- 
+	npm run next:start
+
 # ---------- PRISMA ----------
 prisma-generate:
-  npx prisma generate
- 
+	npx prisma generate
+
 prisma-migrate:
-  npx prisma migrate dev
- 
-# ---------- CLEAN / RESET ----------
+	npx prisma migrate dev
+
+# ---------- CLEAN ----------
 clean:
-  npx rimraf node_modules package-lock.json
-  @echo "🧹 Cleaned project"
- 
+	npx rimraf node_modules package-lock.json
+	@echo "🧹 Cleaned project"
+
+# ---------- RESET ----------
 reset: clean
-  npm install
-  @echo "♻️ Fresh install completed"
- 
-# ---------- FULL SETUP ----------
+	make install
+	@echo "♻️ Fresh install completed"
+
+# ---------- SETUP ----------
 setup:
-  @echo "⚙️ Setting up project..."
-  make install
-  make prisma-generate
-  @echo "🚀 Setup done. Starting dev server..."
-  make dev
- 
-# ---------- MASTER COMMAND ----------
-all: install prisma-generate
-  @echo "🚀 Setup complete. Starting app..."
-  make dev
- 
+	@echo "⚙️ Setting up project..."
+	make install
+	make prisma-generate
+	make dev

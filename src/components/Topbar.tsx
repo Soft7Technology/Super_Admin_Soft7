@@ -11,6 +11,20 @@ export default function Topbar({ title="Dashboard", adminName="Admin", onMenuCli
   const [dd, setDd] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        router.push("/auth");
+        router.refresh();
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
