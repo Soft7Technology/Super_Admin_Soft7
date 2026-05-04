@@ -52,7 +52,7 @@ export default function Sidebar({
           <div style={{ fontWeight:800, fontSize:"1rem", color:t.text, letterSpacing:"-0.02em", transition:"color 0.3s" }}>
             Super<span style={{ color:t.accent }}>Admin</span>
           </div>
-          <div style={{ fontSize:"0.65rem", color:t.textFaint, marginTop:"2px", transition:"color 0.3s" }}>Management Portal</div>
+          <div style={{ fontSize:"0.65rem", color:t.textMuted, marginTop:"2px", transition:"color 0.3s" }}>Management Portal</div>
         </div>
       </div>
 
@@ -93,7 +93,7 @@ function NavItem({ item, active, onClick, t, isDark }: any) {
         display:"flex", alignItems:"center", gap:"12px",
         padding:"9px 12px", marginBottom:"2px", borderRadius:"9px",
         cursor:"pointer", userSelect:"none", transition:"all 0.15s",
-        color:  active ? (isDark ? "#fff" : "#0f172a") : hov ? t.textSub : t.textMuted,
+        color:  active ? (isDark ? "#fff" : "#0f172a") : hov ? t.textSub  : (isDark ? "#d1d5db" : t.textMuted),
         fontWeight: active ? 600 : 400, fontSize:"0.875rem",
         background: active ? t.navActive : hov ? t.navHover : "transparent",
         borderLeft: `3px solid ${active ? t.accent : "transparent"}`,

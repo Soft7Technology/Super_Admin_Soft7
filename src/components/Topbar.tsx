@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
 
-export default function Topbar({ title="Dashboard", adminName="Admin", onMenuClick  }: { title?:string; adminName?:string; onMenuClick?: () => void; }) {
+export default function Topbar({ title="Dashboard", adminName="Super Admin", onMenuClick  }: { title?:string; adminName?:string; onMenuClick?: () => void; }) {
   const { isDark, toggleTheme } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [sf, setSf] = useState(false);
@@ -39,6 +39,7 @@ const pathname = usePathname();
 useEffect(() => {
   setSearch("");
 }, [pathname]);
+
   const getTitle = () => {
   if (pathname.includes("dashboard")) return "Dashboard";
   if (pathname.includes("profile")) return "Profile";
@@ -156,6 +157,7 @@ const filteredPages = pages.filter((p) =>
   cursor: "pointer",
   borderBottom: `1px solid ${t.border}`,
   fontSize: isMobile ? "0.75rem" : "0.875rem",
+  color: t.text,
 }}
           >
             🔍 {item.name}
@@ -199,13 +201,13 @@ const filteredPages = pages.filter((p) =>
         <div style={{ position:"relative" }}>
           <div onClick={()=>setDd(p=>!p)} style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer", padding:"5px 10px 5px 5px", borderRadius:"10px", background:t.iconBox, border:`1px solid ${t.border}`, transition:"all 0.15s" }}>
             <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:"linear-gradient(135deg,#3b5bdb,#6741d9)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.78rem", color:"#fff" }}>
-              {adminName.slice(0,2).toUpperCase()}
+              {adminName.split(" ").map(word=> word[0]).join("").toUpperCase()}
             </div>
             <div>
               <div style={{ fontSize:"0.82rem", fontWeight:600, color:t.text, lineHeight:1.2, transition:"color 0.3s" }}>{adminName}</div>
-              <div style={{ fontSize:"0.65rem", color:t.accent, fontWeight:600 }}>Administrator</div>
+              <div style={{ fontSize:"0.65rem", color:t.accent, fontWeight:600 }}>Soft7</div>
             </div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textFaint} strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isDark ? "#e2e8f0" : t.textFaint} strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
 
           {dd && (
