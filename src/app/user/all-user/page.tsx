@@ -3,6 +3,27 @@
 import { useState, useEffect } from "react";
 import "./all-user.css";
 
+const EXTERNAL_USERS_API =
+  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/user";
+
+  const getExternalHeaders = () => {
+  let token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("console_access_token")
+      : null;
+
+  if (token && token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+
+  return {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface User {
@@ -484,45 +505,116 @@ export default function AllUsers() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
 
+  function timeAgo(dateString: string | null) {
+  if (!dateString) return "-";
+
+  const now = new Date();
+  const past = new Date(dateString);
+
+  const diffMs = now.getTime() - past.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  if (diffHours > 0) return `${diffHours} hr${diffHours > 1 ? "s" : ""} ago`;
+
+  return "Just now";
+}
+
   useEffect(() => {
-    let cancelled = false;
+  let cancelled = false;
 
-    async function loadUsers() {
-      setLoading(true);
-      setError(null);
+  async function loadUsers() {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const res = await fetch("/api/admin/users");
-        const data = await res.json();
+    try {
+  
+  const [usersRes, adminsRes] = await Promise.all([
+    fetch(`${EXTERNAL_USERS_API}?role=user&page=1&limit=10`, {
+      headers: getExternalHeaders(),
+    }),
+    fetch(`${EXTERNAL_USERS_API}?role=admin`, {
+      headers: getExternalHeaders(),
+    }),
+  ]);
 
-        if (cancelled) {
-          return;
-        }
+  const usersJson = await usersRes.json();
+  const adminsJson = await adminsRes.json();
 
-        if (!res.ok) {
-          throw new Error(data.error ?? `Server error ${res.status}`);
-        }
+  //check both responses
+  if (!usersRes.ok || !adminsRes.ok) {
+    throw new Error("Failed to fetch users");
+  }
 
-        setUsers(data.users ?? []);
-        setStats(data.stats ?? { totalUsers: 0, activeUsers: 0, adminUsers: 0, premiumUsers: 0 });
-        setError(data.error ?? null);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Unknown error");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  
+  const usersData = [
+    ...(usersJson?.data || []),
+    ...(adminsJson?.data || []),
+  ];
+
+
+  const mappedUsers: User[] = usersData.map((u: any) => ({
+    id: u.id,
+    name: u.name || "No Name",
+    email: u.email || "",
+    phone: u.phone || "",
+
+    role: u.role === "admin" ? "Admin" : "User",
+    status: (u.status || "active").toUpperCase(),
+
+    company: u.company?.name || "—",
+
+    plan:
+      u.plan_name === "Enterpriess" ? "Enterprise" :
+      u.plan_name === "Free Trial" ? "Starter" :
+      u.plan_name || "Starter",
+
+    av: "#6C5CE7",
+
+    login: timeAgo(u.last_login_at),
+
+    joined: u.created_at
+      ? new Date(u.created_at).toLocaleDateString()
+      : "-",
+
+    msgs: 0,
+    campaigns: 0,
+    chatbots: 0,
+
+    pro:
+      u.plan_name === "Pro" ||
+      u.plan_name === "Enterprise",
+  }));
+
+  setUsers(mappedUsers);
+
+  setStats({
+    totalUsers: mappedUsers.length,
+    activeUsers: mappedUsers.filter(u => u.status === "ACTIVE").length,
+    adminUsers: mappedUsers.filter(u => u.role === "Admin").length,
+    premiumUsers: mappedUsers.filter(u =>
+      ["Pro", "Enterprise"].includes(u.plan)
+    ).length,
+  });
+
+} catch (e) {
+  if (!cancelled) {
+    setError(e instanceof Error ? e.message : "Unknown error");
+  }
+} finally {
+      if (!cancelled) {
+        setLoading(false);
       }
     }
+  }
 
-    loadUsers();
+  loadUsers();
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
   const filteredUsers = [...users]
     .filter((user) => {

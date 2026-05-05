@@ -13,6 +13,25 @@ import toast from "react-hot-toast";
 
 type AuthView = "login" | "register" | "forgot";
 type ForgotStep = "request" | "verify" | "reset";
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const AUTH_BASE = "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/auth";
+
+const getExternalHeaders = (includeAuth = false) => {
+  let token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("console_access_token")
+      : null;
+
+  if (token && token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+
+  return {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+    ...(includeAuth && token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 // Custom hook for responsive design
 const useMediaQuery = (query: string) => {
@@ -257,6 +276,8 @@ export default function AuthPage() {
   const [registerErrors, setRegisterErrors] = useState<Record<string, string>>(
     {},
   );
+  const [loginIdentifier, setLoginIdentifier] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [registerPassword, setRegisterPassword] = useState("");
@@ -295,101 +316,152 @@ export default function AuthPage() {
     }
   }, [timer]);
 
-  const loginMutation = useMutation({
-    mutationFn: async ({
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    }) => {
-      const { data } = await axiosInstance.post("/api/auth/login", {
-        email,
-        password,
-      });
-      return data;
-    },
-    onMutate: () => setLoginErrors({}),
-    onError: (error: any) => {
-      const data = error?.response?.data;
-      if (data?.fieldErrors) {
-        setLoginErrors(data.fieldErrors);
-      } else {
-        setLoginErrors({ general: data?.error || "Login failed" });
-      }
-    },
-    onSuccess: (data) => {
-      if (data?.success) {
-        if (data.user?.role === "SUPER ADMIN") {
-          router.replace("/user/dashboard");
-        } else {
-          router.replace("/user/dashboard");
-          queryClient.invalidateQueries({queryKey: ["user-role"]});
-        }
-        toast.success("Logged in successfully");
-      }
-    },
-  });
-
-  const registerMutation = useMutation({
-    mutationFn: async ({
-      name,
-      email,
-      phone,
-      password,
-      countryCode,
-    }: {
-      name: string;
-      email: string;
-      phone: string;
-      password: string;
-      countryCode: string;
-    }) => {
-      const { data } = await axiosInstance.post("/api/auth/registration", {
-        name,
-        email,
-        phone,
-        password,
-        countryCode,
-      });
-      return data;
-    },
-    onMutate: (variables) => {
-      setRegisterErrors({});
-      const passwordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
-        variables.password,
+const loginMutation = useMutation({
+  mutationFn: async ({
+    identifier,
+    password,
+  }: {
+    identifier: string;
+    password: string;
+  }) => {
+    try {
+      const { data } = await axiosInstance.post(
+        `${AUTH_BASE}/login`,
+        { identifier, password },
+        { headers: getExternalHeaders(), withCredentials: false }
       );
-      if (!passwordValid) {
-        setRegisterErrors({
-          password:
-            "Password must be 8+ chars, include uppercase, lowercase, number, and special character",
-        });
-        throw new Error("Invalid password");
+      return data;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const message = String(
+        error?.response?.data?.message ?? error?.response?.data?.error ?? ""
+      ).toLowerCase();
+      const canTryLocalLogin =
+        status === 401 &&
+        identifier.includes("@") &&
+        (message.includes("invalid") || message.includes("credential"));
+
+      if (!canTryLocalLogin) {
+        throw error;
       }
-    },
-    onError: (error: any) => {
-      const data = error?.response?.data;
-      if (data?.fieldErrors) {
-        setRegisterErrors(data.fieldErrors);
-      } else {
-        setRegisterErrors({ general: data?.error });
-      }
-    },
-    onSuccess: () => {
-      toast.success("Registered successfully! Please login.");
-      setIsRegisterActive(false);
-      setRegisterErrors({});
-    },
-  });
+
+      const { data } = await axiosInstance.post("/api/auth/login", {
+        email: identifier,
+        password,
+      });
+      return data;
+    }
+  },
+  onMutate: () => setLoginErrors({}),
+  
+  onError: (error: any) => {
+    console.error("Login 400 details:", error?.response?.status, JSON.stringify(error?.response?.data));
+    const data = error?.response?.data;
+    if (data?.fieldErrors) {
+      setLoginErrors(data.fieldErrors);
+    } else {
+      setLoginErrors({ general: data?.error || data?.message || "Login failed" });
+    }
+  },
+  onSuccess: (data) => {
+    // Store token returned by external API
+    const token =
+      data?.token ??
+      data?.accessToken ??
+      data?.access_token ??
+      data?.data?.token ??
+      data?.data?.accessToken ??
+      data?.data?.access_token;
+
+    if (!token) {
+      setLoginErrors({ general: data?.message || "Login succeeded but no token was returned" });
+      return;
+    }
+
+    if (token) {
+      localStorage.setItem("console_access_token", token);
+      document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+    }
+
+    if (data?.success !== false) {
+      router.replace("/user/dashboard");
+      queryClient.invalidateQueries({ queryKey: ["user-role"] });
+      toast.success("Logged in successfully");
+    } else {
+      setLoginErrors({ general: data?.message || "Login failed" });
+    }
+  },
+});
+
+const registerMutation = useMutation({
+  mutationFn: async ({
+    name,
+    email,
+    phone,
+    password,
+    countryCode,
+  }: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    countryCode: string;
+  }) => {
+    const { data } = await axiosInstance.post(
+      `${AUTH_BASE}/registration`,
+      { name, email, phone, password, countryCode },
+      { headers: getExternalHeaders(), withCredentials: false }
+    );
+    return data;
+  },
+  onMutate: (variables) => {
+    setRegisterErrors({});
+    const passwordValid =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
+        variables.password
+      );
+    if (!passwordValid) {
+      setRegisterErrors({
+        password:
+          "Password must be 8+ chars, include uppercase, lowercase, number, and special character",
+      });
+      throw new Error("Invalid password");
+    }
+  },
+  onError: (error: any) => {
+    const data = error?.response?.data;
+    if (data?.fieldErrors) {
+      setRegisterErrors(data.fieldErrors);
+    } else {
+      setRegisterErrors({ general: data?.error ?? data?.message });
+    }
+  },
+  onSuccess: () => {
+    toast.success("Registered successfully! Please login.");
+    setIsRegisterActive(false);
+    setRegisterErrors({});
+  },
+});
 
   // Handle login form submission
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const email = form.get("email") as string;
-    const password = form.get("password") as string;
-    
-    loginMutation.mutate({ email, password });
+    const rawIdentifier = String(form.get("identifier") || "").trim();
+    const identifier = rawIdentifier.includes("@")
+      ? rawIdentifier.toLowerCase()
+      : rawIdentifier.replace(/\s+/g, "");
+    const password = String(form.get("password") || "").trim();
+
+    if (!identifier || !password) {
+      setLoginErrors({
+        ...(!identifier ? { identifier: "Email or phone is required" } : {}),
+        ...(!password ? { password: "Password is required" } : {}),
+      });
+      return;
+    }
+
+    loginMutation.mutate({ identifier, password });
   };
 
   // Handle register form submission
@@ -419,166 +491,152 @@ export default function AuthPage() {
     });
   };
 
-  // Handle forgot password flow
-  const handleSendOtp = async () => {
-    // Clear previous errors
-    setEmailError("");
+const handleSendOtp = async () => {
+  setEmailError("");
 
-    // Validate email format
-    if (!email || email.trim() === "") {
-      toast.error("Please enter your email");
-      setEmailError("Email is required");
-      return;
-    }
+  if (!email || email.trim() === "") {
+    toast.error("Please enter your email");
+    setEmailError("Email is required");
+    return;
+  }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
-      setEmailError("Invalid email format");
-      return;
-    }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    toast.error("Please enter a valid email address");
+    setEmailError("Invalid email format");
+    return;
+  }
 
-    // Validate phone if WhatsApp selected
-    if (channel === "whatsapp" && !phone) {
-      toast.error("Please enter your phone number");
-      return;
-    }
+  if (channel === "whatsapp" && !phone) {
+    toast.error("Please enter your phone number");
+    return;
+  }
 
-    try {
-      const response = await axiosInstance.post("/api/auth/send-otp", {
-        email,
-        phone,
-        channel,
-      });
-
-      setForgotStep("verify");
-      setTimer(60);
-      setIsEditingDetails(false);
-      setEmailError("");
-      toast.success(
-        `OTP sent to ${channel === "email" ? maskEmail(email) : maskPhone(phone)}`,
-      );
-    } catch (error: any) {
-      const errorMsg = error?.response?.data?.error;
-      if (error?.response?.status === 404) {
-        toast.error("No account found with this email");
-        setEmailError("Email not registered");
-      } else if (errorMsg) {
-        toast.error(errorMsg);
-        setEmailError(errorMsg);
-      } else {
-        toast.error("Failed to send OTP");
-        setEmailError("Failed to send OTP");
-      }
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    // Clear previous error
-    setOtpError(false);
-
-    // OTP validation
-    if (!otp || otp.trim() === "") {
-      toast.error("Please enter OTP");
-      setOtpError(true);
-      return;
-    }
-
-    if (otp.length !== 6) {
-      toast.error("OTP must be 6 digits");
-      setOtpError(true);
-      return;
-    }
-
-    // Check if OTP contains only numbers
-    if (!/^\d+$/.test(otp)) {
-      toast.error("OTP must contain only numbers");
-      setOtpError(true);
-      return;
-    }
-
-    try {
-      const { data } = await axiosInstance.post("/api/auth/verify-otp", {
-        email,
-        otp,
-      });
-
-      toast.success(data?.message || "OTP verified successfully");
-      setOtpError(false);
-      setForgotStep("reset");
-    } catch (error: any) {
-      setOtpError(true);
-      const errorMessage = error?.response?.data?.error;
-
-      if (errorMessage) {
-        toast.error(errorMessage);
-      } else if (error?.response?.status === 400) {
-        toast.error("Invalid OTP. Please try again.");
-      } else if (error?.response?.status === 500) {
-        toast.error("Server error. Please try again later.");
-      } else {
-        toast.error("Failed to verify OTP. Please try again.");
-      }
-    }
-  };
-
-  const handleResetPassword = async () => {
-    // Clear previous errors
-    setPasswordError("");
-
-    // Validate passwords match
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
-      setPasswordError("Passwords do not match");
-      return;
-    }
-
-    // Validate password is not empty
-    if (!newPassword || newPassword.trim() === "") {
-      toast.error("Please enter a password");
-      setPasswordError("Password is required");
-      return;
-    }
-
-    // Validate password format
-    const passwordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$/.test(
-      newPassword,
+  try {
+    await axiosInstance.post(
+      `${AUTH_BASE}/send-otp`,
+      { email, phone, channel },
+      { headers: getExternalHeaders(), withCredentials: false }
     );
-    if (!passwordValid) {
-      toast.error(
-        "Password must be 8+ chars, include upper, lower, and special character",
-      );
-      setPasswordError(
-        "Password must be 8+ chars with uppercase, lowercase, and special character",
-      );
-      return;
-    }
 
-    try {
-      await axiosInstance.post("/api/auth/reset-password", {
-        email,
-        password: newPassword,
-      });
-      toast.success("Password updated successfully");
-      
-      // Reset states
-      setAuthView("login");
-      setIsForgotActive(false);
-      setForgotStep("request");
-      setEmail("");
-      setPhone("");
-      setOtp("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setPasswordError("");
-      setIsEditingDetails(true);
-    } catch (error: any) {
-      const errorMsg =
-        error?.response?.data?.error || "Failed to reset password";
+    setForgotStep("verify");
+    setTimer(60);
+    setIsEditingDetails(false);
+    setEmailError("");
+    toast.success(
+      `OTP sent to ${channel === "email" ? maskEmail(email) : maskPhone(phone)}`
+    );
+  } catch (error: any) {
+    const errorMsg = error?.response?.data?.error ?? error?.response?.data?.message;
+    if (error?.response?.status === 404) {
+      toast.error("No account found with this email");
+      setEmailError("Email not registered");
+    } else if (errorMsg) {
       toast.error(errorMsg);
-      setPasswordError(errorMsg);
+      setEmailError(errorMsg);
+    } else {
+      toast.error("Failed to send OTP");
+      setEmailError("Failed to send OTP");
     }
-  };
+  }
+};
+
+ const handleVerifyOtp = async () => {
+  setOtpError(false);
+
+  if (!otp || otp.trim() === "") {
+    toast.error("Please enter OTP");
+    setOtpError(true);
+    return;
+  }
+  if (otp.length !== 6) {
+    toast.error("OTP must be 6 digits");
+    setOtpError(true);
+    return;
+  }
+  if (!/^\d+$/.test(otp)) {
+    toast.error("OTP must contain only numbers");
+    setOtpError(true);
+    return;
+  }
+
+  try {
+    const { data } = await axiosInstance.post(
+      `${AUTH_BASE}/verify-otp`,
+      { email, otp },
+      { headers: getExternalHeaders(), withCredentials: false }
+    );
+
+    toast.success(data?.message || "OTP verified successfully");
+    setOtpError(false);
+    setForgotStep("reset");
+  } catch (error: any) {
+    setOtpError(true);
+    const errorMessage =
+      error?.response?.data?.error ?? error?.response?.data?.message;
+
+    if (errorMessage) {
+      toast.error(errorMessage);
+    } else if (error?.response?.status === 400) {
+      toast.error("Invalid OTP. Please try again.");
+    } else if (error?.response?.status === 500) {
+      toast.error("Server error. Please try again later.");
+    } else {
+      toast.error("Failed to verify OTP. Please try again.");
+    }
+  }
+};
+
+const handleResetPassword = async () => {
+  setPasswordError("");
+
+  if (newPassword !== confirmPassword) {
+    toast.error("Passwords do not match");
+    setPasswordError("Passwords do not match");
+    return;
+  }
+  if (!newPassword || newPassword.trim() === "") {
+    toast.error("Please enter a password");
+    setPasswordError("Password is required");
+    return;
+  }
+
+  const passwordValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$/.test(newPassword);
+  if (!passwordValid) {
+    toast.error("Password must be 8+ chars, include upper, lower, and special character");
+    setPasswordError(
+      "Password must be 8+ chars with uppercase, lowercase, and special character"
+    );
+    return;
+  }
+
+  try {
+    await axiosInstance.post(
+      `${AUTH_BASE}/reset-password`,
+      { email, password: newPassword },
+      { headers: getExternalHeaders(), withCredentials: false }
+    );
+
+    toast.success("Password updated successfully");
+    setAuthView("login");
+    setIsForgotActive(false);
+    setForgotStep("request");
+    setEmail("");
+    setPhone("");
+    setOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
+    setIsEditingDetails(true);
+  } catch (error: any) {
+    const errorMsg =
+      error?.response?.data?.error ??
+      error?.response?.data?.message ??
+      "Failed to reset password";
+    toast.error(errorMsg);
+    setPasswordError(errorMsg);
+  }
+};
 
   const handleResendOtp = async () => {
     if (timer > 0) return;
@@ -776,17 +834,25 @@ export default function AuthPage() {
                   }}
                 >
                   <input
-                    type="email"
-                    name="email"
+                    type="text"
+                    name="identifier"
                     required
+                    value={loginIdentifier}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="border-white/30! focus:border-green-500!"
-                    placeholder="Email"
-                    onChange={() => clearFieldError("login", "email")}
+                    placeholder="Email or phone"
+                    onChange={(e) => {
+                      setLoginIdentifier(e.target.value);
+                      clearFieldError("login", "identifier");
+                      clearFieldError("login", "email");
+                    }}
                     style={{
                       width: "100%",
                       height: isMobile ? "44px" : "50px",
                       background: "transparent",
-                      border: `2px solid ${loginErrors.email ? "var(--error-color)" : "var(--input-border)"}`,
+                      border: `2px solid ${loginErrors.identifier || loginErrors.email ? "var(--error-color)" : "var(--input-border)"}`,
                       borderRadius: "40px",
                       fontSize: isMobile ? "14px" : "16px",
                       color: "var(--text-color)",
@@ -795,14 +861,14 @@ export default function AuthPage() {
                       transition: "border-color 0.3s ease",
                     }}
                     onFocus={(e) => {
-                      if (!loginErrors.email) {
+                      if (!loginErrors.identifier && !loginErrors.email) {
                         e.target.style.borderColor = "var(--input-focus-border)";
                         e.target.style.boxShadow =
                           "0 0 0 3px rgba(16, 185, 129, 0.1)";
                       }
                     }}
                     onBlur={(e) => {
-                      if (!loginErrors.email) {
+                      if (!loginErrors.identifier && !loginErrors.email) {
                         e.target.style.borderColor = "var(--input-border)";
                         e.target.style.boxShadow = "none";
                       }
@@ -820,7 +886,7 @@ export default function AuthPage() {
                     }}
                     size={isMobile ? 18 : 20}
                   />
-                  {loginErrors.email && (
+                  {(loginErrors.identifier || loginErrors.email) && (
                     <p
                       style={{
                         color: "#ff4444",
@@ -829,7 +895,7 @@ export default function AuthPage() {
                         marginLeft: "10px",
                       }}
                     >
-                      ⚠️ {loginErrors.email}
+                      ⚠️ {loginErrors.identifier || loginErrors.email}
                     </p>
                   )}
                 </div>
@@ -852,9 +918,13 @@ export default function AuthPage() {
                     type={showLoginPassword ? "text" : "password"}
                     name="password"
                     required
+                    value={loginPassword}
                     className="border-white/30! focus:border-green-500!"
                     placeholder="Password"
-                    onChange={() => clearFieldError("login", "password")}
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value);
+                      clearFieldError("login", "password");
+                    }}
                     style={{
                       width: "100%",
                       height: isMobile ? "44px" : "50px",
@@ -945,10 +1015,10 @@ export default function AuthPage() {
                     type="submit"
                     className="btn-anim text-white!"
                     style={buttonStyle}
-                    disabled={loginMutation?.isPending}
-              >
-                {loginMutation?.isPending ? "Logging in..." : "Login"}
-              </button>
+                    disabled={loginMutation.isPending}
+                  >
+                    {loginMutation.isPending ? "Logging in..." : "Login"}
+                  </button>
                 </div>
 
                 <div
