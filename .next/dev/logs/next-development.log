@@ -1,4 +1,5 @@
-[00:00:02.446] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-[00:00:02.930] Server  LOG     ✓ Ready in 1910ms
-[00:00:29.049] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:04:57.669] Browser ERROR   {}
+[00:00:01.654] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:01.925] Server  LOG     ✓ Ready in 1314ms
+[00:00:05.685] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:13.255] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:16.018] Server  LOG     Token already expired or invalid, clearing cookies anyway.

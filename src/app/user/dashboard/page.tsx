@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
+import { axiosInstance } from "@/lib/axiosInstance";
 
 import StatCards from "../../../components/StatCards";
 import CompanyOverview from "../../../components/CompanyOverview";
@@ -10,11 +11,31 @@ import UserManagement from "../../../components/UserManagement";
 import SubscriptionChart from "../../../components/SubscriptionChart";
 import AuditLogs from "../../../components/AuditLogs";
 
+const EXTERNAL_API =
+  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/dashboard";
+
+const getExternalHeaders = () => {
+  let token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("console_access_token")
+      : null;
+
+  if (token && token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+
+  return {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
 const DEFAULT_STATS: StatCard[] = [
-  { label:"Total Companies", value:"—", icon:"🏢", change:"—", changeType:"up",   accent:"blue"   },
-  { label:"Active Users",    value:"—", icon:"👥", change:"—", changeType:"up",   accent:"green"  },
-  { label:"Subscriptions",   value:"—", icon:"💳", change:"—", changeType:"up",   accent:"purple" },
-  { label:"Support Tickets", value:"—", icon:"📋", change:"—", changeType:"down", accent:"orange" },
+  { label: "Total Companies", value: "—", icon: "🏢", change: "—", changeType: "up",   accent: "blue"   },
+  { label: "Active Users",    value: "—", icon: "👥", change: "—", changeType: "up",   accent: "green"  },
+  { label: "Subscriptions",   value: "—", icon: "💳", change: "—", changeType: "up",   accent: "purple" },
+  { label: "Support Tickets", value: "—", icon: "📋", change: "—", changeType: "down", accent: "orange" },
 ];
 
 interface DashboardCompany {
@@ -56,115 +77,106 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-useEffect(() => {
-  const check = () => setIsMobile(window.innerWidth <= 768);
-  check();
-  window.addEventListener("resize", check);
-  return () => window.removeEventListener("resize", check);
-}, []);
+  const [isHalfScreen, setIsHalfScreen] = useState(false);
+  useEffect(() => {
+    const handleResize = () => setIsHalfScreen(window.innerWidth <= 1100);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-const [isHalfScreen, setIsHalfScreen] = useState(false);
+  useEffect(() => {
+    let alive = true;
 
-useEffect(() => {
-  const handleResize = () => {
-    setIsHalfScreen(window.innerWidth <= 1100);
-  };
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError(null);
 
-  handleResize(); // run once
-  window.addEventListener("resize", handleResize);
+      try {
+        const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
+          headers: getExternalHeaders(),
+          withCredentials: false,
+        });
 
-  return () => window.removeEventListener("resize", handleResize);
-}, []);
+        if (!alive) return;
 
-useEffect(() => {
-   const token = localStorage.getItem("accessToken"); // ⚠️ use correct key
+        // apiResponse follows the same shape as file 3:
+        // { success, message, data: {...}, meta: {...} }
+        const data = apiResponse?.data ?? apiResponse;
 
-  if (!token) {
-    console.error("No token found");
-    setError("Unauthorized");
-    setLoading(false);
-    return;
-  }
+        setStats([
+          {
+            label: "Total Companies",
+            value: Number(data.totalCompanies ?? 0).toLocaleString(),
+            icon: "🏢",
+            change: data.companyChange ?? "—",
+            changeType: "up",
+            accent: "blue",
+          },
+          {
+            label: "Active Users",
+            value: Number(data.activeUsers ?? 0).toLocaleString(),
+            icon: "👥",
+            change: data.userChange ?? "—",
+            changeType: "up",
+            accent: "green",
+          },
+          {
+            label: "Subscriptions",
+            value: Number(data.activeSubscriptions ?? 0).toLocaleString(),
+            icon: "💳",
+            change: "—",
+            changeType: "up",
+            accent: "purple",
+          },
+          {
+            label: "Support Tickets",
+            value: Number(data.auditLogCount ?? 0).toLocaleString(),
+            icon: "📋",
+            change: "—",
+            changeType: "down",
+            accent: "orange",
+          },
+        ]);
 
-  fetch("https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/dashboard", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`, 
-    },
-    credentials: "include", 
-  })
-    .then((r) => r.json())
-    .then((data) => {
-      console.log("API DATA:", data); // 🔍 first thing—inspect shape
+        setCompanies(data.companies ?? []);
+        setUsers(data.users ?? []);
+        setLogs(data.logs ?? []);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load dashboard data.";
+        if (alive) setError(message);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
 
-      setError(data.error ?? null);
-
-      setStats([
-        {
-          label: "Total Companies",
-          value: Number(data.totalCompanies ?? 0).toLocaleString(),
-          icon: "🏢",
-          change: data.companyChange ?? "—",
-          changeType: "up",
-          accent: "blue",
-        },
-        {
-          label: "Active Users",
-          value: Number(data.activeUsers ?? 0).toLocaleString(),
-          icon: "👥",
-          change: data.userChange ?? "—",
-          changeType: "up",
-          accent: "green",
-        },
-        {
-          label: "Subscriptions",
-          value: Number(data.activeSubscriptions ?? 0).toLocaleString(),
-          icon: "💳",
-          change: data.subscriptionChange ?? "—", 
-          changeType: "up",
-          accent: "purple",
-        },
-        {
-          label: "Support Tickets",
-          value: Number(data.totalTickets ?? 0).toLocaleString(), 
-          icon: "📋",
-          change: data.ticketChange ?? "—",
-          changeType: "down",
-          accent: "orange",
-        },
-      ]);
-
-      setCompanies(data.companies ?? []);
-      setUsers(data.users ?? []);
-      setLogs(data.logs ?? []);
-    })
-    .catch((err) => {
-      console.error(err);
-      setError("Failed to load dashboard data.");
-    })
-    .finally(() => {
-      setLoading(false);
-    });
-}, []);
+    loadDashboard();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   return (
-    <div style={{ padding:"28px 28px 48px", background:t.bg, minHeight:"100%", transition:"background 0.3s ease" }}>
+    <div style={{ padding: "28px 28px 48px", background: t.bg, minHeight: "100%", transition: "background 0.3s ease" }}>
       {/* Header */}
-      <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row",alignItems: isMobile ? "flex-start" : "center",justifyContent: "space-between",gap: "12px",marginBottom: "28px" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", gap: "12px", marginBottom: "28px" }}>
         <div>
-          <h1 style={{ fontWeight:800, fontSize:"1.6rem", color:t.text, margin:0, letterSpacing:"-0.02em", transition:"color 0.3s" }}>
+          <h1 style={{ fontWeight: 800, fontSize: "1.6rem", color: t.text, margin: 0, letterSpacing: "-0.02em", transition: "color 0.3s" }}>
             Dashboard Overview
           </h1>
-          <p style={{ fontSize:"0.875rem", color:t.textMuted, margin:"6px 0 0", transition:"color 0.3s" }}>
+          <p style={{ fontSize: "0.875rem", color: t.textMuted, margin: "6px 0 0", transition: "color 0.3s" }}>
             Welcome back! Here&apos;s what&apos;s happening with your platform.
           </p>
         </div>
-        <div style={{ width: isMobile ? "100%" : "auto",
-      display: "flex",
-      justifyContent: isMobile ? "flex-start" : "flex-end"
-    }}>
+        <div style={{ width: isMobile ? "100%" : "auto", display: "flex", justifyContent: isMobile ? "flex-start" : "flex-end" }}>
           <Btn
             variant="primary"
             label="Add Company Logo"
@@ -177,35 +189,22 @@ useEffect(() => {
       <StatCards stats={stats} />
 
       {error && (
-        <div style={{ marginBottom:"18px", padding:"12px 14px", borderRadius:"10px", border:`1px solid ${t.border}`, background:t.surface, color:t.textMuted, fontSize:"0.85rem" }}>
+        <div style={{ marginBottom: "18px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${t.border}`, background: t.surface, color: t.textMuted, fontSize: "0.85rem" }}>
           {error}
         </div>
       )}
 
       {/* Row 2 */}
-<div
-  style={{
-    display: "grid",
-    gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr",
-    gap: "18px",
-    marginBottom: "18px",
-  }}
->
-  <CompanyOverview companies={companies} loading={loading} error={error} />
-  <UserManagement users={users} loading={loading} error={error} />
-</div>
+      <div style={{ display: "grid", gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr", gap: "18px", marginBottom: "18px" }}>
+        <CompanyOverview companies={companies} loading={loading} error={error} />
+        <UserManagement users={users} loading={loading} error={error} />
+      </div>
 
-{/* Row 3 */}
-<div
-  style={{
-    display: "grid",
-    gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr",
-    gap: "18px",
-  }}
->
-  <SubscriptionChart />
-  <AuditLogs logs={logs} loading={loading} error={error} />
-</div>
+      {/* Row 3 */}
+      <div style={{ display: "grid", gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr", gap: "18px" }}>
+        <SubscriptionChart />
+        <AuditLogs logs={logs} loading={loading} error={error} />
+      </div>
     </div>
   );
 }
@@ -213,7 +212,7 @@ useEffect(() => {
 function Btn({
   variant,
   label,
-  onClick
+  onClick,
 }: {
   variant: "outline" | "primary";
   label: string;
@@ -222,21 +221,23 @@ function Btn({
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [hov, setHov] = useState(false);
+
   if (variant === "primary") return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{ display:"inline-flex", alignItems:"center", gap:"7px", padding:"9px 20px", borderRadius:"9px", fontSize:"0.875rem", fontWeight:600, cursor:"pointer", border:"none", background: hov?"linear-gradient(135deg,#2f4dc7,#5a35c0)":"linear-gradient(135deg,#3b5bdb,#6741d9)", color:"#fff", boxShadow: hov?"0 4px 20px rgba(59,91,219,0.4)":"0 2px 8px rgba(59,91,219,0.2)", transition:"all 0.15s", fontFamily:"inherit" }}>
+      style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 20px", borderRadius: "9px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", border: "none", background: hov ? "linear-gradient(135deg,#2f4dc7,#5a35c0)" : "linear-gradient(135deg,#3b5bdb,#6741d9)", color: "#fff", boxShadow: hov ? "0 4px 20px rgba(59,91,219,0.4)" : "0 2px 8px rgba(59,91,219,0.2)", transition: "all 0.15s", fontFamily: "inherit" }}>
       {label}
     </button>
   );
+
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{ display:"inline-flex", alignItems:"center", gap:"7px", padding:"9px 20px", borderRadius:"9px", fontSize:"0.875rem", fontWeight:600, cursor:"pointer", border:`1px solid ${hov?t.accent:t.border}`, background: hov?t.accentBg:"transparent", color: hov?t.accent:t.textMuted, transition:"all 0.15s", fontFamily:"inherit" }}>
+      style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 20px", borderRadius: "9px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", border: `1px solid ${hov ? t.accent : t.border}`, background: hov ? t.accentBg : "transparent", color: hov ? t.accent : t.textMuted, transition: "all 0.15s", fontFamily: "inherit" }}>
       {label}
     </button>
   );

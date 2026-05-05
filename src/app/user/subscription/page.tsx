@@ -2,6 +2,28 @@
 
 import { useState, useEffect } from "react";
 import "./subscription.css";
+import { axiosInstance } from "@/lib/axiosInstance";
+
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const EXTERNAL_API =
+  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/subscriptions";
+
+const getExternalHeaders = () => {
+  let token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("console_access_token")
+      : null;
+
+  if (token && token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+
+  return {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type SubStatus = "ACTIVE"|"TRIAL"|"EXPIRED"|"SUSPENDED"|"CANCELLED";
@@ -16,7 +38,7 @@ interface CustomPlan  { id:number; name:string; price:number; yearPrice:number; 
 
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const INIT_SUBS: SubRow[] = [
-  { id:1, company:"Acme Corp",       logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE",    start:"Jan 1, 2026",  end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
+  { id:1, company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
 ];
 
 const INIT_PLANS: PlanRow[] = [
@@ -27,7 +49,7 @@ const INIT_PLANS: PlanRow[] = [
 ];
 
 const HISTORY: Transaction[] = [
-  { id:1, company:"Acme Corp",       logo:"AC", col:"#6C5CE7", plan:"Enterprise", amount:7999, date:"Jan 1, 2026",  type:"Renewal", status:"SUCCESS"  },
+  { id:1, company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", amount:7999, date:"Jan 1, 2026", type:"Renewal", status:"SUCCESS" },
 ];
 
 const TYPE_COLOR: Record<TxnType, string> = {
@@ -36,6 +58,14 @@ const TYPE_COLOR: Record<TxnType, string> = {
 };
 const ICON_OPTIONS  = ["🌱","🚀","⚡","🏆","💎","🔥","🌟","🎯","🛡️","🧩"];
 const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#74B9FF","#FD79A8","#00B894","#E17055","#0984e3"];
+
+// ─── PLAN COLOR MAP ───────────────────────────────────────────────────────────
+const PLAN_COLORS: Record<string, string> = {
+  starter:    "#00CBA4",
+  basic:      "#FDCB6E",
+  pro:        "#6C5CE7",
+  enterprise: "#A29BFE",
+};
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 function Badge({ status }: { status: SubStatus }) {
@@ -145,7 +175,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
   return (
     <div className="sb-modal-overlay" onClick={onClose}>
       <div className="sb-modal" onClick={e=>e.stopPropagation()}>
-        {/* Header */}
         <div className="sb-modal__header">
           <div className="sb-modal__top">
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -167,10 +196,7 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
           </div>
         </div>
 
-        {/* Body */}
         <div className="sb-modal__body">
-
-          {/* STEP 1 */}
           {step===1 && (
             <div style={{ display:"flex", flexDirection:"column", gap:15 }}>
               <Inp label="PLAN NAME" value={name} onChange={setName} placeholder="e.g. Growth, Teams, Scale…" error={errors.name} />
@@ -184,7 +210,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
                   <span className="sb-price-preview__val">₹{ap.toLocaleString()} <span className="sb-price-preview__note">({yearPct}% off)</span></span>
                 </div>
               )}
-              {/* Icon picker */}
               <div>
                 <div className="sb-field__label" style={{ marginBottom:8 }}>PLAN ICON</div>
                 <div className="sb-icon-grid">
@@ -193,7 +218,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
                   ))}
                 </div>
               </div>
-              {/* Color picker */}
               <div>
                 <div className="sb-field__label" style={{ marginBottom:8 }}>ACCENT COLOR</div>
                 <div className="sb-color-grid">
@@ -203,7 +227,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
                   ))}
                 </div>
               </div>
-              {/* Popular toggle */}
               <div className="sb-toggle-row">
                 <div>
                   <div className="sb-toggle-row__title">Mark as Popular ★</div>
@@ -211,7 +234,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
                 </div>
                 <Tog on={popular} setOn={setPopular} />
               </div>
-              {/* Live preview */}
               {name && (
                 <div className="sb-live-preview" style={{ borderColor:`${col}40`, border:`1px solid ${col}40` }}>
                   <div className="sb-live-preview__label">LIVE PREVIEW</div>
@@ -233,7 +255,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
             </div>
           )}
 
-          {/* STEP 2 */}
           {step===2 && (
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
               <div style={{ fontSize:12, color:"var(--sb-muted)" }}>
@@ -277,7 +298,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
             </div>
           )}
 
-          {/* STEP 3 */}
           {step===3 && (
             <div style={{ display:"flex", flexDirection:"column", gap:13 }}>
               <div style={{ fontSize:12, color:"var(--sb-muted)" }}>
@@ -294,7 +314,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
                 ))}
               </div>
               <button className="sb-btn-add-feat" onClick={()=>setFeats(f=>[...f,""])}>+ Add Feature</button>
-              {/* Final preview */}
               <div className="sb-final-preview" style={{ border:`1px solid ${col}35` }}>
                 {popular && <div className="sb-plan-card__popular-banner">★ MOST POPULAR</div>}
                 <div className="sb-final-preview__inner">
@@ -325,7 +344,6 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
           )}
         </div>
 
-        {/* Footer */}
         <div className="sb-modal__footer">
           <button className="sb-btn sb-btn--ghost" onClick={step>1?back:onClose}>{step===1?"Cancel":"← Back"}</button>
           <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -342,7 +360,7 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
 }
 
 // ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
-function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boolean;activeCount:number }) {
+function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boolean; activeCount: number }) {
   const [sel, setSel] = useState<SubRow|null>(null);
   const active = subs.filter(s => s.status === "ACTIVE");
   const mrr    = active.reduce((a,s)=>a+s.amt,0);
@@ -351,13 +369,22 @@ function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boo
   return (
     <div className="sb-overview">
       <div>
-        {/* Subscription table */}
         <div className="sb-sub-table">
           <div className="sb-sub-table__head">
             <span className="sb-sub-table__head-title">All Subscriptions</span>
             <span className="sb-sub-table__head-count">{active.length} active</span>
           </div>
-          {subs.map(s=>(
+          {loading && (
+            <div style={{ padding:"24px", textAlign:"center", color:"var(--sb-muted)", fontSize:13 }}>
+              Loading subscriptions…
+            </div>
+          )}
+          {!loading && subs.length === 0 && (
+            <div style={{ padding:"24px", textAlign:"center", color:"var(--sb-muted)", fontSize:13 }}>
+              No subscriptions found.
+            </div>
+          )}
+          {!loading && subs.map(s=>(
             <div key={s.id} className={`sb-sub-row ${sel?.id===s.id?"sb-sub-row--active":""}`}
               onClick={()=>setSel(sel?.id===s.id?null:s)}>
               <div className="sb-sub-row__logo" style={{ background:s.col }}>{s.logo}</div>
@@ -371,8 +398,7 @@ function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boo
             </div>
           ))}
         </div>
-       
-        {/* Detail panel */}
+
         {sel && (
           <div className="sb-detail">
             <div className="sb-detail__top">
@@ -407,9 +433,7 @@ function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boo
         )}
       </div>
 
-      {/* Right sidebar */}
       <div className="sb-sidebar">
-        {/* MRR card */}
         <div className="sb-mrr-card">
           <div className="sb-mrr-card__label">MONTHLY RECURRING REVENUE</div>
           <div className="sb-mrr-card__value">₹{mrr.toLocaleString()}</div>
@@ -424,7 +448,6 @@ function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boo
           </div>
         </div>
 
-        {/* Plan distribution */}
         <div className="sb-dist-card">
           <div className="sb-dist-card__title">Plan Distribution</div>
           {INIT_PLANS.map(p=>{ const cnt=subs.filter(s=>s.plan===p.name).length; return (
@@ -437,13 +460,12 @@ function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boo
                 </div>
               </div>
               <div className="sb-dist-bar-bg">
-                <div className="sb-dist-bar-fill" style={{ width:`${(cnt/INIT_SUBS.length)*100}%`, background:p.col }} />
+                <div className="sb-dist-bar-fill" style={{ width:`${subs.length>0?(cnt/subs.length)*100:0}%`, background:p.col }} />
               </div>
             </div>
           );})}
         </div>
 
-        {/* Expiring soon */}
         {exp.length>0 && (
           <div className="sb-exp-card">
             <div className="sb-exp-card__head">
@@ -541,10 +563,8 @@ function Plans({ onOpenModal, customPlans, onRemoveCustom }:{ onOpenModal:()=>vo
         </div>
         <span className="sb-billing-toggle__count">{INIT_PLANS.length+customPlans.length} plans active</span>
       </div>
-
       <div className="sb-plans-grid">{INIT_PLANS.map(p=>renderCard(p,false))}</div>
       {customPlans.length>0 && <div className="sb-plans-grid--custom">{customPlans.map(p=>renderCard(p,true))}</div>}
-
       <div className="sb-cta-dashed" onClick={onOpenModal}>
         <div className="sb-cta-dashed__icon">➕</div>
         <div className="sb-cta-dashed__title">Create New Plan</div>
@@ -575,14 +595,12 @@ function History() {
           </div>
         ))}
       </div>
-
       <div className="sb-hist-filters">
         <span className="sb-hist-label">Filter:</span>
         {["ALL","New","Renewal","Upgrade","Failed","Trial","Refund"].map(t=>(
           <button key={t} onClick={()=>setTf(t)} className={`sb-hist-pill ${tf===t?"sb-hist-pill--active":""}`}>{t}</button>
         ))}
       </div>
-
       <div className="sb-hist-table">
         <div className="sb-hist-table__head">
           {["Company","Plan","Amount","Date","Type","Status"].map(h=>(
@@ -622,90 +640,97 @@ export default function Subscription() {
   const [showModal,   setShowModal]   = useState(false);
   const [customPlans, setCustomPlans] = useState<CustomPlan[]>([]);
 
-  const [subs, setSubs] = useState<SubRow[]>([]);
+  const [subs,        setSubs]        = useState<SubRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState<string | null>(null);
 
   const openModal  = () => { setTab("plans"); setShowModal(true); };
   const savePlan   = (p: CustomPlan) => setCustomPlans(prev=>[...prev, p]);
   const removePlan = (id: number) => setCustomPlans(prev=>prev.filter(p=>p.id!==id));
 
+  useEffect(() => {
+    let alive = true;
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
+    const fetchData = async () => {
       setLoading(true);
+      setError(null);
 
-      const [usersRes, countRes] = await Promise.all([
-        fetch("/api/admin/subscriptions/users"),
-        fetch("/api/admin/subscriptions/active-count"),
-      ]);
+      try {
+        const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
+          headers: getExternalHeaders(),
+          withCredentials: false,
+        });
 
-      const usersData = await usersRes.json();
-      const countData = await countRes.json();
+        if (!alive) return;
 
-    const mapped: SubRow[] = (usersData.data || []).map((u: any) => {
-  const isActive = u.isActive;
+        // Unwrap envelope: { success, message, data: [...], meta: {...} }
+        const raw: any[] = Array.isArray(apiResponse)
+          ? apiResponse
+          : Array.isArray(apiResponse?.data)
+          ? apiResponse.data
+          : [];
 
-const validStatuses: SubStatus[] = ["ACTIVE","TRIAL","EXPIRED","SUSPENDED","CANCELLED"];
+        const validStatuses: SubStatus[] = ["ACTIVE","TRIAL","EXPIRED","SUSPENDED","CANCELLED"];
+        const planMap: Record<string, PlanName> = {
+          starter: "Starter", basic: "Basic", pro: "Pro", enterprise: "Enterprise",
+        };
 
-const status: SubStatus = u.isActive
-  ? "ACTIVE"
-  : (validStatuses.includes(u.status) ? u.status : "EXPIRED");
+        const mapped: SubRow[] = raw.map((u: any) => {
+          const planKey   = (u.plan_name ?? u.plan ?? "").toLowerCase();
+          const planName  = planMap[planKey] ?? "Starter";
+          const planColor = PLAN_COLORS[planKey] ?? "#6C5CE7";
+          const companyName = u.company_name ?? u.name ?? "N/A";
 
-const planMap: Record<string, PlanName> = {
-  starter: "Starter",
-  basic: "Basic",
-  pro: "Pro",
-  enterprise: "Enterprise",
-};
+          const status: SubStatus = validStatuses.includes(u.status)
+            ? u.status
+            : u.is_active ?? u.isActive
+            ? "ACTIVE"
+            : "EXPIRED";
 
-const formattedPlan: PlanName =
-  planMap[u.plan?.toLowerCase()] || "Starter";
+          return {
+            id:      u.id ?? u.subscription_id ?? Math.random(),
+            company: companyName,
+            logo:    companyName[0].toUpperCase(),
+            col:     planColor,
+            plan:    planName,
+            status,
+            start:   u.start_date ?? u.startDate
+              ? new Date(u.start_date ?? u.startDate).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
+              : "—",
+            end:     u.end_date ?? u.renewalDate ?? u.renewal_date
+              ? new Date(u.end_date ?? u.renewalDate ?? u.renewal_date).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
+              : "—",
+            amt:   Number(u.price ?? u.amount ?? 0),
+            users: Number(u.current_users ?? u.users ?? 0),
+            seats: Number(u.max_users ?? u.seats ?? 0),
+          };
+        });
 
-  return {
-    id: u.id,
-    company: u.name || "N/A",
-    logo: (u.name || "U")[0],
-    col: "#6C5CE7",
+        if (!alive) return;
 
-    plan: formattedPlan as PlanName,
-    status,
+        const active = mapped.filter(s => s.status === "ACTIVE").length;
 
-    start: u.startDate
-      ? new Date(u.startDate).toDateString()
-      : "—",
+        // Fall back to mock data only if API returned nothing
+        setSubs(mapped.length > 0 ? mapped : INIT_SUBS);
+        setActiveCount(active);
+      } catch (err) {
+        if (!alive) return;
+        const message = err instanceof Error ? err.message : "Failed to load subscriptions.";
+        setError(message);
+        // Keep mock data visible on error so the UI isn't empty
+        setSubs(INIT_SUBS);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
 
-    end: u.renewalDate
-      ? new Date(u.renewalDate).toDateString()
-      : "—",
-
-    amt: u.price || 0,
-    users: 0,
-    seats: 0,
-  };
-});
-
-      if (mapped.length === 0) {
-      // fallback to mock data
-      setSubs(INIT_SUBS);
-    } else {
-      setSubs(mapped);
-    }
-      setActiveCount(countData.activeSubscribers);
-    } catch (err) {
-      console.error("Failed to fetch subscription data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, []);
+    fetchData();
+    return () => { alive = false; };
+  }, []);
 
   return (
     <div className="sb-root">
-      {/* Header */}
       <div className="sb-header">
         <div>
           <h1 className="sb-header__title">Subscription</h1>
@@ -717,28 +742,32 @@ const formattedPlan: PlanName =
         </div>
       </div>
 
-      {/* KPIs */}
       <div className="sb-kpi-grid">
         <KPI
           label="Active Subscriptions"
-          value={loading ? "..." : String(activeCount)}
+          value={loading ? "…" : String(activeCount)}
           delta="Live data"
           icon="💳"
           color="#6C5CE7"
         />
-        <KPI label="Monthly Revenue"      value="₹0.0L" delta="— vs last month" icon="📈" color="#00CBA4" up />
-        <KPI label="On Trial"             value="0"    delta="— expiring soon"   icon="⏳" color="#FDCB6E" />
-        <KPI label="Churned (30d)"        value="0"     delta="—s more than last"  icon="📉" color="#FF6B6B" up={false} />
+        <KPI label="Monthly Revenue"  value={loading ? "…" : `₹${subs.filter(s=>s.status==="ACTIVE").reduce((a,s)=>a+s.amt,0).toLocaleString()}`} delta="vs last month" icon="📈" color="#00CBA4" up />
+        <KPI label="On Trial"         value={loading ? "…" : String(subs.filter(s=>s.status==="TRIAL").length)}     delta="expiring soon" icon="⏳" color="#FDCB6E" />
+        <KPI label="Churned (30d)"    value={loading ? "…" : String(subs.filter(s=>s.status==="CANCELLED"||s.status==="EXPIRED").length)} delta="vs last month" icon="📉" color="#FF6B6B" up={false} />
       </div>
 
-      {/* Tabs */}
+      {error && (
+        <div style={{ margin:"0 0 16px", padding:"10px 14px", borderRadius:8, background:"rgba(255,107,107,0.1)", border:"1px solid rgba(255,107,107,0.3)", color:"#FF6B6B", fontSize:13 }}>
+          ⚠ {error}
+        </div>
+      )}
+
       <div className="sb-tabs">
         {([ ["overview","📊 Overview"],["plans","💳 Plans"],["history","🕐 History"] ] as [string,string][]).map(([k,l])=>(
           <button key={k} onClick={()=>setTab(k as typeof tab)} className={`sb-tab ${tab===k?"sb-tab--active":""}`}>{l}</button>
         ))}
       </div>
 
-      {tab==="overview" && <Overview  subs= {subs} loading= {loading}  activeCount= {activeCount}/>}
+      {tab==="overview" && <Overview subs={subs} loading={loading} activeCount={activeCount} />}
       {tab==="plans"    && <Plans onOpenModal={()=>setShowModal(true)} customPlans={customPlans} onRemoveCustom={removePlan} />}
       {tab==="history"  && <History />}
 
