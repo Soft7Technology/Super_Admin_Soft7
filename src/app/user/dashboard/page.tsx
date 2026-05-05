@@ -100,56 +100,54 @@ export default function DashboardPage() {
       setError(null);
 
       try {
-        const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
-          headers: getExternalHeaders(),
-          withCredentials: false,
-        });
+  const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
+    headers: getExternalHeaders(),
+    withCredentials: false,
+  });
 
-        if (!alive) return;
+  if (!alive) return;
 
-        // apiResponse follows the same shape as file 3:
-        // { success, message, data: {...}, meta: {...} }
-        const data = apiResponse?.data ?? apiResponse;
+  const data = apiResponse?.data ?? apiResponse;
 
-        setStats([
-          {
-            label: "Total Companies",
-            value: Number(data.totalCompanies ?? 0).toLocaleString(),
-            icon: "🏢",
-            change: data.companyChange ?? "—",
-            changeType: "up",
-            accent: "blue",
-          },
-          {
-            label: "Active Users",
-            value: Number(data.activeUsers ?? 0).toLocaleString(),
-            icon: "👥",
-            change: data.userChange ?? "—",
-            changeType: "up",
-            accent: "green",
-          },
-          {
-            label: "Subscriptions",
-            value: Number(data.activeSubscriptions ?? 0).toLocaleString(),
-            icon: "💳",
-            change: "—",
-            changeType: "up",
-            accent: "purple",
-          },
-          {
-            label: "Support Tickets",
-            value: Number(data.auditLogCount ?? 0).toLocaleString(),
-            icon: "📋",
-            change: "—",
-            changeType: "down",
-            accent: "orange",
-          },
-        ]);
+  setStats([
+  {
+    label: "Total Companies",
+    value: "-", 
+    icon: "🏢",
+    change: "—",
+    changeType: "up",
+    accent: "blue",
+  },
+  {
+    label: "Active Users",
+    value: Number(data.users_count ?? 0).toLocaleString(), 
+    icon: "👥",
+    change: "—",
+    changeType: "up",
+    accent: "green",
+  },
+  {
+    label: "Subscriptions",
+    value: "—", 
+    icon: "💳",
+    change: "—",
+    changeType: "up",
+    accent: "purple",
+  },
+  {
+    label: "Support Tickets",
+    value: "—", 
+    icon: "📋",
+    change: "—",
+    changeType: "down",
+    accent: "orange",
+  },
+]);
 
-        setCompanies(data.companies ?? []);
-        setUsers(data.users ?? []);
-        setLogs(data.logs ?? []);
-      } catch (err) {
+  setCompanies(data.companies ?? []);
+  setUsers(data.users ?? []);
+  setLogs(data.logs ?? []);
+} catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to load dashboard data.";
         if (alive) setError(message);
