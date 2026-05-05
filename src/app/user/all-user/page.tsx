@@ -3,6 +3,27 @@
 import { useState, useEffect } from "react";
 import "./all-user.css";
 
+const EXTERNAL_USERS_API =
+  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/user";
+
+  const getExternalHeaders = () => {
+  let token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("console_access_token")
+      : null;
+
+  if (token && token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+
+  return {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface User {
@@ -13,6 +34,7 @@ interface User {
   role:      string;
   status:    string;
   company:   string;
+  companyId?: number; 
   plan:      string;
   av:        string;
   login:     string;
@@ -89,6 +111,7 @@ function KPI({ label, value, icon, color, up = true }: {
 // ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
 function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
   const [tab, setTab] = useState<"info" | "stats">("info");
+  const [editOpen, setEditOpen] = useState(false);
 
   return (
     <div className="au-panel">
@@ -105,17 +128,23 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
             </div>
             <div className={`au-status-dot au-status-dot--panel ${STATUS_DOT[user.status] ?? "au-status-dot--other"}`} />
           </div>
+
           <div className="au-panel__name">{user.name}</div>
           <div className="au-panel__email">{user.email}</div>
+
           <div className="au-panel__badges">
             <Badge status={user.status} />
-            <span className="au-role-chip" style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}>
+            <span
+              className="au-role-chip"
+              style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}
+            >
               {user.role}
             </span>
             {user.pro && <span className="au-pro-badge--lg">PRO</span>}
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="au-panel__tabs">
           {([["info", "Info"], ["stats", "Stats"]] as [string, string][]).map(([k, l]) => (
             <button
@@ -128,14 +157,15 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           ))}
         </div>
 
+        {/* Info */}
         {tab === "info" && (
           <div>
             {([
-              ["Company",    user.company,    ""],
-              ["Plan",       user.plan,       "plan"],
-              ["Phone",      user.phone || "-", ""],
-              ["Joined",     user.joined,     ""],
-              ["Last Login", user.login,      ""],
+              ["Company", user.company, ""],
+              ["Plan", user.plan, "plan"],
+              ["Phone", user.phone || "-", ""],
+              ["Joined", user.joined, ""],
+              ["Last Login", user.login, ""],
             ] as [string, string, string][]).map(([label, value, type]) => (
               <div key={label} className="au-info-row">
                 <span className="au-info-row__label">{label}</span>
@@ -150,13 +180,14 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           </div>
         )}
 
+        {/* Stats */}
         {tab === "stats" && (
           <div className="au-stats-grid">
             {([
-              ["Messages",  user.msgs.toLocaleString(),         "#A29BFE"],
-              ["Campaigns", String(user.campaigns),             "#00CBA4"],
-              ["Chatbots",  String(user.chatbots),              "#FDCB6E"],
-              ["Flows",     String(Math.floor(user.msgs / 80)), "#74B9FF"],
+              ["Messages", user.msgs.toLocaleString(), "#A29BFE"],
+              ["Campaigns", String(user.campaigns), "#00CBA4"],
+              ["Chatbots", String(user.chatbots), "#FDCB6E"],
+              ["Flows", String(Math.floor(user.msgs / 80)), "#74B9FF"],
             ] as [string, string, string][]).map(([label, value, color]) => (
               <div key={label} className="au-stats-cell">
                 <div className="au-stats-cell__val" style={{ color }}>{value}</div>
@@ -166,19 +197,189 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           </div>
         )}
 
+        {/* Actions */}
         <div className="au-panel__actions">
-          <button className="au-btn au-btn--primary">Edit User</button>
+          <button className="au-btn au-btn--primary" onClick={() => setEditOpen(true)}>
+            Edit User
+          </button>
           <button className="au-btn au-btn--ghost">Reset Password</button>
-          {user.status === "SUSPENDED"
-            ? <button className="au-btn au-btn--success">Restore Account</button>
-            : <button className="au-btn au-btn--danger">Suspend User</button>
-          }
+
+          {user.status === "SUSPENDED" ? (
+            <button className="au-btn au-btn--success">Restore Account</button>
+          ) : (
+            <button className="au-btn au-btn--danger">Suspend User</button>
+          )}
         </div>
       </div>
+
+      
+      {editOpen && (
+        <EditUserModal
+          user={user}
+          onClose={() => setEditOpen(false)}
+          onUpdated={(updatedUser) => {
+            Object.assign(user, updatedUser);
+        }}
+        />
+      )}
     </div>
   );
 }
 
+
+function EditUserModal({
+  user,
+  onClose,
+  onUpdated,
+}: {
+  user: User;
+  onClose: () => void;
+  onUpdated: (u: User) => void;
+}) {
+  const [form, setForm] = useState({ ...user }); 
+
+  const handleChange = (field: string, value: any) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          companyId: form.companyId,
+          plan: form.plan,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Updated successfully");
+
+       
+        onUpdated({
+          ...user,
+          ...form,
+        });
+
+        onClose();
+      } else {
+        alert(data.error || "Update failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    }
+  };
+
+  return (
+    <div className="au-overlay" onClick={onClose}>
+      <div className="au-modal" onClick={(e) => e.stopPropagation()}>
+        
+        {/* HEADER */}
+        <div className="au-modal__header">
+          <div>
+            <div className="au-modal__title">Edit User</div>
+            <div className="au-modal__sub">Update user details</div>
+          </div>
+          <button className="au-modal__close" onClick={onClose}>×</button>
+        </div>
+
+        {/* BODY */}
+        <div className="au-modal__body">
+
+          {/* NAME */}
+          <div className="au-field">
+            <div className="au-field__label">NAME</div>
+            <input
+              type="text"
+              className="au-input"
+              value={form.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+            />
+          </div>
+
+          {/* EMAIL */}
+          <div className="au-field">
+            <div className="au-field__label">EMAIL</div>
+            <input
+              type="email"
+              className="au-input"
+              value={form.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+            />
+          </div>
+
+          {/* PHONE */}
+          <div className="au-field">
+            <div className="au-field__label">MOBILE</div>
+            <input
+              type="tel"
+              className="au-input"
+              value={form.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+            />
+          </div>
+
+          {/* COMPANY + PLAN */}
+          <div className="au-modal__grid-2">
+
+            <div className="au-field">
+  <div className="au-field__label">COMPANY</div>
+
+  <select
+    className="au-select"
+    value={form.companyId || ""}
+    onChange={(e) =>
+      handleChange("companyId", Number(e.target.value))
+    }
+  >
+    <option value="">No Company</option>
+
+    <option value={1}>Soft7</option>
+    <option value={2}>Acme Corp</option>
+    <option value={3}>Tech Solutions</option>
+
+  </select>
+</div>
+            <div className="au-field">
+              <div className="au-field__label">PLAN</div>
+              <select
+                className="au-select"
+                value={form.plan || "Starter"}
+                onChange={(e) => handleChange("plan", e.target.value)}
+              >
+                <option value="Starter">Starter</option>
+                <option value="Basic">Basic</option>
+                <option value="Pro">Pro</option>
+                <option value="Enterprise">Enterprise</option>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ACTIONS */}
+        <div className="au-modal__actions">
+          <button className="au-btn au-btn--primary" onClick={handleSave}>
+            Save Changes
+          </button>
+          <button className="au-btn au-btn--ghost" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
 // ─── INVITE MODAL ─────────────────────────────────────────────────────────────
 function InviteModal({ onClose }: { onClose: () => void }) {
   return (
@@ -304,45 +505,116 @@ export default function AllUsers() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
 
+  function timeAgo(dateString: string | null) {
+  if (!dateString) return "-";
+
+  const now = new Date();
+  const past = new Date(dateString);
+
+  const diffMs = now.getTime() - past.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  if (diffHours > 0) return `${diffHours} hr${diffHours > 1 ? "s" : ""} ago`;
+
+  return "Just now";
+}
+
   useEffect(() => {
-    let cancelled = false;
+  let cancelled = false;
 
-    async function loadUsers() {
-      setLoading(true);
-      setError(null);
+  async function loadUsers() {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const res = await fetch("/api/admin/users");
-        const data = await res.json();
+    try {
+  
+  const [usersRes, adminsRes] = await Promise.all([
+    fetch(`${EXTERNAL_USERS_API}?role=user&page=1&limit=10`, {
+      headers: getExternalHeaders(),
+    }),
+    fetch(`${EXTERNAL_USERS_API}?role=admin`, {
+      headers: getExternalHeaders(),
+    }),
+  ]);
 
-        if (cancelled) {
-          return;
-        }
+  const usersJson = await usersRes.json();
+  const adminsJson = await adminsRes.json();
 
-        if (!res.ok) {
-          throw new Error(data.error ?? `Server error ${res.status}`);
-        }
+  //check both responses
+  if (!usersRes.ok || !adminsRes.ok) {
+    throw new Error("Failed to fetch users");
+  }
 
-        setUsers(data.users ?? []);
-        setStats(data.stats ?? { totalUsers: 0, activeUsers: 0, adminUsers: 0, premiumUsers: 0 });
-        setError(data.error ?? null);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Unknown error");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  
+  const usersData = [
+    ...(usersJson?.data || []),
+    ...(adminsJson?.data || []),
+  ];
+
+
+  const mappedUsers: User[] = usersData.map((u: any) => ({
+    id: u.id,
+    name: u.name || "No Name",
+    email: u.email || "",
+    phone: u.phone || "",
+
+    role: u.role === "admin" ? "Admin" : "User",
+    status: (u.status || "active").toUpperCase(),
+
+    company: u.company?.name || "—",
+
+    plan:
+      u.plan_name === "Enterpriess" ? "Enterprise" :
+      u.plan_name === "Free Trial" ? "Starter" :
+      u.plan_name || "Starter",
+
+    av: "#6C5CE7",
+
+    login: timeAgo(u.last_login_at),
+
+    joined: u.created_at
+      ? new Date(u.created_at).toLocaleDateString()
+      : "-",
+
+    msgs: 0,
+    campaigns: 0,
+    chatbots: 0,
+
+    pro:
+      u.plan_name === "Pro" ||
+      u.plan_name === "Enterprise",
+  }));
+
+  setUsers(mappedUsers);
+
+  setStats({
+    totalUsers: mappedUsers.length,
+    activeUsers: mappedUsers.filter(u => u.status === "ACTIVE").length,
+    adminUsers: mappedUsers.filter(u => u.role === "Admin").length,
+    premiumUsers: mappedUsers.filter(u =>
+      ["Pro", "Enterprise"].includes(u.plan)
+    ).length,
+  });
+
+} catch (e) {
+  if (!cancelled) {
+    setError(e instanceof Error ? e.message : "Unknown error");
+  }
+} finally {
+      if (!cancelled) {
+        setLoading(false);
       }
     }
+  }
 
-    loadUsers();
+  loadUsers();
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
   const filteredUsers = [...users]
     .filter((user) => {

@@ -1,5 +1,58 @@
-[00:00:01.654] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-[00:00:01.925] Server  LOG     ✓ Ready in 1314ms
-[00:00:05.685] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:13.255] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:16.018] Server  LOG     Token already expired or invalid, clearing cookies anyway.
+[00:00:01.544] Server  WARN    ⚠ Turbopack's filesystem cache has been deleted because we previously detected an internal error in Turbopack. Builds or page loads may be slower as a result.
+[00:00:01.978] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:02.263] Server  LOG     ✓ Ready in 1819ms
+[00:02:39.568] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:02:53.398] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:02:58.175] Browser ERROR   Unsupported style property %s. Did you mean %s? @media (max-width: 768px) @media (maxWidth: 768px)
+[00:03:06.963] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:03:07.267] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <PopperProvider scope={{Popper:[...]}} anchor={null} onAnchorChange={function bound dispatchSetState}>
+      <SelectProvider required={undefined} scope={undefined} trigger={null} ...>
+        <SelectCollectionProvider scope={undefined}>
+          <SelectCollectionProviderProvider scope={undefined} itemMap={Map} collectionRef={{current:null}}>
+            <SelectProvider scope={undefined} onNativeOptionAdd={function Select.useCallback} ...>
+              <SelectTrigger aria-label="Filter ana..." style={{minWidth:"...", ...}}>
+                <PopperAnchor asChild={true} __scopePopper={{Popper:[...]}}>
+                  <Primitive.div asChild={true} ref={function}>
+                    <Primitive.div.Slot ref={function}>
+                      <Primitive.div.SlotClone ref={function}>
+                        <Primitive.button type="button" role="combobox" aria-controls="radix-_R_9..." ...>
+                          <button
+                            type="button"
+                            role="combobox"
+                            aria-controls="radix-_R_9dinebneitmlb_"
+                            aria-expanded={false}
+                            aria-required={undefined}
+                            aria-autocomplete="none"
+                            dir="ltr"
+                            data-state="closed"
+                            disabled={false}
+                            data-disabled={undefined}
+                            data-placeholder={undefined}
+                            aria-label="Filter analytics range"
+                            style={{minWidth:"170px",display:"inline-flex",alignItems:"center",justifyContent:"space-between",gap:"10px", ...}}
+                            onClick={function handleEvent}
+                            onPointerDown={function handleEvent}
+                            onKeyDown={function handleEvent}
+                            ref={function}
+-                           fdprocessedid="sc0tryh"
+                          >
+              ...
+        ...
+
+[01:07:40.079] Server  ERROR   GET companies error: TypeError: Cannot read properties of undefined (reading 'findMany')
+[01:07:40.268] Server  ERROR   GET companies error: TypeError: Cannot read properties of undefined (reading 'findMany')
+[01:07:40.276] Browser ERROR   Failed to fetch companies: {}
+[01:07:40.381] Browser ERROR   Failed to fetch companies: {}
