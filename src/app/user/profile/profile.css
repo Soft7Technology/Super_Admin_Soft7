@@ -14,7 +14,7 @@
   --pf-accent:          #6C5CE7;
   --pf-accent2:         #A29BFE;
   --pf-text:            #E2E4F0;
-  --pf-muted:           #565875;
+  --pf-muted:           #aab3c5;
   --pf-title:           #ffffff;
   --pf-success:         #00CBA4;
   --pf-danger:          #FF6B6B;
@@ -350,11 +350,38 @@
 
 /* ─── SELECT ─────────────────────────────────────────────── */
 .pf-select {
-  width: 100%; background: var(--pf-input-bg);
-  border: 1px solid var(--pf-border); color: var(--pf-text);
-  padding: 10px 13px; border-radius: 9px;
-  font-size: 13px; outline: none; cursor: pointer;
+  width: 100%;
+  background: var(--pf-input-bg);
+  border: 1px solid var(--pf-border);
+  color: var(--pf-text);
+  padding: 10px 13px;
+  padding-right: 36px; /* space for icon */
+  border-radius: 9px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+
   transition: border-color 0.2s, background 0.3s, color 0.3s;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+
+  
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+.dark .mc-select,
+[data-theme="dark"] .pf-select {
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='14' viewBox='0 0 20 20' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M5 7l5 5 5-5z'/></svg>");
+}
+
+/* LIGHT MODE */
+.light .mc-select,
+[data-theme="light"] .pf-select {
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' viewBox='0 0 20 20' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M5 7l5 5 5-5z'/></svg>");
 }
 .pf-select:focus { border-color: var(--pf-accent); }
 

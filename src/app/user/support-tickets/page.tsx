@@ -578,7 +578,7 @@ export default function SupportTickets() {
                   <span className="st-unread-banner__text">{totalUnread} unread</span>
                 </div>
               )}
-              <button className="st-btn-new">+ New Ticket</button>
+              <button className="st-btn-new"> New Ticket</button>
             </div>
           </div>
 
@@ -593,86 +593,88 @@ export default function SupportTickets() {
 
           <div className={`st-main-grid ${selected ? "st-main-grid--split" : "st-main-grid--full"}`}>
             <div className={`st-list-panel ${selected ? "st-list-panel--selection-open" : ""}`}>
-              <div className="st-filters">
-                <div className="st-search-wrap">
-                  <span className="st-search-icon">🔍</span>
-                  <input
-                    className="st-search-input"
-                    value={search}
-                    onChange={(event) => {
-                      setSearch(event.target.value);
-                      setPage(1);
-                    }}
-                    placeholder="Search tickets..."
-                    autoComplete="off"
-                  />
-                </div>
+              <div className="st-filters st-filters-row">
 
-                <div className="st-pills">
-                  {(["ALL", "OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"] as const).map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => {
-                        setStatusF(status);
-                        setPage(1);
-                      }}
-                      className={`st-pill ${statusF === status ? "st-pill--active" : ""}`}
-                      style={
-                        statusF === status && status !== "ALL"
-                          ? {
-                              background: `var(--st-status-${status === "IN_PROGRESS" ? "inprog" : status.toLowerCase()}-bg)`,
-                              color: `var(--st-status-${status === "IN_PROGRESS" ? "inprog" : status.toLowerCase()}-col)`,
-                              borderColor: `var(--st-status-${status === "IN_PROGRESS" ? "inprog" : status.toLowerCase()}-col)`,
-                            }
-                          : statusF === status
-                          ? {
-                              background: "var(--st-surf3)",
-                              color: "var(--st-accent2)",
-                              borderColor: "rgba(108,92,231,0.35)",
-                            }
-                          : {}
-                      }
-                    >
-                      {status === "ALL" ? "All" : STATUS_META[status as TicketStatus]?.label ?? status}
-                    </button>
-                  ))}
-                </div>
+  {/* Search */}
+  <div className="st-search-wrap">
+    <span className="st-search-icon">🔍</span>
+    <input
+      className="st-search-input"
+      value={search}
+      onChange={(e) => {
+        setSearch(e.target.value);
+        setPage(1);
+      }}
+      placeholder="Search tickets..."
+    />
+  </div>
 
-                <div className="st-priority-row">
-                  <span className="st-priority-label">Priority:</span>
-                  {(["ALL", "URGENT", "HIGH", "MEDIUM", "LOW"] as const).map((priority) => (
-                    <button
-                      key={priority}
-                      onClick={() => {
-                        setPriorityF(priority);
-                        setPage(1);
-                      }}
-                      className={`st-pill ${priorityF === priority ? "st-pill--active" : ""}`}
-                      style={
-                        priorityF === priority && priority !== "ALL"
-                          ? {
-                              background: `var(--st-pri-${priority.toLowerCase()}-bg)`,
-                              color: `var(--st-pri-${priority.toLowerCase()}-col)`,
-                              borderColor: `var(--st-pri-${priority.toLowerCase()}-col)`,
-                            }
-                          : priorityF === priority
-                          ? {
-                              background: "var(--st-surf3)",
-                              color: "var(--st-accent2)",
-                              borderColor: "rgba(108,92,231,0.35)",
-                            }
-                          : {}
-                      }
-                    >
-                      {priority === "ALL" ? "All" : PRIORITY_META[priority as TicketPriority]?.label ?? priority}
-                    </button>
-                  ))}
-                  <span className="st-filter-count">
-                    {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              </div>
+  {/* Status */}
+  <div className="st-group st-status-group">
+    {(["ALL","OPEN","IN_PROGRESS","WAITING","RESOLVED","CLOSED"] as const).map((status) => (
+      <button
+        key={status}
+        onClick={() => { setStatusF(status); setPage(1); }}
+        className={`st-pill ${statusF === status ? "st-pill--active" : ""}`}
+        style={
+          statusF === status && status !== "ALL"
+            ? {
+                background: `var(--st-status-${status === "IN_PROGRESS" ? "inprog" : status.toLowerCase()}-bg)`,
+                color: `var(--st-status-${status === "IN_PROGRESS" ? "inprog" : status.toLowerCase()}-col)`,
+                borderColor: `var(--st-status-${status === "IN_PROGRESS" ? "inprog" : status.toLowerCase()}-col)`,
+              }
+            : statusF === status
+            ? {
+                background: "var(--st-surf3)",
+                color: "var(--st-accent2)",
+                borderColor: "rgba(108,92,231,0.35)",
+              }
+            : {}
+        }
+      >
+        {status === "ALL" ? "All" : STATUS_META[status]?.label}
+      </button>
+    ))}
+  </div>
 
+  {/* Priority */}
+  <div className="st-group st-priority-group">
+    <span className="st-priority-label">Priority:</span>
+
+    {(["ALL","URGENT","HIGH","MEDIUM","LOW"] as const).map((priority) => (
+      <button
+        key={priority}
+        onClick={() => { setPriorityF(priority); setPage(1); }}
+        className={`st-pill ${priorityF === priority ? "st-pill--active" : ""}`}
+        style={
+          priorityF === priority && priority !== "ALL"
+            ? {
+                background: `var(--st-pri-${priority.toLowerCase()}-bg)`,
+                color: `var(--st-pri-${priority.toLowerCase()}-col)`,
+                borderColor: `var(--st-pri-${priority.toLowerCase()}-col)`,
+              }
+            : priorityF === priority
+            ? {
+                background: "var(--st-surf3)",
+                color: "var(--st-accent2)",
+                borderColor: "rgba(108,92,231,0.35)",
+              }
+            : {}
+        }
+      >
+        {priority === "ALL" ? "All" : PRIORITY_META[priority]?.label}
+      </button>
+    ))}
+  </div>
+
+  {/* Count */}
+  <div className="st-count-group">
+    <span className="st-filter-count">
+      {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
+    </span>
+  </div>
+
+</div>
               <div className="st-list">
                 {paginated.map((ticket) => {
                   const isActive = selected?.id === ticket.id;
