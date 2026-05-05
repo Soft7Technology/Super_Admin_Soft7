@@ -20,17 +20,22 @@ axiosInstance.interceptors.response.use(
   (response) => response, // If the request is successful, just return it
   async (error) => {
     const originalRequest = error.config;
+    const requestUrl = originalRequest?.url ?? "";
 
     const isAuthRoute =
-      originalRequest.url.includes("/api/auth/login") ||
-      originalRequest.url.includes("/api/auth/registration") ||
-      originalRequest.url?.includes("/api/auth/get-role");
+      requestUrl.includes("/api/auth/login") ||
+      requestUrl.includes("/api/auth/registration") ||
+      requestUrl.includes("/api/auth/get-role") ||
+      requestUrl.includes("/v1/auth/");
+
+    const isExternalApi = /^https?:\/\//i.test(requestUrl);
 
     // 1. Check if the error is 401 and we haven't already retried this request
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !isAuthRoute
+      !isAuthRoute &&
+      !isExternalApi
     ) {
       originalRequest._retry = true;
 
