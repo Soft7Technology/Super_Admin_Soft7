@@ -641,6 +641,12 @@ export default function Subscription() {
   const [customPlans, setCustomPlans] = useState<CustomPlan[]>([]);
 
   const [subs,        setSubs]        = useState<SubRow[]>([]);
+  const [stats, setStats] = useState({
+  active: 0,
+  revenue: 0,
+  usersWithPlans: 0,
+  expired: 0,
+});
   const [activeCount, setActiveCount] = useState(0);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
@@ -664,12 +670,14 @@ export default function Subscription() {
 
         if (!alive) return;
 
-        // Unwrap envelope: { success, message, data: [...], meta: {...} }
-        const raw: any[] = Array.isArray(apiResponse)
-          ? apiResponse
-          : Array.isArray(apiResponse?.data)
-          ? apiResponse.data
-          : [];
+       const responseData = apiResponse?.data || {};
+const raw: any[] = responseData?.subscriptions || [];
+setStats({
+  active: responseData.active_subscriptions || 0,
+  revenue: responseData.total_revenue || 0,
+  usersWithPlans: responseData.total_users_with_plans || 0,
+  expired: responseData.expired_subscriptions || 0,
+});
 
         const validStatuses: SubStatus[] = ["ACTIVE","TRIAL","EXPIRED","SUSPENDED","CANCELLED"];
         const planMap: Record<string, PlanName> = {
@@ -680,18 +688,18 @@ export default function Subscription() {
           const planKey   = (u.plan_name ?? u.plan ?? "").toLowerCase();
           const planName  = planMap[planKey] ?? "Starter";
           const planColor = PLAN_COLORS[planKey] ?? "#6C5CE7";
-          const companyName = u.company_name ?? u.name ?? "N/A";
-
-          const status: SubStatus = validStatuses.includes(u.status)
-            ? u.status
-            : u.is_active ?? u.isActive
-            ? "ACTIVE"
-            : "EXPIRED";
-
+        const companyName = u.user_name || u.user_email || "N/A";
+         const status: SubStatus = u.active
+  ? "ACTIVE"
+  : u.status === "EXPIRED"
+  ? "EXPIRED"
+  : "CANCELLED";
           return {
             id:      u.id ?? u.subscription_id ?? Math.random(),
             company: companyName,
-            logo:    companyName[0].toUpperCase(),
+            logo: companyName && companyName !== "N/A"
+  ? companyName[0].toUpperCase()
+  : "?",
             col:     planColor,
             plan:    planName,
             status,
@@ -742,19 +750,41 @@ export default function Subscription() {
         </div>
       </div>
 
-      <div className="sb-kpi-grid">
-        <KPI
-          label="Active Subscriptions"
-          value={loading ? "…" : String(activeCount)}
-          delta="Live data"
-          icon="💳"
-          color="#6C5CE7"
-        />
-        <KPI label="Monthly Revenue"  value={loading ? "…" : `₹${subs.filter(s=>s.status==="ACTIVE").reduce((a,s)=>a+s.amt,0).toLocaleString()}`} delta="vs last month" icon="📈" color="#00CBA4" up />
-        <KPI label="On Trial"         value={loading ? "…" : String(subs.filter(s=>s.status==="TRIAL").length)}     delta="expiring soon" icon="⏳" color="#FDCB6E" />
-        <KPI label="Churned (30d)"    value={loading ? "…" : String(subs.filter(s=>s.status==="CANCELLED"||s.status==="EXPIRED").length)} delta="vs last month" icon="📉" color="#FF6B6B" up={false} />
-      </div>
+     <div className="sb-kpi-grid">
+  <KPI
+    label="Active Subscriptions"
+    value={loading ? "…" : String(stats.active)}
+    delta="Live data"
+    icon="💳"
+    color="#6C5CE7"
+  />
 
+  <KPI
+    label="Monthly Revenue"
+    value={loading ? "…" : `₹${stats.revenue.toLocaleString()}`}
+    delta="vs last month"
+    icon="📈"
+    color="#00CBA4"
+    up
+  />
+
+  <KPI
+    label="On Trial"
+    value={loading ? "…" : String(stats.usersWithPlans)}
+    delta="expiring soon"
+    icon="⏳"
+    color="#FDCB6E"
+  />
+
+  <KPI
+    label="Churned (30d)"
+    value={loading ? "…" : String(stats.expired)}
+    delta="vs last month"
+    icon="📉"
+    color="#FF6B6B"
+    up={false}
+  />
+</div>
       {error && (
         <div style={{ margin:"0 0 16px", padding:"10px 14px", borderRadius:8, background:"rgba(255,107,107,0.1)", border:"1px solid rgba(255,107,107,0.3)", color:"#FF6B6B", fontSize:13 }}>
           ⚠ {error}
