@@ -41,10 +41,16 @@ export default function UserManagement({
   users = [],
   loading = false,
   error = null,
+  title = "User Management",
+  showViewAll = true,
+  onUserClick,
 }: {
   users?: DbUser[];
   loading?: boolean;
   error?: string | null;
+  title?: string;
+  showViewAll?: boolean;
+  onUserClick?: (user: DbUser) => void;
 }) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
@@ -52,10 +58,12 @@ export default function UserManagement({
   return (
     <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:"14px", overflow:"hidden", transition:"background 0.3s,border-color 0.3s" }}>
       <div style={{ padding:"18px 20px 14px", borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontWeight:700, fontSize:"0.95rem", color:t.text }}>User Management</span>
-        <span style={{ fontSize:"0.8rem", color:t.accent, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:"4px" }}>
-          View All <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </span>
+        <span style={{ fontWeight:700, fontSize:"0.95rem", color:t.text }}>{title}</span>
+        {showViewAll && (
+          <span style={{ fontSize:"0.8rem", color:t.accent, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:"4px" }}>
+            View All <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+        )}
       </div>
       {loading ? (
         <div style={{ padding:"24px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>Loading...</div>
@@ -71,7 +79,7 @@ export default function UserManagement({
             </tr>
           </thead>
           <tbody>
-            {users.map((u, i) => <Row key={u.id} u={u} last={i === users.length - 1} t={t} />)}
+            {users.map((u, i) => <Row key={u.id} u={u} last={i === users.length - 1} t={t} onUserClick={onUserClick} />)}
             {users.length === 0 && (
               <tr><td colSpan={3} style={{ padding:"20px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>No users found</td></tr>
             )}
@@ -82,17 +90,36 @@ export default function UserManagement({
   );
 }
 
-function Row({ u, last, t }: { u: DbUser; last: boolean; t: Record<string, string> }) {
+function Row({ u, last, t, onUserClick }: { u: DbUser; last: boolean; t: Record<string, string>; onUserClick?: (user: DbUser) => void }) {
   const [hov, setHov] = useState(false);
   const rs = RS[u.role]   ?? { bg:"rgba(148,163,184,0.1)", color:"#94a3b8" };
   const ss = SS[u.status] ?? { bg:"rgba(148,163,184,0.1)", color:"#64748b", dot:"#94a3b8" };
   return (
     <tr onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ borderBottom:last?"none":`1px solid ${t.border}`, background:hov?t.rowHover:"transparent", transition:"background 0.12s", cursor:"pointer" }}>
+      style={{ borderBottom:last?"none":`1px solid ${t.border}`, background:hov?t.rowHover:"transparent", transition:"background 0.12s" }}>
       <td style={{ padding:"12px 20px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
           <div style={{ width:"30px", height:"30px", borderRadius:"8px", background:u.col, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.68rem", color:"#fff", flexShrink:0 }}>{u.av}</div>
-          <span style={{ fontWeight:500, color:t.textSub }}>@{u.un}</span>
+          {onUserClick ? (
+            <button
+              onClick={() => onUserClick(u)}
+              style={{
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                margin: 0,
+                color: t.accent,
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              @{u.un}
+            </button>
+          ) : (
+            <span style={{ fontWeight:500, color:t.textSub }}>@{u.un}</span>
+          )}
         </div>
       </td>
       <td style={{ padding:"12px 20px" }}>
