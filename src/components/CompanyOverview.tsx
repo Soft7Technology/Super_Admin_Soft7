@@ -16,16 +16,23 @@ const ST: Record<string, { bg: string; color: string; dot: string }> = {
   Active:   { bg:"rgba(34,197,94,0.12)",  color:"#16a34a", dot:"#4ade80" },
   Inactive: { bg:"rgba(148,163,184,0.1)", color:"#64748b", dot:"#94a3b8" },
   Trial:    { bg:"rgba(251,191,36,0.12)", color:"#d97706", dot:"#fbbf24" },
+  Suspended:{ bg:"rgba(239,68,68,0.10)",  color:"#dc2626", dot:"#f87171" },
 };
 
 export default function CompanyOverview({
   companies = [],
   loading = false,
   error = null,
+  title = "Company Overview",
+  showViewAll = true,
+  onCompanyClick,
 }: {
   companies?: Company[];
   loading?: boolean;
   error?: string | null;
+  title?: string;
+  showViewAll?: boolean;
+  onCompanyClick?: (company: Company) => void;
 }) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
@@ -33,10 +40,12 @@ export default function CompanyOverview({
   return (
     <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:"14px", overflow:"hidden", transition:"background 0.3s,border-color 0.3s" }}>
       <div style={{ padding:"18px 20px 14px", borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontWeight:700, fontSize:"0.95rem", color:t.text }}>Company Overview</span>
-        <span style={{ fontSize:"0.8rem", color:t.accent, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:"4px" }}>
-          View All <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </span>
+        <span style={{ fontWeight:700, fontSize:"0.95rem", color:t.text }}>{title}</span>
+        {showViewAll && (
+          <span style={{ fontSize:"0.8rem", color:t.accent, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:"4px" }}>
+            View All <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+        )}
       </div>
       {loading ? (
         <div style={{ padding:"24px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>Loading...</div>
@@ -52,7 +61,7 @@ export default function CompanyOverview({
             </tr>
           </thead>
           <tbody>
-            {companies.map((co, i) => <Row key={co.id} co={co} last={i === companies.length - 1} t={t} />)}
+            {companies.map((co, i) => <Row key={co.id} co={co} last={i === companies.length - 1} t={t} onCompanyClick={onCompanyClick} />)}
             {companies.length === 0 && (
               <tr><td colSpan={4} style={{ padding:"20px", textAlign:"center", color:t.textFaint, fontSize:"0.85rem" }}>No companies found</td></tr>
             )}
@@ -63,16 +72,35 @@ export default function CompanyOverview({
   );
 }
 
-function Row({ co, last, t }: { co: Company; last: boolean; t: Record<string, string> }) {
+function Row({ co, last, t, onCompanyClick }: { co: Company; last: boolean; t: Record<string, string>; onCompanyClick?: (company: Company) => void }) {
   const [hov, setHov] = useState(false);
   const s = ST[co.status] ?? ST["Inactive"];
   return (
     <tr onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ borderBottom:last?"none":`1px solid ${t.border}`, background:hov?t.rowHover:"transparent", transition:"background 0.12s", cursor:"pointer" }}>
+      style={{ borderBottom:last?"none":`1px solid ${t.border}`, background:hov?t.rowHover:"transparent", transition:"background 0.12s" }}>
       <td style={{ padding:"13px 20px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
           <div style={{ width:"30px", height:"30px", borderRadius:"8px", background:co.col, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.68rem", color:"#fff", flexShrink:0 }}>{co.ini}</div>
-          <span style={{ fontWeight:600, color:t.textSub }}>{co.name}</span>
+          {onCompanyClick ? (
+            <button
+              onClick={() => onCompanyClick(co)}
+              style={{
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                margin: 0,
+                color: t.accent,
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              {co.name}
+            </button>
+          ) : (
+            <span style={{ fontWeight:600, color:t.textSub }}>{co.name}</span>
+          )}
         </div>
       </td>
       <td style={{ padding:"13px 20px" }}>

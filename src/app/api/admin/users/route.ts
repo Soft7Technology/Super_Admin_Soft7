@@ -14,6 +14,23 @@ function avatarColor(id: number) {
   return AVATAR_PALETTE[id % AVATAR_PALETTE.length];
 }
 
+function parseTake(limit: string | null, fallback: number) {
+  if (!limit) {
+    return fallback;
+  }
+
+  if (limit.toLowerCase() === "all") {
+    return undefined;
+  }
+
+  const parsed = Number(limit);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.min(Math.floor(parsed), 5000);
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -21,6 +38,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status") ?? "ALL";
     const role   = searchParams.get("role")   ?? "ALL";
     const sort   = searchParams.get("sort")   ?? "name";
+    const take   = parseTake(searchParams.get("limit"), 500);
 
     // ── Build WHERE clause ──────────────────────────────────────────────────
     const where: Record<string, unknown> = {};
@@ -71,7 +89,7 @@ export async function GET(req: NextRequest) {
         orderBy: sort === "msgs"
           ? { messages: { _count: "desc" } }
           : { name: "asc" },
-        take: 500,
+        ...(typeof take === "number" ? { take } : {}),
       }),
       prisma.user.count(),
       prisma.user.count({ where: { status: "ACTIVE" } }),
