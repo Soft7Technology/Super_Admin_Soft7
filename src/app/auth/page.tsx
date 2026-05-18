@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 type AuthView = "login" | "register" | "forgot";
 type ForgotStep = "request" | "verify" | "reset";
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const AUTH_BASE = "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/auth";
+const AUTH_BASE = "https://hostapi.soft7.in/v1/auth";
 
 const getExternalHeaders = (includeAuth = false) => {
   let token =
@@ -332,7 +332,24 @@ const loginMutation = useMutation({
       );
       return data;
     } catch (error: any) {
-      throw error;
+      const status = error?.response?.status;
+      const message = String(
+        error?.response?.data?.message ?? error?.response?.data?.error ?? ""
+      ).toLowerCase();
+      const canTryLocalLogin =
+        status === 401 &&
+        identifier.includes("@") &&
+        (message.includes("invalid") || message.includes("credential"));
+
+      if (!canTryLocalLogin) {
+        throw error;
+      }
+
+      const { data } = await axiosInstance.post("/api/auth/login", {
+        email: identifier,
+        password,
+      });
+      return data;
     }
   },
   onMutate: () => setLoginErrors({}),

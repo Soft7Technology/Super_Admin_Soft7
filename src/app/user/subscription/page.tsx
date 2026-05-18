@@ -6,7 +6,7 @@ import { axiosInstance } from "@/lib/axiosInstance";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
-  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/subscriptions";
+  "https://hostapi.soft7.in/v1/admin/companies/subscriptions";
 
 const getExternalHeaders = () => {
   let token =
