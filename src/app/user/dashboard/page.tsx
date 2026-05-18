@@ -12,7 +12,7 @@ import SubscriptionChart from "../../../components/SubscriptionChart";
 import AuditLogs from "../../../components/AuditLogs";
 
 const EXTERNAL_API =
-  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/dashboard";
+  "https://hostapi.soft7.in/v1/admin/companies/dashboard";
 
 const getExternalHeaders = () => {
   let token =

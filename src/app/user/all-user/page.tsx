@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import "./all-user.css";
 
 const EXTERNAL_USERS_API =
-  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/user";
+  "https://hostapi.soft7.in/v1/admin/companies/user";
 
   const getExternalHeaders = () => {
   let token =
@@ -548,11 +548,10 @@ export default function AllUsers() {
   }
 
   
-  const usersData = [
-    ...(usersJson?.data || []),
-    ...(adminsJson?.data || []),
-  ];
-
+ const usersData = [
+  ...(usersJson?.data?.data || []),
+  ...(adminsJson?.data?.data || []),
+];
 
   const mappedUsers: User[] = usersData.map((u: any) => ({
     id: u.id,
@@ -563,7 +562,7 @@ export default function AllUsers() {
     role: u.role === "admin" ? "Admin" : "User",
     status: (u.status || "active").toUpperCase(),
 
-    company: u.company?.name || "—",
+  company: u.company_name || "—",
 
     plan:
       u.plan_name === "Enterpriess" ? "Enterprise" :
