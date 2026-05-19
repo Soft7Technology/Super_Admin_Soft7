@@ -111,7 +111,7 @@ export default function SubscriptionChart() {
         </div>
         <div style={{ display:"flex", gap:"6px" }}>
           {["6M","1Y","All"].map(p=>(
-            <button key={p} style={{ padding:"4px 10px", borderRadius:"6px", fontSize:"0.72rem", fontWeight:600, cursor:"pointer", border:`1px solid ${t.border}`, background:p==="1Y"?t.accentBg:"transparent", color:p==="1Y"?t.accent:t.textMuted, fontFamily:"inherit", transition:"all 0.15s" }}>{p}</button>
+            <button key={p} style={{ padding:"4px 10px", borderRadius:"6px", fontSize:"0.72rem", fontWeight:600, cursor:"pointer", border:`1px solid ${t.border}`, background:p==="1Y"?t.accentBg:"transparent", color:p==="1Y"?t.accent:t.textMuted, fontFamily:"'Inter', sans-serif", transition:"all 0.15s" }}>{p}</button>
           ))}
         </div>
       </div>

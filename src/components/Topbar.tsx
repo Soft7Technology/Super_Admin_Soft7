@@ -4,7 +4,7 @@ import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
 import NotificationModal from "./NotificationModal";
 
-export default function Topbar({ title="Dashboard", adminName="Super Admin", onMenuClick  }: { title?:string; adminName?:string; onMenuClick?: () => void; }) {
+export default function Topbar({ title="Dashboard", adminName="Admin", onMenuClick  }: { title?:string; adminName?:string; onMenuClick?: () => void; }) {
   const { isDark, toggleTheme } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [sf, setSf] = useState(false);
@@ -55,7 +55,6 @@ const pathname = usePathname();
 useEffect(() => {
   setSearch("");
 }, [pathname]);
-
   const getTitle = () => {
   if (pathname.includes("dashboard")) return "Dashboard";
   if (pathname.includes("profile")) return "Profile";
@@ -89,8 +88,39 @@ const filteredPages = pages.filter((p) =>
     ☰
   </button>
 )}
+       <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    minWidth: "fit-content",
+    flexShrink: 0,
+    marginLeft: "-24px",
+  }}
+>
+  <div
+    style={{
+      width: "5px",
+      height: isMobile ? "26px" : "32px",
+      borderRadius: "999px",
+      background: "linear-gradient(180deg,#10b981,#14b8a6)",
+    }}
+  />
 
-      <div style={{ fontWeight:700, fontSize:"1.05rem", color:t.text, minWidth:"120px", flexShrink:0, transition:"color 0.3s" }}>{getTitle()}</div>
+  <div
+   style={{
+  fontSize: isMobile ? "1.1rem" : "1.5rem",
+  fontWeight: 900,
+  letterSpacing: 0,
+  color: isDark ? "#f8fafc" : "#111827",
+  fontFamily: "'Inter', sans-serif",
+  lineHeight: 1.2,
+  paddingBottom: "2px",
+}}
+  >
+    {getTitle()}
+  </div>
+</div>
 
       {/* Search */}
       <div style={{ position: "relative", flex:1, maxWidth:"420px" }}>
@@ -173,7 +203,6 @@ const filteredPages = pages.filter((p) =>
   cursor: "pointer",
   borderBottom: `1px solid ${t.border}`,
   fontSize: isMobile ? "0.75rem" : "0.875rem",
-  color: t.text,
 }}
           >
             🔍 {item.name}
@@ -199,7 +228,7 @@ const filteredPages = pages.filter((p) =>
           style={{ width:"40px", height:"40px", borderRadius:"10px", background:t.iconBox, border:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.2s" }}>
           {isDark
             ? /* Sun */ <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            : /* Moon */ <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6741d9" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            : /* Moon */ <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           }
         </button>
 
@@ -216,14 +245,14 @@ const filteredPages = pages.filter((p) =>
         {/* Avatar */}
         <div style={{ position:"relative" }}>
           <div onClick={()=>setDd(p=>!p)} style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer", padding:"5px 10px 5px 5px", borderRadius:"10px", background:t.iconBox, border:`1px solid ${t.border}`, transition:"all 0.15s" }}>
-            <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:"linear-gradient(135deg,#3b5bdb,#6741d9)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.78rem", color:"#fff" }}>
+            <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:"linear-gradient(135deg,#10b981,#14b8a6)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.78rem", color:"#fff" }}>
               {adminName.split(" ").map(word=> word[0]).join("").toUpperCase()}
             </div>
             <div>
               <div style={{ fontSize:"0.82rem", fontWeight:600, color:t.text, lineHeight:1.2, transition:"color 0.3s" }}>{adminName}</div>
-              <div style={{ fontSize:"0.65rem", color:t.accent, fontWeight:600 }}>Soft7</div>
+              <div style={{ fontSize:"0.65rem", color:t.accent, fontWeight:600 }}>Administrator</div>
             </div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isDark ? "#e2e8f0" : t.textFaint} strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textFaint} strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
 
           {dd && (

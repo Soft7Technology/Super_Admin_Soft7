@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 type AuthView = "login" | "register" | "forgot";
 type ForgotStep = "request" | "verify" | "reset";
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const AUTH_BASE = "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/auth";
+const AUTH_BASE = "https://hostapi.soft7.in/v1/auth";
 
 const getExternalHeaders = (includeAuth = false) => {
   let token =
@@ -53,25 +53,23 @@ const useMediaQuery = (query: string) => {
 };
 
 function maskEmail(email: string) {
-  if (!email || !email.includes("@")) return email;
+  const str = String(email ?? "");
+  if (!str || !str.includes("@")) return str;
 
-  const [name, domain] = email.split("@");
-
+  const [name, domain] = str.split("@");
   if (name.length <= 2) return `**@${domain}`;
 
   const visible = name.slice(0, 2);
-  const hidden = "*".repeat(name.length - 2);
-
+  const hidden = "*".repeat(Math.max(0, name.length - 2));
   return `${visible}${hidden}@${domain}`;
-  
 }
 
 function maskPhone(phone: string) {
-  if (!phone || phone.length < 4) return "*".repeat(phone.length || 10);
+  const str = String(phone ?? "");           // ensure it's always a string
+  if (!str || str.length < 4) return "*".repeat(Math.max(0, str.length));
 
-  const visible = phone.slice(-4);
-  const hidden = "*".repeat(phone.length - 4);
-
+  const visible = str.slice(-4);
+  const hidden = "*".repeat(Math.max(0, str.length - 4));
   return `${hidden}${visible}`;
 }
 
@@ -332,7 +330,24 @@ const loginMutation = useMutation({
       );
       return data;
     } catch (error: any) {
-      throw error;
+      const status = error?.response?.status;
+      const message = String(
+        error?.response?.data?.message ?? error?.response?.data?.error ?? ""
+      ).toLowerCase();
+      const canTryLocalLogin =
+        status === 401 &&
+        identifier.includes("@") &&
+        (message.includes("invalid") || message.includes("credential"));
+
+      if (!canTryLocalLogin) {
+        throw error;
+      }
+
+      const { data } = await axiosInstance.post("/api/auth/login", {
+        email: identifier,
+        password,
+      });
+      return data;
     }
   },
   onMutate: () => setLoginErrors({}),
