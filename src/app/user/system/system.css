@@ -15,7 +15,7 @@
   --ss-accent2:        #A29BFE;
   --ss-text:           #E2E4F0;
   --ss-text-sub:       #B0B3C6;
-  --ss-muted:          #aab3c5;
+  --ss-muted:          #565875;
   --ss-title:          #ffffff;
   --ss-success:        #00CBA4;
   --ss-danger:         #FF6B6B;
@@ -117,7 +117,7 @@
 .ss-root button,
 .ss-root input,
 .ss-root select,
-.ss-root textarea                  { font-family: inherit; }
+.ss-root textarea                  { font-family: "'Inter', sans-serif"; }
 .ss-root select option             { background: var(--ss-select-opt-bg); color: var(--ss-text); }
 
 /* ─── PAGE WRAPPER ───────────────────────────────────────── */
@@ -348,32 +348,11 @@
   border: 1px solid var(--ss-border);
   color: var(--ss-text);
   padding: 9px 12px;
-  padding-right: 36px; /* space for icon */
   border-radius: 9px;
   font-size: 12px;
   outline: none;
   cursor: pointer;
-
   transition: border-color 0.2s, background 0.3s, color 0.3s;
-
- 
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px;
-}
-
-.dark .ss-select,
-[data-theme="dark"] .ss-select {
-  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='14' viewBox='0 0 20 20' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M5 7l5 5 5-5z'/></svg>");
-}
-
-
-.light .ss-select,
-[data-theme="light"] .ss-select {
-  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' viewBox='0 0 20 20' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M5 7l5 5 5-5z'/></svg>");
 }
 .ss-select:focus { border-color: var(--ss-accent); }
 

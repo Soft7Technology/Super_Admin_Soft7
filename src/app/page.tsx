@@ -14,7 +14,7 @@ export default function RootPage() {
   }, [router]);
   return (
     <div style={{ display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#070b14",flexDirection:"column",gap:"16px" }}>
-      <div style={{ width:"36px",height:"36px",border:"3px solid #1c2333",borderTop:"3px solid #4dabf7",borderRadius:"50%",animation:"spin 0.8s linear infinite" }} />
+      <div style={{ width:"36px",height:"36px",border:"2px solid #1c2333",borderTop:"2px solid #4dabf7",borderRadius:"50%",animation:"spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );

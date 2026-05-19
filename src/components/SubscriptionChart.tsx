@@ -339,7 +339,7 @@ export default function SubscriptionChart() {
               background: t.surface2,
               color: t.textSub,
               fontSize: "0.8rem",
-              fontFamily: "inherit",
+              fontFamily: "'Inter', sans-serif",
               cursor: "pointer",
             }}
           >

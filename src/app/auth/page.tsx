@@ -53,25 +53,23 @@ const useMediaQuery = (query: string) => {
 };
 
 function maskEmail(email: string) {
-  if (!email || !email.includes("@")) return email;
+  const str = String(email ?? "");
+  if (!str || !str.includes("@")) return str;
 
-  const [name, domain] = email.split("@");
-
+  const [name, domain] = str.split("@");
   if (name.length <= 2) return `**@${domain}`;
 
   const visible = name.slice(0, 2);
-  const hidden = "*".repeat(name.length - 2);
-
+  const hidden = "*".repeat(Math.max(0, name.length - 2));
   return `${visible}${hidden}@${domain}`;
-  
 }
 
 function maskPhone(phone: string) {
-  if (!phone || phone.length < 4) return "*".repeat(phone.length || 10);
+  const str = String(phone ?? "");           // ensure it's always a string
+  if (!str || str.length < 4) return "*".repeat(Math.max(0, str.length));
 
-  const visible = phone.slice(-4);
-  const hidden = "*".repeat(phone.length - 4);
-
+  const visible = str.slice(-4);
+  const hidden = "*".repeat(Math.max(0, str.length - 4));
   return `${hidden}${visible}`;
 }
 
