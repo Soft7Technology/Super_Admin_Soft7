@@ -1,6 +1,7 @@
 "use client";
-
-import { useState } from "react";
+import React, { useState } from "react";
+import type { Theme } from "../types/auth.types";
+import type { useForgotPassword } from "../hooks/useForgotPassword";
 import {
   X,
   Lock,
@@ -10,8 +11,6 @@ import {
   Phone,
 } from "lucide-react";
 
-import type { Theme } from "../types/auth.types";
-import type { useForgotPassword } from "../hooks/useForgotPassword";
 
 type ForgotProps = ReturnType<typeof useForgotPassword> & {
   onClose: () => void;
