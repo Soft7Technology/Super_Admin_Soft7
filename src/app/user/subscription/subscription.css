@@ -14,7 +14,7 @@
   --sb-accent:   #6C5CE7;
   --sb-accent2:  #A29BFE;
   --sb-text:     #E2E4F0;
-  --sb-muted:     #aab3c5;
+  --sb-muted:    #565875;
   --sb-title:    #ffffff;
   --sb-success:  #00CBA4;
   --sb-danger:   #FF6B6B;
@@ -168,7 +168,7 @@
 .sb-root ::-webkit-scrollbar       { width: 4px; }
 .sb-root ::-webkit-scrollbar-thumb { background: var(--sb-scrollbar); border-radius: 4px; }
 .sb-root ::placeholder             { color: var(--sb-placeholder); }
-.sb-root button, .sb-root input, .sb-root select { font-family: inherit; }
+.sb-root button, .sb-root input, .sb-root select { font-family: "'Inter', sans-serif"; }
 .sb-root select option             { background: var(--sb-select-bg); }
 .sb-root input:-webkit-autofill,
 .sb-root input:-webkit-autofill:hover,
