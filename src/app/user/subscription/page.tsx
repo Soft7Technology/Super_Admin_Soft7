@@ -26,7 +26,12 @@ const getExternalHeaders = () => {
 };
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-type SubStatus = "ACTIVE"|"TRIAL"|"EXPIRED"|"SUSPENDED"|"CANCELLED";
+type SubStatus =
+  | "ACTIVE"
+  | "TRIAL"
+  | "EXPIRED"
+  | "SUSPENDED"
+  | "CANCELLED";
 type PlanName  = "Starter"|"Basic"|"Pro"|"Enterprise";
 type TxnStatus = "SUCCESS"|"FAILED"|"REFUNDED";
 type TxnType   = "New"|"Renewal"|"Upgrade"|"Failed"|"Trial"|"Refund";
@@ -71,20 +76,16 @@ const PLAN_COLORS: Record<string, string> = {
 function Badge({ status }: { status: SubStatus }) {
   const labels: Record<SubStatus, string> = {
     ACTIVE: "Active",
-    PENDING: "Pending",
-    COMPLETED: "Active",
-    EXPIRED: "Expired",
     TRIAL: "Trial",
+    EXPIRED: "Expired",
     SUSPENDED: "Suspended",
     CANCELLED: "Cancelled",
   };
-  const label = labels[status];
-
-  const cls = status === "PENDING" ? "SUSPENDED" : status === "COMPLETED" ? "ACTIVE" : status;
 
   return (
     <span className={`sb-badge sb-badge--${status}`}>
-      <span className="sb-badge__dot" />{status[0]+status.slice(1).toLowerCase()}
+      <span className="sb-badge__dot" />
+      {labels[status]}
     </span>
   );
 }

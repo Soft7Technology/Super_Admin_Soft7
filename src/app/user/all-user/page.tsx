@@ -90,6 +90,7 @@ function KPI({ label, value, icon, color }: {
 // ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
 function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
   const [tab, setTab] = useState<"info" | "stats">("info");
+  const [editOpen, setEditOpen] = useState(false);
 
   return (
     <div className="au-panel">
