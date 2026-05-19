@@ -1,17 +1,16 @@
 ﻿"use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
+import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
-
-import StatCards from "../../../components/StatCards";
 import CompanyOverview from "../../../components/CompanyOverview";
 import UserManagement from "../../../components/UserManagement";
-import SubscriptionChart from "../../../components/SubscriptionChart";
+import PlatformGrowthChart from "../../../components/PlatformGrowthChart";
 import AuditLogs from "../../../components/AuditLogs";
 
-const EXTERNAL_API =
+const DASHBOARD_API =
   "https://hostapi.soft7.in/v1/admin/companies/dashboard";
 
 const getExternalHeaders = () => {
@@ -32,134 +31,229 @@ const getExternalHeaders = () => {
 };
 
 const DEFAULT_STATS: StatCard[] = [
-  { label: "Total Companies", value: "—", icon: "🏢", change: "—", changeType: "up",   accent: "blue"   },
-  { label: "Active Users",    value: "—", icon: "👥", change: "—", changeType: "up",   accent: "green"  },
-  { label: "Subscriptions",   value: "—", icon: "💳", change: "—", changeType: "up",   accent: "purple" },
-  { label: "Support Tickets", value: "—", icon: "📋", change: "—", changeType: "down", accent: "orange" },
+  { label: "Campaigns", value: "—", icon: "📢", change: "—", changeType: "up", accent: "blue" },
+  { label: "Users",     value: "—", icon: "👥", change: "—", changeType: "up", accent: "green" },
+  { label: "Chatbots",  value: "—", icon: "🤖", change: "—", changeType: "up", accent: "purple" },
+  { label: "Messages",  value: "—", icon: "💬", change: "—", changeType: "up", accent: "orange" },
 ];
 
 interface DashboardCompany {
-  id: string;
-  name: string;
-  ini: string;
-  col: string;
-  status: string;
-  plan: string;
-  users: number;
+  id: string; name: string; ini: string; col: string;
+  status: string; plan: string; users: number;
 }
-
 interface DashboardUser {
-  id: string;
-  un: string;
-  role: string;
-  status: string;
-  av: string;
-  col: string;
+  id: string; un: string; role: string; status: string; av: string; col: string;
 }
-
 interface DashboardLog {
-  id: string;
-  msg: string;
-  actor: string;
-  time: string;
-  sev: string;
+  id: string; msg: string; actor: string; time: string; sev: string;
 }
 
-export default function DashboardPage() {
-  const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
-  const router = useRouter();
-  const [stats, setStats] = useState<StatCard[]>(DEFAULT_STATS);
-  const [companies, setCompanies] = useState<DashboardCompany[]>([]);
-  const [users, setUsers] = useState<DashboardUser[]>([]);
-  const [logs, setLogs] = useState<DashboardLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [isMobile, setIsMobile] = useState(false);
+function useWindowWidth() {
+  const [width, setWidth] = useState<number>(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
-  const [isHalfScreen, setIsHalfScreen] = useState(false);
-  useEffect(() => {
-    const handleResize = () => setIsHalfScreen(window.innerWidth <= 1100);
+    const handleResize = () => setWidth(window.innerWidth);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+  return width;
+}
+
+/* ─── Stat Meta ───────────────────────────────────────────── */
+const STAT_META = [
+  { icon: "📢", label: "Campaigns", accent: "#0d9488", glow: "rgba(13,148,136,0.18)" },
+  { icon: "👥", label: "Users",     accent: "#6366f1", glow: "rgba(99,102,241,0.18)" },
+  { icon: "🤖", label: "Chatbots",  accent: "#f59e0b", glow: "rgba(245,158,11,0.18)" },
+  { icon: "💬", label: "Messages",  accent: "#10b981", glow: "rgba(16,185,129,0.18)" },
+];
+
+/* ─── Inline StatCards ────────────────────────────────────── */
+function InlineStatCards({
+  stats,
+  isDark,
+  isMobile,
+}: {
+  stats: StatCard[];
+  isDark: boolean;
+  isMobile: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
+        gap: "16px",
+        marginBottom: "28px",
+      }}
+    >
+      {stats.map((s, i) => {
+        const meta = STAT_META[i] ?? STAT_META[0];
+        return (
+          <div
+            key={s.label}
+            style={{
+              background: isDark ? "rgba(15,17,32,0.9)" : "#ffffff",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+              borderRadius: "14px",
+              padding: "20px 22px",
+              position: "relative",
+              overflow: "hidden",
+              transition: "box-shadow 0.2s, transform 0.2s",
+              boxShadow: isDark
+                ? "0 2px 8px rgba(0,0,0,0.25)"
+                : "0 1px 6px rgba(0,0,0,0.06)",
+            }}
+          >
+            {/* Soft orb */}
+            <div
+              style={{
+                position: "absolute", top: -10, right: -10,
+                width: 64, height: 64, borderRadius: "50%",
+                background: meta.glow, pointerEvents: "none",
+              }}
+            />
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              alignItems: "flex-start", marginBottom: "14px",
+            }}>
+              <span style={{
+                fontSize: "11px", fontWeight: 600, letterSpacing: "0.04em",
+                color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
+                textTransform: "uppercase",
+              }}>
+                {meta.label}
+              </span>
+              <div style={{
+                width: "32px", height: "32px", borderRadius: "9px",
+                background: `${meta.accent}18`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "15px",
+              }}>
+                {meta.icon}
+              </div>
+            </div>
+            <div style={{
+              fontSize: "30px", fontWeight: 800,
+              color: isDark ? "#f1f5f9" : "#0f172a",
+              letterSpacing: "-0.03em", lineHeight: 1,
+              marginBottom: "6px",
+            }}>
+              {s.value}
+            </div>
+            <div style={{
+              height: "2px", width: "36px",
+              borderRadius: "2px",
+              background: meta.accent,
+              opacity: 0.7,
+            }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Section wrapper ─────────────────────────────────────── */
+function Section({
+  children,
+  isDark,
+  isMobile,
+}: {
+  children: React.ReactNode;
+  isDark: boolean;
+  isMobile: boolean;
+}) {
+  return (
+    <div
+      style={{
+        background: isDark ? "rgba(15,17,32,0.85)" : "#ffffff",
+        border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+        borderRadius: "16px",
+        padding: isMobile ? "20px" : "26px 28px",
+        boxShadow: isDark
+          ? "0 2px 10px rgba(0,0,0,0.22)"
+          : "0 1px 8px rgba(0,0,0,0.06)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─── Dashboard Page ──────────────────────────────────────── */
+export default function DashboardPage() {
+  const { isDark } = useTheme();
+  const t = useMemo(() => (isDark ? tokens.dark : tokens.light), [isDark]);
+  const router = useRouter();
+  const width = useWindowWidth();
+  const isMobile     = width <= 768;
+  const isHalfScreen = width <= 1100;
+
+  const [stats, setStats]           = useState<StatCard[]>(DEFAULT_STATS);
+  const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
+  const [users, setUsers]           = useState<DashboardUser[]>([]);
+  const [logs, setLogs]             = useState<DashboardLog[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
 
   useEffect(() => {
-    let alive = true;
-
+    let mounted = true;
     const loadDashboard = async () => {
-      setLoading(true);
-      setError(null);
-
       try {
-  const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
-    headers: getExternalHeaders(),
-    withCredentials: false,
-  });
+        setLoading(true);
+        setError(null);
+        const { data: apiResponse } = await axiosInstance.get(DASHBOARD_API, {
+          headers: getExternalHeaders(),
+          withCredentials: false,
+        });
+        if (!mounted) return;
+        const data = apiResponse?.data ?? apiResponse;
 
-  if (!alive) return;
+        setStats([
+          { label: "Campaigns", value: Number(data.campaigns_count ?? 0).toLocaleString(), icon: "📢", change: "—", changeType: "up", accent: "blue" },
+          { label: "Users",     value: Number(data.users_count ?? 0).toLocaleString(),     icon: "👥", change: "—", changeType: "up", accent: "green" },
+          { label: "Chatbots",  value: Number(data.chatbot_count ?? 0).toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
+          { label: "Messages",  value: Number(data.total_messages ?? 0).toLocaleString(),  icon: "💬", change: "—", changeType: "up", accent: "orange" },
+        ]);
 
-  const data = apiResponse?.data ?? apiResponse;
+        setCompanies([
+          { id:"1", name:"Acme Corp",   ini:"AC", col:"#0d9488", status:"Active", plan:"Enterprise", users:248 },
+          { id:"2", name:"Nova Labs",   ini:"NL", col:"#14b8a6", status:"Active", plan:"Basic",      users:132 },
+          { id:"3", name:"Vertex AI",   ini:"VA", col:"#059669", status:"Active", plan:"Free Trial", users:54  },
+          { id:"4", name:"Pulse Media", ini:"PM", col:"#0d9488", status:"Active", plan:"Enterprise", users:89  },
+        ]);
 
-  setStats([
-  {
-    label: "Total Companies",
-    value: "-", 
-    icon: "🏢",
-    change: "—",
-    changeType: "up",
-    accent: "blue",
-  },
-  {
-    label: "Active Users",
-    value: Number(data.users_count ?? 0).toLocaleString(), 
-    icon: "👥",
-    change: "—",
-    changeType: "up",
-    accent: "green",
-  },
-  {
-    label: "Subscriptions",
-    value: "—", 
-    icon: "💳",
-    change: "—",
-    changeType: "up",
-    accent: "purple",
-  },
-  {
-    label: "Support Tickets",
-    value: "—", 
-    icon: "📋",
-    change: "—",
-    changeType: "down",
-    accent: "orange",
-  },
-]);
+        setUsers([
+          { id:"1", un:"Sarah Johnson", role:"Admin", status:"Active", av:"SJ", col:"#0d9488" },
+          { id:"2", un:"Michael Chen",  role:"User",  status:"Active", av:"MC", col:"#14b8a6" },
+          { id:"3", un:"Emily Davis",   role:"Admin", status:"Active", av:"ED", col:"#059669" },
+          { id:"4", un:"James Wilson",  role:"User",  status:"Active", av:"JW", col:"#0d9488" },
+        ]);
 
-  setCompanies(data.companies ?? []);
-  setUsers(data.users ?? []);
-  setLogs(data.logs ?? []);
-} catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to load dashboard data.";
-        if (alive) setError(message);
+        setLogs([
+          { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
+          { id:"2", msg:"Company subscription upgraded to Enterprise", actor:"Michael Chen",      time:"18 mins ago", sev:"success" },
+          { id:"3", msg:"User access permissions updated",             actor:"Emily Davis",       time:"1 hour ago",  sev:"warning" },
+          { id:"4", msg:"Monthly analytics report generated",         actor:"System",            time:"3 hours ago", sev:"info"    },
+          { id:"5", msg:"API usage threshold reached",                actor:"Monitoring Service",time:"5 hours ago", sev:"warning" },
+        ]);
+      } catch (err) {
+        if (!mounted) return;
+        if (axios.isAxiosError(err)) {
+          setError(err.response?.data?.message || err.message || "Failed to load dashboard.");
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to load dashboard.");
+        }
       } finally {
-        if (alive) setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
-
     loadDashboard();
-    return () => {
-      alive = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   const handleStatCardClick = (stat: StatCard) => {
@@ -174,84 +268,173 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ padding: "28px 28px 48px", background: t.bg, minHeight: "100%", transition: "background 0.3s ease" }}>
+    <div
+      style={{
+        padding: isMobile ? "24px" : "36px 38px 56px",
+        background: t.bg,
+        minHeight: "100%",
+        transition: "background 0.3s ease",
+      }}
+    >
       {/* Header */}
-      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", gap: "12px", marginBottom: "28px" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "flex-start" : "center",
+          justifyContent: "space-between",
+          gap: "18px",
+          marginBottom: "30px",
+        }}
+      >
         <div>
-          <h1 style={{ fontWeight: 800, fontSize: "1.6rem", color: t.text, margin: 0, letterSpacing: "-0.02em", transition: "color 0.3s" }}>
+          <h1
+            style={{
+              fontWeight: 800,
+              fontSize: isMobile ? "1.75rem" : "2rem",
+              color: t.text,
+              margin: 0,
+              letterSpacing: "-0.025em",
+              transition: "color 0.3s",
+            }}
+          >
             Dashboard Overview
           </h1>
-          <p style={{ fontSize: "0.875rem", color: t.textMuted, margin: "6px 0 0", transition: "color 0.3s" }}>
+          <p
+            style={{
+              fontSize: "0.95rem",
+              color: isDark ? t.textMuted : "#64748b",
+              margin: "7px 0 0",
+              transition: "color 0.3s",
+            }}
+          >
             Welcome back! Here&apos;s what&apos;s happening with your platform.
           </p>
         </div>
-        <div style={{ width: isMobile ? "100%" : "auto", display: "flex", justifyContent: isMobile ? "flex-start" : "flex-end" }}>
-          <Btn
-            variant="primary"
-            label="Add Company Logo"
-            onClick={() => router.push("/user/dashboard/create")}
-          />
-        </div>
+
+        <DashboardButton
+          label="Add Company"
+          onClick={() => router.push("/user/dashboard/create")}
+          isDark={isDark}
+        />
       </div>
 
       {/* Stats */}
-      <StatCards
-        stats={stats}
-        onCardClick={handleStatCardClick}
-        isCardClickable={(stat) => stat.label === "Total Companies" || stat.label === "Active Users"}
-      />
+      <InlineStatCards stats={stats} isDark={isDark} isMobile={isMobile} />
 
       {error && (
-        <div style={{ marginBottom: "18px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${t.border}`, background: t.surface, color: t.textMuted, fontSize: "0.85rem" }}>
+        <div
+          style={{
+            marginBottom: "18px", padding: "12px 16px",
+            borderRadius: "10px",
+            border: "1px solid rgba(239,68,68,0.25)",
+            background: isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)",
+            color: "#ef4444", fontSize: "0.85rem",
+          }}
+        >
           {error}
         </div>
       )}
 
       {/* Row 2 */}
-      <div style={{ display: "grid", gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr", gap: "18px", marginBottom: "18px" }}>
-        <CompanyOverview companies={companies} loading={loading} error={error} />
-        <UserManagement users={users} loading={loading} error={error} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px",
+          marginBottom: "20px",
+        }}
+      >
+        <Section isDark={isDark} isMobile={isMobile}>
+          <CompanyOverview companies={companies} loading={loading} error={error} />
+        </Section>
+        <Section isDark={isDark} isMobile={isMobile}>
+          <UserManagement users={users} loading={loading} error={error} />
+        </Section>
       </div>
 
       {/* Row 3 */}
-      <div style={{ display: "grid", gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr", gap: "18px" }}>
-        <SubscriptionChart />
-        <AuditLogs logs={logs} loading={loading} error={error} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+          gap: "20px",
+        }}
+      >
+        
+       <Section isDark={isDark} isMobile={isMobile}>
+  <div
+    style={{
+      marginBottom: "18px",
+    }}
+  >
+    <h2
+      style={{
+        margin: 0,
+        fontSize: "1rem",
+        fontWeight: 700,
+        color: t.text,
+        letterSpacing: "-0.02em",
+      }}
+    >
+      Platform Growth
+    </h2>
+
+    <p
+      style={{
+        margin: "4px 0 0",
+        fontSize: "0.85rem",
+        color: isDark ? t.textMuted : "#64748b",
+      }}
+    >
+      Monthly platform activity and engagement overview
+    </p>
+  </div>
+
+  <PlatformGrowthChart />
+</Section>
+        <Section isDark={isDark} isMobile={isMobile}>
+          <AuditLogs logs={logs} loading={loading} error={error} />
+        </Section>
       </div>
     </div>
   );
 }
 
-function Btn({
-  variant,
+/* ─── Dashboard Button ────────────────────────────────────── */
+function DashboardButton({
   label,
   onClick,
+  isDark,
 }: {
-  variant: "outline" | "primary";
   label: string;
   onClick?: () => void;
+  isDark: boolean;
 }) {
-  const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
-  const [hov, setHov] = useState(false);
-
-  if (variant === "primary") return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 20px", borderRadius: "9px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", border: "none", background: hov ? "linear-gradient(135deg,#2f4dc7,#5a35c0)" : "linear-gradient(135deg,#3b5bdb,#6741d9)", color: "#fff", boxShadow: hov ? "0 4px 20px rgba(59,91,219,0.4)" : "0 2px 8px rgba(59,91,219,0.2)", transition: "all 0.15s", fontFamily: "inherit" }}>
-      {label}
-    </button>
-  );
-
+  const [hovered, setHovered] = useState(false);
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 20px", borderRadius: "9px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", border: `1px solid ${hov ? t.accent : t.border}`, background: hov ? t.accentBg : "transparent", color: hov ? t.accent : t.textMuted, transition: "all 0.15s", fontFamily: "inherit" }}>
-      {label}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: "8px",
+        padding: "11px 22px",
+        borderRadius: "10px",
+        fontSize: "0.9rem", fontWeight: 700,
+        cursor: "pointer",
+        border: "1px solid #0d9488",
+        background: hovered ? "#0b7a70" : "#0d9488",
+        color: "#fff",
+        boxShadow: hovered
+          ? "0 6px 20px rgba(13,148,136,0.40)"
+          : "0 3px 12px rgba(13,148,136,0.28)",
+        transition: "all 0.15s ease",
+        fontFamily: "'Inter', sans-serif",
+        whiteSpace: "nowrap",
+      }}
+    >
+      + {label}
     </button>
   );
 }

@@ -86,7 +86,7 @@ export default function AddCompanyPage() {
         {/* Back link */}
         <button
           onClick={() => router.push("/user/dashboard")}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 16, background: "none", border: "none", cursor: "pointer", color: C.hint, fontSize: "0.82rem", fontFamily: "inherit", padding: 0 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 16, background: "none", border: "none", cursor: "pointer", color: C.hint, fontSize: "0.82rem", fontFamily: "'Inter', sans-serif", padding: 0 }}
         >
           
         </button>
@@ -123,7 +123,7 @@ export default function AddCompanyPage() {
               onChange={e => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: "" })); }}
               onFocus={e  => (e.target.style.borderColor = "#3b5bdb")}
               onBlur={e   => (e.target.style.borderColor = errors.name ? "#f87171" : C.border)}
-              style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 9, border: `1.5px solid ${errors.name ? "#f87171" : C.border}`, background: C.inputBg, color: C.inputClr, fontSize: "0.9rem", fontFamily: "inherit", outline: "none", transition: "border .2s" }}
+              style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 9, border: `1.5px solid ${errors.name ? "#f87171" : C.border}`, background: C.inputBg, color: C.inputClr, fontSize: "0.9rem", fontFamily: "'Inter', sans-serif", outline: "none", transition: "border .2s" }}
             />
             {errors.name && <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "#f87171" }}>⚠ {errors.name}</p>}
           </div>
@@ -240,7 +240,7 @@ function BtnCancel({ onClick, C }: { onClick: () => void; C: Record<string, stri
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ padding: "10px 26px", borderRadius: 9, fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: "transparent", border: `1.5px solid ${hov ? "#3b5bdb" : C.border}`, color: hov ? "#3b5bdb" : C.label, transition: "all .15s" }}>
+      style={{ padding: "10px 26px", borderRadius: 9, fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif", background: "transparent", border: `1.5px solid ${hov ? "#3b5bdb" : C.border}`, color: hov ? "#3b5bdb" : C.label, transition: "all .15s" }}>
        Cancel
     </button>
   );
@@ -250,7 +250,7 @@ function BtnSave({ onClick, saving }: { onClick: () => void; saving: boolean }) 
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} disabled={saving} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ padding: "10px 28px", borderRadius: 9, fontSize: "0.875rem", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", border: "none", fontFamily: "inherit", color: "#fff", display: "flex", alignItems: "center", gap: 8, transition: "all .15s", background: saving ? "#4b5563" : hov ? "linear-gradient(135deg,#2f4dc7,#5a35c0)" : "linear-gradient(135deg,#3b5bdb,#6741d9)", boxShadow: saving ? "none" : hov ? "0 6px 20px rgba(59,91,219,.5)" : "0 4px 14px rgba(59,91,219,.35)" }}>
+      style={{ padding: "10px 28px", borderRadius: 9, fontSize: "0.875rem", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", border: "none", fontFamily: "'Inter', sans-serif", color: "#fff", display: "flex", alignItems: "center", gap: 8, transition: "all .15s", background: saving ? "#4b5563" : hov ? "linear-gradient(135deg,#2f4dc7,#5a35c0)" : "linear-gradient(135deg,#3b5bdb,#6741d9)", boxShadow: saving ? "none" : hov ? "0 6px 20px rgba(59,91,219,.5)" : "0 4px 14px rgba(59,91,219,.35)" }}>
       {saving
         ? <><span style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTop: "2px solid #fff", display: "inline-block", animation: "spin .8s linear infinite" }} /> Saving...</>
         : <>💾 Save Company</>}
