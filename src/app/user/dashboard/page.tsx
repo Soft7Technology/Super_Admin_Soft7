@@ -256,6 +256,17 @@ export default function DashboardPage() {
     return () => { mounted = false; };
   }, []);
 
+  const handleStatCardClick = (stat: StatCard) => {
+    if (stat.label === "Total Companies") {
+      router.push("/user/dashboard/companies");
+      return;
+    }
+
+    if (stat.label === "Active Users") {
+      router.push("/user/dashboard/users");
+    }
+  };
+
   return (
     <div
       style={{

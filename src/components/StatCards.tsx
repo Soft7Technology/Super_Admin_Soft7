@@ -43,12 +43,13 @@ useEffect(() => {
   );
 }
 
-function Card({ stat }: { stat: StatCard }) {
+function Card({ stat, onClick }: { stat: StatCard; onClick?: () => void }) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const s = isDark ? DARK[stat.accent] : LIGHT[stat.accent];
   const [hov, setHov] = useState(false);
   const textColor = isDark ? "#fff" : LIGHT_TEXT[stat.accent];
+  const clickable = Boolean(onClick);
 
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
