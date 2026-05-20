@@ -16,16 +16,23 @@ const ST: Record<string, { bg: string; color: string; dot: string }> = {
   Active:   { bg:"rgba(16,185,129,0.14)", color:"#059669", dot:"#10b981" },
   Inactive: { bg:"rgba(148,163,184,0.1)", color:"#64748b", dot:"#94a3b8" },
   Trial:    { bg:"rgba(251,191,36,0.12)", color:"#d97706", dot:"#fbbf24" },
+  Suspended:{ bg:"rgba(239,68,68,0.10)",  color:"#dc2626", dot:"#f87171" },
 };
 
 export default function CompanyOverview({
   companies = [],
   loading = false,
   error = null,
+  title = "Company Overview",
+  showViewAll = true,
+  onCompanyClick,
 }: {
   companies?: Company[];
   loading?: boolean;
   error?: string | null;
+  title?: string;
+  showViewAll?: boolean;
+  onCompanyClick?: (company: Company) => void;
 }) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
@@ -52,7 +59,7 @@ export default function CompanyOverview({
             </tr>
           </thead>
           <tbody>
-            {companies.map((co, i) => <Row key={co.id} co={co} last={i === companies.length - 1} t={t} />)}
+            {companies.map((co, i) => <Row key={co.id} co={co} last={i === companies.length - 1} t={t} onCompanyClick={onCompanyClick} />)}
             {companies.length === 0 && (
               <tr><td colSpan={4} style={{ padding:"26px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>No companies found</td></tr>
             )}
@@ -63,7 +70,7 @@ export default function CompanyOverview({
   );
 }
 
-function Row({ co, last, t }: { co: Company; last: boolean; t: Record<string, string> }) {
+function Row({ co, last, t, onCompanyClick }: { co: Company; last: boolean; t: Record<string, string>; onCompanyClick?: (company: Company) => void }) {
   const [hov, setHov] = useState(false);
   const s = ST[co.status] ?? ST["Inactive"];
   return (

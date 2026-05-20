@@ -41,10 +41,16 @@ export default function UserManagement({
   users = [],
   loading = false,
   error = null,
+  title = "User Management",
+  showViewAll = true,
+  onUserClick,
 }: {
   users?: DbUser[];
   loading?: boolean;
   error?: string | null;
+  title?: string;
+  showViewAll?: boolean;
+  onUserClick?: (user: DbUser) => void;
 }) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
@@ -71,7 +77,7 @@ export default function UserManagement({
             </tr>
           </thead>
           <tbody>
-            {users.map((u, i) => <Row key={u.id} u={u} last={i === users.length - 1} t={t} />)}
+            {users.map((u, i) => <Row key={u.id} u={u} last={i === users.length - 1} t={t} onUserClick={onUserClick} />)}
             {users.length === 0 && (
               <tr><td colSpan={3} style={{ padding:"26px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>No users found</td></tr>
             )}
@@ -82,7 +88,7 @@ export default function UserManagement({
   );
 }
 
-function Row({ u, last, t }: { u: DbUser; last: boolean; t: Record<string, string> }) {
+function Row({ u, last, t, onUserClick }: { u: DbUser; last: boolean; t: Record<string, string>; onUserClick?: (user: DbUser) => void }) {
   const [hov, setHov] = useState(false);
   const rs = RS[u.role]   ?? { bg:"rgba(148,163,184,0.1)", color:"#94a3b8" };
   const ss = SS[u.status] ?? { bg:"rgba(148,163,184,0.1)", color:"#64748b", dot:"#94a3b8" };
