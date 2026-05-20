@@ -1,170 +1,169 @@
 /* ============================================================
-   support-tickets.css — Full Dark + Light Theme Support
+   support-tickets.css — Emerald Green Theme (Dark + Light)
    Usage: import "./support-tickets.css" in your page.tsx
-   Add className="st-root" to the outer div, then replace
-   inline styles with st-* classes for theme to work.
+   Add className="st-root" to the outer div.
    ============================================================ */
 
 /* ─── DARK THEME (default) ───────────────────────────────── */
 :root,
 [data-theme="dark"],
 .dark {
-  --st-bg:              #080A12;
-  --st-surf:            #0F1120;
-  --st-surf2:           #171929;
-  --st-surf3:           #1E2035;
-  --st-border:          rgba(255, 255, 255, 0.07);
-  --st-accent:          #6C5CE7;
-  --st-accent2:         #A29BFE;
-  --st-text:            #E2E4F0;
-  --st-muted:           #565875;
-  --st-title:           #ffffff;
-  --st-success:         #00CBA4;
-  --st-danger:          #FF6B6B;
-  --st-warn:            #FDCB6E;
-  --st-info:            #74B9FF;
-  --st-pink:            #FD79A8;
-  --st-scrollbar:       #1E2035;
-  --st-placeholder:     #3A3D5C;
-  --st-input-bg:        #0F1120;
-  --st-shadow:          0 12px 40px rgba(0,0,0,0.5);
-  --st-shadow-sm:       0 4px 14px rgba(108,92,231,0.35);
+  --st-bg:              #050D0A;
+  --st-surf:            #0A1410;
+  --st-surf2:           #0F1C16;
+  --st-surf3:           #162419;
+  --st-border:          rgba(16, 185, 129, 0.10);
+  --st-accent:          #10b981;
+  --st-accent2:         #34d399;
+  --st-text:            #D4EDE5;
+  --st-muted:           #4A7A63;
+  --st-title:           #E8F5EF;
+  --st-success:         #34d399;
+  --st-danger:          #F87171;
+  --st-warn:            #FBBF24;
+  --st-info:            #60A5FA;
+  --st-pink:            #F472B6;
+  --st-scrollbar:       #162419;
+  --st-placeholder:     #2D5242;
+  --st-input-bg:        #0A1410;
+  --st-shadow:          0 12px 40px rgba(0,0,0,0.6);
+  --st-shadow-sm:       0 4px 14px rgba(16,185,129,0.30);
 
   /* status badge backgrounds */
-  --st-status-open-bg:     rgba(116,185,255,0.12);
-  --st-status-open-col:    #74B9FF;
-  --st-status-inprog-bg:   rgba(253,203,110,0.12);
-  --st-status-inprog-col:  #FDCB6E;
-  --st-status-resolved-bg: rgba(0,203,164,0.12);
-  --st-status-resolved-col:#00CBA4;
-  --st-status-closed-bg:   rgba(86,88,117,0.20);
-  --st-status-closed-col:  #565875;
-  --st-status-waiting-bg:  rgba(162,155,254,0.12);
-  --st-status-waiting-col: #A29BFE;
+  --st-status-open-bg:     rgba(96,165,250,0.10);
+  --st-status-open-col:    #60A5FA;
+  --st-status-inprog-bg:   rgba(251,191,36,0.10);
+  --st-status-inprog-col:  #FBBF24;
+  --st-status-resolved-bg: rgba(52,211,153,0.12);
+  --st-status-resolved-col:#34d399;
+  --st-status-closed-bg:   rgba(74,122,99,0.18);
+  --st-status-closed-col:  #4A7A63;
+  --st-status-waiting-bg:  rgba(16,185,129,0.10);
+  --st-status-waiting-col: #10b981;
 
   /* priority badge backgrounds */
-  --st-pri-low-bg:     rgba(86,88,117,0.20);
-  --st-pri-low-col:    #565875;
-  --st-pri-med-bg:     rgba(116,185,255,0.12);
-  --st-pri-med-col:    #74B9FF;
-  --st-pri-high-bg:    rgba(253,203,110,0.12);
-  --st-pri-high-col:   #FDCB6E;
-  --st-pri-urgent-bg:  rgba(255,107,107,0.12);
-  --st-pri-urgent-col: #FF6B6B;
+  --st-pri-low-bg:     rgba(74,122,99,0.18);
+  --st-pri-low-col:    #4A7A63;
+  --st-pri-med-bg:     rgba(96,165,250,0.10);
+  --st-pri-med-col:    #60A5FA;
+  --st-pri-high-bg:    rgba(251,191,36,0.10);
+  --st-pri-high-col:   #FBBF24;
+  --st-pri-urgent-bg:  rgba(248,113,113,0.10);
+  --st-pri-urgent-col: #F87171;
 
   /* msg bubbles */
-  --st-msg-admin-bg:   rgba(108,92,231,0.12);
-  --st-msg-admin-br:   rgba(108,92,231,0.25);
-  --st-msg-user-bg:    #171929;
-  --st-msg-user-br:    rgba(255,255,255,0.07);
-  --st-msg-unread-bg:  rgba(255,107,107,0.15);
+  --st-msg-admin-bg:   rgba(16,185,129,0.10);
+  --st-msg-admin-br:   rgba(16,185,129,0.22);
+  --st-msg-user-bg:    #0F1C16;
+  --st-msg-user-br:    rgba(16,185,129,0.09);
+  --st-msg-unread-bg:  rgba(248,113,113,0.13);
 
   /* reply box */
-  --st-reply-bg:       #1E2035;
-  --st-reply-br:       rgba(255,255,255,0.07);
+  --st-reply-bg:       #162419;
+  --st-reply-br:       rgba(16,185,129,0.12);
 
   /* buttons */
-  --st-btn-resolve-bg:  rgba(0,203,164,0.08);
-  --st-btn-resolve-hbg: rgba(0,203,164,0.15);
-  --st-btn-resolve-br:  rgba(0,203,164,0.25);
-  --st-btn-reopen-bg:   #1E2035;
-  --st-btn-reopen-br:   rgba(108,92,231,0.30);
-  --st-unread-banner-bg: rgba(255,107,107,0.10);
-  --st-unread-banner-br: rgba(255,107,107,0.28);
+  --st-btn-resolve-bg:  rgba(52,211,153,0.08);
+  --st-btn-resolve-hbg: rgba(52,211,153,0.15);
+  --st-btn-resolve-br:  rgba(52,211,153,0.28);
+  --st-btn-reopen-bg:   #162419;
+  --st-btn-reopen-br:   rgba(16,185,129,0.28);
+  --st-unread-banner-bg: rgba(248,113,113,0.09);
+  --st-unread-banner-br: rgba(248,113,113,0.25);
 
   /* status dropdown */
-  --st-dropdown-bg:    #1E2035;
+  --st-dropdown-bg:    #162419;
 
   /* KPI */
-  --st-kpi-bg:         #0F1120;
-  --st-kpi-br:         rgba(255,255,255,0.07);
+  --st-kpi-bg:         #0A1410;
+  --st-kpi-br:         rgba(16,185,129,0.10);
 
   /* empty state */
-  --st-empty-icon-bg:  rgba(108,92,231,0.09);
-  --st-empty-icon-br:  rgba(108,92,231,0.18);
-  --st-empty-chip-bg:  #171929;
+  --st-empty-icon-bg:  rgba(16,185,129,0.08);
+  --st-empty-icon-br:  rgba(16,185,129,0.16);
+  --st-empty-chip-bg:  #0F1C16;
 
   /* ticket row */
-  --st-row-active-bg:  rgba(108,92,231,0.07);
-  --st-row-active-bl:  #6C5CE7;
-  --st-row-hover-bg:   rgba(108,92,231,0.03);
-  --st-cat-chip-bg:    #171929;
+  --st-row-active-bg:  rgba(16,185,129,0.07);
+  --st-row-active-bl:  #10b981;
+  --st-row-hover-bg:   rgba(16,185,129,0.03);
+  --st-cat-chip-bg:    #0F1C16;
 }
 
 /* ─── LIGHT THEME ────────────────────────────────────────── */
 [data-theme="light"],
 .light {
-  --st-bg:              #F0F2F8;
-  --st-surf:            #FFFFFF;
-  --st-surf2:           #F4F5FB;
-  --st-surf3:           #E8EAEF;
-  --st-border:          rgba(0, 0, 0, 0.08);
-  --st-accent:          #6C5CE7;
-  --st-accent2:         #5A4BD1;
-  --st-text:            #1A1D2E;
-  --st-muted:           #8A8EA8;
-  --st-title:           #0F1120;
-  --st-success:         #009E7A;
-  --st-danger:          #D94444;
-  --st-warn:            #B8860B;
-  --st-info:            #2E78C7;
-  --st-pink:            #C0397A;
-  --st-scrollbar:       #C8CBE0;
-  --st-placeholder:     #AAADC4;
+  --st-bg:              #ffffff;
+  --st-surf:            #ffffff;
+  --st-surf2:           #F0FDF9;
+  --st-surf3:           #ffffff;
+  --st-border:          rgba(16,185,129,0.12);
+  --st-accent:          #10b981;
+  --st-accent2:         #059669;
+  --st-text:            #064E3B;
+  --st-muted:           #6EAF92;
+  --st-title:           #022C22;
+  --st-success:         #059669;
+  --st-danger:          #DC2626;
+  --st-warn:            #D97706;
+  --st-info:            #2563EB;
+  --st-pink:            #BE185D;
+  --st-scrollbar:       #A7F3D0;
+  --st-placeholder:     #6EAF92;
   --st-input-bg:        #FFFFFF;
-  --st-shadow:          0 8px 28px rgba(0,0,0,0.10);
-  --st-shadow-sm:       0 4px 12px rgba(108,92,231,0.22);
+  --st-shadow:          0 8px 28px rgba(5,150,105,0.10);
+  --st-shadow-sm:       0 4px 12px rgba(16,185,129,0.20);
 
-  --st-status-open-bg:     rgba(46,120,199,0.10);
-  --st-status-open-col:    #2E78C7;
-  --st-status-inprog-bg:   rgba(184,134,11,0.10);
-  --st-status-inprog-col:  #B8860B;
-  --st-status-resolved-bg: rgba(0,158,122,0.10);
-  --st-status-resolved-col:#009E7A;
-  --st-status-closed-bg:   rgba(138,142,168,0.15);
-  --st-status-closed-col:  #8A8EA8;
-  --st-status-waiting-bg:  rgba(90,75,209,0.10);
-  --st-status-waiting-col: #5A4BD1;
+  --st-status-open-bg:     rgba(37,99,235,0.08);
+  --st-status-open-col:    #2563EB;
+  --st-status-inprog-bg:   rgba(217,119,6,0.09);
+  --st-status-inprog-col:  #D97706;
+  --st-status-resolved-bg: rgba(5,150,105,0.09);
+  --st-status-resolved-col:#059669;
+  --st-status-closed-bg:   rgba(110,175,146,0.14);
+  --st-status-closed-col:  #6EAF92;
+  --st-status-waiting-bg:  rgba(16,185,129,0.09);
+  --st-status-waiting-col: #10b981;
 
-  --st-pri-low-bg:     rgba(138,142,168,0.15);
-  --st-pri-low-col:    #8A8EA8;
-  --st-pri-med-bg:     rgba(46,120,199,0.10);
-  --st-pri-med-col:    #2E78C7;
-  --st-pri-high-bg:    rgba(184,134,11,0.10);
-  --st-pri-high-col:   #B8860B;
-  --st-pri-urgent-bg:  rgba(217,68,68,0.10);
-  --st-pri-urgent-col: #D94444;
+  --st-pri-low-bg:     rgba(110,175,146,0.14);
+  --st-pri-low-col:    #6EAF92;
+  --st-pri-med-bg:     rgba(37,99,235,0.08);
+  --st-pri-med-col:    #2563EB;
+  --st-pri-high-bg:    rgba(217,119,6,0.09);
+  --st-pri-high-col:   #D97706;
+  --st-pri-urgent-bg:  rgba(220,38,38,0.08);
+  --st-pri-urgent-col: #DC2626;
 
-  --st-msg-admin-bg:   rgba(108,92,231,0.07);
-  --st-msg-admin-br:   rgba(108,92,231,0.18);
-  --st-msg-user-bg:    #F4F5FB;
-  --st-msg-user-br:    rgba(0,0,0,0.08);
-  --st-msg-unread-bg:  rgba(217,68,68,0.10);
+  --st-msg-admin-bg:   rgba(16,185,129,0.07);
+  --st-msg-admin-br:   rgba(16,185,129,0.18);
+  --st-msg-user-bg:    #F0FDF9;
+  --st-msg-user-br:    rgba(16,185,129,0.10);
+  --st-msg-unread-bg:  rgba(220,38,38,0.08);
 
-  --st-reply-bg:       #E8EAEF;
-  --st-reply-br:       rgba(0,0,0,0.08);
+  --st-reply-bg:       #D1FAE5;
+  --st-reply-br:       rgba(16,185,129,0.16);
 
-  --st-btn-resolve-bg:  rgba(0,158,122,0.08);
-  --st-btn-resolve-hbg: rgba(0,158,122,0.14);
-  --st-btn-resolve-br:  rgba(0,158,122,0.25);
-  --st-btn-reopen-bg:   #E8EAEF;
-  --st-btn-reopen-br:   rgba(108,92,231,0.25);
-  --st-unread-banner-bg: rgba(217,68,68,0.08);
-  --st-unread-banner-br: rgba(217,68,68,0.22);
+  --st-btn-resolve-bg:  rgba(5,150,105,0.08);
+  --st-btn-resolve-hbg: rgba(5,150,105,0.14);
+  --st-btn-resolve-br:  rgba(5,150,105,0.28);
+  --st-btn-reopen-bg:   #D1FAE5;
+  --st-btn-reopen-br:   rgba(16,185,129,0.28);
+  --st-unread-banner-bg: rgba(220,38,38,0.07);
+  --st-unread-banner-br: rgba(220,38,38,0.20);
 
   --st-dropdown-bg:    #FFFFFF;
 
   --st-kpi-bg:         #FFFFFF;
-  --st-kpi-br:         rgba(0,0,0,0.08);
+  --st-kpi-br:         rgba(16,185,129,0.12);
 
-  --st-empty-icon-bg:  rgba(108,92,231,0.07);
-  --st-empty-icon-br:  rgba(108,92,231,0.15);
-  --st-empty-chip-bg:  #F4F5FB;
+  --st-empty-icon-bg:  rgba(16,185,129,0.07);
+  --st-empty-icon-br:  rgba(16,185,129,0.15);
+  --st-empty-chip-bg:  #F0FDF9;
 
-  --st-row-active-bg:  rgba(108,92,231,0.06);
-  --st-row-active-bl:  #6C5CE7;
-  --st-row-hover-bg:   rgba(108,92,231,0.025);
-  --st-cat-chip-bg:    #F4F5FB;
+  --st-row-active-bg:  rgba(16,185,129,0.06);
+  --st-row-active-bl:  #10b981;
+  --st-row-hover-bg:   rgba(16,185,129,0.025);
+  --st-cat-chip-bg:    #F0FDF9;
 }
 
 /* ─── ANIMATIONS ─────────────────────────────────────────── */
@@ -232,10 +231,11 @@
 .st-unread-banner__text { font-size: 12px; color: var(--st-danger); font-weight: 700; transition: color 0.3s; }
 
 .st-btn-new {
-  background: linear-gradient(135deg, var(--st-accent), var(--st-accent2));
+  background: linear-gradient(135deg, #10b981, #34d399);
   color: #fff; border: none; padding: 9px 18px;
   border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 700;
   transition: opacity 0.15s;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.35);
 }
 .st-btn-new:hover { opacity: 0.85; }
 
@@ -277,8 +277,8 @@
 }
 
 .st-list-panel--selection-open {
-  border-color: rgba(108, 92, 231, 0.35);
-  box-shadow: inset 0 0 0 1px rgba(108, 92, 231, 0.2);
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.18);
 }
 
 /* Filters */
@@ -326,7 +326,7 @@
 .st-ticket-row--active      {
   background: var(--st-row-active-bg) !important;
   border-left-color: var(--st-row-active-bl);
-  box-shadow: inset 0 0 0 1px rgba(108, 92, 231, 0.28), 0 8px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.22), 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .st-ticket-row__top         { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 7px; }
@@ -345,8 +345,8 @@
   font-size: 9px;
   font-weight: 700;
   color: var(--st-accent2);
-  background: rgba(108, 92, 231, 0.15);
-  border: 1px solid rgba(108, 92, 231, 0.35);
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.32);
   border-radius: 999px;
   padding: 2px 7px;
   line-height: 1;
@@ -436,8 +436,8 @@
   font-weight: 400; transition: all 0.12s;
 }
 .st-pager__btn--active {
-  background: linear-gradient(135deg, var(--st-accent), var(--st-accent2));
-  border-color: rgba(108,92,231,0.5); color: #fff; font-weight: 800;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  border-color: rgba(16,185,129,0.5); color: #fff; font-weight: 800;
 }
 .st-pager__btn:disabled { opacity: 0.35; cursor: not-allowed; color: var(--st-muted); }
 .st-pager__dots    { width: 28px; text-align: center; color: var(--st-muted); font-size: 11px; }
@@ -620,7 +620,11 @@
   display: flex; align-items: center; gap: 7px;
   transition: all 0.2s;
 }
-.st-btn-send--active   { background: linear-gradient(135deg, var(--st-accent), var(--st-accent2)); color: #fff; }
+.st-btn-send--active   {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.30);
+}
 .st-btn-send--inactive { background: var(--st-surf3); color: var(--st-muted); cursor: not-allowed; opacity: 0.5; }
 .st-btn-send__spinner  {
   width: 12px; height: 12px; border-radius: 50%;

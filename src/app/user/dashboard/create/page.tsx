@@ -91,7 +91,7 @@ export default function AddCompanyPage() {
           
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#3b5bdb,#6741d9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0, boxShadow: "0 4px 14px rgba(59,91,219,.4)" }}>🏢</div>
+          <div style={{ width: 42, height: 42, borderRadius: 12,  background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0, boxShadow: "none" }}>🏢</div>
           <h1 style={{ margin: 0, fontWeight: 800, fontSize: "1.55rem", color: C.heading, letterSpacing: "-0.02em" }}>Add Company</h1>
         </div>
         <p style={{ margin: 0, paddingLeft: 56, fontSize: "0.875rem", color: C.hint }}>Register a new company on the platform.</p>
