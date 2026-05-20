@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import type { Theme } from "../types/auth.types";
 
 interface LoginFormProps {
@@ -10,6 +10,7 @@ interface LoginFormProps {
   setErrors: (e: Record<string, string>) => void;
   isPending: boolean;
   onForgot: () => void;
+  onRegister?: () => void;
   theme: Theme;
   isMobile: boolean;
 }
@@ -26,40 +27,7 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-
-  const isDark = theme === "dark";
-
-  const inputBase: React.CSSProperties = {
-    width: "100%",
-    height: isMobile ? "46px" : "52px",
-
-    background: isDark
-      ? "rgba(3,18,14,0.95)"
-      : "rgba(5,150,105,0.08)",
-
-    border: isDark
-      ? "1.5px solid rgba(16,185,129,0.55)"
-      : "1.5px solid rgba(5,150,105,0.35)",
-
-    borderRadius: "14px",
-    fontSize: "15px",
-
-    color: isDark ? "#ecfdf5" : "#052e26",
-
-    padding: "0 44px 0 16px",
-
-    outline: "none",
-
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-
-    fontFamily: "'Inter', sans-serif",
-
-    backdropFilter: "blur(10px)",
-
-    boxShadow: isDark
-      ? "inset 0 1px 2px rgba(0,0,0,0.5)"
-      : "inset 0 1px 2px rgba(16,185,129,0.08)",
-  };
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const clearError = (field: string) => {
     const next = { ...errors };
@@ -67,275 +35,234 @@ export function LoginForm({
     setErrors(next);
   };
 
+  const fieldStyle = (name: string, hasError?: boolean): React.CSSProperties => ({
+    width: "100%",
+    height: "48px",
+    background: "#f9fafb",
+    border: `1.5px solid ${
+      hasError ? "#ef4444" : focusedField === name ? "#10b981" : "#e5e7eb"
+    }`,
+    borderRadius: "10px",
+    color: "#111827",
+    padding: "0 46px 0 14px",
+    fontSize: "14px",
+    outline: "none",
+    fontFamily: "'DM Sans', sans-serif",
+    transition: "border-color 0.2s ease",
+    boxSizing: "border-box",
+  });
+
   return (
-    <form onSubmit={onSubmit} style={{ width: "100%" }} noValidate>
-      {/* General Error */}
-      {errors.general && (
-        <div
-          style={{
-            marginBottom: "16px",
-            padding: "12px 14px",
-            borderRadius: "12px",
-            background: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.25)",
-            color: "#ef4444",
-            fontSize: "13px",
-            textAlign: "center",
-            backdropFilter: "blur(12px)",
-          }}
-        >
-          {errors.general}
+    <div style={{
+      minHeight: "100dvh",
+      background: "#c0f7d2",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "'DM Sans', sans-serif",
+      padding: "24px 16px",
+      boxSizing: "border-box",
+    }}>
+      <div style={{
+        width: "100%",
+        maxWidth: "500px",
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "16px",
+        padding: isMobile ? "36px 24px 32px" : "48px 40px 44px",
+        boxSizing: "border-box",
+      }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: "32px" }}>
+          <h1 style={{
+            fontSize: "22px",
+            fontWeight: 700,
+            color: "#34d399",
+            letterSpacing: "-0.4px",
+            marginBottom: "6px",
+            fontFamily: "'DM Sans', sans-serif",
+          }}>
+            Sign in
+          </h1>
+          <p style={{
+            fontSize: "14px",
+            color: "#6b7280",
+            fontFamily: "'DM Sans', sans-serif",
+          }}>
+            Sign in to super admin to continue
+          </p>
         </div>
-      )}
 
-      {/* Identifier */}
-      <div
-        style={{
-          position: "relative",
-          marginBottom: errors.identifier ? "6px" : "18px",
-        }}
-      >
-        <input
-          type="text"
-          name="identifier"
-          placeholder="Email or phone"
-          autoCapitalize="none"
-          autoCorrect="off"
-          value={identifier}
-          onChange={(e) => {
-            setIdentifier(e.target.value);
-            clearError("identifier");
-            clearError("email");
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = "#10b981";
-            e.target.style.boxShadow =
-              "0 0 0 4px rgba(16,185,129,0.18)";
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor =
-              errors.identifier || errors.email
-                ? "#ef4444"
-                : isDark
-                  ? "rgba(16,185,129,0.55)"
-                  : "rgba(5,150,105,0.35)";
+        {/* Form */}
+        <form onSubmit={onSubmit} noValidate>
 
-            e.target.style.boxShadow =
-              isDark
-                ? "inset 0 1px 2px rgba(0,0,0,0.5)"
-                : "inset 0 1px 2px rgba(16,185,129,0.08)";
-          }}
-          style={{
-            ...inputBase,
-            borderColor:
-              errors.identifier || errors.email
-                ? "#ef4444"
-                : isDark
-                  ? "rgba(16,185,129,0.55)"
-                  : "rgba(5,150,105,0.35)",
-          }}
-        />
+          {errors.general && (
+            <div style={{
+              marginBottom: "18px",
+              padding: "11px 14px",
+              borderRadius: "8px",
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              color: "#dc2626",
+              fontSize: "13px",
+            }}>
+              {errors.general}
+            </div>
+          )}
 
-        <Mail
-          size={17}
-          style={{
-            position: "absolute",
-            right: "14px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            color: isDark
-              ? "rgba(167,243,208,0.7)"
-              : "rgba(5,150,105,0.6)",
-            pointerEvents: "none",
-          }}
-        />
-      </div>
+          {/* Email / Phone */}
+          <div style={{ marginBottom: "14px" }}>
+            <label style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#374151",
+              marginBottom: "6px",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+              Email or phone
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                name="identifier"
+                placeholder="you@example.com"
+                autoCapitalize="none"
+                autoCorrect="off"
+                value={identifier}
+                onChange={(e) => { setIdentifier(e.target.value); clearError("identifier"); clearError("email"); }}
+                onFocus={() => setFocusedField("identifier")}
+                onBlur={() => setFocusedField(null)}
+                style={fieldStyle("identifier", !!(errors.identifier || errors.email))}
+              />
+              <Mail size={16} style={{
+                position: "absolute", right: "14px", top: "50%",
+                transform: "translateY(-50%)",
+                color: "#9ca3af",
+                pointerEvents: "none",
+              }} />
+            </div>
+            {(errors.identifier || errors.email) && (
+              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>
+                {errors.identifier || errors.email}
+              </p>
+            )}
+          </div>
 
-      {(errors.identifier || errors.email) && (
-        <p
-          style={{
-            color: "#ef4444",
-            fontSize: "12px",
-            marginBottom: "12px",
-            marginLeft: "4px",
-          }}
-        >
-          {errors.identifier || errors.email}
-        </p>
-      )}
+          {/* Password */}
+          <div style={{ marginBottom: "10px" }}>
+            <label style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#374151",
+              marginBottom: "6px",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+              Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
+                onFocus={() => setFocusedField("password")}
+                onBlur={() => setFocusedField(null)}
+                style={{ ...fieldStyle("password", !!errors.password), paddingRight: "76px" }}
+              />
+              <div style={{
+                position: "absolute", right: "12px", top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex", gap: "6px", alignItems: "center",
+              }}>
+                <Lock size={15} style={{ color: "#9ca3af" }} />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    padding: "2px", display: "flex", alignItems: "center",
+                    color: "#6b7280",
+                  }}
+                >
+                  {showPassword ? <Eye size={15} /> : <EyeOff size={15} />}
+                </button>
+              </div>
+            </div>
+            {errors.password && (
+              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>
+                {errors.password}
+              </p>
+            )}
+          </div>
 
-      {/* Password */}
-      <div
-        style={{
-          position: "relative",
-          marginBottom: errors.password ? "6px" : "24px",
-        }}
-      >
-        <input
-          type={showPassword ? "text" : "password"}
-          name="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            clearError("password");
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = "#10b981";
-            e.target.style.boxShadow =
-              "0 0 0 4px rgba(16,185,129,0.18)";
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = errors.password
-              ? "#ef4444"
-              : isDark
-                ? "rgba(16,185,129,0.55)"
-                : "rgba(5,150,105,0.35)";
+          {/* Forgot */}
+          <div style={{ textAlign: "right", marginBottom: "24px" }}>
+            <button
+              type="button"
+              onClick={onForgot}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: "13px",
+                color: "#059669",
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 500,
+                padding: 0,
+              }}
+            >
+              Forgot password?
+            </button>
+          </div>
 
-            e.target.style.boxShadow =
-              isDark
-                ? "inset 0 1px 2px rgba(0,0,0,0.5)"
-                : "inset 0 1px 2px rgba(16,185,129,0.08)";
-          }}
-          style={{
-            ...inputBase,
-            paddingRight: "72px",
-            borderColor: errors.password
-              ? "#ef4444"
-              : isDark
-                ? "rgba(16,185,129,0.55)"
-                : "rgba(5,150,105,0.35)",
-          }}
-        />
-
-        <div
-          style={{
-            position: "absolute",
-            right: "14px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            display: "flex",
-            gap: "10px",
-            alignItems: "center",
-          }}
-        >
-          <Lock
-            size={17}
-            style={{
-              color: isDark
-                ? "rgba(167,243,208,0.75)"
-                : "rgba(5,150,105,0.6)",
-            }}
-          />
-
+          {/* Submit */}
           <button
-            type="button"
-            onClick={() => setShowPassword((p) => !p)}
+            type="submit"
+            disabled={isPending}
             style={{
-              background: "none",
+              width: "100%",
+              height: "48px",
+              borderRadius: "10px",
               border: "none",
-              cursor: "pointer",
-              padding: 0,
+              cursor: isPending ? "not-allowed" : "pointer",
+              background: isPending ? "#6ee7b7" : "#10b981",
+              color: "#fff",
+              fontSize: "15px",
+              fontWeight: 700,
+              fontFamily: "'DM Sans', sans-serif",
               display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              transition: "background 0.2s ease",
             }}
           >
-            {showPassword ? (
-              <Eye
-                size={17}
-                style={{
-                  color: isDark ? "#a7f3d0" : "#059669",
-                }}
-              />
+            {isPending ? (
+              <span style={{
+                width: "18px", height: "18px",
+                border: "2px solid rgba(255,255,255,0.4)",
+                borderTopColor: "#fff",
+                borderRadius: "50%",
+                display: "inline-block",
+                animation: "spin 0.7s linear infinite",
+              }} />
             ) : (
-              <EyeOff
-                size={17}
-                style={{
-                  color: isDark ? "#a7f3d0" : "#059669",
-                }}
-              />
+              <>Sign in <ArrowRight size={15} strokeWidth={2.5} /></>
             )}
           </button>
-        </div>
+        </form>
       </div>
 
-      {errors.password && (
-        <p
-          style={{
-            color: "#ef4444",
-            fontSize: "12px",
-            marginBottom: "12px",
-            marginLeft: "4px",
-          }}
-        >
-          {errors.password}
-        </p>
-      )}
-
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={isPending}
-        style={{
-          width: "100%",
-          height: "52px",
-          borderRadius: "14px",
-          border: "none",
-          cursor: isPending ? "not-allowed" : "pointer",
-
-          background: isPending
-            ? isDark
-              ? "rgba(16,185,129,0.4)"
-              : "rgba(16,185,129,0.5)"
-            : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-
-          color: "#ffffff",
-
-          fontSize: "15px",
-          fontWeight: 700,
-          letterSpacing: "0.3px",
-
-          boxShadow: isPending
-            ? "none"
-            : "0 10px 28px rgba(16,185,129,0.35)",
-
-          transition:
-            "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-
-          fontFamily: "'Inter', sans-serif",
-        }}
-        onMouseEnter={(e) => {
-          if (!isPending) {
-            (e.target as HTMLButtonElement).style.transform =
-              "translateY(-2px)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          (e.target as HTMLButtonElement).style.transform =
-            "translateY(0)";
-        }}
-      >
-        {isPending ? "Signing in…" : "Sign In"}
-      </button>
-
-      {/* Forgot Password */}
-      <div style={{ textAlign: "center", marginTop: "18px" }}>
-        <button
-          type="button"
-          onClick={onForgot}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "13px",
-            color: isDark ? "#a7f3d0" : "#059669",
-            textDecoration: "underline",
-            fontFamily: "'Inter', sans-serif",
-            transition: "opacity 0.2s ease",
-          }}
-        >
-          Forgot password?
-        </button>
-      </div>
-    </form>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        input::placeholder { color: #9ca3af; }
+      `}</style>
+    </div>
   );
 }
