@@ -91,7 +91,7 @@ export default function AddCompanyPage() {
           
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#3b5bdb,#6741d9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0, boxShadow: "0 4px 14px rgba(59,91,219,.4)" }}>🏢</div>
+          <div style={{ width: 42, height: 42, borderRadius: 12,  background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0, boxShadow: "none" }}>🏢</div>
           <h1 style={{ margin: 0, fontWeight: 800, fontSize: "1.55rem", color: C.heading, letterSpacing: "-0.02em" }}>Add Company</h1>
         </div>
         <p style={{ margin: 0, paddingLeft: 56, fontSize: "0.875rem", color: C.hint }}>Register a new company on the platform.</p>
@@ -108,7 +108,7 @@ export default function AddCompanyPage() {
       <div style={{ width: "100%", maxWidth: 660, background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden", boxShadow: isDark ? "0 8px 36px rgba(0,0,0,.45)" : "0 8px 36px rgba(0,0,0,.09)", transition: "background .3s,border-color .3s" }}>
 
         {/* stripe */}
-        <div style={{ height: 4, background: "linear-gradient(90deg,#3b5bdb,#6741d9,#0ca678)" }} />
+        <div style={{ height: 4, background: "linear-gradient(90deg,#059669,#10b981,#34d399)" }} />
 
         <div style={{ padding: "32px 36px 36px" }}>
 
@@ -209,7 +209,7 @@ function Zone({ state, onChange, onDrop, onDragOver, onDragLeave, onRemove, inpu
         <span style={{ fontSize: "1.8rem", opacity: .5 }}>📂</span>
         <div style={{ textAlign: "center" }}>
           <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600, color: C.dropText }}>
-            Drag & drop or <span style={{ color: "#3b5bdb", textDecoration: "underline" }}>choose file</span>
+            Drag & drop or <span style={{ color: "#34c38a", textDecoration: "underline" }}>choose file</span>
           </p>
           <p style={{ margin: "3px 0 0", fontSize: "0.72rem", color: C.dropSub }}>for {label}</p>
         </div>
@@ -236,24 +236,106 @@ function Zone({ state, onChange, onDrop, onDragOver, onDragLeave, onRemove, inpu
 }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
-function BtnCancel({ onClick, C }: { onClick: () => void; C: Record<string, string> }) {
+function BtnCancel({
+  onClick,
+  C,
+}: {
+  onClick: () => void;
+  C: Record<string, string>;
+}) {
   const [hov, setHov] = useState(false);
+
   return (
-    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ padding: "10px 26px", borderRadius: 9, fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif", background: "transparent", border: `1.5px solid ${hov ? "#3b5bdb" : C.border}`, color: hov ? "#3b5bdb" : C.label, transition: "all .15s" }}>
-       Cancel
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "10px 26px",
+        borderRadius: 10,
+        fontSize: "0.875rem",
+        fontWeight: 600,
+        cursor: "pointer",
+        fontFamily: "'Inter', sans-serif",
+        background: hov
+          ? "rgba(16,185,129,0.08)"
+          : "transparent",
+        border: `1.5px solid ${
+          hov ? "#10b981" : C.border
+        }`,
+        color: hov ? "#10b981" : C.label,
+        transition: "all .18s ease",
+      }}
+    >
+      Cancel
     </button>
   );
 }
 
-function BtnSave({ onClick, saving }: { onClick: () => void; saving: boolean }) {
+function BtnSave({
+  onClick,
+  saving,
+}: {
+  onClick: () => void;
+  saving: boolean;
+}) {
   const [hov, setHov] = useState(false);
+
   return (
-    <button onClick={onClick} disabled={saving} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ padding: "10px 28px", borderRadius: 9, fontSize: "0.875rem", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", border: "none", fontFamily: "'Inter', sans-serif", color: "#fff", display: "flex", alignItems: "center", gap: 8, transition: "all .15s", background: saving ? "#4b5563" : hov ? "linear-gradient(135deg,#2f4dc7,#5a35c0)" : "linear-gradient(135deg,#3b5bdb,#6741d9)", boxShadow: saving ? "none" : hov ? "0 6px 20px rgba(59,91,219,.5)" : "0 4px 14px rgba(59,91,219,.35)" }}>
-      {saving
-        ? <><span style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", borderTop: "2px solid #fff", display: "inline-block", animation: "spin .8s linear infinite" }} /> Saving...</>
-        : <>💾 Save Company</>}
+    <button
+      onClick={onClick}
+      disabled={saving}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "10px 28px",
+        borderRadius: 10,
+        fontSize: "0.875rem",
+        fontWeight: 700,
+        cursor: saving ? "not-allowed" : "pointer",
+        border: "none",
+        fontFamily: "'Inter', sans-serif",
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        transition: "all .18s ease",
+
+        background: saving
+          ? "#4b5563"
+          : hov
+          ? "linear-gradient(135deg,#059669,#10b981)"
+          : "linear-gradient(135deg,#10b981,#34d399)",
+
+        boxShadow: saving
+          ? "none"
+          : hov
+          ? "0 10px 24px rgba(16,185,129,0.35)"
+          : "0 6px 18px rgba(16,185,129,0.24)",
+
+        transform: hov && !saving
+          ? "translateY(-1px)"
+          : "translateY(0)",
+      }}
+    >
+      {saving ? (
+        <>
+          <span
+            style={{
+              width: 13,
+              height: 13,
+              borderRadius: "50%",
+              border: "2px solid rgba(255,255,255,.3)",
+              borderTop: "2px solid #fff",
+              display: "inline-block",
+              animation: "spin .8s linear infinite",
+            }}
+          />
+          Saving...
+        </>
+      ) : (
+        <>💾 Save Company</>
+      )}
     </button>
   );
 }
