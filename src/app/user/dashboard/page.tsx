@@ -6,6 +6,7 @@ import { StatCard } from "../../../types";
 import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
 import CompanyOverview from "../../../components/CompanyOverview";
+
 import UserManagement from "../../../components/UserManagement";
 import PlatformGrowthChart from "../../../components/PlatformGrowthChart";
 import AuditLogs from "../../../components/AuditLogs";
@@ -13,6 +14,8 @@ import AuditLogs from "../../../components/AuditLogs";
 const DASHBOARD_API =
   "https://hostapi.soft7.in/v1/admin/companies/dashboard";
 
+const USERS_API =
+  "https://hostapi.soft7.in/v1/admin/companies/user?role=admin";
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -42,7 +45,12 @@ interface DashboardCompany {
   status: string; plan: string; users: number;
 }
 interface DashboardUser {
-  id: string; un: string; role: string; status: string; av: string; col: string;
+  id: string;
+  un: string;
+  role: string;
+  status: string;
+  av: string;
+  col: string;
 }
 interface DashboardLog {
   id: string; msg: string; actor: string; time: string; sev: string;
@@ -210,7 +218,40 @@ export default function DashboardPage() {
         });
         if (!mounted) return;
         const data = apiResponse?.data ?? apiResponse;
+// USERS API
+const userResponse = await axiosInstance.get(USERS_API, {
+  headers: getExternalHeaders(),
+  withCredentials: false,
+});
 
+const usersData =
+  userResponse?.data?.data?.data || [];
+
+const formattedUsers = Array.isArray(usersData)
+  ? usersData.slice(0, 4).map((user: any, index: number) => ({
+      id: user.id?.toString() || index.toString(),
+      un:
+        user.name ||
+        user.username ||
+        user.full_name ||
+        "Unknown User",
+      role: user.role || "Admin",
+      status: user.status || "Active",
+      av: (
+        user.name ||
+        user.username ||
+        "U"
+      )
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase(),
+      col: "#0d9488",
+    }))
+  : [];
+
+setUsers(formattedUsers);
         setStats([
           { label: "Campaigns", value: Number(data.campaigns_count ?? 0).toLocaleString(), icon: "📢", change: "—", changeType: "up", accent: "blue" },
           { label: "Users",     value: Number(data.users_count ?? 0).toLocaleString(),     icon: "👥", change: "—", changeType: "up", accent: "green" },
@@ -225,12 +266,7 @@ export default function DashboardPage() {
           { id:"4", name:"Pulse Media", ini:"PM", col:"#0d9488", status:"Active", plan:"Enterprise", users:89  },
         ]);
 
-        setUsers([
-          { id:"1", un:"Sarah Johnson", role:"Admin", status:"Active", av:"SJ", col:"#0d9488" },
-          { id:"2", un:"Michael Chen",  role:"User",  status:"Active", av:"MC", col:"#14b8a6" },
-          { id:"3", un:"Emily Davis",   role:"Admin", status:"Active", av:"ED", col:"#059669" },
-          { id:"4", un:"James Wilson",  role:"User",  status:"Active", av:"JW", col:"#0d9488" },
-        ]);
+
 
         setLogs([
           { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
