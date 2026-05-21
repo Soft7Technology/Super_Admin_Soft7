@@ -34,10 +34,38 @@ const getExternalHeaders = () => {
 };
 
 const DEFAULT_STATS: StatCard[] = [
-  { label: "Campaigns", value: "—", icon: "📢", change: "—", changeType: "up", accent: "blue" },
-  { label: "Users",     value: "—", icon: "👥", change: "—", changeType: "up", accent: "green" },
-  { label: "Chatbots",  value: "—", icon: "🤖", change: "—", changeType: "up", accent: "purple" },
-  { label: "Messages",  value: "—", icon: "💬", change: "—", changeType: "up", accent: "orange" },
+  {
+    icon: "📢",
+    label: "Campaigns",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "blue",
+  },
+  {
+    icon: "👥",
+    label: "Users",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "green",
+  },
+  {
+    icon: "🤖",
+    label: "Chatbots",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "purple",
+  },
+  {
+    icon: "💬",
+    label: "Messages",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "orange",
+  },
 ];
 
 interface DashboardCompany {
@@ -74,7 +102,7 @@ const STAT_META = [
   { icon: "📢", label: "Campaigns", accent: "#0d9488", glow: "rgba(13,148,136,0.18)" },
   { icon: "👥", label: "Users",     accent: "#6366f1", glow: "rgba(99,102,241,0.18)" },
   { icon: "🤖", label: "Chatbots",  accent: "#f59e0b", glow: "rgba(245,158,11,0.18)" },
-  { icon: "💬", label: "Messages",  accent: "#10b981", glow: "rgba(16,185,129,0.18)" },
+  { icon: "💬", label: "Messages",  accent: "#34d399", glow: "rgba(52,211,153,0.18)" },
 ];
 
 /* ─── Inline StatCards ────────────────────────────────────── */
@@ -177,7 +205,7 @@ function Section({
     <div
       style={{
         background: isDark ? "rgba(15,17,32,0.85)" : "#ffffff",
-        border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.07)"}`,
         borderRadius: "16px",
         padding: isMobile ? "20px" : "26px 28px",
         boxShadow: isDark
@@ -260,12 +288,11 @@ setUsers(formattedUsers);
         ]);
 
         setCompanies([
-          { id:"1", name:"Acme Corp",   ini:"AC", col:"#0d9488", status:"Active", plan:"Enterprise", users:248 },
-          { id:"2", name:"Nova Labs",   ini:"NL", col:"#14b8a6", status:"Active", plan:"Basic",      users:132 },
+          { id:"1", name:"Acme Corp",   ini:"AC", col:"#10b981", status:"Active", plan:"Enterprise", users:248 },
+          { id:"2", name:"Nova Labs",   ini:"NL", col:"#34d399", status:"Active", plan:"Basic",      users:132 },
           { id:"3", name:"Vertex AI",   ini:"VA", col:"#059669", status:"Active", plan:"Free Trial", users:54  },
-          { id:"4", name:"Pulse Media", ini:"PM", col:"#0d9488", status:"Active", plan:"Enterprise", users:89  },
+          { id:"4", name:"Pulse Media", ini:"PM", col:"#10b981", status:"Active", plan:"Enterprise", users:89  },
         ]);
-
 
 
         setLogs([
@@ -363,7 +390,7 @@ setUsers(formattedUsers);
           style={{
             marginBottom: "18px", padding: "12px 16px",
             borderRadius: "10px",
-            border: "1px solid rgba(239,68,68,0.25)",
+            border: "1px solid rgba(179, 68, 239, 0.25)",
             background: isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)",
             color: "#ef4444", fontSize: "0.85rem",
           }}
@@ -459,12 +486,12 @@ function DashboardButton({
         borderRadius: "10px",
         fontSize: "0.9rem", fontWeight: 700,
         cursor: "pointer",
-        border: "1px solid #0d9488",
-        background: hovered ? "#0b7a70" : "#0d9488",
+        border: `1px solid ${BRAND}`,
+        background: hovered ? BRAND_HOVER : BRAND,
         color: "#fff",
-        boxShadow: hovered
-          ? "0 6px 20px rgba(13,148,136,0.40)"
-          : "0 3px 12px rgba(13,148,136,0.28)",
+       boxShadow: hovered
+        ? "0 8px 24px rgba(16,185,129,0.38)"
+        : "0 4px 14px rgba(16,185,129,0.24)",
         transition: "all 0.15s ease",
         fontFamily: "'Inter', sans-serif",
         whiteSpace: "nowrap",

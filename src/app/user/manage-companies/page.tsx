@@ -67,8 +67,8 @@ interface Company {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
-  "#6C5CE7", "#0d9488", "#f59e0b", "#3b82f6",
-  "#ec4899", "#14b8a6", "#8b5cf6", "#ef4444",
+  "#6C5CE7", "#0d9462", "#f59e0b", "#3b82f6",
+  "#ec4899", "#14b871", "#8b5cf6", "#ef4444",
 ];
 
 function avatarColor(id: string) {
