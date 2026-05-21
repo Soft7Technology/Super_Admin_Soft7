@@ -45,14 +45,14 @@ const STATUS_DOT: Record<string, string> = {
   PENDING:   "au-status-dot--other",
 };
 const PLAN_COLOR: Record<string, string> = {
-  Enterprise: "#0d9488",
+  Enterprise: "#10b981",
   Pro:        "#6366f1",
   Basic:      "#f59e0b",
-  Starter:    "#14b8a6",
+  Starter:    "#34d399",
 };
 function planColor(plan: string) { return PLAN_COLOR[plan] ?? "#94a3b8"; }
 const ROLE_COLOR: Record<string, string> = {
-  Admin: "#0d9488",
+  Admin: "#10b981",
   User:  "#64748b",
 };
 function roleColor(role: string) { return ROLE_COLOR[role] ?? "#94a3b8"; }
@@ -150,10 +150,10 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
         {tab === "stats" && (
           <div className="au-stats-grid">
             {([
-              ["Messages",  user.msgs.toLocaleString(),           "#0d9488"],
+              ["Messages",  user.msgs.toLocaleString(),           "#10b981"],
               ["Campaigns", String(user.campaigns),               "#6366f1"],
               ["Chatbots",  String(user.chatbots),                "#f59e0b"],
-              ["Flows",     String(Math.floor(user.msgs / 80)),   "#14b8a6"],
+              ["Flows",     String(Math.floor(user.msgs / 80)),   "#34d399"],
             ] as [string, string, string][]).map(([label, value, color]) => (
               <div key={label} className="au-stats-cell">
                 <div className="au-stats-cell__val" style={{ color }}>{value}</div>
@@ -453,7 +453,7 @@ useEffect(() => {
           u.plan_name === "Enterpriess" ? "Enterprise" :
           u.plan_name === "Free Trial"  ? "Starter"    :
           u.plan_name                   || "Starter",
-        av:        "#0d9488",
+       av: "#10b981",
         login:     timeAgo(u.last_login_at),
         joined:    u.created_at ? new Date(u.created_at).toLocaleDateString() : "—",
         msgs: 0, campaigns: 0, chatbots: 0,
@@ -509,8 +509,8 @@ useEffect(() => {
 
       {/* KPI */}
       <div className="au-kpi-grid">
-        <KPI label="Total Users"   value={stats.totalUsers.toLocaleString()}   icon="👥" color="#0d9488" />
-        <KPI label="Active Users"  value={stats.activeUsers.toLocaleString()}  icon="✅" color="#14b8a6" />
+        <KPI label="Total Users"   value={stats.totalUsers.toLocaleString()}   icon="👥" color="#2bc386" />
+        <KPI label="Active Users"  value={stats.activeUsers.toLocaleString()}  icon="✅" color="#34d399" />
         <KPI label="Admin Users"   value={stats.adminUsers.toLocaleString()}   icon="🛡" color="#6366f1" />
         <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon="⭐" color="#f59e0b" />
       </div>

@@ -70,12 +70,12 @@ const AVATAR_COLORS: Record<string, string> = {
   SR: "#FDCB6E",
   AP: "#A29BFE",
   PS: "#00B894",
-  JD: "#6C5CE7",
+  JD: "#5ce7c7",
   TK: "#00CBA4",
   ML: "#FF6B6B",
   RK: "#E17055",
   LH: "#FD79A8",
-  ST: "#6C5CE7",
+  ST: "#5ce79d",
 };
 
 const PAGE_SIZE = 8;
@@ -579,7 +579,7 @@ export default function SupportTickets() {
        const normalised: Ticket[] = (
   Array.isArray(ticketsData) ? ticketsData : []
 ).map((t: any) => ({
-  id: t.id,
+  id:String(t.id),
 
   subject: t.message || "Support Ticket",
 
@@ -587,13 +587,13 @@ export default function SupportTickets() {
 
   companyLogo: "S",
 
-  companyCol: "#6C5CE7",
+  companyCol: "#10b981",
 
   user: t.name || "Unknown User",
 
   userEmail: t.email || "",
 
-  status: (t.status || "OPEN").toUpperCase(),
+  status: ((t.status || "OPEN").toUpperCase() as TicketStatus),
 
   priority: "MEDIUM",
 
@@ -607,7 +607,7 @@ export default function SupportTickets() {
 
   messages: [
     {
-      id: 1,
+      id: "1",
       sender: "USER",
       name: t.name || "User",
       avatar: (t.name || "U")
@@ -757,7 +757,7 @@ const formattedTicket: Ticket = {
 
   companyLogo: "S",
 
-  companyCol: "#6C5CE7",
+  companyCol: "#10b981",
 
   user:
     firstMessage.user_name ||
@@ -805,8 +805,16 @@ setTickets((prev) =>
     setApiError("Failed to load ticket details.");
   }
 };
-
-  const handleStatusChange = async (id: number, status: TicketStatus) => {
+const applyServerTicket = (updatedTicket: Ticket) => {
+  setTickets((prev) =>
+    prev.map((ticket) =>
+      ticket.id === updatedTicket.id
+        ? updatedTicket
+        : ticket
+    )
+  );
+};
+  const handleStatusChange = async (id: string, status: TicketStatus) => {
     setApiError(null);
     try {
       const response = await fetch("/api/admin/support-tickets", {
@@ -970,7 +978,7 @@ setTickets((prev) =>
               value={String(openCount)}
               sub={`${urgent} urgent`}
               icon="🎫"
-              color="#74B9FF"
+              color="#74ff76"
             />
             <KPI
               label="In Progress"
@@ -991,7 +999,7 @@ setTickets((prev) =>
               value="18m"
               sub="across all tickets"
               icon="⚡"
-              color="#6C5CE7"
+              color="#41c993"
             />
           </div>
 
@@ -1063,8 +1071,8 @@ setTickets((prev) =>
                           : statusF === status
                           ? {
                               background: "var(--st-surf3)",
-                              color: "var(--st-accent2)",
-                              borderColor: "rgba(108,92,231,0.35)",
+                              color: "#10b981",
+                              borderColor: "rgba(16,185,129,0.35)",
                             }
                           : {}
                       }

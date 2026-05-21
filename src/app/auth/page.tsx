@@ -9,6 +9,7 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import toast from "react-hot-toast";
 
 import { LoginForm } from "./components/LoginForm";
+import { RegisterForm } from "./components/RegisterForm";
 import { ForgotPasswordModal } from "./components/ForgotPasswordModal";
 import type { Theme } from "./types/auth.types";
 
@@ -427,11 +428,6 @@ export default function AuthPage() {
 
       {isForgotActive && (
         <ForgotPasswordModal
-          step={forgotStep}
-          email={forgotEmail}
-          setEmail={setForgotEmail}
-          phone={forgotPhone}
-          setPhone={setForgotPhone}
           channel={forgotChannel}
           setChannel={setForgotChannel}
           otp={otp}
@@ -443,10 +439,8 @@ export default function AuthPage() {
           timer={timer}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
-          emailError={emailError}
           otpError={otpError}
           setOtpError={setOtpError}
-          passwordError={passwordError}
           loading={forgotLoading}
           sendOtp={handleSendOtp}
           verifyOtp={handleVerifyOtp}
@@ -457,6 +451,16 @@ export default function AuthPage() {
           onClose={handleCloseForgot}
           theme={theme}
           isMobile={isMobile}
+          step={forgotStep}
+          setStep={setForgotStep}
+          email={forgotEmail}
+          setEmail={setForgotEmail}
+          phone={forgotPhone}
+          setPhone={setForgotPhone}
+          emailError={emailError}
+          setEmailError={setEmailError}
+          passwordError={passwordError}
+          setPasswordError={setPasswordError}
         />
       )}
     </>

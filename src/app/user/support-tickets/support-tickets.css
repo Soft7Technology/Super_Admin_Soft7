@@ -8,86 +8,44 @@
 :root,
 [data-theme="dark"],
 .dark {
-  --st-bg:              #050D0A;
-  --st-surf:            #0A1410;
-  --st-surf2:           #0F1C16;
-  --st-surf3:           #162419;
-  --st-border:          rgba(16, 185, 129, 0.10);
+  --st-bg:              #0A0C10;
+  --st-surf:            #11141A;
+  --st-surf2:           #161B22;
+  --st-surf3:           #1B222C;
+
+  --st-border:          rgba(255,255,255,0.06);
+
   --st-accent:          #10b981;
   --st-accent2:         #34d399;
-  --st-text:            #D4EDE5;
-  --st-muted:           #4A7A63;
-  --st-title:           #E8F5EF;
-  --st-success:         #34d399;
-  --st-danger:          #F87171;
-  --st-warn:            #FBBF24;
-  --st-info:            #60A5FA;
-  --st-pink:            #F472B6;
-  --st-scrollbar:       #162419;
-  --st-placeholder:     #2D5242;
-  --st-input-bg:        #0A1410;
-  --st-shadow:          0 12px 40px rgba(0,0,0,0.6);
-  --st-shadow-sm:       0 4px 14px rgba(16,185,129,0.30);
 
-  /* status badge backgrounds */
-  --st-status-open-bg:     rgba(96,165,250,0.10);
-  --st-status-open-col:    #60A5FA;
-  --st-status-inprog-bg:   rgba(251,191,36,0.10);
-  --st-status-inprog-col:  #FBBF24;
-  --st-status-resolved-bg: rgba(52,211,153,0.12);
-  --st-status-resolved-col:#34d399;
-  --st-status-closed-bg:   rgba(74,122,99,0.18);
-  --st-status-closed-col:  #4A7A63;
-  --st-status-waiting-bg:  rgba(16,185,129,0.10);
-  --st-status-waiting-col: #10b981;
+  --st-text:            #D7DEE7;
+  --st-muted:           #7C8798;
+  --st-title:           #F3F6FA;
 
-  /* priority badge backgrounds */
-  --st-pri-low-bg:     rgba(74,122,99,0.18);
-  --st-pri-low-col:    #4A7A63;
-  --st-pri-med-bg:     rgba(96,165,250,0.10);
-  --st-pri-med-col:    #60A5FA;
-  --st-pri-high-bg:    rgba(251,191,36,0.10);
-  --st-pri-high-col:   #FBBF24;
-  --st-pri-urgent-bg:  rgba(248,113,113,0.10);
-  --st-pri-urgent-col: #F87171;
+  --st-placeholder:     #667085;
+  --st-input-bg:        #11141A;
 
-  /* msg bubbles */
-  --st-msg-admin-bg:   rgba(16,185,129,0.10);
-  --st-msg-admin-br:   rgba(16,185,129,0.22);
-  --st-msg-user-bg:    #0F1C16;
-  --st-msg-user-br:    rgba(16,185,129,0.09);
-  --st-msg-unread-bg:  rgba(248,113,113,0.13);
+  --st-scrollbar:       #222A35;
 
-  /* reply box */
-  --st-reply-bg:       #162419;
-  --st-reply-br:       rgba(16,185,129,0.12);
+  --st-shadow:          0 12px 40px rgba(0,0,0,0.45);
+  --st-shadow-sm:       0 4px 14px rgba(0,0,0,0.22);
 
-  /* buttons */
-  --st-btn-resolve-bg:  rgba(52,211,153,0.08);
-  --st-btn-resolve-hbg: rgba(52,211,153,0.15);
-  --st-btn-resolve-br:  rgba(52,211,153,0.28);
-  --st-btn-reopen-bg:   #162419;
-  --st-btn-reopen-br:   rgba(16,185,129,0.28);
-  --st-unread-banner-bg: rgba(248,113,113,0.09);
-  --st-unread-banner-br: rgba(248,113,113,0.25);
+  --st-kpi-bg:          #11141A;
+  --st-kpi-br:          rgba(255,255,255,0.06);
 
-  /* status dropdown */
-  --st-dropdown-bg:    #162419;
+  --st-row-active-bg:   rgba(16,185,129,0.08);
+  --st-row-hover-bg:    rgba(255,255,255,0.025);
 
-  /* KPI */
-  --st-kpi-bg:         #0A1410;
-  --st-kpi-br:         rgba(16,185,129,0.10);
+  --st-msg-user-bg:     #161B22;
+  --st-msg-user-br:     rgba(255,255,255,0.05);
 
-  /* empty state */
-  --st-empty-icon-bg:  rgba(16,185,129,0.08);
-  --st-empty-icon-br:  rgba(16,185,129,0.16);
-  --st-empty-chip-bg:  #0F1C16;
+  --st-reply-bg:        #161B22;
+  --st-reply-br:        rgba(255,255,255,0.06);
 
-  /* ticket row */
-  --st-row-active-bg:  rgba(16,185,129,0.07);
-  --st-row-active-bl:  #10b981;
-  --st-row-hover-bg:   rgba(16,185,129,0.03);
-  --st-cat-chip-bg:    #0F1C16;
+  --st-dropdown-bg:     #1B222C;
+
+  --st-cat-chip-bg:     #161B22;
+  --st-empty-chip-bg:   #161B22;
 }
 
 /* ─── LIGHT THEME ────────────────────────────────────────── */
@@ -115,7 +73,7 @@
   --st-shadow-sm:       0 4px 12px rgba(16,185,129,0.20);
 
   --st-status-open-bg:     rgba(37,99,235,0.08);
-  --st-status-open-col:    #2563EB;
+  --st-status-open-col:    #33d187;
   --st-status-inprog-bg:   rgba(217,119,6,0.09);
   --st-status-inprog-col:  #D97706;
   --st-status-resolved-bg: rgba(5,150,105,0.09);
@@ -128,7 +86,7 @@
   --st-pri-low-bg:     rgba(110,175,146,0.14);
   --st-pri-low-col:    #6EAF92;
   --st-pri-med-bg:     rgba(37,99,235,0.08);
-  --st-pri-med-col:    #2563EB;
+  --st-pri-med-col:    #ebb025;
   --st-pri-high-bg:    rgba(217,119,6,0.09);
   --st-pri-high-col:   #D97706;
   --st-pri-urgent-bg:  rgba(220,38,38,0.08);
@@ -231,13 +189,39 @@
 .st-unread-banner__text { font-size: 12px; color: var(--st-danger); font-weight: 700; transition: color 0.3s; }
 
 .st-btn-new {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  color: #fff; border: none; padding: 9px 18px;
-  border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 700;
-  transition: opacity 0.15s;
-  box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+  background: #10b981;
+  color: #fff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.25);
 }
-.st-btn-new:hover { opacity: 0.85; }
+
+.st-btn-new:hover {
+  background: #0ea572;
+}
+
+.st-pager__btn--active {
+  background: #10b981;
+  border-color: rgba(16,185,129,0.45);
+  color: #fff;
+  font-weight: 800;
+}
+
+.st-btn-send--active {
+  background: #10b981;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+}
+
+.st-btn-send--active:hover {
+  background: #0ea572;
+} 
+
 
 /* ─── KPI GRID ───────────────────────────────────────────── */
 .st-kpi-grid {
@@ -435,10 +419,7 @@
   color: var(--st-text); cursor: pointer; font-size: 11px;
   font-weight: 400; transition: all 0.12s;
 }
-.st-pager__btn--active {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  border-color: rgba(16,185,129,0.5); color: #fff; font-weight: 800;
-}
+
 .st-pager__btn:disabled { opacity: 0.35; cursor: not-allowed; color: var(--st-muted); }
 .st-pager__dots    { width: 28px; text-align: center; color: var(--st-muted); font-size: 11px; }
 
@@ -620,11 +601,8 @@
   display: flex; align-items: center; gap: 7px;
   transition: all 0.2s;
 }
-.st-btn-send--active   {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(16,185,129,0.30);
-}
+
+
 .st-btn-send--inactive { background: var(--st-surf3); color: var(--st-muted); cursor: not-allowed; opacity: 0.5; }
 .st-btn-send__spinner  {
   width: 12px; height: 12px; border-radius: 50%;
