@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
@@ -6,16 +6,20 @@ import { StatCard } from "../../../types";
 import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
 import CompanyOverview from "../../../components/CompanyOverview";
-
 import UserManagement from "../../../components/UserManagement";
 import PlatformGrowthChart from "../../../components/PlatformGrowthChart";
 import AuditLogs from "../../../components/AuditLogs";
 
 const DASHBOARD_API =
   "https://hostapi.soft7.in/v1/admin/companies/dashboard";
-
-const USERS_API =
+  const USERS_API =
   "https://hostapi.soft7.in/v1/admin/companies/user?role=admin";
+  const COMPANIES_API =
+  "https://hostapi.soft7.in/v1/admin/companies";
+const BRAND = "#10b981";
+const BRAND_HOVER = "#059669";
+const BRAND_SOFT = "rgba(16, 22, 185, 0.16)";
+const BRAND_GLOW = "rgba(16,185,129,0.32)";
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -73,12 +77,7 @@ interface DashboardCompany {
   status: string; plan: string; users: number;
 }
 interface DashboardUser {
-  id: string;
-  un: string;
-  role: string;
-  status: string;
-  av: string;
-  col: string;
+  id: string; un: string; role: string; status: string; av: string; col: string;
 }
 interface DashboardLog {
   id: string; msg: string; actor: string; time: string; sev: string;
@@ -246,55 +245,89 @@ export default function DashboardPage() {
         });
         if (!mounted) return;
         const data = apiResponse?.data ?? apiResponse;
-// USERS API
-const userResponse = await axiosInstance.get(USERS_API, {
-  headers: getExternalHeaders(),
-  withCredentials: false,
-});
 
-const usersData =
-  userResponse?.data?.data?.data || [];
-
-const formattedUsers = Array.isArray(usersData)
-  ? usersData.slice(0, 4).map((user: any, index: number) => ({
-      id: user.id?.toString() || index.toString(),
-      un:
-        user.name ||
-        user.username ||
-        user.full_name ||
-        "Unknown User",
-      role: user.role || "Admin",
-      status: user.status || "Active",
-      av: (
-        user.name ||
-        user.username ||
-        "U"
-      )
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase(),
-      col: "#0d9488",
-    }))
-  : [];
-
-setUsers(formattedUsers);
         setStats([
           { label: "Campaigns", value: Number(data.campaigns_count ?? 0).toLocaleString(), icon: "📢", change: "—", changeType: "up", accent: "blue" },
           { label: "Users",     value: Number(data.users_count ?? 0).toLocaleString(),     icon: "👥", change: "—", changeType: "up", accent: "green" },
           { label: "Chatbots",  value: Number(data.chatbot_count ?? 0).toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
           { label: "Messages",  value: Number(data.total_messages ?? 0).toLocaleString(),  icon: "💬", change: "—", changeType: "up", accent: "orange" },
         ]);
+const { data: companiesResponse } = await axiosInstance.get(
+  COMPANIES_API,
+  {
+    headers: getExternalHeaders(),
+    withCredentials: false,
+  }
+);
 
-        setCompanies([
-          { id:"1", name:"Acme Corp",   ini:"AC", col:"#10b981", status:"Active", plan:"Enterprise", users:248 },
-          { id:"2", name:"Nova Labs",   ini:"NL", col:"#34d399", status:"Active", plan:"Basic",      users:132 },
-          { id:"3", name:"Vertex AI",   ini:"VA", col:"#059669", status:"Active", plan:"Free Trial", users:54  },
-          { id:"4", name:"Pulse Media", ini:"PM", col:"#10b981", status:"Active", plan:"Enterprise", users:89  },
-        ]);
+const companiesData =
+  companiesResponse?.data || [];
 
+setCompanies(
+  companiesData.slice(0, 4).map((company: any, index: number) => ({
+    id: company.id || index.toString(),
 
+    name: company.name || "Unknown Company",
+
+    ini: (company.name || "C")
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2),
+
+    col: [
+      "#10b981",
+      "#34d399",
+      "#059669",
+      "#0d9488",
+    ][index % 4],
+
+    status:
+      company.status
+        ? company.status.charAt(0).toUpperCase() +
+          company.status.slice(1)
+        : "Active",
+
+    plan: "Basic",
+
+    users: 0,
+  }))
+);
+
+       const { data: usersResponse } = await axiosInstance.get(USERS_API, {
+  headers: getExternalHeaders(),
+  withCredentials: false,
+});
+
+const usersData =
+  usersResponse?.data?.data || [];
+setUsers(
+  usersData.slice(0, 4).map((user: any, index: number) => ({
+    id: user.id || index.toString(),
+
+    un: user.name || "Unknown User",
+
+   role: "User",
+    status:
+      user.status?.charAt(0).toUpperCase() +
+        user.status?.slice(1) || "Active",
+
+    av: (user.name || "U")
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2),
+
+    col: [
+      "#10b981",
+      "#34d399",
+      "#059669",
+      "#0d9488",
+    ][index % 4],
+  }))
+);
         setLogs([
           { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
           { id:"2", msg:"Company subscription upgraded to Enterprise", actor:"Michael Chen",      time:"18 mins ago", sev:"success" },
@@ -409,7 +442,12 @@ setUsers(formattedUsers);
         }}
       >
         <Section isDark={isDark} isMobile={isMobile}>
-          <CompanyOverview companies={companies} loading={loading} error={error} />
+       <CompanyOverview
+  companies={companies}
+  loading={loading}
+  error={error}
+  onViewAll={() => router.push("/user/manage-companies")}
+/>
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
           <UserManagement users={users} loading={loading} error={error} />
