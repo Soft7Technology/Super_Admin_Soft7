@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const [company, activeUsers, inactiveUsers, activeSubscriptions, expiredSubscriptions, cancelledSubscriptions, trialSubscriptions] = await prisma.$transaction([
-      prisma.companies.findUnique({
+      prisma.company.findUnique({
         where: { id: companyId },
         select: {
           id: true,

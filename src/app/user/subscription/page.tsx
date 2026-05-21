@@ -94,7 +94,7 @@ interface CustomPlan  { id:number; name:string; price:number; yearPrice:number; 
 
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const INIT_SUBS: SubRow[] = [
-  { id:1, company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
+  { id:"1", company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
 ];
 
 const INIT_PLANS: PlanRow[] = [
@@ -895,7 +895,7 @@ export default function Subscription() {
       : "#00CBA4";
 
   return {
-   id: plan.id,
+  id: String(plan.id),
 
     // Show plan name in UI
     company: name,

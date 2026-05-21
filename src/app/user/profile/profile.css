@@ -6,49 +6,30 @@
 :root,
 [data-theme="dark"],
 .dark {
-  --pf-bg:              #050D0A;
-  --pf-surf:            #0A1410;
-  --pf-surf2:           #0F1C16;
-  --pf-surf3:           #162419;
-  --pf-border:          rgba(16, 185, 129, 0.10);
-  --pf-accent:          #10b981;
-  --pf-accent2:         #34d399;
-  --pf-text:            #D4EDE5;
-  --pf-muted:           #4A7A63;
-  --pf-title:           #E8F5EF;
-  --pf-success:         #34d399;
-  --pf-danger:          #F87171;
-  --pf-warn:            #FBBF24;
-  --pf-info:            #60A5FA;
-  --pf-pink:            #F472B6;
-  --pf-scrollbar:       #162419;
-  --pf-placeholder:     #2D5242;
-  --pf-input-bg:        #0A1410;
-  --pf-input-dis-bg:    #162419;
-  --pf-select-opt-bg:   #0F1C16;
-  --pf-toggle-off:      #162419;
-  --pf-shadow:          0 1px 4px rgba(0,0,0,0.4);
-  --pf-shadow-avatar:   0 8px 32px rgba(16,185,129,0.35);
-  --pf-banner-bg:       linear-gradient(135deg,#031A10 0%,#0A2E1C 40%,#031C14 100%);
-  --pf-card-border:     rgba(16,185,129,0.10);
-  --pf-hero-border:     #050D0A;
-  --pf-perm-granted-bg: rgba(52,211,153,0.10);
-  --pf-perm-denied-bg:  #162419;
-  --pf-pwd-err-bg:      rgba(248,113,113,0.08);
-  --pf-pwd-err-br:      rgba(248,113,113,0.20);
-  --pf-danger-card-bg:  rgba(248,113,113,0.04);
-  --pf-danger-card-br:  rgba(248,113,113,0.20);
-  --pf-danger-card-hbr: rgba(248,113,113,0.14);
-  --pf-danger-btn-bg:   rgba(248,113,113,0.08);
-  --pf-danger-btn-br:   rgba(248,113,113,0.28);
-  --pf-danger-btn-hbg:  rgba(248,113,113,0.16);
-  --pf-info-note-bg:    rgba(16,185,129,0.06);
-  --pf-info-note-br:    rgba(16,185,129,0.18);
-  --pf-tab-bar-bg:      #0A1410;
-  --pf-stat-strip-bg:   #0F1C16;
-  --pf-activity-foot-bg:#0F1C16;
-  --pf-bar-track:       #162419;
-  --pf-perm-bar-bg:     linear-gradient(90deg,#10b981,#34d399);
+  --pf-bg:            #05070D;
+  --pf-surf:          #0B1220;
+  --pf-surf2:         #111827;
+  --pf-surf3:         #1E293B;
+
+  --pf-border:        rgba(59,130,246,0.10);
+
+  --pf-muted:         #7C8BA1;
+  --pf-title:         #F1F5F9;
+  --pf-text:          #CBD5E1;
+
+  --pf-scrollbar:     #1E293B;
+  --pf-placeholder:   #475569;
+
+  --pf-input-bg:      #0B1220;
+  --pf-input-dis-bg:  #111827;
+  --pf-select-opt-bg: #111827;
+  --pf-toggle-off:    #1E293B;
+
+  --pf-tab-bar-bg:    #0B1220;
+  --pf-stat-strip-bg: #111827;
+  --pf-activity-foot-bg:#111827;
+
+  --pf-bar-track:     #1E293B;
 }
 
 /* ─── LIGHT THEME ────────────────────────────────────────── */
@@ -163,29 +144,15 @@
   background: var(--pf-banner-bg);
   position: relative; overflow: hidden;
 }
-.pf-hero__banner-orb1 {
-  position: absolute; top: -30px; left: -20px;
-  width: 120px; height: 120px; border-radius: 50%;
-  background: rgba(16,185,129,0.22); filter: blur(30px);
-}
-.pf-hero__banner-orb2 {
-  position: absolute; top: 10px; right: 60px;
-  width: 80px; height: 80px; border-radius: 50%;
-  background: rgba(52,211,153,0.14); filter: blur(20px);
-}
-.pf-hero__banner-orb3 {
-  position: absolute; bottom: -10px; left: 40%;
-  width: 100px; height: 60px; border-radius: 50%;
-  background: rgba(16,185,129,0.10); filter: blur(25px);
-}
+
 .pf-hero__banner-grid {
   position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(16,185,129,0.04) 1px,transparent 1px),
-                    linear-gradient(90deg,rgba(16,185,129,0.04) 1px,transparent 1px);
+  background-image: linear-gradient(rgba(16, 126, 185, 0.04) 1px,transparent 1px),
+                    linear-gradient(90deg,rgba(16, 185, 134, 0.04) 1px,transparent 1px);
   background-size: 28px 28px;
 }
 [data-theme="light"] .pf-hero__banner-grid {
-  background-image: linear-gradient(rgba(5,150,105,0.05) 1px,transparent 1px),
+  background-image: linear-gradient(rgba(5, 65, 150, 0.05) 1px,transparent 1px),
                     linear-gradient(90deg,rgba(5,150,105,0.05) 1px,transparent 1px);
 }
 
@@ -379,7 +346,7 @@
 }
 .pf-toggle--on {
   background: linear-gradient(135deg, #10b981, #34d399);
-  border-color: rgba(16,185,129,0.4);
+  border-color: rgba(59,130,246,0.04);
   box-shadow: none;
 }
 .pf-toggle__knob {
