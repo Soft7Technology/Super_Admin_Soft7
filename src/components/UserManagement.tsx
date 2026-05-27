@@ -1,6 +1,7 @@
 ﻿"use client";
 import React, { useState } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
+import { useRouter } from "next/navigation";
 
 interface DbUser {
   id:     string;
@@ -54,14 +55,38 @@ export default function UserManagement({
 }) {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
+  const router = useRouter();
 
   return (
     <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius:"16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s" }}>
       <div style={{ padding:"24px 26px 20px", borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <span style={{ fontWeight:800, fontSize:"1.18rem", color:t.text }}>User Management</span>
-        <span style={{ fontSize:"0.95rem", color:t.accent, cursor:"pointer", fontWeight:800, display:"flex", alignItems:"center", gap:"6px" }}>
-          View All <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </span>
+        <button
+  onClick={() => router.push("/user/all-user")}
+  style={{
+    fontSize: "0.95rem",
+    color: t.accent,
+    cursor: "pointer",
+    fontWeight: 800,
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    border: "none",
+    background: "transparent",
+  }}
+>
+  View All
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+  >
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+</button>
       </div>
       {loading ? (
         <div style={{ padding:"30px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>Loading...</div>

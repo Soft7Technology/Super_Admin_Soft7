@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
@@ -12,6 +12,10 @@ import AuditLogs from "../../../components/AuditLogs";
 
 const DASHBOARD_API =
   "https://hostapi.soft7.in/v1/admin/companies/dashboard";
+  const USERS_API =
+  "https://hostapi.soft7.in/v1/admin/companies/user?role=admin";
+  const COMPANIES_API =
+  "https://hostapi.soft7.in/v1/admin/companies";
 const BRAND = "#10b981";
 const BRAND_HOVER = "#059669";
 const BRAND_SOFT = "rgba(16, 22, 185, 0.16)";
@@ -252,21 +256,82 @@ export default function DashboardPage() {
           { label: "Chatbots",  value: Number(data.chatbot_count ?? 0).toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
           { label: "Messages",  value: Number(data.total_messages ?? 0).toLocaleString(),  icon: "💬", change: "—", changeType: "up", accent: "orange" },
         ]);
+const { data: companiesResponse } = await axiosInstance.get(
+  COMPANIES_API,
+  {
+    headers: getExternalHeaders(),
+    withCredentials: false,
+  }
+);
 
-        setCompanies([
-          { id:"1", name:"Acme Corp",   ini:"AC", col:"#10b981", status:"Active", plan:"Enterprise", users:248 },
-          { id:"2", name:"Nova Labs",   ini:"NL", col:"#34d399", status:"Active", plan:"Basic",      users:132 },
-          { id:"3", name:"Vertex AI",   ini:"VA", col:"#059669", status:"Active", plan:"Free Trial", users:54  },
-          { id:"4", name:"Pulse Media", ini:"PM", col:"#10b981", status:"Active", plan:"Enterprise", users:89  },
-        ]);
+const companiesData =
+  companiesResponse?.data || [];
 
-        setUsers([
-          { id:"1", un:"Sarah Johnson", role:"Admin", status:"Active", av:"SJ", col:"#10b981" },
-          { id:"2", un:"Michael Chen",  role:"User",  status:"Active", av:"MC", col:"#34d399" },
-          { id:"3", un:"Emily Davis",   role:"Admin", status:"Active", av:"ED", col:"#059669" },
-          { id:"4", un:"James Wilson",  role:"User",  status:"Active", av:"JW", col:"#0d9488" },
-        ]);
+setCompanies(
+  companiesData.slice(0, 4).map((company: any, index: number) => ({
+    id: company.id || index.toString(),
 
+    name: company.name || "Unknown Company",
+
+    ini: (company.name || "C")
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2),
+
+    col: [
+      "#10b981",
+      "#34d399",
+      "#059669",
+      "#0d9488",
+    ][index % 4],
+
+    status:
+      company.status
+        ? company.status.charAt(0).toUpperCase() +
+          company.status.slice(1)
+        : "Active",
+
+    plan: "Basic",
+
+    users: 0,
+  }))
+);
+
+       const { data: usersResponse } = await axiosInstance.get(USERS_API, {
+  headers: getExternalHeaders(),
+  withCredentials: false,
+});
+
+const usersData =
+  usersResponse?.data?.data || [];
+setUsers(
+  usersData.slice(0, 4).map((user: any, index: number) => ({
+    id: user.id || index.toString(),
+
+    un: user.name || "Unknown User",
+
+   role: "User",
+    status:
+      user.status?.charAt(0).toUpperCase() +
+        user.status?.slice(1) || "Active",
+
+    av: (user.name || "U")
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2),
+
+    col: [
+      "#10b981",
+      "#34d399",
+      "#059669",
+      "#0d9488",
+    ][index % 4],
+  }))
+);
         setLogs([
           { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
           { id:"2", msg:"Company subscription upgraded to Enterprise", actor:"Michael Chen",      time:"18 mins ago", sev:"success" },
@@ -381,7 +446,12 @@ export default function DashboardPage() {
         }}
       >
         <Section isDark={isDark} isMobile={isMobile}>
-          <CompanyOverview companies={companies} loading={loading} error={error} />
+       <CompanyOverview
+  companies={companies}
+  loading={loading}
+  error={error}
+  onViewAll={() => router.push("/user/manage-companies")}
+/>
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
           <UserManagement users={users} loading={loading} error={error} />
