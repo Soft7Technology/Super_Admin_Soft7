@@ -1,4 +1,5 @@
-﻿"use client";
+﻿
+"use client";
 
 import { useState, useEffect } from "react";
 import "./all-user.css";
@@ -22,8 +23,8 @@ const getExternalHeaders = () => {
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface User {
-  id: number; name: string; email: string; phone: string;
-  role: string; status: string; company: string; companyId?: number;
+   id: string; name: string; email: string; phone: string;
+  role: string; status: string; company: string; companyId?: string;
   plan: string; av: string; login: string; joined: string;
   msgs: number; campaigns: number; chatbots: number; pro: boolean;
 }
@@ -45,14 +46,14 @@ const STATUS_DOT: Record<string, string> = {
   PENDING:   "au-status-dot--other",
 };
 const PLAN_COLOR: Record<string, string> = {
-  Enterprise: "#0d9488",
+  Enterprise: "#10b981",
   Pro:        "#6366f1",
   Basic:      "#f59e0b",
-  Starter:    "#14b8a6",
+  Starter:    "#34d399",
 };
 function planColor(plan: string) { return PLAN_COLOR[plan] ?? "#94a3b8"; }
 const ROLE_COLOR: Record<string, string> = {
-  Admin: "#0d9488",
+  Admin: "#10b981",
   User:  "#64748b",
 };
 function roleColor(role: string) { return ROLE_COLOR[role] ?? "#94a3b8"; }
@@ -90,7 +91,57 @@ function KPI({ label, value, icon, color }: {
 // ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
 function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
   const [tab, setTab] = useState<"info" | "stats">("info");
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+const [userStats, setUserStats] = useState<any>(null);
+const [statsLoading, setStatsLoading] = useState(false);
+const fetchUserStats = async () => {
+  try {
+    setStatsLoading(true);
+
+    const res = await fetch(
+       `https://hostapi.soft7.in/v1/admin/users/stats`,
+      {
+        method: "GET",
+        headers: getExternalHeaders(),
+      }
+    );
+
+    const data = await res.json();
+
+    console.log("USER STATS =>", data);
+
+if (data.success) {
+  setUserStats({
+    messages:
+      data?.data?.messages ||
+      data?.data?.total_messages ||
+      0,
+
+    campaigns:
+      data?.data?.campaigns ||
+      data?.data?.total_campaigns ||
+      0,
+
+    chatbots:
+      data?.data?.chatbots ||
+      data?.data?.total_chatbots ||
+      0,
+
+    flows:
+      data?.data?.flows ||
+      data?.data?.total_flows ||
+      0,
+  });
+} else {
+  console.error(data.message);
+}
+  } catch (error) {
+    console.error("Stats Error:", error);
+  } finally {
+    setStatsLoading(false);
+  }
+};
 
   return (
     <div className="au-panel">
@@ -121,7 +172,13 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           {([["info", "Info"], ["stats", "Stats"]] as [string, string][]).map(([k, l]) => (
             <button
               key={k}
-              onClick={() => setTab(k as "info" | "stats")}
+             onClick={() => {
+  setTab(k as "info" | "stats");
+
+  if (k === "stats") {
+    fetchUserStats();
+  }
+}}
               className={`au-panel__tab ${tab === k ? "au-panel__tab--active" : ""}`}
             >{l}</button>
           ))}
@@ -147,25 +204,84 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           </div>
         )}
 
-        {tab === "stats" && (
-          <div className="au-stats-grid">
-            {([
-              ["Messages",  user.msgs.toLocaleString(),           "#0d9488"],
-              ["Campaigns", String(user.campaigns),               "#6366f1"],
-              ["Chatbots",  String(user.chatbots),                "#f59e0b"],
-              ["Flows",     String(Math.floor(user.msgs / 80)),   "#14b8a6"],
-            ] as [string, string, string][]).map(([label, value, color]) => (
-              <div key={label} className="au-stats-cell">
-                <div className="au-stats-cell__val" style={{ color }}>{value}</div>
-                <div className="au-stats-cell__lbl">{label}</div>
-              </div>
-            ))}
+       {tab === "stats" && (
+  <div className="au-stats-grid">
+
+    {statsLoading ? (
+      <div className="au-empty__title">
+        Loading stats...
+      </div>
+    ) : (
+      <>
+        <div className="au-stats-cell">
+          <div
+            className="au-stats-cell__val"
+            style={{ color: "#10b981" }}
+          >
+            {userStats?.messages || 0}
           </div>
-        )}
+
+          <div className="au-stats-cell__lbl">
+            Messages
+          </div>
+        </div>
+
+        <div className="au-stats-cell">
+          <div
+            className="au-stats-cell__val"
+            style={{ color: "#6366f1" }}
+          >
+            {userStats?.campaigns || 0}
+          </div>
+
+          <div className="au-stats-cell__lbl">
+            Campaigns
+          </div>
+        </div>
+
+        <div className="au-stats-cell">
+          <div
+            className="au-stats-cell__val"
+            style={{ color: "#f59e0b" }}
+          >
+            {userStats?.chatbots || 0}
+          </div>
+
+          <div className="au-stats-cell__lbl">
+            Chatbots
+          </div>
+        </div>
+
+        <div className="au-stats-cell">
+          <div
+            className="au-stats-cell__val"
+            style={{ color: "#34d399" }}
+          >
+            {userStats?.flows || 0}
+          </div>
+
+          <div className="au-stats-cell__lbl">
+            Flows
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+)}
 
         <div className="au-panel__actions">
-          <button className="au-btn au-btn--primary">Edit User</button>
-          <button className="au-btn au-btn--ghost">Reset Password</button>
+        <button
+  className="au-btn au-btn--primary"
+  onClick={() => setEditOpen(true)}
+>
+  Edit User
+</button>
+        <button
+  className="au-btn au-btn--ghost"
+  onClick={() => setPasswordOpen(true)}
+>
+  Reset Password
+</button>
           {user.status === "SUSPENDED"
             ? <button className="au-btn au-btn--success">Restore Account</button>
             : <button className="au-btn au-btn--danger">Suspend User</button>
@@ -180,142 +296,343 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
           onUpdated={(updatedUser) => { Object.assign(user, updatedUser); }}
         />
       )}
+      {passwordOpen && (
+  <ResetPasswordModal
+    onClose={() => setPasswordOpen(false)}
+  />
+)}
     </div>
   );
 }
 
-// ─── EDIT MODAL ───────────────────────────────────────────────────────────────
+// ─── EDIT USER MODAL ─────────────────────────────────────────────────────────
 function EditUserModal({
-  user, onClose, onUpdated,
+  user,
+  onClose,
+  onUpdated,
 }: {
-  user: User; onClose: () => void; onUpdated: (u: User) => void;
+  user: User;
+  onClose: () => void;
+  onUpdated: (updatedUser: Partial<User>) => void;
 }) {
-  const [form, setForm] = useState({ ...user });
-  const handleChange = (field: string, value: any) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const [name, setName] = useState(user.name || "");
+  const [email, setEmail] = useState(user.email || "");
+  const [phone, setPhone] = useState(user.phone || "");
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = async () => {
+  const handleUpdateUser = async () => {
+    if (!name || !email || !phone) {
+      alert("All fields are required");
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/admin/users/${user.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name, email: form.email,
-          phone: form.phone, companyId: form.companyId, plan: form.plan,
-        }),
-      });
-      const data = await res.json();
+      setLoading(true);
+
+      const response = await fetch(
+         `https://hostapi.soft7.in/v1/admin/users/${user.id}`,
+        {
+          method: "PUT",
+          headers: getExternalHeaders(),
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("UPDATE USER RESPONSE =>", data);
+
       if (data.success) {
-        alert("Updated successfully");
-        onUpdated({ ...user, ...form });
+        alert("User updated successfully");
+
+        onUpdated({
+          name,
+          email,
+          phone,
+        });
+
         onClose();
       } else {
-        alert(data.error || "Update failed");
+        alert(data.message || "Failed to update user");
       }
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error("Update User Error:", error);
       alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+return (
+  <div className="au-overlay" onClick={onClose}>
+    <div
+      className="au-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="au-modal__header">
+        <div>
+          <div className="au-modal__title">
+            Edit User
+          </div>
+
+          <div className="au-modal__sub">
+            Update user details
+          </div>
+        </div>
+
+        <button
+          className="au-modal__close"
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="au-modal__body">
+
+        {/* NAME */}
+        <div className="au-field">
+          <div className="au-field__label">
+            NAME
+          </div>
+
+          <input
+            type="text"
+            className="au-input"
+            value={name}
+            onChange={(e) =>
+              setName(e.target.value)
+            }
+          />
+        </div>
+
+        {/* EMAIL */}
+        <div className="au-field">
+          <div className="au-field__label">
+            EMAIL
+          </div>
+
+          <input
+            type="email"
+            className="au-input"
+            value={email}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
+          />
+        </div>
+
+        {/* PHONE */}
+        <div className="au-field">
+          <div className="au-field__label">
+            PHONE
+          </div>
+
+          <input
+            type="text"
+            className="au-input"
+            value={phone}
+            onChange={(e) =>
+              setPhone(e.target.value)
+            }
+          />
+        </div>
+
+      </div>
+
+      <div className="au-modal__actions">
+        <button
+          className="au-btn au-btn--primary"
+          onClick={handleUpdateUser}
+          disabled={loading}
+        >
+          {loading ? "Updating..." : "Update User"}
+        </button>
+
+        <button
+          className="au-btn au-btn--ghost"
+          onClick={onClose}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+);
+}
+// ─── RESET PASSWORD MODAL ───────────────────────────────────────────────────
+function ResetPasswordModal({
+  onClose,
+}: {
+  onClose: () => void;
+}) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  const [showCurrentPassword, setShowCurrentPassword] =
+    useState(false);
+
+  const [showNewPassword, setShowNewPassword] =
+    useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword) {
+      alert("All fields are required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        "https://hostapi.soft7.in/v1/auth/change-password",
+        {
+          method: "POST",
+          headers: getExternalHeaders(),
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("PASSWORD RESPONSE =>", data);
+
+      if (data.success) {
+        alert("Password changed successfully");
+        onClose();
+      } else {
+        alert(data.message || "Password change failed");
+      }
+    } catch (error) {
+      console.error("Password Error:", error);
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="au-overlay" onClick={onClose}>
-      <div className="au-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="au-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="au-modal__header">
           <div>
-            <div className="au-modal__title">Edit User</div>
-            <div className="au-modal__sub">Update user details below</div>
-          </div>
-          <button className="au-modal__close" onClick={onClose}>×</button>
-        </div>
-        <div className="au-modal__body">
-          <div className="au-field">
-            <div className="au-field__label">FULL NAME</div>
-            <input type="text" className="au-input" value={form.name}
-              onChange={(e) => handleChange("name", e.target.value)} />
-          </div>
-          <div className="au-field">
-            <div className="au-field__label">EMAIL ADDRESS</div>
-            <input type="email" className="au-input" value={form.email}
-              onChange={(e) => handleChange("email", e.target.value)} />
-          </div>
-          <div className="au-field">
-            <div className="au-field__label">MOBILE NUMBER</div>
-            <input type="tel" className="au-input" value={form.phone}
-              onChange={(e) => handleChange("phone", e.target.value)} />
-          </div>
-          <div className="au-modal__grid-2">
-            <div className="au-field">
-              <div className="au-field__label">COMPANY</div>
-              <select className="au-select" value={form.companyId || ""}
-                onChange={(e) => handleChange("companyId", Number(e.target.value))}>
-                <option value="">No Company</option>
-                <option value={1}>Soft7</option>
-                <option value={2}>Acme Corp</option>
-                <option value={3}>Tech Solutions</option>
-              </select>
+            <div className="au-modal__title">
+              Reset Password
             </div>
-            <div className="au-field">
-              <div className="au-field__label">PLAN</div>
-              <select className="au-select" value={form.plan || "Starter"}
-                onChange={(e) => handleChange("plan", e.target.value)}>
-                <option value="Starter">Starter</option>
-                <option value="Basic">Basic</option>
-                <option value="Pro">Pro</option>
-                <option value="Enterprise">Enterprise</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div className="au-modal__actions">
-          <button className="au-btn au-btn--primary" onClick={handleSave}>Save Changes</button>
-          <button className="au-btn au-btn--ghost" onClick={onClose}>Cancel</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// ─── INVITE MODAL ─────────────────────────────────────────────────────────────
-function InviteModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="au-overlay" onClick={onClose}>
-      <div className="au-modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-        <div className="au-modal__header">
-          <div>
-            <div className="au-modal__title">Invite New User</div>
-            <div className="au-modal__sub">Send an invitation to join the platform.</div>
-          </div>
-          <button className="au-modal__close" onClick={onClose}>×</button>
-        </div>
-        <div className="au-modal__body">
-          {([
-            ["FULL NAME",     "e.g. John Smith",  "text"],
-            ["EMAIL ADDRESS", "john@company.com", "email"],
-            ["PHONE NUMBER",  "+91 98765 43210",  "tel"],
-          ] as [string, string, string][]).map(([label, ph, type]) => (
-            <div key={label} className="au-field">
-              <div className="au-field__label">{label}</div>
-              <input type={type} placeholder={ph} className="au-input" />
+            <div className="au-modal__sub">
+              Update user password
             </div>
-          ))}
-          <div className="au-modal__grid-2">
-            {([
-              ["ROLE", ["Admin", "User"]],
-              ["PLAN", ["Starter", "Basic", "Pro", "Enterprise"]],
-            ] as [string, string[]][]).map(([label, options]) => (
-              <div key={label} className="au-field">
-                <div className="au-field__label">{label}</div>
-                <select className="au-select">
-                  {options.map((o: string) => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-            ))}
           </div>
-          <div className="au-modal__actions">
-            <button className="au-btn au-btn--primary" onClick={onClose}>Send Invite</button>
-            <button className="au-btn au-btn--ghost"   onClick={onClose}>Cancel</button>
+
+          <button
+            className="au-modal__close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="au-modal__body">
+
+          {/* CURRENT PASSWORD */}
+          <div className="au-field">
+            <div className="au-field__label">
+              CURRENT PASSWORD
+            </div>
+
+            <div className="au-password-wrap">
+              <input
+                type={
+                  showCurrentPassword
+                    ? "text"
+                    : "password"
+                }
+                className="au-input"
+                value={currentPassword}
+                onChange={(e) =>
+                  setCurrentPassword(e.target.value)
+                }
+              />
+
+              <button
+                type="button"
+                className="au-password-toggle"
+                onClick={() =>
+                  setShowCurrentPassword(
+                    !showCurrentPassword
+                  )
+                }
+              >
+                👁
+              </button>
+            </div>
           </div>
+
+          {/* NEW PASSWORD */}
+          <div className="au-field">
+            <div className="au-field__label">
+              NEW PASSWORD
+            </div>
+
+            <div className="au-password-wrap">
+              <input
+                type={
+                  showNewPassword
+                    ? "text"
+                    : "password"
+                }
+                className="au-input"
+                value={newPassword}
+                onChange={(e) =>
+                  setNewPassword(e.target.value)
+                }
+              />
+
+              <button
+                type="button"
+                className="au-password-toggle"
+                onClick={() =>
+                  setShowNewPassword(
+                    !showNewPassword
+                  )
+                }
+              >
+                👁
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <div className="au-modal__actions">
+          <button
+            className="au-btn au-btn--primary"
+            onClick={handlePasswordChange}
+            disabled={loading}
+          >
+            {loading
+              ? "Changing..."
+              : "Change Password"}
+          </button>
+
+          <button
+            className="au-btn au-btn--ghost"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>
@@ -453,7 +770,7 @@ useEffect(() => {
           u.plan_name === "Enterpriess" ? "Enterprise" :
           u.plan_name === "Free Trial"  ? "Starter"    :
           u.plan_name                   || "Starter",
-        av:        "#0d9488",
+       av: "#10b981",
         login:     timeAgo(u.last_login_at),
         joined:    u.created_at ? new Date(u.created_at).toLocaleDateString() : "—",
         msgs: 0, campaigns: 0, chatbots: 0,
@@ -509,8 +826,8 @@ useEffect(() => {
 
       {/* KPI */}
       <div className="au-kpi-grid">
-        <KPI label="Total Users"   value={stats.totalUsers.toLocaleString()}   icon="👥" color="#0d9488" />
-        <KPI label="Active Users"  value={stats.activeUsers.toLocaleString()}  icon="✅" color="#14b8a6" />
+        <KPI label="Total Users"   value={stats.totalUsers.toLocaleString()}   icon="👥" color="#2bc386" />
+        <KPI label="Active Users"  value={stats.activeUsers.toLocaleString()}  icon="✅" color="#34d399" />
         <KPI label="Admin Users"   value={stats.adminUsers.toLocaleString()}   icon="🛡" color="#6366f1" />
         <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon="⭐" color="#f59e0b" />
       </div>

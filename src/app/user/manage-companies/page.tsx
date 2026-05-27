@@ -30,7 +30,7 @@ interface RawCompany {
   phone: string | null;
   domain: string | null;
   logo: string | null;
-  status: string;           // lowercase: "active" | "inactive" | "suspended" | "trial"
+  status: string;          
   credit_balance: string;
   created_at: string;
   updated_at: string;
@@ -53,8 +53,8 @@ interface Company {
   email: string;
   phone: string;
   domain: string;
-  logo: string;       // initials fallback
-  col: string;        // avatar background color
+  logo: string;      
+  col: string;        
   status: Status;
   plan: Plan;
   users: number;
@@ -67,8 +67,8 @@ interface Company {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
-  "#6C5CE7", "#0d9488", "#f59e0b", "#3b82f6",
-  "#ec4899", "#14b8a6", "#8b5cf6", "#ef4444",
+  "#6C5CE7", "#0d9462", "#f59e0b", "#3b82f6",
+  "#ec4899", "#14b871", "#8b5cf6", "#ef4444",
 ];
 
 function avatarColor(id: string) {
@@ -95,9 +95,9 @@ function enrichCompany(raw: RawCompany): Company {
     logo:          (raw.name || "??").slice(0, 2).toUpperCase(),
     col:           avatarColor(raw.id),
     status:        normaliseStatus(raw.status),
-    plan:          "Starter",       // API doesn't return plan yet — default Starter
-    users:         0,               // not in API response
-    mrr:           0,               // not in API response
+    plan:          "Starter",      
+    users:         0,             
+    mrr:           0,            
     end:           "N/A",
     creditBalance: raw.credit_balance ?? "0.00",
     createdAt:     raw.created_at
@@ -160,44 +160,96 @@ function CompanyModal({
     setErr(null);
   }, [company]);
 
-  const handleSubmit = async () => {
-    setErr(null);
+ const handleSubmit = async () => {
+  setErr(null);
 
-    // Validation
-    if (!name.trim())  return setErr("Company name is required.");
-    if (!email.trim()) return setErr("Email is required.");
-    if (!company && !password.trim())
-      return setErr("Password is required for new companies.");
+  if (!name.trim()) {
+    return setErr("Company name is required.");
+  }
 
-    setSaving(true);
-    try {
-      const isEdit = !!company;
-      const url    = isEdit ? `${COMPANIES_API}/${company.id}` : COMPANIES_API;
+  if (!email.trim()) {
+    return setErr("Email is required.");
+  }
 
-      // POST body: name + password + (email | phone)  per API spec
-      // PUT  body: send changed fields
-      const body: Record<string, string> = { name, email };
-      if (phone.trim())    body.phone  = phone;
-      if (!isEdit)         body.password = password;
-      if (isEdit)          body.status   = status.toLowerCase(); // API expects lowercase
+  if (!company && !password.trim()) {
+    return setErr("Password is required.");
+  }
 
-      const res = await fetch(url, {
-        method:  isEdit ? "PUT" : "POST",
-        headers: getHeaders(),
-        body:    JSON.stringify(body),
-      });
+  setSaving(true);
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Request failed");
+  try {
+    const isEdit = !!company;
 
-      onSuccess();
-      onClose();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setSaving(false);
-    }
-  };
+    const url = isEdit
+      ? `${COMPANIES_API}/${company.id}`
+      : COMPANIES_API;
+
+    // =========================
+    // CREATE COMPANY BODY
+    // =========================
+    let body: any = {};
+
+  body = {
+  name,
+  email,
+
+  user: {
+    name,
+    email,
+    phone,
+    password,
+  },
+};
+
+    console.log("REQUEST BODY =>", body);
+
+    const res = await fetch(url, {
+      method: isEdit ? "PUT" : "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+
+    console.log("COMPANY RESPONSE =>", data);
+
+   if (!res.ok || !data.success) {
+
+  // EMAIL ALREADY EXISTS
+  if (
+    data?.message?.toLowerCase().includes("already exists")
+  ) {
+    setErr("⚠️ Company with this email already exists");
+    return;
+  }
+
+  // GENERAL ERROR
+  setErr(
+    data?.error?.message ||
+    data?.message ||
+    "Company request failed"
+  );
+
+  return;
+}
+    // REFRESH COMPANY LIST
+    await onSuccess();
+
+    // CLOSE MODAL
+    onClose();
+
+ } catch (e: any) {
+  console.error(e);
+
+  if (e instanceof Error) {
+    setErr(e.message);
+  } else {
+    setErr("Something went wrong");
+  }
+} finally {
+  setSaving(false);
+}
+};
 
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -510,7 +562,7 @@ export default function ManageCompanies() {
           </p>
         </div>
         <button className="mc-btn mc-btn--primary" onClick={openAdd}>
-          + Add Company
+          Create Company
         </button>
       </div>
 

@@ -1,32 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, Phone } from "lucide-react";
 import type { Theme } from "../types/auth.types";
 
-interface LoginFormProps {
+interface RegisterFormProps {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   errors: Record<string, string>;
   setErrors: (e: Record<string, string>) => void;
   isPending: boolean;
-  onForgot: () => void;
-  onRegister?: () => void;
+  onLogin: () => void;
   theme: Theme;
   isMobile: boolean;
 }
 
-export function LoginForm({
+export function RegisterForm({
   onSubmit,
   errors,
   setErrors,
   isPending,
-  onForgot,
+  onLogin,
   theme,
   isMobile,
-}: LoginFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
+}: RegisterFormProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const clearError = (field: string) => {
@@ -65,15 +61,13 @@ export function LoginForm({
     }}>
       <div style={{
         width: "100%",
-        maxWidth: "500px",
+        maxWidth: "520px",
         background: "#ffffff",
         border: "1px solid #e5e7eb",
         borderRadius: "16px",
         padding: isMobile ? "36px 24px 32px" : "48px 40px 44px",
         boxSizing: "border-box",
       }}>
-
-        {/* Header */}
         <div style={{ marginBottom: "32px" }}>
           <h1 style={{
             fontSize: "22px",
@@ -83,20 +77,18 @@ export function LoginForm({
             marginBottom: "6px",
             fontFamily: "'DM Sans', sans-serif",
           }}>
-            Sign in
+            Create account
           </h1>
           <p style={{
             fontSize: "14px",
             color: "#6b7280",
             fontFamily: "'DM Sans', sans-serif",
           }}>
-            Sign in to super admin to continue
+            Register to access the super admin dashboard
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={onSubmit} noValidate>
-
           {errors.general && (
             <div style={{
               marginBottom: "18px",
@@ -111,7 +103,6 @@ export function LoginForm({
             </div>
           )}
 
-          {/* Email / Phone */}
           <div style={{ marginBottom: "14px" }}>
             <label style={{
               display: "block",
@@ -121,20 +112,54 @@ export function LoginForm({
               marginBottom: "6px",
               fontFamily: "'DM Sans', sans-serif",
             }}>
-              Email or phone
+              Full name
             </label>
             <div style={{ position: "relative" }}>
               <input
                 type="text"
-                name="identifier"
+                name="name"
+                placeholder="Your full name"
+                onFocus={() => setFocusedField("name")}
+                onBlur={() => setFocusedField(null)}
+                onChange={() => clearError("name")}
+                style={fieldStyle("name", !!errors.name)}
+              />
+              <User size={16} style={{
+                position: "absolute", right: "14px", top: "50%",
+                transform: "translateY(-50%)",
+                color: "#9ca3af",
+                pointerEvents: "none",
+              }} />
+            </div>
+            {errors.name && (
+              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>
+                {errors.name}
+              </p>
+            )}
+          </div>
+
+          <div style={{ marginBottom: "14px" }}>
+            <label style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#374151",
+              marginBottom: "6px",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+              Email address
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type="email"
+                name="email"
                 placeholder="you@example.com"
                 autoCapitalize="none"
                 autoCorrect="off"
-                value={identifier}
-                onChange={(e) => { setIdentifier(e.target.value); clearError("identifier"); clearError("email"); }}
-                onFocus={() => setFocusedField("identifier")}
+                onFocus={() => setFocusedField("email")}
                 onBlur={() => setFocusedField(null)}
-                style={fieldStyle("identifier", !!(errors.identifier || errors.email))}
+                onChange={() => clearError("email")}
+                style={fieldStyle("email", !!errors.email)}
               />
               <Mail size={16} style={{
                 position: "absolute", right: "14px", top: "50%",
@@ -143,15 +168,77 @@ export function LoginForm({
                 pointerEvents: "none",
               }} />
             </div>
-            {(errors.identifier || errors.email) && (
+            {errors.email && (
               <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>
-                {errors.identifier || errors.email}
+                {errors.email}
               </p>
             )}
           </div>
 
-          {/* Password */}
-          <div style={{ marginBottom: "10px" }}>
+          <div style={{ display: "grid", gap: "14px", marginBottom: "14px", gridTemplateColumns: "1fr 1fr" }}>
+            <div>
+              <label style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#374151",
+                marginBottom: "6px",
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+                Country code
+              </label>
+              <input
+                type="text"
+                name="countryCode"
+                placeholder="+91"
+                onFocus={() => setFocusedField("countryCode")}
+                onBlur={() => setFocusedField(null)}
+                onChange={() => clearError("countryCode")}
+                style={fieldStyle("countryCode", !!errors.countryCode)}
+              />
+              {errors.countryCode && (
+                <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>
+                  {errors.countryCode}
+                </p>
+              )}
+            </div>
+            <div>
+              <label style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#374151",
+                marginBottom: "6px",
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+                Phone number
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="9876543210"
+                  onFocus={() => setFocusedField("phone")}
+                  onBlur={() => setFocusedField(null)}
+                  onChange={() => clearError("phone")}
+                  style={fieldStyle("phone", !!errors.phone)}
+                />
+                <Phone size={16} style={{
+                  position: "absolute", right: "14px", top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#9ca3af",
+                  pointerEvents: "none",
+                }} />
+              </div>
+              {errors.phone && (
+                <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>
+                  {errors.phone}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "24px" }}>
             <label style={{
               display: "block",
               fontSize: "13px",
@@ -164,33 +251,20 @@ export function LoginForm({
             </label>
             <div style={{ position: "relative" }}>
               <input
-                type={showPassword ? "text" : "password"}
+                type="password"
                 name="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
+                placeholder="Create a secure password"
                 onFocus={() => setFocusedField("password")}
                 onBlur={() => setFocusedField(null)}
-                style={{ ...fieldStyle("password", !!errors.password), paddingRight: "76px" }}
+                onChange={() => clearError("password")}
+                style={fieldStyle("password", !!errors.password)}
               />
-              <div style={{
-                position: "absolute", right: "12px", top: "50%",
+              <Lock size={16} style={{
+                position: "absolute", right: "14px", top: "50%",
                 transform: "translateY(-50%)",
-                display: "flex", gap: "6px", alignItems: "center",
-              }}>
-                <Lock size={15} style={{ color: "#9ca3af" }} />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    padding: "2px", display: "flex", alignItems: "center",
-                    color: "#6b7280",
-                  }}
-                >
-                  {showPassword ? <Eye size={15} /> : <EyeOff size={15} />}
-                </button>
-              </div>
+                color: "#9ca3af",
+                pointerEvents: "none",
+              }} />
             </div>
             {errors.password && (
               <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>
@@ -199,25 +273,6 @@ export function LoginForm({
             )}
           </div>
 
-          {/* Forgot */}
-          <div style={{ textAlign: "right", marginBottom: "24px" }}>
-            <button
-              type="button"
-              onClick={onForgot}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: "13px",
-                color: "#059669",
-                fontFamily: "'DM Sans', sans-serif",
-                fontWeight: 500,
-                padding: 0,
-              }}
-            >
-              Forgot password?
-            </button>
-          </div>
-
-          {/* Submit */}
           <button
             type="submit"
             disabled={isPending}
@@ -237,30 +292,33 @@ export function LoginForm({
               justifyContent: "center",
               gap: "8px",
               transition: "background 0.2s ease",
-            }}
-          >
-            {isPending ? (
-              <span style={{
-                width: "18px", height: "18px",
-                border: "2px solid rgba(255,255,255,0.4)",
-                borderTopColor: "#fff",
-                borderRadius: "50%",
-                display: "inline-block",
-                animation: "spin 0.7s linear infinite",
-              }} />
-            ) : (
-              <>Sign in <ArrowRight size={15} strokeWidth={2.5} /></>
-            )}
+            }}>
+            {isPending ? "Registering…" : "Create account"}
           </button>
         </form>
+
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
+          <span style={{ color: "#6b7280", fontSize: "13px" }}>
+            Already have an account?{' '}
+          </span>
+          <button
+            type="button"
+            onClick={onLogin}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#10b981",
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+            Sign in
+          </button>
+        </div>
       </div>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
         input::placeholder { color: #9ca3af; }
       `}</style>
     </div>

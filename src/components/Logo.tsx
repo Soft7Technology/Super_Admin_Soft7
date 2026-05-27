@@ -19,7 +19,7 @@ export default function Logo() {
       <style jsx>{`
         .sidebar-logo {
           width: 100%;
-          max-width: 80px;
+          max-width: 120px;
           height: auto;
           object-fit: contain;
           display: block;
