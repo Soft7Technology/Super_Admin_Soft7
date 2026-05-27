@@ -118,7 +118,7 @@ function InlineStatCards({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
         gap: "16px",
         marginBottom: "28px",
       }}
@@ -211,6 +211,7 @@ function Section({
         border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.07)"}`,
         borderRadius: "16px",
         padding: isMobile ? "20px" : "26px 28px",
+        minWidth: 0,
         boxShadow: isDark
           ? "0 2px 10px rgba(0,0,0,0.22)"
           : "0 1px 8px rgba(0,0,0,0.06)",
@@ -440,7 +441,7 @@ setUsers(
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: isHalfScreen ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
           gap: "20px",
           marginBottom: "20px",
         }}
@@ -462,7 +463,7 @@ setUsers(
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+          gridTemplateColumns: isHalfScreen ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
           gap: "20px",
         }}
       >
