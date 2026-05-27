@@ -11,11 +11,11 @@ import PlatformGrowthChart from "../../../components/PlatformGrowthChart";
 import AuditLogs from "../../../components/AuditLogs";
 
 const DASHBOARD_API =
-  "https://hostapi.soft7.in/v1/admin/companies/dashboard";
+  "/v1/admin/companies/dashboard";
   const USERS_API =
-  "https://hostapi.soft7.in/v1/admin/companies/user?role=admin";
+  "/v1/admin/companies/user?role=admin";
   const COMPANIES_API =
-  "https://hostapi.soft7.in/v1/admin/companies";
+  "/v1/admin/companies";
 const BRAND = "#10b981";
 const BRAND_HOVER = "#059669";
 const BRAND_SOFT = "rgba(16, 22, 185, 0.16)";
