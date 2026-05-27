@@ -58,8 +58,8 @@ export default function UserManagement({
   const router = useRouter();
 
   return (
-    <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius:"16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s" }}>
-      <div style={{ padding:"24px 26px 20px", borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+    <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius:"16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s", width:"100%", minWidth:0 }}>
+      <div style={{ padding:"24px 26px 20px", borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:"14px", flexWrap:"wrap" }}>
         <span style={{ fontWeight:800, fontSize:"1.18rem", color:t.text }}>User Management</span>
         <button
   onClick={() => router.push("/user/all-user")}
@@ -93,21 +93,23 @@ export default function UserManagement({
       ) : error ? (
         <div style={{ padding:"30px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>{error}</div>
       ) : (
-        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"1rem" }}>
-          <thead>
-            <tr style={{ background:t.tableHead }}>
-              {["USERNAME","ROLE","STATUS"].map(h => (
-                <th key={h} style={{ padding:"15px 24px", textAlign:"left", fontSize:"0.78rem", color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u, i) => <Row key={u.id} u={u} last={i === users.length - 1} t={t} onUserClick={onUserClick} />)}
-            {users.length === 0 && (
-              <tr><td colSpan={3} style={{ padding:"26px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>No users found</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div style={{ width:"100%", overflowX:"auto" }}>
+          <table style={{ width:"100%", minWidth:"500px", borderCollapse:"collapse", fontSize:"1rem" }}>
+            <thead>
+              <tr style={{ background:t.tableHead }}>
+                {["USERNAME","ROLE","STATUS"].map(h => (
+                  <th key={h} style={{ padding:"15px 24px", textAlign:"left", fontSize:"0.78rem", color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u, i) => <Row key={u.id} u={u} last={i === users.length - 1} t={t} onUserClick={onUserClick} />)}
+              {users.length === 0 && (
+                <tr><td colSpan={3} style={{ padding:"26px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>No users found</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -123,7 +125,7 @@ function Row({ u, last, t, onUserClick }: { u: DbUser; last: boolean; t: Record<
       <td style={{ padding:"18px 24px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"13px" }}>
           <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:u.col, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:"0.8rem", color:"#fff", flexShrink:0 }}>{u.av}</div>
-          <span style={{ fontWeight:800, color:t.textSub }}>@{u.un}</span>
+          <span style={{ fontWeight:800, color:t.textSub, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{u.un}</span>
         </div>
       </td>
       <td style={{ padding:"18px 24px" }}>
