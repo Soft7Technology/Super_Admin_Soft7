@@ -117,7 +117,7 @@ html[data-theme="dark"], body[data-theme="dark"] {
 .au-root ::-webkit-scrollbar       { width: 4px; }
 .au-root ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
 .au-root ::placeholder             { color: var(--placeholder); }
-.au-root button, .au-root input, .au-root select { font-family: "'Inter', sans-serif"; }
+.au-root button, .au-root input, .au-root select { font-family: inherit; }
 .au-root select option             { background: var(--select-opt-bg); color: var(--text); }
 
 /* ─── PAGE WRAPPER ───────────────────────────────────────── */
@@ -520,7 +520,7 @@ html[data-theme="dark"], body[data-theme="dark"] {
 .au-select {
   width: 100%; background: var(--input-bg); border: 1px solid var(--border);
   color: var(--text); padding: 10px 34px 10px 13px; border-radius: 10px;
-  font-size: 13px; outline: none; font-family: "'Inter', sans-serif";
+  font-size: 13px; outline: none; font-family: inherit;
   transition: border-color 0.2s, background 0.3s, color 0.3s;
   appearance: none; -webkit-appearance: none; -moz-appearance: none;
   background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;
@@ -537,7 +537,7 @@ html[data-theme="dark"], body[data-theme="dark"] {
 .au-btn {
   border-radius: 10px; cursor: pointer; font-weight: 700;
   white-space: nowrap; transition: all 0.15s; width: 100%;
-  padding: 10px 18px; font-size: 13px; font-family: "'Inter', sans-serif";
+  padding: 10px 18px; font-size: 13px; font-family: inherit;
 }
 .au-btn:hover { opacity: 0.82; transform: translateY(-1px); }
 .au-btn--primary { background: var(--accent); color: #fff; border: none; box-shadow: 0 4px 12px rgba(13,148,136,0.28); }

@@ -156,7 +156,7 @@
 .al-root ::-webkit-scrollbar       { width: 4px; }
 .al-root ::-webkit-scrollbar-thumb { background: var(--al-scrollbar); border-radius: 4px; }
 .al-root ::placeholder             { color: var(--al-placeholder); }
-.al-root button, .al-root input, .al-root select { font-family: "'Inter', sans-serif"; }
+.al-root button, .al-root input, .al-root select { font-family: inherit; }
 .al-root input:-webkit-autofill,
 .al-root input:-webkit-autofill:hover,
 .al-root input:-webkit-autofill:focus {
