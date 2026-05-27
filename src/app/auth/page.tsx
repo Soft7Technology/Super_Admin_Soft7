@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
 import toast from "react-hot-toast";
 
@@ -14,7 +15,7 @@ import { ForgotPasswordModal } from "./components/ForgotPasswordModal";
 import type { Theme } from "./types/auth.types";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const AUTH_BASE = "https://hostapi.soft7.in/v1/auth";
+const AUTH_BASE = "/v1/auth";
 
 const getExternalHeaders = (includeAuth = false) => {
   let token =
@@ -136,7 +137,7 @@ export default function AuthPage() {
 
         if (!canTryLocal) throw error;
 
-        const { data } = await axiosInstance.post("/api/auth/login", {
+        const { data } = await axios.post("/api/auth/login", {
           email: identifier,
           password,
         });

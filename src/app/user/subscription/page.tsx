@@ -6,7 +6,7 @@ import { axiosInstance } from "@/lib/axiosInstance";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
- "https://hostapi.soft7.in/v1/admin/subscription/plan?active=true";
+ "/v1/admin/subscription/plan?active=true";
  const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -38,7 +38,7 @@ const updateSubscriptionPlan = async (
   payload: any
 ) => {
   return axiosInstance.put(
-    `https://hostapi.soft7.in/v1/admin/subscription/plan/${id}`,
+    `/v1/admin/subscription/plan/${id}`,
     payload,
     {
       headers: getExternalHeaders(),
@@ -51,7 +51,7 @@ const createSubscriptionPlan = async (
   payload: any
 ) => {
   return axiosInstance.post(
-    "https://hostapi.soft7.in/v1/admin/subscription/plan",
+    "/v1/admin/subscription/plan",
     payload,
     {
       headers: getExternalHeaders(),
