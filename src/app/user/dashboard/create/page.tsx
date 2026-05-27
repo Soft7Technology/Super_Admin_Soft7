@@ -79,14 +79,14 @@ export default function AddCompanyPage() {
   };
 
   return (
-    <div style={{ minHeight: "100%", padding: "36px 24px 64px", background: C.pageBg, fontFamily: "'Inter',sans-serif", display: "flex", flexDirection: "column", alignItems: "center", transition: "background .3s" }}>
+    <div style={{ minHeight: "100%", padding: "36px 24px 64px", background: C.pageBg, fontFamily: "'DM Sans', 'Segoe UI', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", transition: "background .3s" }}>
 
       {/* ── Header ── */}
       <div style={{ width: "100%", maxWidth: 660, marginBottom: 24 }}>
         {/* Back link */}
         <button
           onClick={() => router.push("/user/dashboard")}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 16, background: "none", border: "none", cursor: "pointer", color: C.hint, fontSize: "0.82rem", fontFamily: "'Inter', sans-serif", padding: 0 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 16, background: "none", border: "none", cursor: "pointer", color: C.hint, fontSize: "0.82rem", fontFamily: "'DM Sans', 'Segoe UI', sans-serif", padding: 0 }}
         >
           
         </button>
@@ -123,7 +123,7 @@ export default function AddCompanyPage() {
               onChange={e => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: "" })); }}
               onFocus={e  => (e.target.style.borderColor = "#3b5bdb")}
               onBlur={e   => (e.target.style.borderColor = errors.name ? "#f87171" : C.border)}
-              style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 9, border: `1.5px solid ${errors.name ? "#f87171" : C.border}`, background: C.inputBg, color: C.inputClr, fontSize: "0.9rem", fontFamily: "'Inter', sans-serif", outline: "none", transition: "border .2s" }}
+              style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 9, border: `1.5px solid ${errors.name ? "#f87171" : C.border}`, background: C.inputBg, color: C.inputClr, fontSize: "0.9rem", fontFamily: "'DM Sans', 'Segoe UI', sans-serif", outline: "none", transition: "border .2s" }}
             />
             {errors.name && <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "#f87171" }}>⚠ {errors.name}</p>}
           </div>
@@ -256,7 +256,7 @@ function BtnCancel({
         fontSize: "0.875rem",
         fontWeight: 600,
         cursor: "pointer",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
         background: hov
           ? "rgba(16,185,129,0.08)"
           : "transparent",
@@ -294,7 +294,7 @@ function BtnSave({
         fontWeight: 700,
         cursor: saving ? "not-allowed" : "pointer",
         border: "none",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
         color: "#fff",
         display: "flex",
         alignItems: "center",

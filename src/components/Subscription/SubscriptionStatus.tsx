@@ -27,7 +27,7 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({
         border: "1px solid #1c2333",
         borderRadius: "14px",
         overflow: "hidden",
-        fontFamily: "'Inter', 'DM Sans', sans-serif",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
       }}
     >
       <div

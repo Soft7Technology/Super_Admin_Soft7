@@ -136,7 +136,7 @@
 .st-root ::-webkit-scrollbar       { width: 5px; }
 .st-root ::-webkit-scrollbar-thumb { background: var(--st-scrollbar); border-radius: 4px; }
 .st-root ::placeholder             { color: var(--st-placeholder); }
-.st-root button, .st-root input, .st-root textarea { font-family: "'Inter', sans-serif"; }
+.st-root button, .st-root input, .st-root textarea { font-family: inherit; }
 
 /* autofill fix */
 .st-root input:-webkit-autofill,

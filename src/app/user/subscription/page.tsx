@@ -123,6 +123,104 @@ const PLAN_COLORS: Record<string, string> = {
   enterprise: "#A29BFE",
 };
 
+const escapeExcelCell = (value: unknown) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const serialiseExportValue = (value: unknown) => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+};
+
+const downloadExcel = (rows: SubRow[]) => {
+  if (rows.length === 0) {
+    alert("No subscription data available to export.");
+    return;
+  }
+
+  const columns = [
+    "Plan ID",
+    "Plan Name",
+    "Mapped Plan Type",
+    "Status",
+    "Price",
+    "Feature Count",
+    "Total Limits",
+    "Created Date",
+    "Updated Date",
+    "API Active",
+    "Billing Cycle",
+    "Popular",
+    "Description",
+    "Features",
+    "Raw API Data",
+  ];
+
+  const tableRows = rows.map((row) => {
+    const raw = row.rawData ?? {};
+
+    return [
+      row.id,
+      raw.plan_name ?? row.company,
+      row.plan,
+      row.status,
+      row.amt,
+      row.users,
+      row.seats,
+      row.start,
+      row.end,
+      raw.active ?? "",
+      raw.billing_cycle ?? "",
+      raw.popular ?? "",
+      raw.description ?? "",
+      serialiseExportValue(raw.features),
+      serialiseExportValue(raw),
+    ];
+  });
+
+  const worksheet = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <table>
+      <thead>
+        <tr>${columns.map((column) => `<th>${escapeExcelCell(column)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        ${tableRows
+          .map(
+            (row) =>
+              `<tr>${row
+                .map((cell) => `<td>${escapeExcelCell(cell)}</td>`)
+                .join("")}</tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+  </body>
+</html>`;
+
+  const blob = new Blob([worksheet], {
+    type: "application/vnd.ms-excel;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  link.href = url;
+  link.download = `subscription-plans-${stamp}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 function Badge({ status }: { status: SubStatus }) {
   const labels: Record<SubStatus, string> = {
@@ -178,9 +276,15 @@ function Inp({ label,value,onChange,placeholder,type="text",error,prefix }:{
 
 function Tog({ on, setOn }:{ on:boolean; setOn:(v:boolean)=>void }) {
   return (
-    <div className={`sb-toggle ${on?"sb-toggle--on":""}`} onClick={()=>setOn(!on)}>
+    <button
+      type="button"
+      className={`sb-toggle ${on?"sb-toggle--on":""}`}
+      onClick={()=>setOn(!on)}
+      aria-pressed={on}
+      aria-label={on ? "Enabled" : "Disabled"}
+    >
       <div className="sb-toggle__knob" />
-    </div>
+    </button>
   );
 }
 
@@ -976,7 +1080,13 @@ rawData: plan,
           <p className="sb-header__sub">Plans, billing, and company subscription management.</p>
         </div>
         <div className="sb-header__btns">
-          <button className="sb-btn sb-btn--export">⬇ Export</button>
+          <button
+            className="sb-btn sb-btn--export"
+            onClick={() => downloadExcel(subs)}
+            disabled={loading || subs.length === 0}
+          >
+            ⬇ Export
+          </button>
           <button className="sb-btn sb-btn--primary" onClick={openModal}>+ Create Plan</button>
         </div>
       </div>
