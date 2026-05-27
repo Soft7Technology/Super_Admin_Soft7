@@ -192,7 +192,7 @@ export default function Sidebar({
           background: transparent;
           color: ${isDark ? "#cbd5e1" : "#334155"};
           padding: 0 13px;
-          font-family: "Inter", sans-serif;
+          font-family: "DM Sans", "Segoe UI", sans-serif;
           text-align: left;
           transition: background 180ms ease, color 180ms ease, transform 180ms ease;
           cursor: pointer;
