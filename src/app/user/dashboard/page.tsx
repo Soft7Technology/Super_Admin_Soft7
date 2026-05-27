@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
@@ -12,7 +12,14 @@ import AuditLogs from "../../../components/AuditLogs";
 
 const DASHBOARD_API =
   "https://hostapi.soft7.in/v1/admin/companies/dashboard";
-
+  const USERS_API =
+  "https://hostapi.soft7.in/v1/admin/companies/user?role=admin";
+  const COMPANIES_API =
+  "https://hostapi.soft7.in/v1/admin/companies";
+const BRAND = "#10b981";
+const BRAND_HOVER = "#059669";
+const BRAND_SOFT = "rgba(16, 22, 185, 0.16)";
+const BRAND_GLOW = "rgba(16,185,129,0.32)";
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -31,10 +38,38 @@ const getExternalHeaders = () => {
 };
 
 const DEFAULT_STATS: StatCard[] = [
-  { label: "Campaigns", value: "—", icon: "📢", change: "—", changeType: "up", accent: "blue" },
-  { label: "Users",     value: "—", icon: "👥", change: "—", changeType: "up", accent: "green" },
-  { label: "Chatbots",  value: "—", icon: "🤖", change: "—", changeType: "up", accent: "purple" },
-  { label: "Messages",  value: "—", icon: "💬", change: "—", changeType: "up", accent: "orange" },
+  {
+    icon: "📢",
+    label: "Campaigns",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "blue",
+  },
+  {
+    icon: "👥",
+    label: "Users",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "green",
+  },
+  {
+    icon: "🤖",
+    label: "Chatbots",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "purple",
+  },
+  {
+    icon: "💬",
+    label: "Messages",
+    value: "0",
+    change: "—",
+    changeType: "up",
+    accent: "orange",
+  },
 ];
 
 interface DashboardCompany {
@@ -66,7 +101,7 @@ const STAT_META = [
   { icon: "📢", label: "Campaigns", accent: "#0d9488", glow: "rgba(13,148,136,0.18)" },
   { icon: "👥", label: "Users",     accent: "#6366f1", glow: "rgba(99,102,241,0.18)" },
   { icon: "🤖", label: "Chatbots",  accent: "#f59e0b", glow: "rgba(245,158,11,0.18)" },
-  { icon: "💬", label: "Messages",  accent: "#10b981", glow: "rgba(16,185,129,0.18)" },
+  { icon: "💬", label: "Messages",  accent: "#34d399", glow: "rgba(52,211,153,0.18)" },
 ];
 
 /* ─── Inline StatCards ────────────────────────────────────── */
@@ -119,20 +154,24 @@ function InlineStatCards({
               alignItems: "flex-start", marginBottom: "14px",
             }}>
               <span style={{
-                fontSize: "11px", fontWeight: 600, letterSpacing: "0.04em",
+                fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em",
                 color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
                 textTransform: "uppercase",
               }}>
                 {meta.label}
               </span>
-              <div style={{
-                width: "32px", height: "32px", borderRadius: "9px",
-                background: `${meta.accent}18`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "15px",
-              }}>
-                {meta.icon}
-              </div>
+        <div style={{
+  width: "42px",
+  height: "42px",
+  borderRadius: "12px",
+  background: `${meta.accent}18`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "20px",
+}}>
+  {meta.icon}
+</div>
             </div>
             <div style={{
               fontSize: "30px", fontWeight: 800,
@@ -169,7 +208,7 @@ function Section({
     <div
       style={{
         background: isDark ? "rgba(15,17,32,0.85)" : "#ffffff",
-        border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.07)"}`,
         borderRadius: "16px",
         padding: isMobile ? "20px" : "26px 28px",
         boxShadow: isDark
@@ -217,21 +256,82 @@ export default function DashboardPage() {
           { label: "Chatbots",  value: Number(data.chatbot_count ?? 0).toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
           { label: "Messages",  value: Number(data.total_messages ?? 0).toLocaleString(),  icon: "💬", change: "—", changeType: "up", accent: "orange" },
         ]);
+const { data: companiesResponse } = await axiosInstance.get(
+  COMPANIES_API,
+  {
+    headers: getExternalHeaders(),
+    withCredentials: false,
+  }
+);
 
-        setCompanies([
-          { id:"1", name:"Acme Corp",   ini:"AC", col:"#0d9488", status:"Active", plan:"Enterprise", users:248 },
-          { id:"2", name:"Nova Labs",   ini:"NL", col:"#14b8a6", status:"Active", plan:"Basic",      users:132 },
-          { id:"3", name:"Vertex AI",   ini:"VA", col:"#059669", status:"Active", plan:"Free Trial", users:54  },
-          { id:"4", name:"Pulse Media", ini:"PM", col:"#0d9488", status:"Active", plan:"Enterprise", users:89  },
-        ]);
+const companiesData =
+  companiesResponse?.data || [];
 
-        setUsers([
-          { id:"1", un:"Sarah Johnson", role:"Admin", status:"Active", av:"SJ", col:"#0d9488" },
-          { id:"2", un:"Michael Chen",  role:"User",  status:"Active", av:"MC", col:"#14b8a6" },
-          { id:"3", un:"Emily Davis",   role:"Admin", status:"Active", av:"ED", col:"#059669" },
-          { id:"4", un:"James Wilson",  role:"User",  status:"Active", av:"JW", col:"#0d9488" },
-        ]);
+setCompanies(
+  companiesData.slice(0, 4).map((company: any, index: number) => ({
+    id: company.id || index.toString(),
 
+    name: company.name || "Unknown Company",
+
+    ini: (company.name || "C")
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2),
+
+    col: [
+      "#10b981",
+      "#34d399",
+      "#059669",
+      "#0d9488",
+    ][index % 4],
+
+    status:
+      company.status
+        ? company.status.charAt(0).toUpperCase() +
+          company.status.slice(1)
+        : "Active",
+
+    plan: "Basic",
+
+    users: 0,
+  }))
+);
+
+       const { data: usersResponse } = await axiosInstance.get(USERS_API, {
+  headers: getExternalHeaders(),
+  withCredentials: false,
+});
+
+const usersData =
+  usersResponse?.data?.data || [];
+setUsers(
+  usersData.slice(0, 4).map((user: any, index: number) => ({
+    id: user.id || index.toString(),
+
+    un: user.name || "Unknown User",
+
+   role: "User",
+    status:
+      user.status?.charAt(0).toUpperCase() +
+        user.status?.slice(1) || "Active",
+
+    av: (user.name || "U")
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2),
+
+    col: [
+      "#10b981",
+      "#34d399",
+      "#059669",
+      "#0d9488",
+    ][index % 4],
+  }))
+);
         setLogs([
           { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
           { id:"2", msg:"Company subscription upgraded to Enterprise", actor:"Michael Chen",      time:"18 mins ago", sev:"success" },
@@ -255,6 +355,17 @@ export default function DashboardPage() {
     loadDashboard();
     return () => { mounted = false; };
   }, []);
+
+  const handleStatCardClick = (stat: StatCard) => {
+    if (stat.label === "Total Companies") {
+      router.push("/user/dashboard/companies");
+      return;
+    }
+
+    if (stat.label === "Active Users") {
+      router.push("/user/dashboard/users");
+    }
+  };
 
   return (
     <div
@@ -316,7 +427,7 @@ export default function DashboardPage() {
           style={{
             marginBottom: "18px", padding: "12px 16px",
             borderRadius: "10px",
-            border: "1px solid rgba(239,68,68,0.25)",
+            border: "1px solid rgba(179, 68, 239, 0.25)",
             background: isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)",
             color: "#ef4444", fontSize: "0.85rem",
           }}
@@ -335,7 +446,12 @@ export default function DashboardPage() {
         }}
       >
         <Section isDark={isDark} isMobile={isMobile}>
-          <CompanyOverview companies={companies} loading={loading} error={error} />
+       <CompanyOverview
+  companies={companies}
+  loading={loading}
+  error={error}
+  onViewAll={() => router.push("/user/manage-companies")}
+/>
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
           <UserManagement users={users} loading={loading} error={error} />
@@ -360,7 +476,7 @@ export default function DashboardPage() {
     <h2
       style={{
         margin: 0,
-        fontSize: "1rem",
+        fontSize: "0.85rem",
         fontWeight: 700,
         color: t.text,
         letterSpacing: "-0.02em",
@@ -372,7 +488,7 @@ export default function DashboardPage() {
     <p
       style={{
         margin: "4px 0 0",
-        fontSize: "0.85rem",
+        fontSize: "0.75rem",
         color: isDark ? t.textMuted : "#64748b",
       }}
     >
@@ -410,16 +526,16 @@ function DashboardButton({
         display: "inline-flex", alignItems: "center", gap: "8px",
         padding: "11px 22px",
         borderRadius: "10px",
-        fontSize: "0.9rem", fontWeight: 700,
+        fontSize: "0.85rem", fontWeight: 700,
         cursor: "pointer",
-        border: "1px solid #0d9488",
-        background: hovered ? "#0b7a70" : "#0d9488",
+        border: `1px solid ${BRAND}`,
+        background: hovered ? BRAND_HOVER : BRAND,
         color: "#fff",
-        boxShadow: hovered
-          ? "0 6px 20px rgba(13,148,136,0.40)"
-          : "0 3px 12px rgba(13,148,136,0.28)",
+       boxShadow: hovered
+        ? "0 8px 24px rgba(16,185,129,0.38)"
+        : "0 4px 14px rgba(16,185,129,0.24)",
         transition: "all 0.15s ease",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
         whiteSpace: "nowrap",
       }}
     >

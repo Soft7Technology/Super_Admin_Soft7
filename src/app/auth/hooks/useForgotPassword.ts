@@ -42,7 +42,7 @@ export function useForgotPassword(onClose?: () => void) {
   const [timer, setTimer] = useState(0);
   const [isEditing, setIsEditing] = useState(true);
   const [emailError, setEmailError] = useState("");
-  const [otpError, setOtpError] = useState(false);
+  const [otpError, setOtpError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -108,20 +108,20 @@ export function useForgotPassword(onClose?: () => void) {
   };
 
   const verifyOtp = async () => {
-    setOtpError(false);
+    setOtpError("");
     if (!otp || otp.trim() === "") {
       toast.error("Please enter OTP");
-      setOtpError(true);
+      setOtpError("OTP is required");
       return;
     }
     if (otp.length !== 6) {
       toast.error("OTP must be 6 digits");
-      setOtpError(true);
+      setOtpError("OTP must be 6 digits");
       return;
     }
     if (!/^\d+$/.test(otp)) {
       toast.error("OTP must contain only numbers");
-      setOtpError(true);
+      setOtpError("OTP must contain only numbers");
       return;
     }
 
@@ -133,12 +133,12 @@ export function useForgotPassword(onClose?: () => void) {
         { headers: getHeaders(), withCredentials: false }
       );
       toast.success(data?.message || "OTP verified successfully");
-      setOtpError(false);
+      setOtpError("");
       setStep("reset");
     } catch (error: any) {
-      setOtpError(true);
       const errorMessage =
         error?.response?.data?.error ?? error?.response?.data?.message;
+      setOtpError(errorMessage || "Failed to verify OTP. Please try again.");
       if (errorMessage) toast.error(errorMessage);
       else if (error?.response?.status === 400) toast.error("Invalid OTP. Please try again.");
       else if (error?.response?.status === 500) toast.error("Server error. Please try again later.");

@@ -6,24 +6,60 @@ import { axiosInstance } from "@/lib/axiosInstance";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
-  "https://oralee-spiritlike-writhingly.ngrok-free.dev/v1/admin/companies/subscriptions";
-
-const getExternalHeaders = () => {
+ "https://hostapi.soft7.in/v1/admin/subscription/plan?active=true";
+ const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
       ? localStorage.getItem("console_access_token")
       : null;
 
-  if (token && token.startsWith('"') && token.endsWith('"')) {
+  if (
+    token &&
+    token.startsWith('"') &&
+    token.endsWith('"')
+  ) {
     token = token.slice(1, -1);
   }
 
   return {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+    ...(token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {}),
   };
 };
+
+const updateSubscriptionPlan = async (
+  id: string,
+  payload: any
+) => {
+  return axiosInstance.put(
+    `https://hostapi.soft7.in/v1/admin/subscription/plan/${id}`,
+    payload,
+    {
+      headers: getExternalHeaders(),
+      withCredentials: false,
+    }
+  );
+};
+
+const createSubscriptionPlan = async (
+  payload: any
+) => {
+  return axiosInstance.post(
+    "https://hostapi.soft7.in/v1/admin/subscription/plan",
+    payload,
+    {
+      headers: getExternalHeaders(),
+      withCredentials: false,
+    }
+  );
+};
+
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type SubStatus =
@@ -36,14 +72,29 @@ type PlanName  = "Starter"|"Basic"|"Pro"|"Enterprise";
 type TxnStatus = "SUCCESS"|"FAILED"|"REFUNDED";
 type TxnType   = "New"|"Renewal"|"Upgrade"|"Failed"|"Trial"|"Refund";
 
-interface SubRow    { id:number; company:string; logo:string; col:string; plan:PlanName; status:SubStatus; start:string; end:string; amt:number; users:number; seats:number; }
+interface SubRow {
+  id: string;
+  company: string;
+  logo: string;
+  col: string;
+  plan: PlanName;
+  status: SubStatus;
+  start: string;
+  end: string;
+  amt: number;
+  users: number;
+  seats: number;
+
+  // API original data
+  rawData?: any;
+}
 interface PlanRow   { id:number; name:PlanName; price:number; yearPrice:number; icon:string; col:string; users:string; wa:string; msgs:string; popular?:boolean; extra:string[]; }
 interface Transaction { id:number; company:string; logo:string; col:string; plan:PlanName; amount:number; date:string; type:TxnType; status:TxnStatus; }
 interface CustomPlan  { id:number; name:string; price:number; yearPrice:number; icon:string; col:string; users:string; wa:string; msgs:string; popular:boolean; extra:string[]; }
 
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const INIT_SUBS: SubRow[] = [
-  { id:1, company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
+  { id:"1", company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
 ];
 
 const INIT_PLANS: PlanRow[] = [
@@ -70,6 +121,104 @@ const PLAN_COLORS: Record<string, string> = {
   basic:      "#FDCB6E",
   pro:        "#6C5CE7",
   enterprise: "#A29BFE",
+};
+
+const escapeExcelCell = (value: unknown) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const serialiseExportValue = (value: unknown) => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+};
+
+const downloadExcel = (rows: SubRow[]) => {
+  if (rows.length === 0) {
+    alert("No subscription data available to export.");
+    return;
+  }
+
+  const columns = [
+    "Plan ID",
+    "Plan Name",
+    "Mapped Plan Type",
+    "Status",
+    "Price",
+    "Feature Count",
+    "Total Limits",
+    "Created Date",
+    "Updated Date",
+    "API Active",
+    "Billing Cycle",
+    "Popular",
+    "Description",
+    "Features",
+    "Raw API Data",
+  ];
+
+  const tableRows = rows.map((row) => {
+    const raw = row.rawData ?? {};
+
+    return [
+      row.id,
+      raw.plan_name ?? row.company,
+      row.plan,
+      row.status,
+      row.amt,
+      row.users,
+      row.seats,
+      row.start,
+      row.end,
+      raw.active ?? "",
+      raw.billing_cycle ?? "",
+      raw.popular ?? "",
+      raw.description ?? "",
+      serialiseExportValue(raw.features),
+      serialiseExportValue(raw),
+    ];
+  });
+
+  const worksheet = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <table>
+      <thead>
+        <tr>${columns.map((column) => `<th>${escapeExcelCell(column)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        ${tableRows
+          .map(
+            (row) =>
+              `<tr>${row
+                .map((cell) => `<td>${escapeExcelCell(cell)}</td>`)
+                .join("")}</tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+  </body>
+</html>`;
+
+  const blob = new Blob([worksheet], {
+    type: "application/vnd.ms-excel;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  link.href = url;
+  link.download = `subscription-plans-${stamp}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
@@ -127,9 +276,15 @@ function Inp({ label,value,onChange,placeholder,type="text",error,prefix }:{
 
 function Tog({ on, setOn }:{ on:boolean; setOn:(v:boolean)=>void }) {
   return (
-    <div className={`sb-toggle ${on?"sb-toggle--on":""}`} onClick={()=>setOn(!on)}>
+    <button
+      type="button"
+      className={`sb-toggle ${on?"sb-toggle--on":""}`}
+      onClick={()=>setOn(!on)}
+      aria-pressed={on}
+      aria-label={on ? "Enabled" : "Disabled"}
+    >
       <div className="sb-toggle__knob" />
-    </div>
+    </button>
   );
 }
 
@@ -374,7 +529,17 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
 }
 
 // ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
-function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boolean; activeCount: number }) {
+function Overview({
+  subs,
+  loading,
+  activeCount,
+  onUpdatePlan,
+}: {
+  subs: SubRow[];
+  loading: boolean;
+  activeCount: number;
+  onUpdatePlan: (plan: SubRow) => void;
+}) {
   const [sel, setSel] = useState<SubRow|null>(null);
   const active = subs.filter(s => s.status === "ACTIVE");
   const mrr    = active.reduce((a,s)=>a+s.amt,0);
@@ -439,7 +604,12 @@ function Overview({ subs, loading, activeCount }: { subs: SubRow[]; loading: boo
               ))}
             </div>
             <div className="sb-detail__actions">
-              <button className="sb-btn sb-btn--primary sb-btn--small">✏️ Edit Plan</button>
+             <button
+  className="sb-btn sb-btn--primary sb-btn--small"
+ onClick={() => onUpdatePlan(sel)}
+>
+  ✏️ Update Plan
+</button>
               <button className="sb-btn sb-btn--ghost sb-btn--small">⏸ Pause</button>
               <button className="sb-btn sb-btn--danger sb-btn--small">⛔ Cancel</button>
             </div>
@@ -650,6 +820,31 @@ function History() {
 
 // ─── PAGE ROOT ────────────────────────────────────────────────────────────────
 export default function Subscription() {
+  const handleUpdatePlan = async (plan: SubRow) => {
+  try {
+    const payload = {
+      plan_name: plan.company,
+      price: plan.amt,
+      active: true,
+      billing_cycle: "Monthly",
+      features: plan.rawData?.features || {},
+      description: plan.rawData?.description || "",
+    };
+
+    console.log("UPDATE PAYLOAD:", payload);
+
+    await updateSubscriptionPlan(plan.id, payload);
+
+    alert("Plan updated successfully");
+
+    // Refresh API
+    window.location.reload();
+  } catch (error) {
+    console.error("UPDATE ERROR:", error);
+
+    alert("Failed to update plan");
+  }
+};
   const [tab,         setTab]         = useState<"overview"|"plans"|"history">("overview");
   const [showModal,   setShowModal]   = useState(false);
   const [customPlans, setCustomPlans] = useState<CustomPlan[]>([]);
@@ -660,89 +855,223 @@ export default function Subscription() {
   const [error,       setError]       = useState<string | null>(null);
 
   const openModal  = () => { setTab("plans"); setShowModal(true); };
-  const savePlan   = (p: CustomPlan) => setCustomPlans(prev=>[...prev, p]);
+  const savePlan = async (p: CustomPlan) => {
+  try {
+    const payload = {
+      plan_name: p.name,
+
+      price: p.price,
+
+      yearly_price: p.yearPrice,
+
+      active: true,
+
+      popular: p.popular,
+
+      features: {
+        users: {
+          limit_value:
+            p.users === "∞"
+              ? 999999
+              : Number(p.users),
+        },
+
+        whatsapp_accounts: {
+          limit_value:
+            p.wa === "∞"
+              ? 999999
+              : Number(p.wa),
+        },
+
+        messages_per_month: {
+          limit_value:
+            p.msgs === "∞"
+              ? 999999
+              : Number(
+                  p.msgs.replace("K", "000")
+                ),
+        },
+      },
+
+      extras: p.extra,
+
+      icon: p.icon,
+
+      color: p.col,
+    };
+
+    console.log(
+      "CREATE PLAN PAYLOAD:",
+      payload
+    );
+
+    const response =
+      await createSubscriptionPlan(payload);
+
+    console.log(
+      "CREATE PLAN RESPONSE:",
+      response.data
+    );
+
+    alert("Plan created successfully");
+
+    // Add locally
+    setCustomPlans((prev) => [...prev, p]);
+
+    // Refresh data
+    window.location.reload();
+  } catch (error) {
+    console.error(
+      "CREATE PLAN ERROR:",
+      error
+    );
+
+    alert("Failed to create plan");
+  }
+};
   const removePlan = (id: number) => setCustomPlans(prev=>prev.filter(p=>p.id!==id));
 
   useEffect(() => {
-    let alive = true;
+  let alive = true;
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
-          headers: getExternalHeaders(),
-          withCredentials: false,
-        });
+    try {
+      const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
+        headers: getExternalHeaders(),
+        withCredentials: false,
+      });
 
-        if (!alive) return;
+      console.log("FULL API RESPONSE:", apiResponse);
 
-        // Unwrap envelope: { success, message, data: [...], meta: {...} }
-        const raw: any[] = Array.isArray(apiResponse)
-          ? apiResponse
-          : Array.isArray(apiResponse?.data)
-          ? apiResponse.data
+      if (!alive) return;
+
+      // Correct array path
+      const raw =
+        apiResponse?.data?.data && Array.isArray(apiResponse.data.data)
+          ? apiResponse.data.data
           : [];
 
-        const validStatuses: SubStatus[] = ["ACTIVE","TRIAL","EXPIRED","SUSPENDED","CANCELLED"];
-        const planMap: Record<string, PlanName> = {
-          starter: "Starter", basic: "Basic", pro: "Pro", enterprise: "Enterprise",
-        };
+      console.log("RAW DATA:", raw);
 
-        const mapped: SubRow[] = raw.map((u: any) => {
-          const planKey   = (u.plan_name ?? u.plan ?? "").toLowerCase();
-          const planName  = planMap[planKey] ?? "Starter";
-          const planColor = PLAN_COLORS[planKey] ?? "#6C5CE7";
-          const companyName = u.company_name ?? u.name ?? "N/A";
+      const mapped: SubRow[] = raw.map((plan: any, index: number) => {
+  const name = plan.plan_name || "Plan";
 
-          const status: SubStatus = validStatuses.includes(u.status)
-            ? u.status
-            : u.is_active ?? u.isActive
-            ? "ACTIVE"
-            : "EXPIRED";
+  // Detect plan type properly
+  let planType: PlanName = "Starter";
 
-          return {
-            id:      u.id ?? u.subscription_id ?? Math.random(),
-            company: companyName,
-            logo:    companyName[0].toUpperCase(),
-            col:     planColor,
-            plan:    planName,
-            status,
-            start:   u.start_date ?? u.startDate
-              ? new Date(u.start_date ?? u.startDate).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
-              : "—",
-            end:     u.end_date ?? u.renewalDate ?? u.renewal_date
-              ? new Date(u.end_date ?? u.renewalDate ?? u.renewal_date).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
-              : "—",
-            amt:   Number(u.price ?? u.amount ?? 0),
-            users: Number(u.current_users ?? u.users ?? 0),
-            seats: Number(u.max_users ?? u.seats ?? 0),
-          };
-        });
+  if (name.toLowerCase().includes("basic")) {
+    planType = "Basic";
+  } else if (name.toLowerCase().includes("pro")) {
+    planType = "Pro";
+  } else if (
+    name.toLowerCase().includes("enterprise")
+  ) {
+    planType = "Enterprise";
+  }
 
-        if (!alive) return;
+  const features = plan.features || {};
 
-        const active = mapped.filter(s => s.status === "ACTIVE").length;
+  // Total features
+  const featureKeys = Object.keys(features);
 
-        // Fall back to mock data only if API returned nothing
-        setSubs(mapped.length > 0 ? mapped : INIT_SUBS);
-        setActiveCount(active);
-      } catch (err) {
-        if (!alive) return;
-        const message = err instanceof Error ? err.message : "Failed to load subscriptions.";
-        setError(message);
-        // Keep mock data visible on error so the UI isn't empty
-        setSubs(INIT_SUBS);
-      } finally {
-        if (alive) setLoading(false);
+  // Calculate total limits
+  let totalLimits = 0;
+
+  featureKeys.forEach((key) => {
+    const value = features[key]?.limit_value;
+
+    if (typeof value === "number") {
+      totalLimits += value;
+    }
+  });
+
+  // Proper plan color
+  const planColor =
+    planType === "Basic"
+      ? "#FDCB6E"
+      : planType === "Pro"
+      ? "#6C5CE7"
+      : planType === "Enterprise"
+      ? "#A29BFE"
+      : "#00CBA4";
+
+  return {
+  id: String(plan.id),
+
+    // Show plan name in UI
+    company: name,
+
+    // First letter logo
+    logo: name.charAt(0).toUpperCase(),
+
+    col: planColor,
+
+    plan: planType,
+
+    status: plan.active ? "ACTIVE" : "EXPIRED",
+
+    // Created date
+    start: new Date(plan.created_at).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
       }
-    };
+    ),
 
-    fetchData();
-    return () => { alive = false; };
-  }, []);
+    // Updated date
+    end: new Date(plan.updated_at).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    ),
 
+    // Price
+    amt: Number(plan.price || 0),
+
+    // Total feature count
+    users: featureKeys.length,
+
+    seats: totalLimits,
+
+rawData: plan,
+  };
+});
+      console.log("MAPPED DATA:", mapped);
+
+      if (!alive) return;
+
+      setSubs(mapped);
+
+      setActiveCount(
+        mapped.filter((s) => s.status === "ACTIVE").length
+      );
+    } catch (err) {
+      console.error("API ERROR:", err);
+
+      if (!alive) return;
+
+      setError("Failed to load subscription plans");
+    } finally {
+      if (alive) {
+        setLoading(false);
+      }
+    }
+  };
+
+  fetchData();
+
+  return () => {
+    alive = false;
+  };
+}, []);
   return (
     <div className="sb-root">
       <div className="sb-header">
@@ -751,7 +1080,13 @@ export default function Subscription() {
           <p className="sb-header__sub">Plans, billing, and company subscription management.</p>
         </div>
         <div className="sb-header__btns">
-          <button className="sb-btn sb-btn--export">⬇ Export</button>
+          <button
+            className="sb-btn sb-btn--export"
+            onClick={() => downloadExcel(subs)}
+            disabled={loading || subs.length === 0}
+          >
+            ⬇ Export
+          </button>
           <button className="sb-btn sb-btn--primary" onClick={openModal}>+ Create Plan</button>
         </div>
       </div>
@@ -781,7 +1116,12 @@ export default function Subscription() {
         ))}
       </div>
 
-      {tab==="overview" && <Overview subs={subs} loading={loading} activeCount={activeCount} />}
+      {tab==="overview" && <Overview
+  subs={subs}
+  loading={loading}
+  activeCount={activeCount}
+  onUpdatePlan={handleUpdatePlan}
+/>}
       {tab==="plans"    && <Plans onOpenModal={()=>setShowModal(true)} customPlans={customPlans} onRemoveCustom={removePlan} />}
       {tab==="history"  && <History />}
 
