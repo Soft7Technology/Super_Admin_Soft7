@@ -966,7 +966,6 @@ const applyServerTicket = (updatedTicket: Ticket) => {
                   </span>
                 </div>
               )}
-              <button className="st-btn-new"> New Ticket</button>
             </div>
           </div>
 

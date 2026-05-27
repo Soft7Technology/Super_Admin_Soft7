@@ -87,99 +87,101 @@ function KPI({ label, value, icon, color }: {
   );
 }
 
-// ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
+// ─── DETAIL PANEL (now a centered modal overlay) ──────────────────────────────
 function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
   const [tab, setTab] = useState<"info" | "stats">("info");
-  const [editOpen, setEditOpen] = useState(false);
 
   return (
-    <div className="au-panel">
-      <div className="au-panel__header">
-        <span className="au-panel__title">User Details</span>
-        <button className="au-panel__close" onClick={onClose}>×</button>
-      </div>
-      <div className="au-panel__body">
-        <div className="au-panel__identity">
-          <div className="au-panel__avatar-wrap">
-            <div className="au-avatar au-avatar--68" style={{ background: user.av }}>
-              {user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-            </div>
-            <div className={`au-status-dot au-status-dot--panel ${STATUS_DOT[user.status] ?? "au-status-dot--other"}`} />
-          </div>
-          <div className="au-panel__name">{user.name}</div>
-          <div className="au-panel__email">{user.email}</div>
-          <div className="au-panel__badges">
-            <Badge status={user.status} />
-            <span className="au-role-chip" style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}>
-              {user.role}
-            </span>
-            {user.pro && <span className="au-pro-badge--lg">PRO</span>}
-          </div>
-        </div>
-
-        <div className="au-panel__tabs">
-          {([["info", "Info"], ["stats", "Stats"]] as [string, string][]).map(([k, l]) => (
-            <button
-              key={k}
-              onClick={() => setTab(k as "info" | "stats")}
-              className={`au-panel__tab ${tab === k ? "au-panel__tab--active" : ""}`}
-            >{l}</button>
-          ))}
-        </div>
-
-        {tab === "info" && (
+    <div className="au-overlay" onClick={onClose}>
+      <div
+        className="au-modal au-modal--detail"
+        style={{ maxWidth: 460, maxHeight: "80vh", overflowY: "auto" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="au-modal__header">
           <div>
-            {([
-              ["Company", user.company, ""],
-              ["Plan",    user.plan,    "plan"],
-              ["Phone",   user.phone || "—", ""],
-              ["Joined",  user.joined,  ""],
-              ["Last Login", user.login, ""],
-            ] as [string, string, string][]).map(([label, value, type]) => (
-              <div key={label} className="au-info-row">
-                <span className="au-info-row__label">{label}</span>
-                <span className="au-info-row__value"
-                  style={type === "plan" ? { color: planColor(value) } : undefined}>
-                  {value}
-                </span>
+            <div className="au-modal__title">User Details</div>
+            <div className="au-modal__sub">{user.email}</div>
+          </div>
+          <button className="au-modal__close" onClick={onClose}>×</button>
+        </div>
+        <div className="au-modal__body" style={{ paddingTop: 12 }}>
+          <div className="au-panel__identity" style={{ marginBottom: 12 }}>
+            <div className="au-panel__avatar-wrap">
+              <div className="au-avatar au-avatar--68" style={{ background: user.av }}>
+                {user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
               </div>
+              <div className={`au-status-dot au-status-dot--panel ${STATUS_DOT[user.status] ?? "au-status-dot--other"}`} />
+            </div>
+            <div className="au-panel__name">{user.name}</div>
+            <div className="au-panel__email">{user.email}</div>
+            <div className="au-panel__badges">
+              <Badge status={user.status} />
+              <span className="au-role-chip" style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}>
+                {user.role}
+              </span>
+              {user.pro && <span className="au-pro-badge--lg">PRO</span>}
+            </div>
+          </div>
+
+          <div className="au-panel__tabs">
+            {([["info", "Info"], ["stats", "Stats"]] as [string, string][]).map(([k, l]) => (
+              <button
+                key={k}
+                onClick={() => setTab(k as "info" | "stats")}
+                className={`au-panel__tab ${tab === k ? "au-panel__tab--active" : ""}`}
+              >{l}</button>
             ))}
           </div>
-        )}
 
-        {tab === "stats" && (
-          <div className="au-stats-grid">
-            {([
-              ["Messages",  user.msgs.toLocaleString(),           "#10b981"],
-              ["Campaigns", String(user.campaigns),               "#6366f1"],
-              ["Chatbots",  String(user.chatbots),                "#f59e0b"],
-              ["Flows",     String(Math.floor(user.msgs / 80)),   "#34d399"],
-            ] as [string, string, string][]).map(([label, value, color]) => (
-              <div key={label} className="au-stats-cell">
-                <div className="au-stats-cell__val" style={{ color }}>{value}</div>
-                <div className="au-stats-cell__lbl">{label}</div>
-              </div>
-            ))}
-          </div>
-        )}
+          {tab === "info" && (
+            <div>
+              {([
+                ["Company",    user.company,        ""],
+                ["Plan",       user.plan,            "plan"],
+                ["Phone",      user.phone || "—",   ""],
+                ["Joined",     user.joined,          ""],
+                ["Last Login", user.login,           ""],
+              ] as [string, string, string][]).map(([label, value, type]) => (
+                <div key={label} className="au-info-row">
+                  <span className="au-info-row__label">{label}</span>
+                  <span className="au-info-row__value"
+                    style={type === "plan" ? { color: planColor(value) } : undefined}>
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
-        <div className="au-panel__actions">
-          <button className="au-btn au-btn--primary">Edit User</button>
-          <button className="au-btn au-btn--ghost">Reset Password</button>
-          {user.status === "SUSPENDED"
-            ? <button className="au-btn au-btn--success">Restore Account</button>
-            : <button className="au-btn au-btn--danger">Suspend User</button>
-          }
+          {tab === "stats" && (
+            <div className="au-stats-grid">
+              {([
+                ["Messages",  user.msgs.toLocaleString(),           "#10b981"],
+                ["Campaigns", String(user.campaigns),               "#6366f1"],
+                ["Chatbots",  String(user.chatbots),                "#f59e0b"],
+                ["Flows",     String(Math.floor(user.msgs / 80)),   "#34d399"],
+              ] as [string, string, string][]).map(([label, value, color]) => (
+                <div key={label} className="au-stats-cell">
+                  <div className="au-stats-cell__val" style={{ color }}>{value}</div>
+                  <div className="au-stats-cell__lbl">{label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === "info" && (
+            <div className="au-panel__actions">
+              <button className="au-btn au-btn--primary">Edit User</button>
+              <button className="au-btn au-btn--ghost">Reset Password</button>
+              {user.status === "SUSPENDED"
+                ? <button className="au-btn au-btn--success">Restore Account</button>
+                : <button className="au-btn au-btn--danger">Suspend User</button>
+              }
+            </div>
+          )}
         </div>
       </div>
-
-      {editOpen && (
-        <EditUserModal
-          user={user}
-          onClose={() => setEditOpen(false)}
-          onUpdated={(updatedUser) => { Object.assign(user, updatedUser); }}
-        />
-      )}
     </div>
   );
 }
@@ -406,78 +408,77 @@ export default function AllUsers() {
     return "Just now";
   }
 
-useEffect(() => {
-  let cancelled = false;
-  async function loadUsers() {
-    setLoading(true); setError(null);
-    try {
-      // Step 1: fetch first page of users to get total page count
-      const firstRes = await fetch(
-        `${EXTERNAL_USERS_API}?role=user&page=1&limit=10`,
-        { headers: getExternalHeaders() }
-      );
-      if (!firstRes.ok) throw new Error("Failed to fetch users");
-      const firstJson = await firstRes.json();
+  useEffect(() => {
+    let cancelled = false;
+    async function loadUsers() {
+      setLoading(true); setError(null);
+      try {
+        // Step 1: fetch first page of users to get total page count
+        const firstRes = await fetch(
+          `${EXTERNAL_USERS_API}?role=user&page=1&limit=10`,
+          { headers: getExternalHeaders() }
+        );
+        if (!firstRes.ok) throw new Error("Failed to fetch users");
+        const firstJson = await firstRes.json();
 
-      const totalPages: number = firstJson?.data?.pagination?.totalPages ?? 1;
+        const totalPages: number = firstJson?.data?.pagination?.totalPages ?? 1;
 
-      // Step 2: fetch remaining user pages + admins in parallel
-      const pageRequests = Array.from({ length: totalPages - 1 }, (_, i) =>
-        fetch(`${EXTERNAL_USERS_API}?role=user&page=${i + 2}&limit=10`, {
+        // Step 2: fetch remaining user pages + admins in parallel
+        const pageRequests = Array.from({ length: totalPages - 1 }, (_, i) =>
+          fetch(`${EXTERNAL_USERS_API}?role=user&page=${i + 2}&limit=10`, {
+            headers: getExternalHeaders(),
+          }).then(r => r.json())
+        );
+        const adminRequest = fetch(`${EXTERNAL_USERS_API}?role=admin`, {
           headers: getExternalHeaders(),
-        }).then(r => r.json())
-      );
-      const adminRequest = fetch(`${EXTERNAL_USERS_API}?role=admin`, {
-        headers: getExternalHeaders(),
-      }).then(r => r.json());
+        }).then(r => r.json());
 
-      const [adminJson, ...restPages] = await Promise.all([adminRequest, ...pageRequests]);
+        const [adminJson, ...restPages] = await Promise.all([adminRequest, ...pageRequests]);
 
-      // Step 3: flatten all raw records
-      const allUserRecords: any[] = [
-        ...(firstJson?.data?.data ?? []),           // page 1 users
-        ...restPages.flatMap(p => p?.data?.data ?? []), // remaining pages
-        ...(adminJson?.data?.data ?? []),            // admins
-      ];
+        // Step 3: flatten all raw records
+        const allUserRecords: any[] = [
+          ...(firstJson?.data?.data ?? []),
+          ...restPages.flatMap(p => p?.data?.data ?? []),
+          ...(adminJson?.data?.data ?? []),
+        ];
 
-      const mappedUsers: User[] = allUserRecords.map((u: any) => ({
-        id:      u.id,
-        name:    u.name  || "No Name",
-        email:   u.email || "",
-        phone:   u.phone || "",
-        role:    u.role === "admin" ? "Admin" : "User",
-        status:  (u.status || "active").toUpperCase(),
-        company: u.company_id ? `ID: ${u.company_id.slice(0, 8)}…` : "—",
-        //       ↑ company_id is a UUID string, not a nested object
-        plan:
-          u.plan_name === "Enterpriess" ? "Enterprise" :
-          u.plan_name === "Free Trial"  ? "Starter"    :
-          u.plan_name                   || "Starter",
-       av: "#10b981",
-        login:     timeAgo(u.last_login_at),
-        joined:    u.created_at ? new Date(u.created_at).toLocaleDateString() : "—",
-        msgs: 0, campaigns: 0, chatbots: 0,
-        pro: ["Pro", "Enterprise"].includes(u.plan_name),
-      }));
+        const mappedUsers: User[] = allUserRecords.map((u: any) => ({
+          id:      u.id,
+          name:    u.name  || "No Name",
+          email:   u.email || "",
+          phone:   u.phone || "",
+          role:    u.role === "admin" ? "Admin" : "User",
+          status:  (u.status || "active").toUpperCase(),
+          company: u.company_id ? `ID: ${u.company_id.slice(0, 8)}…` : "—",
+          plan:
+            u.plan_name === "Enterpriess" ? "Enterprise" :
+            u.plan_name === "Free Trial"  ? "Starter"    :
+            u.plan_name                   || "Starter",
+          av: "#10b981",
+          login:     timeAgo(u.last_login_at),
+          joined:    u.created_at ? new Date(u.created_at).toLocaleDateString() : "—",
+          msgs: 0, campaigns: 0, chatbots: 0,
+          pro: ["Pro", "Enterprise"].includes(u.plan_name),
+        }));
 
-      if (!cancelled) {
-        setUsers(mappedUsers);
-        setStats({
-          totalUsers:   mappedUsers.length,
-          activeUsers:  mappedUsers.filter(u => u.status === "ACTIVE").length,
-          adminUsers:   mappedUsers.filter(u => u.role === "Admin").length,
-          premiumUsers: mappedUsers.filter(u => ["Pro", "Enterprise"].includes(u.plan)).length,
-        });
+        if (!cancelled) {
+          setUsers(mappedUsers);
+          setStats({
+            totalUsers:   mappedUsers.length,
+            activeUsers:  mappedUsers.filter(u => u.status === "ACTIVE").length,
+            adminUsers:   mappedUsers.filter(u => u.role === "Admin").length,
+            premiumUsers: mappedUsers.filter(u => ["Pro", "Enterprise"].includes(u.plan)).length,
+          });
+        }
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Unknown error");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (e) {
-      if (!cancelled) setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      if (!cancelled) setLoading(false);
     }
-  }
-  loadUsers();
-  return () => { cancelled = true; };
-}, []);
+    loadUsers();
+    return () => { cancelled = true; };
+  }, []);
 
   const filteredUsers = [...users]
     .filter(user => {
@@ -552,37 +553,36 @@ useEffect(() => {
         </span>
       </div>
 
-      {/* Grid */}
-      <div className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"}`}>
-        <div className="au-cards-grid">
-          {loading && (
-            <div className="au-empty">
-              <div className="au-empty__spinner" />
-              <div className="au-empty__title">Loading users…</div>
-            </div>
-          )}
-          {!loading && error && (
-            <div className="au-empty">
-              <div className="au-empty__icon">⚠️</div>
-              <div className="au-empty__title">Could not load users</div>
-              <div className="au-empty__desc">{error}</div>
-            </div>
-          )}
-          {!loading && !error && filteredUsers.map(u => (
-            <UserCard key={u.id} user={u} isSelected={detail?.id === u.id}
-              onClick={() => setDetail(detail?.id === u.id ? null : u)} />
-          ))}
-          {!loading && !error && filteredUsers.length === 0 && (
-            <div className="au-empty">
-              <div className="au-empty__icon">🔍</div>
-              <div className="au-empty__title">No users found</div>
-              <div className="au-empty__desc">Try adjusting your search or filters.</div>
-            </div>
-          )}
-        </div>
-        {detail && <DetailPanel user={detail} onClose={() => setDetail(null)} />}
+      {/* Grid — always full width, no side panel */}
+      <div className="au-cards-grid">
+        {loading && (
+          <div className="au-empty">
+            <div className="au-empty__spinner" />
+            <div className="au-empty__title">Loading users…</div>
+          </div>
+        )}
+        {!loading && error && (
+          <div className="au-empty">
+            <div className="au-empty__icon">⚠️</div>
+            <div className="au-empty__title">Could not load users</div>
+            <div className="au-empty__desc">{error}</div>
+          </div>
+        )}
+        {!loading && !error && filteredUsers.map(u => (
+          <UserCard key={u.id} user={u} isSelected={detail?.id === u.id}
+            onClick={() => setDetail(detail?.id === u.id ? null : u)} />
+        ))}
+        {!loading && !error && filteredUsers.length === 0 && (
+          <div className="au-empty">
+            <div className="au-empty__icon">🔍</div>
+            <div className="au-empty__title">No users found</div>
+            <div className="au-empty__desc">Try adjusting your search or filters.</div>
+          </div>
+        )}
       </div>
 
+      {/* Modals */}
+      {detail && <DetailPanel user={detail} onClose={() => setDetail(null)} />}
       {invite && <InviteModal onClose={() => setInvite(false)} />}
     </div>
   );

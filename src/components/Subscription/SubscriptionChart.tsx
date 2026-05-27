@@ -34,12 +34,12 @@ export default function SubscriptionChart() {
       const y=pT+(i/4)*(H-pT-pB);
       ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
       ctx.fillStyle=isDark?"#4b5563":"#94a3b8";
-      ctx.font="11px Inter,sans-serif";ctx.textAlign="right";
+      ctx.font="11px DM Sans,sans-serif";ctx.textAlign="right";
       ctx.fillText(String(Math.round(max-(i/4)*max)),pL-8,y+4);
     }
     ctx.setLineDash([]);
     ctx.fillStyle=isDark?"#4b5563":"#94a3b8";
-    ctx.font="11px Inter,sans-serif";ctx.textAlign="center";
+    ctx.font="11px DM Sans,sans-serif";ctx.textAlign="center";
     DATA.forEach((d,i)=>{ if(i%2===0||i===DATA.length-1) ctx.fillText(d.l,tx(i),H-6); });
     // Axes
     ctx.strokeStyle=isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)";
@@ -111,7 +111,7 @@ export default function SubscriptionChart() {
         </div>
         <div style={{ display:"flex", gap:"6px" }}>
           {["6M","1Y","All"].map(p=>(
-            <button key={p} style={{ padding:"4px 10px", borderRadius:"6px", fontSize:"0.72rem", fontWeight:600, cursor:"pointer", border:`1px solid ${t.border}`, background:p==="1Y"?t.accentBg:"transparent", color:p==="1Y"?t.accent:t.textMuted, fontFamily:"'Inter', sans-serif", transition:"all 0.15s" }}>{p}</button>
+            <button key={p} style={{ padding:"4px 10px", borderRadius:"6px", fontSize:"0.72rem", fontWeight:600, cursor:"pointer", border:`1px solid ${t.border}`, background:p==="1Y"?t.accentBg:"transparent", color:p==="1Y"?t.accent:t.textMuted, fontFamily:"'DM Sans', 'Segoe UI', sans-serif", transition:"all 0.15s" }}>{p}</button>
           ))}
         </div>
       </div>

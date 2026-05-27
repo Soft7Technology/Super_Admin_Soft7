@@ -93,7 +93,7 @@
 .pf-root button,
 .pf-root input,
 .pf-root select,
-.pf-root textarea                  { font-family: "'Inter', sans-serif"; }
+.pf-root textarea                  { font-family: inherit; }
 .pf-root select option             { background: var(--pf-select-opt-bg); color: var(--pf-text); }
 
 /* ─── KILL BROWSER AUTOFILL WHITE FLASH ──────────────────── */

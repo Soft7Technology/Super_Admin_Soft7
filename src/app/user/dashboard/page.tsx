@@ -150,20 +150,24 @@ function InlineStatCards({
               alignItems: "flex-start", marginBottom: "14px",
             }}>
               <span style={{
-                fontSize: "11px", fontWeight: 600, letterSpacing: "0.04em",
+                fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em",
                 color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
                 textTransform: "uppercase",
               }}>
                 {meta.label}
               </span>
-              <div style={{
-                width: "32px", height: "32px", borderRadius: "9px",
-                background: `${meta.accent}18`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "15px",
-              }}>
-                {meta.icon}
-              </div>
+        <div style={{
+  width: "42px",
+  height: "42px",
+  borderRadius: "12px",
+  background: `${meta.accent}18`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "20px",
+}}>
+  {meta.icon}
+</div>
             </div>
             <div style={{
               fontSize: "30px", fontWeight: 800,
@@ -402,7 +406,7 @@ export default function DashboardPage() {
     <h2
       style={{
         margin: 0,
-        fontSize: "1rem",
+        fontSize: "0.85rem",
         fontWeight: 700,
         color: t.text,
         letterSpacing: "-0.02em",
@@ -414,7 +418,7 @@ export default function DashboardPage() {
     <p
       style={{
         margin: "4px 0 0",
-        fontSize: "0.85rem",
+        fontSize: "0.75rem",
         color: isDark ? t.textMuted : "#64748b",
       }}
     >
@@ -452,7 +456,7 @@ function DashboardButton({
         display: "inline-flex", alignItems: "center", gap: "8px",
         padding: "11px 22px",
         borderRadius: "10px",
-        fontSize: "0.9rem", fontWeight: 700,
+        fontSize: "0.85rem", fontWeight: 700,
         cursor: "pointer",
         border: `1px solid ${BRAND}`,
         background: hovered ? BRAND_HOVER : BRAND,
@@ -461,7 +465,7 @@ function DashboardButton({
         ? "0 8px 24px rgba(16,185,129,0.38)"
         : "0 4px 14px rgba(16,185,129,0.24)",
         transition: "all 0.15s ease",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
         whiteSpace: "nowrap",
       }}
     >
