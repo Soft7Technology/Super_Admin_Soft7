@@ -85,7 +85,7 @@ export async function GET() {
       recentUsers,
       recentTickets,
     ] = await prisma.$transaction([
-      prisma.companies.count(),
+      prisma.company.count(),
       prisma.user.count({ where: { status: "ACTIVE" } }),
       prisma.user.count({
         where: {
@@ -93,7 +93,7 @@ export async function GET() {
         },
       }),
       prisma.support_tickets.count(),
-      prisma.companies.count({
+      prisma.company.count({
         where: { createdAt: { lt: thirtyDaysAgo } },
       }),
       prisma.user.count({
@@ -102,7 +102,7 @@ export async function GET() {
           createdAt: { lt: thirtyDaysAgo },
         },
       }),
-      prisma.companies.findMany({
+      prisma.company.findMany({
         select: {
           id: true,
           name: true,
