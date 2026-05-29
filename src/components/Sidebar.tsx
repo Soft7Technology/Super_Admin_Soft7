@@ -1,116 +1,272 @@
 "use client";
-import React, { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";   // ← ADD
-import { useTheme, tokens } from "../context/ThemeContext";
 
-const NAV = [
-  { icon:"⊞",  label:"Dashboard",        route:"/user/dashboard",         bg:"#3b5bdb" },
-  { icon:"🏢", label:"Manage Companies",  route:"/user/manage-companies",  bg:"#1971c2" },
-  { icon:"👥", label:"All User",          route:"/user/all-user",          bg:"#0ca678" },
-  { icon:"💳", label:"Subscription",      route:"/user/subscription",      bg:"#6741d9" },
-  { icon:"📋", label:"Audit Logs",        route:"/user/audit-logs",        bg:"#862e9c" },
-  { icon:"⚙️", label:"System",            route:"/user/system",            bg:"#495057" },
-  { icon:"👤", label:"Profile",           route:"/user/profile",           bg:"#1864ab" },
-  { icon:"🎫", label:"Support Tickets",   route:"/user/support-tickets",   bg:"#c92a2a" },
+import React, { useMemo } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Building2,
+  ClipboardList,
+  CreditCard,
+  LayoutDashboard,
+  Settings,
+  TicketPercent,
+  UserCircle,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
+import Logo from "./Logo";
+
+const BRAND = "#10b981";
+const SIDEBAR_WIDTH = 260;
+
+type NavItem = {
+  icon: LucideIcon;
+  label: string;
+  route: string;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", route: "/user/dashboard" },
+  { icon: Building2, label: "Manage Companies", route: "/user/manage-companies" },
+  { icon: Users, label: "All User", route: "/user/all-user" },
+  { icon: CreditCard, label: "Subscription", route: "/user/subscription" },
+  { icon: ClipboardList, label: "Audit Logs", route: "/user/audit-logs" },
+  { icon: Settings, label: "System", route: "/user/system" },
+  { icon: UserCircle, label: "Profile", route: "/user/profile" },
+  { icon: TicketPercent, label: "Support Tickets", route: "/user/support-tickets" },
 ];
+
+function isRouteActive(pathname: string | null, route: string) {
+  if (!pathname) return route === "/user/dashboard";
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
 
 export default function Sidebar({
   activeItem,
   onNavigate,
+  onWidthChange,
 }: {
   activeItem?: string;
-  onNavigate?: (l: string) => void;
+  onNavigate?: (label: string) => void;
+  onWidthChange?: (width: number) => void;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
-  const router   = useRouter();
-  const pathname = usePathname();  
 
- 
-  const currentActive =
-    activeItem ??
-    (NAV.find(n => pathname?.startsWith(n.route))?.label ?? "Dashboard");
+  // Notify parent of fixed width on mount
+  React.useEffect(() => {
+    onWidthChange?.(SIDEBAR_WIDTH);
+  }, [onWidthChange]);
 
-  const handleNav = (item: typeof NAV[0]) => {
+  const activeRoute = useMemo(() => {
+    return (
+      NAV_ITEMS.find((item) => isRouteActive(pathname, item.route))?.route ??
+      NAV_ITEMS.find((item) => item.label === activeItem)?.route ??
+      "/user/dashboard"
+    );
+  }, [activeItem, pathname]);
+
+  const handleNavigate = (item: NavItem) => {
     onNavigate?.(item.label);
-    router.push(item.route);       
+    router.push(item.route);
   };
 
   return (
-    <aside style={{ width:"250px", background:t.surface, borderRight:`1px solid ${t.border}`, display:"flex", flexDirection:"column", height:"100vh", position:"fixed", left:0, top:0, zIndex:100, transition:"background 0.3s,border-color 0.3s" }}>
+    <aside
+      className="admin-sidebar"
+      style={{ "--brand": BRAND } as React.CSSProperties}
+    >
+      <div className="admin-sidebar__shell">
+        {/* ── Brand / Logo ── */}
+        <div className="admin-sidebar__brand">
+          <span className="admin-sidebar__mark">
+            <Logo />
+          </span>
+        </div>
 
-      {/* Logo */}
-      <div style={{ padding:"20px", borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", gap:"12px" }}>
-        <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:"linear-gradient(135deg,#3b5bdb,#6741d9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.1rem", boxShadow:"0 4px 14px rgba(59,91,219,0.35)", flexShrink:0 }}>🛡</div>
-        <div>
-          <div style={{ fontWeight:800, fontSize:"1rem", color:t.text, letterSpacing:"-0.02em", transition:"color 0.3s" }}>
-            Super<span style={{ color:t.accent }}>Admin</span>
-          </div>
-          <div style={{ fontSize:"0.65rem", color:t.textFaint, marginTop:"2px", transition:"color 0.3s" }}>Management Portal</div>
+        {/* ── Navigation ── */}
+        <nav className="admin-sidebar__nav" aria-label="Admin navigation">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = activeRoute === item.route;
+
+            return (
+              <button
+                type="button"
+                key={item.route}
+                className="admin-sidebar__item"
+                data-active={active}
+                onClick={() => handleNavigate(item)}
+                aria-current={active ? "page" : undefined}
+              >
+                
+                <span className="admin-sidebar__icon">
+                  <Icon size={20} strokeWidth={2.25} />
+                </span>
+                <span className="admin-sidebar__label">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* ── Footer ── */}
+        <div className="admin-sidebar__footer">
+          <span className="admin-sidebar__status-dot" />
+          <span>
+            System Online
+            <small>{isDark ? "Dark Mode" : "Light Mode"}</small>
+          </span>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav style={{ flex:1, overflowY:"auto", padding:"12px 10px" }}>
-        {NAV.map(item => (
-          <NavItem
-            key={item.label}
-            item={item}
-            active={item.label === currentActive}
-            onClick={() => handleNav(item)}
-            t={t}
-            isDark={isDark}
-          />
-        ))}
-      </nav>
+      <style jsx>{`
+        .admin-sidebar {
+          width: ${SIDEBAR_WIDTH}px;
+          height: 100vh;
+          flex: 0 0 ${SIDEBAR_WIDTH}px;
+          color: ${isDark ? "#f8fafc" : "#111827"};
+        }
 
-      {/* Footer */}
-      <div style={{ padding:"14px 20px", borderTop:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between", transition:"border-color 0.3s" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
-          <div style={{ width:"7px", height:"7px", borderRadius:"50%", background:"#4ade80", boxShadow:"0 0 6px #4ade80" }} />
-          <span style={{ fontSize:"0.72rem", color:t.textFaint }}>System Online</span>
-        </div>
-        <span style={{ fontSize:"0.72rem", color:t.textFaint }}>© 2026 Soft7</span>
-      </div>
-    </aside>
-  );
+        .admin-sidebar__shell {
+          display: flex;
+          height: 100%;
+          flex-direction: column;
+          overflow: hidden;
+          border-right: 1px solid
+            ${isDark ? "rgba(99,179,237,0.18)" : "#d1fae5"};
+          background: ${isDark
+            ? "linear-gradient(180deg,#050d1a 0%,#07111f 48%,#040e1a 100%)"
+            : "linear-gradient(180deg,#ffffff 0%,#f0fdf4 52%,#dcfce7 100%)"};
+        }
+
+       
+        .admin-sidebar__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70px;
+  padding: 4px 8px;
+  border-bottom: 1px solid
+    ${isDark ? "rgba(148,163,184,0.12)" : "#d1fae5"};
 }
 
-function NavItem({ item, active, onClick, t, isDark }: any) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display:"flex", alignItems:"center", gap:"12px",
-        padding:"9px 12px", marginBottom:"2px", borderRadius:"9px",
-        cursor:"pointer", userSelect:"none", transition:"all 0.15s",
-        color:  active ? (isDark ? "#fff" : "#0f172a") : hov ? t.textSub : t.textMuted,
-        fontWeight: active ? 600 : 400, fontSize:"0.875rem",
-        background: active ? t.navActive : hov ? t.navHover : "transparent",
-        borderLeft: `3px solid ${active ? t.accent : "transparent"}`,
-      }}
-    >
-      <div style={{
-        width:"30px", height:"30px", borderRadius:"8px",
-        display:"flex", alignItems:"center", justifyContent:"center",
-        fontSize:"0.85rem", flexShrink:0, transition:"background 0.15s",
-        background: active ? item.bg : t.iconBox,
-        boxShadow: active ? `0 2px 10px ${item.bg}66` : "none",
-      }}>
-        {item.icon}
-      </div>
-      <span style={{ flex:1 }}>{item.label}</span>
-      {item.badge && (
-        <span style={{ background:"#1971c2", color:"#fff", fontSize:"0.62rem", padding:"2px 7px", borderRadius:"20px", fontWeight:700 }}>
-          {item.badge}
-        </span>
-      )}
-      {active && (
-        <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:t.accent, boxShadow:`0 0 6px ${t.accent}` }} />
-      )}
-    </div>
+.admin-sidebar__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin: 0;
+  line-height: 1;
+}
+
+        /* ── Nav ── */
+        .admin-sidebar__nav {
+          display: grid;
+          gap: 6px;
+          flex: 1;
+          align-content: start;
+          overflow-y: auto;
+          padding: 16px 12px;
+        }
+
+        .admin-sidebar__nav::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .admin-sidebar__nav::-webkit-scrollbar-thumb {
+          border-radius: 999px;
+          background: rgba(16, 185, 129, 0.45);
+        }
+
+        .admin-sidebar__item {
+          position: relative;
+          display: flex;
+          width: 100%;
+          height: 46px;
+          align-items: center;
+          gap: 12px;
+          overflow: hidden;
+          border-radius: 12px;
+          border: 0;
+          background: transparent;
+          color: ${isDark ? "#cbd5e1" : "#334155"};
+          padding: 0 13px;
+          font-family: "DM Sans", "Segoe UI", sans-serif;
+          text-align: left;
+          transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+          cursor: pointer;
+        }
+
+        .admin-sidebar__item:hover {
+          background: ${isDark ? "rgba(99,179,237,0.12)" : "#dcfce7"};
+          color: ${isDark ? "#ffffff" : "#065f46"};
+          transform: translateX(3px);
+        }
+
+        .admin-sidebar__item[data-active="true"] {
+        background: #10b981;
+        color: #ffffff;
+        }
+
+        /* ── Active bar ── */
+      
+        .admin-sidebar__item[data-active="true"] .admin-sidebar__active-bar {
+          opacity: 1;
+        }
+
+        .admin-sidebar__icon {
+          display: grid;
+          flex: 0 0 22px;
+          place-items: center;
+          color: currentColor;
+        }
+
+        .admin-sidebar__label {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 0.92rem;
+          font-weight: 750;
+        }
+
+        /* ── Footer ── */
+        .admin-sidebar__footer {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 66px;
+          padding: 14px 18px;
+          border-top: 1px solid
+            ${isDark ? "rgba(148,163,184,0.12)" : "#d1fae5"};
+          color: ${isDark ? "#93c5fd" : "#065f46"};
+          font-size: 0.8rem;
+          font-weight: 800;
+        }
+
+        .admin-sidebar__footer span:not(.admin-sidebar__status-dot) {
+          display: grid;
+          gap: 2px;
+        }
+
+        .admin-sidebar__footer small {
+          color: ${isDark ? "#60a5fa" : "#047857"};
+          font-size: 0.72rem;
+          font-weight: 700;
+        }
+
+        .admin-sidebar__status-dot {
+          width: 9px;
+          height: 9px;
+          flex: 0 0 9px;
+          border-radius: 999px;
+          background: #10b981;
+          box-shadow:
+            0 0 0 5px rgba(16, 185, 129, 0.14),
+            0 0 18px rgba(16, 185, 129, 0.9);
+        }
+      `}</style>
+    </aside>
   );
 }

@@ -81,9 +81,9 @@
 /* ─── LIGHT THEME ────────────────────────────────────────── */
 [data-theme="light"],
 .light {
-  --al-bg:              #F0F2F8;
+  --al-bg:              #ffffff;
   --al-surf:            #FFFFFF;
-  --al-surf2:           #F4F5FB;
+  --al-surf2:           #ffffff;
   --al-surf3:           #E8EAEF;
   --al-border:          rgba(0, 0, 0, 0.08);
   --al-accent:          #6C5CE7;
@@ -188,16 +188,18 @@
   font-size: 12px; font-weight: 700; border: none;
   display: flex; align-items: center; gap: 8px;
   transition: all 0.25s; min-width: 160px; justify-content: center;
-  background: linear-gradient(135deg, var(--al-accent), var(--al-accent2));
+  background: linear-gradient(135deg, #10b981, #34d399);
   color: #fff;
 }
 .al-btn-export:hover       { opacity: 0.85; }
 .al-btn-export:disabled    { opacity: 0.45; cursor: not-allowed; }
-.al-btn-export--loading    { background: var(--al-btn-export-load-bg); color: var(--al-muted); }
+.al-btn-export--loading    { background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+  opacity: 0.7; }
 .al-btn-export--done       {
-  background: var(--al-btn-export-done-bg) !important;
-  color: var(--al-btn-export-done-col) !important;
-  border: 1px solid var(--al-btn-export-done-br) !important;
+    background: linear-gradient(135deg, #10b981, #34d399) !important;
+  color: #fff !important;
+  border: none !important;
 }
 .al-btn-export__spinner {
   display: inline-block; width: 12px; height: 12px; border-radius: 50%;
@@ -432,22 +434,25 @@
 .al-btn-copy {
   width: 100%; padding: 9px; border-radius: 8px; cursor: pointer;
   font-size: 11px; font-weight: 600; border: none; transition: all 0.2s;
-  background: linear-gradient(135deg, var(--al-accent), var(--al-accent2));
+  background: linear-gradient(135deg, #10b981, #34d399);
   color: #fff;
 }
 .al-btn-copy--done {
-  background: var(--al-panel-copy-done-bg) !important;
-  color: var(--al-panel-copy-done-col) !important;
-  border: 1px solid var(--al-panel-copy-done-br) !important;
+  background: linear-gradient(135deg, #10b981, #34d399) !important;
+  color: #fff !important;
+  border: none !important;
 }
 .al-btn-export-event {
   width: 100%; padding: 9px; border-radius: 8px; cursor: pointer;
   font-size: 11px; font-weight: 600;
-  background: var(--al-panel-export-bg); color: var(--al-muted);
-  border: 1px solid var(--al-border);
   transition: border-color 0.15s, background 0.3s, color 0.3s;
+  background: linear-gradient(135deg, #10b981, #34d399) !important;
+  color: #fff !important;
+  border: none !important;
 }
-.al-btn-export-event:hover { border-color: var(--al-accent2); }
+.al-btn-export-event:hover { 
+  opacity: 0.9;
+  border: none; }
 .al-panel__btn-row         { display: flex; flex-direction: column; gap: 7px; }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
@@ -456,10 +461,78 @@
   .al-kpi-grid         { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 900px) {
+
   .al-root             { padding: 16px; }
   .al-main-grid--split { grid-template-columns: 1fr; }
   .al-kpi-grid         { grid-template-columns: repeat(2,1fr); }
-  .al-table__head,
-  .al-log-row__main    { grid-template-columns: 28px 1fr 0.7fr 0.55fr 70px; }
-  .al-changes-grid     { grid-template-columns: repeat(2,1fr); }
+
+  /* hide header */
+  .al-table__head {
+    display: none;
+  }
+
+  /* MAIN GRID (IMPORTANT) */
+  .al-log-row__main {
+    display: grid; 
+    grid-template-columns: 20px 1fr 1fr;
+    gap: 10px 12px;
+    padding: 14px;
+    align-items: start;
+  }
+
+  /* card */
+  .al-log-row {
+    border: 1px solid var(--al-border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* dot */
+  .al-log-row__dot {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: start;
+    margin-top: 6px;
+  }
+
+  /* event */
+  .al-log-row__event {
+     grid-column: 2;
+  grid-row: 1;
+  }
+
+  /* actor */
+  .al-log-row__actor {
+    grid-column: 2;
+  }
+
+  /* resource */
+  .al-log-row__main > div:nth-child(4) {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  /* action */
+  .al-log-row__main > div:nth-child(5) {
+    grid-column: 2;
+  }
+
+  /* severity */
+  .al-log-row__main > div:nth-child(6) {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  /* time */
+  .al-log-row__time-col {
+    grid-column: 3;       
+  grid-row: 1;           
+  justify-self: end;
+  align-self: center;
+  }
+
+  .al-changes-grid {
+    grid-template-columns: repeat(2,1fr);
+  }
 }

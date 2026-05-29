@@ -67,15 +67,15 @@ function SaveBtn({ onClick, saving, saved }: { onClick: () => void; saving: bool
 
 // ─── TAB: PERSONAL INFO ───────────────────────────────────────────────────────
 function PersonalTab() {
-  const [firstName,  setFirstName]  = useState("James");
-  const [lastName,   setLastName]   = useState("Doe");
-  const [email,      setEmail]      = useState("james.doe@platform.io");
+  const [firstName,  setFirstName]  = useState("Soft7");
+  const [lastName,   setLastName]   = useState("Technology");
+  const [email,      setEmail]      = useState("soft7.in@gmail.com");
   const [phone,      setPhone]      = useState("+91 98765 43210");
   const [bio,        setBio]        = useState("Super administrator for the WhatsApp SaaS platform. Overseeing all companies, subscriptions, and system health.");
   const [location,   setLocation]   = useState("Mumbai, India");
   const [timezone,   setTimezone]   = useState("Asia/Kolkata");
   const [language,   setLanguage]   = useState("en");
-  const [website,    setWebsite]    = useState("https://jamesdoe.dev");
+  const [website,    setWebsite]    = useState("https://soft7.in");
   const [weekStart,  setWeekStart]  = useState("Mon");
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif,   setSmsNotif]   = useState(false);
@@ -100,8 +100,8 @@ function PersonalTab() {
         </div>
         <div className="pf-card__body">
           <div className="pf-grid-2" style={{ marginBottom: 16 }}>
-            <Inp label="First Name" value={firstName} onChange={setFirstName} placeholder="John" />
-            <Inp label="Last Name"  value={lastName}  onChange={setLastName}  placeholder="Doe" />
+            <Inp label="First Name" value={firstName} onChange={setFirstName} placeholder="Soft7" />
+            <Inp label="Last Name"  value={lastName}  onChange={setLastName}  placeholder="Technology" />
             <Inp label="Email"      value={email}     onChange={setEmail}     type="email" hint="Used for login and notifications" />
             <Inp label="Phone"      value={phone}     onChange={setPhone}     type="tel" prefix="📱" />
             <Inp label="Location"   value={location}  onChange={setLocation}  placeholder="City, Country" />
@@ -468,7 +468,7 @@ export default function Profile() {
           <div className="pf-hero__top-row">
             <div className="pf-avatar-wrap">
               <div className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}>
-                {uploading ? "⬆" : (avatarEmoji ?? "JD")}
+                {uploading ? "⬆" : (avatarEmoji ?? "S7")}
               </div>
               <div className="pf-avatar__online" />
               <div className="pf-avatar__upload-overlay" onClick={triggerUpload}>📷</div>
@@ -481,12 +481,12 @@ export default function Profile() {
 
           <div className="pf-hero__info">
             <div className="pf-hero__name-row">
-              <span className="pf-hero__name">James Doe</span>
+              <span className="pf-hero__name">Soft7 Technology</span>
               <span className="pf-hero__role">SUPER ADMIN</span>
             </div>
             <div className="pf-hero__meta">
               {[
-                { icon:"📧", val:"james.doe@platform.io" },
+                { icon:"📧", val:"soft7.in@gmail.com" },
                 { icon:"📱", val:"+91 98765 43210" },
                 { icon:"📍", val:"Mumbai, India" },
                 { icon:"🕐", val:"IST +5:30" },

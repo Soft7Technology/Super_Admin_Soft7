@@ -43,7 +43,7 @@ export async function POST(){
             return NextResponse.json({error: "Token reuse detected"}, {status: 403})
         }
 
-        const newAccessToken = await new SignJWT({id: user.id, email: user.email, role: user.role, companyId: user.companyId, trialEndAt: user.trialEndAt, subscriptionEnd: user.subscriptionEnd}).setProtectedHeader({alg: 'HS256'}).setExpirationTime('15m').sign(ACCESS_SECRET);
+        const newAccessToken = await new SignJWT({id: user.id, email: user.email, role: user.role, companyId: user.companyId, trialEndAt: user.trialEndAt, subscriptionEnd: user.subscriptionEnd}).setProtectedHeader({alg: 'HS256'}).setExpirationTime('7d').sign(ACCESS_SECRET);
 
         const response = NextResponse.json({success: true, message: "Access token generated successfully"});
 
@@ -52,7 +52,7 @@ export async function POST(){
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             path: "/",
-            maxAge: 15 * 60
+            maxAge: 7 * 24 * 60 * 60
         })
 
         return response;

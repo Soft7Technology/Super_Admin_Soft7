@@ -190,7 +190,7 @@ export default function SubscriptionChart() {
       ctx.stroke();
 
       ctx.fillStyle = isDark ? "#4b5563" : "#94a3b8";
-      ctx.font = "11px Inter, sans-serif";
+      ctx.font = "11px DM Sans, sans-serif";
       ctx.textAlign = "right";
       ctx.fillText(String(Math.round(maxValue - (i / 4) * maxValue)), pL - 8, y + 4);
     }
@@ -242,7 +242,7 @@ export default function SubscriptionChart() {
     });
 
     ctx.fillStyle = isDark ? "#4b5563" : "#94a3b8";
-    ctx.font = "11px Inter, sans-serif";
+    ctx.font = "11px DM Sans, sans-serif";
     ctx.textAlign = "center";
 
     const xLabelStep = drawData.length > 12 ? Math.ceil(drawData.length / 8) : 1;
@@ -339,7 +339,7 @@ export default function SubscriptionChart() {
               background: t.surface2,
               color: t.textSub,
               fontSize: "0.8rem",
-              fontFamily: "inherit",
+              fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
               cursor: "pointer",
             }}
           >
