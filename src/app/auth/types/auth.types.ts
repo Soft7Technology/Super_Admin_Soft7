@@ -5,7 +5,7 @@ export type Theme = "light" | "dark";
 export type AuthView = "login" | "register" | "forgot";
 export type ForgotStep = "request" | "verify" | "reset";
 
-export const AUTH_BASE = "https://hostapi.soft7.in/v1/auth";
+export const AUTH_BASE = "/v1/auth";
 
 export interface LoginPayload {
   identifier: string;
