@@ -843,12 +843,10 @@ useEffect(() => {
         user.name.toLowerCase().includes(search.toLowerCase()) ||
         user.email.toLowerCase().includes(search.toLowerCase()) ||
         user.company.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus =
-        status === "ALL" ? true :
-        status === "ADMIN" ? user.role.toLowerCase() === "admin" :
-        user.status === status;
-      const matchesRole = role === "ALL" || user.role.toLowerCase() === role.toLowerCase();
-      return matchesSearch && matchesStatus && matchesRole;
+       const matchesStatus =
+       status === "ALL" || user.status === status;
+       const matchesRole = role === "ALL" || user.role.toLowerCase() === role.toLowerCase();
+       return matchesSearch && matchesStatus && matchesRole;
     })
     .sort((a, b) => sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name));
 
@@ -885,10 +883,10 @@ useEffect(() => {
           />
         </div>
         <div className="au-filter-group">
-          {["ALL","ACTIVE","INACTIVE","ADMIN","PENDING"].map(f => (
+          {["ALL","ACTIVE","INACTIVE","PENDING"].map(f => (
             <button key={f} onClick={() => setStatus(f)}
               className={`au-filter-pill ${status === f ? "au-filter-pill--active" : ""}`}>
-              {f === "ALL" ? "All" : f === "ADMIN" ? "Admins" : f[0] + f.slice(1).toLowerCase()}
+              {f === "ALL" ? "All" : f[0] + f.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
