@@ -3,23 +3,9 @@
 
 import { useState, useEffect } from "react";
 import "./all-user.css";
+import { axiosInstance } from "@/lib/axiosInstance";
 
-const EXTERNAL_USERS_API = "https://hostapi.soft7.in/v1/admin/companies/user";
-
-const getExternalHeaders = () => {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
-  if (token && token.startsWith('"') && token.endsWith('"')) {
-    token = token.slice(1, -1);
-  }
-  return {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+const EXTERNAL_USERS_API = "/v1/admin/companies/user";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface User {
@@ -99,15 +85,7 @@ const fetchUserStats = async () => {
   try {
     setStatsLoading(true);
 
-    const res = await fetch(
-       `https://hostapi.soft7.in/v1/admin/users/stats`,
-      {
-        method: "GET",
-        headers: getExternalHeaders(),
-      }
-    );
-
-    const data = await res.json();
+    const { data } = await axiosInstance.get("/v1/admin/users/stats");
 
     console.log("USER STATS =>", data);
 
@@ -329,20 +307,11 @@ function EditUserModal({
     try {
       setLoading(true);
 
-      const response = await fetch(
-         `https://hostapi.soft7.in/v1/admin/users/${user.id}`,
-        {
-          method: "PUT",
-          headers: getExternalHeaders(),
-          body: JSON.stringify({
-            name,
-            email,
-            phone,
-          }),
-        }
-      );
-
-      const data = await response.json();
+      const { data } = await axiosInstance.put(`/v1/admin/users/${user.id}`, {
+        name,
+        email,
+        phone,
+      });
 
       console.log("UPDATE USER RESPONSE =>", data);
 
@@ -489,19 +458,10 @@ function ResetPasswordModal({
     try {
       setLoading(true);
 
-      const response = await fetch(
-        "https://hostapi.soft7.in/v1/auth/change-password",
-        {
-          method: "POST",
-          headers: getExternalHeaders(),
-          body: JSON.stringify({
-            current_password: currentPassword,
-            new_password: newPassword,
-          }),
-        }
-      );
-
-      const data = await response.json();
+      const { data } = await axiosInstance.post("/v1/auth/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
 
       console.log("PASSWORD RESPONSE =>", data);
 
@@ -780,6 +740,20 @@ function UserCard({ user, isSelected, onClick }: {
   );
 }
 
+function InviteModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="au-overlay">
+      <div className="au-modal">
+        <h2>Invite User</h2>
+
+        <button onClick={onClose}>
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── PAGE COMPONENT ───────────────────────────────────────────────────────────
 export default function AllUsers() {
   const [search, setSearch]   = useState("");
@@ -809,24 +783,21 @@ useEffect(() => {
     setLoading(true); setError(null);
     try {
       // Step 1: fetch first page of users to get total page count
-      const firstRes = await fetch(
-        `${EXTERNAL_USERS_API}?role=user&page=1&limit=10`,
-        { headers: getExternalHeaders() }
+      const { data: firstJson } = await axiosInstance.get(
+        `${EXTERNAL_USERS_API}?role=user&page=1&limit=10`
       );
-      if (!firstRes.ok) throw new Error("Failed to fetch users");
-      const firstJson = await firstRes.json();
 
       const totalPages: number = firstJson?.data?.pagination?.totalPages ?? 1;
 
       // Step 2: fetch remaining user pages + admins in parallel
       const pageRequests = Array.from({ length: totalPages - 1 }, (_, i) =>
-        fetch(`${EXTERNAL_USERS_API}?role=user&page=${i + 2}&limit=10`, {
-          headers: getExternalHeaders(),
-        }).then(r => r.json())
+        axiosInstance
+          .get(`${EXTERNAL_USERS_API}?role=user&page=${i + 2}&limit=10`)
+          .then((response) => response.data)
       );
-      const adminRequest = fetch(`${EXTERNAL_USERS_API}?role=admin`, {
-        headers: getExternalHeaders(),
-      }).then(r => r.json());
+      const adminRequest = axiosInstance
+        .get(`${EXTERNAL_USERS_API}?role=admin`)
+        .then((response) => response.data);
 
       const [adminJson, ...restPages] = await Promise.all([adminRequest, ...pageRequests]);
 

@@ -3,13 +3,29 @@
 import axios from "axios";
 
 export const axiosInstance = axios.create({
-  baseURL: "",
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  baseURL: "https://hostapi.soft7.in",
+  withCredentials: false,
+  headers: {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 // When sending FormData, remove Content-Type so axios sets multipart/form-data with boundary
 axiosInstance.interceptors.request.use((config) => {
+  let token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("console_access_token")
+      : null;
+
+  if (token && token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   if (config.data instanceof FormData) {
     delete config.headers["Content-Type"];
   }
@@ -28,7 +44,8 @@ axiosInstance.interceptors.response.use(
       requestUrl.includes("/api/auth/get-role") ||
       requestUrl.includes("/v1/auth/");
 
-    const isExternalApi = /^https?:\/\//i.test(requestUrl);
+    const isExternalApi =
+      /^https?:\/\//i.test(requestUrl) || requestUrl.startsWith("/v1/");
 
     // 1. Check if the error is 401 and we haven't already retried this request
     if (

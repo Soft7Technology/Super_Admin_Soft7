@@ -6,7 +6,7 @@ import { axiosInstance } from "@/lib/axiosInstance";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
- "https://hostapi.soft7.in/v1/admin/subscription/plan?active=true";
+ "/v1/admin/subscription/plan?active=true";
  const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -38,7 +38,7 @@ const updateSubscriptionPlan = async (
   payload: any
 ) => {
   return axiosInstance.put(
-    `https://hostapi.soft7.in/v1/admin/subscription/plan/${id}`,
+    `/v1/admin/subscription/plan/${id}`,
     payload,
     {
       headers: getExternalHeaders(),
@@ -51,7 +51,7 @@ const createSubscriptionPlan = async (
   payload: any
 ) => {
   return axiosInstance.post(
-    "https://hostapi.soft7.in/v1/admin/subscription/plan",
+    "/v1/admin/subscription/plan",
     payload,
     {
       headers: getExternalHeaders(),
@@ -104,9 +104,7 @@ const INIT_PLANS: PlanRow[] = [
   { id:4, name:"Enterprise", price:7999, yearPrice:6399, icon:"🏆", col:"#A29BFE", users:"∞", wa:"∞", msgs:"∞",  extra:["Dedicated Manager","SLA 99.9%","Custom Integration","White Label","SSO"] },
 ];
 
-const HISTORY: Transaction[] = [
-  { id:1, company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", amount:7999, date:"Jan 1, 2026", type:"Renewal", status:"SUCCESS" },
-];
+const HISTORY: Transaction[] = [];
 
 const TYPE_COLOR: Record<TxnType, string> = {
   New:"#00CBA4", Renewal:"#A29BFE", Upgrade:"#FDCB6E",
@@ -633,22 +631,95 @@ function Overview({
         </div>
 
         <div className="sb-dist-card">
-          <div className="sb-dist-card__title">Plan Distribution</div>
-          {INIT_PLANS.map(p=>{ const cnt=subs.filter(s=>s.plan===p.name).length; return (
-            <div key={p.id} className="sb-dist-row">
-              <div className="sb-dist-row__top">
-                <span className="sb-dist-row__name">{p.icon} {p.name}</span>
-                <div style={{ display:"flex", gap:8 }}>
-                  <span className="sb-dist-row__count">{cnt} co.</span>
-                  <span className="sb-dist-row__rev" style={{ color:p.col }}>{cnt>0?`₹${(cnt*p.price).toLocaleString()}`:"—"}</span>
-                </div>
-              </div>
-              <div className="sb-dist-bar-bg">
-                <div className="sb-dist-bar-fill" style={{ width:`${subs.length>0?(cnt/subs.length)*100:0}%`, background:p.col }} />
-              </div>
-            </div>
-          );})}
+  <div className="sb-dist-card__title">
+    Plan Distribution
+  </div>
+
+  {subs.length === 0 ? (
+    <div
+      style={{
+        padding: "20px",
+        textAlign: "center",
+        color: "#888",
+      }}
+    >
+      No Plans Found
+    </div>
+  ) : (
+    Object.values(
+      subs.reduce((acc: any, sub) => {
+        const key = sub.company;
+
+        if (!acc[key]) {
+          acc[key] = {
+            name: sub.company,
+            count: 0,
+            revenue: 0,
+            color: sub.col,
+          };
+        }
+
+        acc[key].count += 1;
+        acc[key].revenue += sub.amt;
+
+        return acc;
+      }, {})
+    ).map((item: any) => (
+      <div
+        key={item.name}
+        className="sb-dist-row"
+      >
+        <div className="sb-dist-row__top">
+<span
+  className="sb-dist-row__name"
+  style={{
+    fontWeight: 600,
+    maxWidth: "140px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  }}
+>
+  {item.name}
+</span>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+            }}
+          >
+            <span className="sb-dist-row__count">
+              {item.count} co.
+            </span>
+
+            <span
+              className="sb-dist-row__rev"
+              style={{
+                color: item.color,
+              }}
+            >
+              ₹{item.revenue.toLocaleString()}
+            </span>
+          </div>
         </div>
+
+        <div className="sb-dist-bar-bg">
+          <div
+            className="sb-dist-bar-fill"
+            style={{
+              width: `${Math.min(
+                item.count * 20,
+                100
+              )}%`,
+              background: item.color,
+            }}
+          />
+        </div>
+      </div>
+    ))
+  )}
+</div>
 
         {exp.length>0 && (
           <div className="sb-exp-card">
@@ -674,14 +745,37 @@ function Overview({
 }
 
 // ─── PLANS TAB ────────────────────────────────────────────────────────────────
-function Plans({ onOpenModal, customPlans, onRemoveCustom }:{ onOpenModal:()=>void; customPlans:CustomPlan[]; onRemoveCustom:(id:number)=>void }) {
+function Plans({
+  onOpenModal,
+  customPlans,
+  onRemoveCustom,
+  subs
+}:{
+  onOpenModal:()=>void;
+  customPlans:CustomPlan[];
+  onRemoveCustom:(id:number)=>void;
+  subs:SubRow[];
+}) {
   const [billing, setBilling] = useState<"MONTHLY"|"YEARLY">("MONTHLY");
   const [editId,  setEditId]  = useState<number|null>(null);
+  const apiPlans = subs.map((s) => ({
+  id: s.id,
+  name: s.company,
+  price: s.amt,
+  yearPrice: Math.round(s.amt * 0.8),
+  icon: s.logo,
+  col: s.col,
+  users: String(s.users),
+  wa: "-",
+  msgs: String(s.seats),
+  popular: false,
+  extra: [],
+}));
 
   const renderCard = (p: PlanRow|CustomPlan, isCustom=false) => {
     const price    = billing==="YEARLY" ? p.yearPrice : p.price;
     const isEdit   = editId===p.id;
-    const subCount = isCustom ? 0 : INIT_SUBS.filter(s=>s.plan===(p as PlanRow).name).length;
+    const subCount = 1;
     return (
       <div key={p.id} className={`sb-plan-card ${p.popular?"sb-plan-card--popular":""}`}>
         {p.popular && <div className="sb-plan-card__popular-banner">★ MOST POPULAR</div>}
@@ -745,9 +839,16 @@ function Plans({ onOpenModal, customPlans, onRemoveCustom }:{ onOpenModal:()=>vo
             </button>
           ))}
         </div>
-        <span className="sb-billing-toggle__count">{INIT_PLANS.length+customPlans.length} plans active</span>
+       <span className="sb-billing-toggle__count">
+  {apiPlans.length}
+  plans active
+</span>
       </div>
-      <div className="sb-plans-grid">{INIT_PLANS.map(p=>renderCard(p,false))}</div>
+     <div className="sb-plans-grid">
+  {apiPlans.map((p:any)=>
+    renderCard(p,false)
+  )}
+</div>
       {customPlans.length>0 && <div className="sb-plans-grid--custom">{customPlans.map(p=>renderCard(p,true))}</div>}
       <div className="sb-cta-dashed" onClick={onOpenModal}>
         <div className="sb-cta-dashed__icon">➕</div>
@@ -759,19 +860,46 @@ function Plans({ onOpenModal, customPlans, onRemoveCustom }:{ onOpenModal:()=>vo
 }
 
 // ─── HISTORY TAB ──────────────────────────────────────────────────────────────
-function History() {
+function History({
+  subs
+}:{
+  subs: SubRow[];
+}) {
   const [tf, setTf] = useState("ALL");
-  const filtered = tf==="ALL"?HISTORY:HISTORY.filter(h=>h.type===tf);
-  const rev = HISTORY.filter(h=>h.status==="SUCCESS").reduce((a,h)=>a+h.amount,0);
+ const historyRows = subs.map((s,index)=>({
+  id:index+1,
+  company:s.company,
+  logo:s.logo,
+  col:s.col,
+  plan:s.plan,
+  amount:s.amt,
+  date:s.start,
+  type:"Renewal",
+  status:"SUCCESS"
+}));
 
+const filtered =
+  tf==="ALL"
+    ? historyRows
+    : historyRows.filter(
+        h=>h.type===tf
+      );
+
+const rev =
+  historyRows.reduce(
+    (a,h)=>a+h.amount,
+    0
+  );
   return (
     <div className="sb-history">
       <div className="sb-hist-kpi-grid">
         {([
           ["Total Revenue",`₹${rev.toLocaleString()}`,"var(--sb-success)","💰"],
-          ["Transactions",String(HISTORY.length),"var(--sb-accent2)","📊"],
-          ["Failed",String(HISTORY.filter(h=>h.status==="FAILED").length),"var(--sb-danger)","❌"],
-          ["Refunded",String(HISTORY.filter(h=>h.status==="REFUNDED").length),"var(--sb-warn)","↩️"],
+          ["Transactions",
+ String(historyRows.length)
+]
+       ["Failed","0"]
+         ["Refunded","0"]
         ] as [string,string,string,string][]).map(([l,v,c,ic])=>(
           <div key={l} className="sb-hist-kpi">
             <div className="sb-hist-kpi__top"><span className="sb-hist-kpi__lbl">{l}</span><span className="sb-hist-kpi__icon">{ic}</span></div>
@@ -959,18 +1087,22 @@ export default function Subscription() {
       const mapped: SubRow[] = raw.map((plan: any, index: number) => {
   const name = plan.plan_name || "Plan";
 
-  // Detect plan type properly
   let planType: PlanName = "Starter";
 
-  if (name.toLowerCase().includes("basic")) {
-    planType = "Basic";
-  } else if (name.toLowerCase().includes("pro")) {
-    planType = "Pro";
-  } else if (
-    name.toLowerCase().includes("enterprise")
-  ) {
-    planType = "Enterprise";
-  }
+const lowerName = name.toLowerCase();
+
+if (lowerName.includes("basic")) {
+  planType = "Basic";
+}
+else if (lowerName.includes("pro")) {
+  planType = "Pro";
+}
+else if (lowerName.includes("enterprise")) {
+  planType = "Enterprise";
+}
+else {
+  planType = "Starter";
+}
 
   const features = plan.features || {};
 
@@ -1122,8 +1254,19 @@ rawData: plan,
   activeCount={activeCount}
   onUpdatePlan={handleUpdatePlan}
 />}
-      {tab==="plans"    && <Plans onOpenModal={()=>setShowModal(true)} customPlans={customPlans} onRemoveCustom={removePlan} />}
-      {tab==="history"  && <History />}
+     {tab==="plans" &&
+  <Plans
+    onOpenModal={()=>setShowModal(true)}
+    customPlans={customPlans}
+    onRemoveCustom={removePlan}
+    subs={subs}
+  />
+}
+    {tab==="history" &&
+  <History
+    subs={subs}
+  />
+}
 
       {showModal && <CreatePlanModal onClose={()=>setShowModal(false)} onSave={savePlan} />}
     </div>

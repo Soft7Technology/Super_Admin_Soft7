@@ -2,24 +2,10 @@
 
 import { useState, useEffect } from "react";
 import "./manage-companies.css";
+import { axiosInstance } from "@/lib/axiosInstance";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const COMPANIES_API = "https://hostapi.soft7.in/v1/admin/companies";
-
-const getHeaders = () => {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
-  if (token && token.startsWith('"') && token.endsWith('"')) {
-    token = token.slice(1, -1);
-  }
-  return {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+const COMPANIES_API = "/v1/admin/companies";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 // Raw shape returned by the API
@@ -150,6 +136,7 @@ function CompanyModal({
   const [saving,   setSaving]   = useState(false);
   const [err,      setErr]      = useState<string | null>(null);
 
+
   // Reset when target changes
   useEffect(() => {
     setName(company?.name   || "");
@@ -203,17 +190,15 @@ function CompanyModal({
 
     console.log("REQUEST BODY =>", body);
 
-    const res = await fetch(url, {
+    const { data } = await axiosInstance.request({
+      url,
       method: isEdit ? "PUT" : "POST",
-      headers: getHeaders(),
-      body: JSON.stringify(body),
+      data: body,
     });
-
-    const data = await res.json();
 
     console.log("COMPANY RESPONSE =>", data);
 
-   if (!res.ok || !data.success) {
+   if (!data.success) {
 
   // EMAIL ALREADY EXISTS
   if (
@@ -518,10 +503,7 @@ export default function ManageCompanies() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await fetch(COMPANIES_API, { headers: getHeaders() });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const json = await res.json();
+      const { data: json } = await axiosInstance.get(COMPANIES_API);
 
       // Response shape: { success, message, data: [...], meta }
       const raw: RawCompany[] = Array.isArray(json?.data) ? json.data : [];
