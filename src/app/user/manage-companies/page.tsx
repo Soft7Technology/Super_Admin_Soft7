@@ -136,6 +136,7 @@ function CompanyModal({
   const [saving,   setSaving]   = useState(false);
   const [err,      setErr]      = useState<string | null>(null);
 
+
   // Reset when target changes
   useEffect(() => {
     setName(company?.name   || "");
