@@ -866,7 +866,7 @@ function History({
   subs: SubRow[];
 }) {
   const [tf, setTf] = useState("ALL");
- const historyRows = subs.map((s,index)=>({
+const historyRows: Transaction[] = subs.map((s,index)=>({
   id:index+1,
   company:s.company,
   logo:s.logo,
@@ -893,17 +893,20 @@ const rev =
   return (
     <div className="sb-history">
       <div className="sb-hist-kpi-grid">
-        {([
-          ["Total Revenue",`₹${rev.toLocaleString()}`,"var(--sb-success)","💰"],
-          ["Transactions",
- String(historyRows.length)
-]
-       ["Failed","0"]
-         ["Refunded","0"]
-        ] as [string,string,string,string][]).map(([l,v,c,ic])=>(
+       {([
+          ["Total Revenue", `₹${rev.toLocaleString()}`, "var(--sb-success)", "💰"],
+          ["Transactions", String(historyRows.length), "var(--sb-accent2)", "📊"],
+          ["Failed", "0", "var(--sb-danger)", "❌"],
+          ["Refunded", "0", "var(--sb-warn)", "↩️"],
+        ] as [string, string, string, string][]).map(([l, v, c, ic]) => (
           <div key={l} className="sb-hist-kpi">
-            <div className="sb-hist-kpi__top"><span className="sb-hist-kpi__lbl">{l}</span><span className="sb-hist-kpi__icon">{ic}</span></div>
-            <div className="sb-hist-kpi__val" style={{ color:c }}>{v}</div>
+            <div className="sb-hist-kpi__top">
+              <span className="sb-hist-kpi__lbl">{l}</span>
+              <span className="sb-hist-kpi__icon">{ic}</span>
+            </div>
+            <div className="sb-hist-kpi__val" style={{ color: c }}>
+              {v}
+            </div>
           </div>
         ))}
       </div>
