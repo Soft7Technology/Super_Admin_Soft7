@@ -40,8 +40,8 @@ export default function CompanyOverview({
   const t = isDark ? tokens.dark : tokens.light;
 
   return (
-    <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius:"16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s" }}>
-      <div style={{ padding:"24px 26px 20px", borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+    <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius:"16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s", width:"100%", minWidth:0 }}>
+      <div style={{ padding:"24px 26px 20px", borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:"14px", flexWrap:"wrap" }}>
         <span style={{ fontWeight:800, fontSize:"1.18rem", color:t.text }}>Company Overview</span>
 <span
   onClick={onViewAll}
@@ -73,21 +73,23 @@ export default function CompanyOverview({
       ) : error ? (
         <div style={{ padding:"30px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>{error}</div>
       ) : (
-        <table style={{ width:"100%",tableLayout:"fixed", borderCollapse:"collapse", fontSize:"1rem" }}>
-          <thead>
-            <tr style={{ background:t.tableHead }}>
-              {["COMPANY NAME","STATUS","PLAN","USERS"].map(h => (
-                <th key={h} style={{ padding:"15px 24px", textAlign:"left", fontSize:"0.78rem", color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {companies.map((co, i) => <Row key={co.id} co={co} last={i === companies.length - 1} t={t} onCompanyClick={onCompanyClick} />)}
-            {companies.length === 0 && (
-              <tr><td colSpan={4} style={{ padding:"26px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>No companies found</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div style={{ width:"100%", overflowX:"auto" }}>
+          <table style={{ width:"100%", minWidth:"620px", tableLayout:"fixed", borderCollapse:"collapse", fontSize:"1rem" }}>
+            <thead>
+              <tr style={{ background:t.tableHead }}>
+                {["COMPANY NAME","STATUS","PLAN","USERS"].map(h => (
+                  <th key={h} style={{ padding:"15px 24px", textAlign:"left", fontSize:"0.78rem", color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {companies.map((co, i) => <Row key={co.id} co={co} last={i === companies.length - 1} t={t} onCompanyClick={onCompanyClick} />)}
+              {companies.length === 0 && (
+                <tr><td colSpan={4} style={{ padding:"26px", textAlign:"center", color:t.textFaint, fontSize:"1rem" }}>No companies found</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -102,7 +104,7 @@ function Row({ co, last, t, onCompanyClick }: { co: Company; last: boolean; t: R
       <td style={{ padding:"18px 24px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"13px" }}>
           <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:co.col, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:"0.8rem", color:"#fff", flexShrink:0 }}>{co.ini}</div>
-          <span style={{ fontWeight:800, color:t.textSub }}>{co.name}</span>
+          <span style={{ fontWeight:800, color:t.textSub, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{co.name}</span>
         </div>
       </td>
       <td style={{ padding:"18px 24px" }}>

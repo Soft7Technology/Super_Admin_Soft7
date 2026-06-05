@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import "./support-tickets.css";
+import { axiosInstance } from "@/lib/axiosInstance";
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING";
 type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -79,23 +80,6 @@ const AVATAR_COLORS: Record<string, string> = {
 };
 
 const PAGE_SIZE = 8;
-
-const getExternalHeaders = () => {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
-
-  if (token && token.startsWith('"') && token.endsWith('"')) {
-    token = token.slice(1, -1);
-  }
-
-  return {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -554,25 +538,12 @@ export default function SupportTickets() {
       setApiError(null);
 
       try {
-        const response = await fetch(
-          "https://hostapi.soft7.in/v1/admin/support/tickets/forward",
-          {
-            method: "GET",
-            headers: getExternalHeaders(),
-            cache: "no-store",
-          }
+        const { data } = await axiosInstance.get(
+          "/v1/admin/support/tickets/forward"
         );
-
-        const data = await response.json();
         console.log("Forward Tickets API Response:", data);
 
         if (!active) return;
-
-        if (!response.ok) {
-          setApiError(data?.message || "Failed to load support tickets.");
-          setTickets([]);
-          return;
-        }
 
         const ticketsData = data?.data ?? data?.tickets ?? [];
 
@@ -691,23 +662,12 @@ export default function SupportTickets() {
   try {
     setApiError(null);
 
-    const response = await fetch(
-      `https://hostapi.soft7.in/v1/admin/support/${ticketId}/forward`,
-      {
-        method: "GET",
-        headers: getExternalHeaders(),
-        cache: "no-store",
-      }
+    const { data } = await axiosInstance.get(
+      `/v1/admin/support/${ticketId}/forward`
     );
-
-    const data = await response.json();
 
     console.log("Single Ticket Response:", data);
 
-    if (!response.ok) {
-      setApiError(data?.message || "Failed to load ticket.");
-      return;
-    }
 const conversations = Array.isArray(data?.data)
   ? data.data
   : [];
@@ -851,33 +811,16 @@ const applyServerTicket = (updatedTicket: Ticket) => {
       (t) => t.id === id
     );
 
-    const response = await fetch(
-      `https://hostapi.soft7.in/v1/admin/support/${id}/forward/reply`,
+    const { data } = await axiosInstance.post(
+      `/v1/admin/support/${id}/forward/reply`,
       {
-        method: "POST",
-
-        headers: getExternalHeaders(),
-
-        body: JSON.stringify({
-          message: text,
-          email: selectedTicket?.userEmail || "",
-          phone: "9372597458",
-        }),
+        message: text,
+        email: selectedTicket?.userEmail || "",
+        phone: "9372597458",
       }
     );
 
-    const data = await response.json();
-
     console.log("Reply API Response:", data);
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        error:
-          data?.message ||
-          "Failed to send reply.",
-      };
-    }
 
     const newMessage: Message = {
       id: Date.now().toString(),
