@@ -79,191 +79,259 @@ function DetailPanel({ user, onClose }: { user: User; onClose: () => void }) {
   const [tab, setTab] = useState<"info" | "stats">("info");
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-const [userStats, setUserStats] = useState<any>(null);
-const [statsLoading, setStatsLoading] = useState(false);
-const fetchUserStats = async () => {
-  try {
-    setStatsLoading(true);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
-    const { data } = await axiosInstance.get("/v1/admin/users/stats");
+  const fetchUserStats = async () => {
+    try {
+      setStatsLoading(true);
 
-    console.log("USER STATS =>", data);
+      const { data } = await axiosInstance.get("/v1/admin/users/stats");
 
-if (data.success) {
-  setUserStats({
-    messages:
-      data?.data?.messages ||
-      data?.data?.total_messages ||
-      0,
+      if (data.success) {
+        setUserStats({
+          messages:
+            data?.data?.messages ||
+            data?.data?.total_messages ||
+            0,
 
-    campaigns:
-      data?.data?.campaigns ||
-      data?.data?.total_campaigns ||
-      0,
+          campaigns:
+            data?.data?.campaigns ||
+            data?.data?.total_campaigns ||
+            0,
 
-    chatbots:
-      data?.data?.chatbots ||
-      data?.data?.total_chatbots ||
-      0,
+          chatbots:
+            data?.data?.chatbots ||
+            data?.data?.total_chatbots ||
+            0,
 
-    flows:
-      data?.data?.flows ||
-      data?.data?.total_flows ||
-      0,
-  });
-} else {
-  console.error(data.message);
-}
-  } catch (error) {
-    console.error("Stats Error:", error);
-  } finally {
-    setStatsLoading(false);
-  }
-};
+          flows:
+            data?.data?.flows ||
+            data?.data?.total_flows ||
+            0,
+        });
+      }
+    } catch (error) {
+      console.error("Stats Error:", error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   return (
-    <div className="au-panel">
-      <div className="au-panel__header">
-        <span className="au-panel__title">User Details</span>
-        <button className="au-panel__close" onClick={onClose}>×</button>
-      </div>
-      <div className="au-panel__body">
-        <div className="au-panel__identity">
-          <div className="au-panel__avatar-wrap">
-            <div className="au-avatar au-avatar--68" style={{ background: user.av }}>
-              {user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+    <>
+      <div className="au-overlay" onClick={onClose}>
+        <div
+          className="au-modal au-modal--detail"
+          style={{
+            maxWidth: "520px",
+            width: "100%",
+            maxHeight: "85vh",
+            overflowY: "auto",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="au-modal__header">
+            <div>
+              <div className="au-modal__title">User Details</div>
+              <div className="au-modal__sub">{user.email}</div>
             </div>
-            <div className={`au-status-dot au-status-dot--panel ${STATUS_DOT[user.status] ?? "au-status-dot--other"}`} />
+
+            <button className="au-modal__close" onClick={onClose}>
+              ×
+            </button>
           </div>
-          <div className="au-panel__name">{user.name}</div>
-          <div className="au-panel__email">{user.email}</div>
-          <div className="au-panel__badges">
-            <Badge status={user.status} />
-            <span className="au-role-chip" style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}>
-              {user.role}
-            </span>
-            {user.pro && <span className="au-pro-badge--lg">PRO</span>}
-          </div>
-        </div>
 
-        <div className="au-panel__tabs">
-          {([["info", "Info"], ["stats", "Stats"]] as [string, string][]).map(([k, l]) => (
-            <button
-              key={k}
-             onClick={() => {
-  setTab(k as "info" | "stats");
+          <div className="au-modal__body">
+            <div className="au-panel__identity">
+              <div className="au-panel__avatar-wrap">
+                <div
+                  className="au-avatar au-avatar--68"
+                  style={{ background: user.av }}
+                >
+                  {user.name
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
 
-  if (k === "stats") {
-    fetchUserStats();
-  }
-}}
-              className={`au-panel__tab ${tab === k ? "au-panel__tab--active" : ""}`}
-            >{l}</button>
-          ))}
-        </div>
-
-        {tab === "info" && (
-          <div>
-            {([
-              ["Company", user.company, ""],
-              ["Plan",    user.plan,    "plan"],
-              ["Phone",   user.phone || "—", ""],
-              ["Joined",  user.joined,  ""],
-              ["Last Login", user.login, ""],
-            ] as [string, string, string][]).map(([label, value, type]) => (
-              <div key={label} className="au-info-row">
-                <span className="au-info-row__label">{label}</span>
-                <span className="au-info-row__value"
-                  style={type === "plan" ? { color: planColor(value) } : undefined}>
-                  {value}
-                </span>
+                <div
+                  className={`au-status-dot au-status-dot--panel ${
+                    STATUS_DOT[user.status] ?? "au-status-dot--other"
+                  }`}
+                />
               </div>
-            ))}
+
+              <div className="au-panel__name">{user.name}</div>
+              <div className="au-panel__email">{user.email}</div>
+
+              <div className="au-panel__badges">
+                <Badge status={user.status} />
+
+                <span
+                  className="au-role-chip"
+                  style={{
+                    background: `${roleColor(user.role)}18`,
+                    color: roleColor(user.role),
+                  }}
+                >
+                  {user.role}
+                </span>
+
+                {user.pro && (
+                  <span className="au-pro-badge--lg">
+                    PRO
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="au-panel__tabs">
+              {(
+                [
+                  ["info", "Info"],
+                  ["stats", "Stats"],
+                ] as [string, string][]
+              ).map(([k, l]) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    setTab(k as "info" | "stats");
+
+                    if (k === "stats") {
+                      fetchUserStats();
+                    }
+                  }}
+                  className={`au-panel__tab ${
+                    tab === k ? "au-panel__tab--active" : ""
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {tab === "info" && (
+              <div>
+                {(
+                  [
+                    ["Company", user.company, ""],
+                    ["Plan", user.plan, "plan"],
+                    ["Phone", user.phone || "—", ""],
+                    ["Joined", user.joined, ""],
+                    ["Last Login", user.login, ""],
+                  ] as [string, string, string][]
+                ).map(([label, value, type]) => (
+                  <div key={label} className="au-info-row">
+                    <span className="au-info-row__label">
+                      {label}
+                    </span>
+
+                    <span
+                      className="au-info-row__value"
+                      style={
+                        type === "plan"
+                          ? { color: planColor(value) }
+                          : undefined
+                      }
+                    >
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === "stats" && (
+              <div className="au-stats-grid">
+                {statsLoading ? (
+                  <div className="au-empty__title">
+                    Loading stats...
+                  </div>
+                ) : (
+                  <>
+                    <div className="au-stats-cell">
+                      <div
+                        className="au-stats-cell__val"
+                        style={{ color: "#10b981" }}
+                      >
+                        {userStats?.messages || 0}
+                      </div>
+                      <div className="au-stats-cell__lbl">
+                        Messages
+                      </div>
+                    </div>
+
+                    <div className="au-stats-cell">
+                      <div
+                        className="au-stats-cell__val"
+                        style={{ color: "#6366f1" }}
+                      >
+                        {userStats?.campaigns || 0}
+                      </div>
+                      <div className="au-stats-cell__lbl">
+                        Campaigns
+                      </div>
+                    </div>
+
+                    <div className="au-stats-cell">
+                      <div
+                        className="au-stats-cell__val"
+                        style={{ color: "#f59e0b" }}
+                      >
+                        {userStats?.chatbots || 0}
+                      </div>
+                      <div className="au-stats-cell__lbl">
+                        Chatbots
+                      </div>
+                    </div>
+
+                    <div className="au-stats-cell">
+                      <div
+                        className="au-stats-cell__val"
+                        style={{ color: "#34d399" }}
+                      >
+                        {userStats?.flows || 0}
+                      </div>
+                      <div className="au-stats-cell__lbl">
+                        Flows
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {tab === "info" && (
+              <div className="au-panel__actions">
+                <button
+                  className="au-btn au-btn--primary"
+                  onClick={() => setEditOpen(true)}
+                >
+                  Edit User
+                </button>
+
+                <button
+                  className="au-btn au-btn--ghost"
+                  onClick={() => setPasswordOpen(true)}
+                >
+                  Reset Password
+                </button>
+
+                {user.status === "SUSPENDED" ? (
+                  <button className="au-btn au-btn--success">
+                    Restore Account
+                  </button>
+                ) : (
+                  <button className="au-btn au-btn--danger">
+                    Suspend User
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
-       {tab === "stats" && (
-  <div className="au-stats-grid">
-
-    {statsLoading ? (
-      <div className="au-empty__title">
-        Loading stats...
-      </div>
-    ) : (
-      <>
-        <div className="au-stats-cell">
-          <div
-            className="au-stats-cell__val"
-            style={{ color: "#10b981" }}
-          >
-            {userStats?.messages || 0}
-          </div>
-
-          <div className="au-stats-cell__lbl">
-            Messages
-          </div>
-        </div>
-
-        <div className="au-stats-cell">
-          <div
-            className="au-stats-cell__val"
-            style={{ color: "#6366f1" }}
-          >
-            {userStats?.campaigns || 0}
-          </div>
-
-          <div className="au-stats-cell__lbl">
-            Campaigns
-          </div>
-        </div>
-
-        <div className="au-stats-cell">
-          <div
-            className="au-stats-cell__val"
-            style={{ color: "#f59e0b" }}
-          >
-            {userStats?.chatbots || 0}
-          </div>
-
-          <div className="au-stats-cell__lbl">
-            Chatbots
-          </div>
-        </div>
-
-        <div className="au-stats-cell">
-          <div
-            className="au-stats-cell__val"
-            style={{ color: "#34d399" }}
-          >
-            {userStats?.flows || 0}
-          </div>
-
-          <div className="au-stats-cell__lbl">
-            Flows
-          </div>
-        </div>
-      </>
-    )}
-  </div>
-)}
-
-        <div className="au-panel__actions">
-        <button
-  className="au-btn au-btn--primary"
-  onClick={() => setEditOpen(true)}
->
-  Edit User
-</button>
-        <button
-  className="au-btn au-btn--ghost"
-  onClick={() => setPasswordOpen(true)}
->
-  Reset Password
-</button>
-          {user.status === "SUSPENDED"
-            ? <button className="au-btn au-btn--success">Restore Account</button>
-            : <button className="au-btn au-btn--danger">Suspend User</button>
-          }
         </div>
       </div>
 
@@ -271,18 +339,20 @@ if (data.success) {
         <EditUserModal
           user={user}
           onClose={() => setEditOpen(false)}
-          onUpdated={(updatedUser) => { Object.assign(user, updatedUser); }}
+          onUpdated={(updatedUser) => {
+            Object.assign(user, updatedUser);
+          }}
         />
       )}
+
       {passwordOpen && (
-  <ResetPasswordModal
-    onClose={() => setPasswordOpen(false)}
-  />
-)}
-    </div>
+        <ResetPasswordModal
+          onClose={() => setPasswordOpen(false)}
+        />
+      )}
+    </>
   );
 }
-
 // ─── EDIT USER MODAL ─────────────────────────────────────────────────────────
 function EditUserModal({
   user,
@@ -853,12 +923,10 @@ useEffect(() => {
         user.name.toLowerCase().includes(search.toLowerCase()) ||
         user.email.toLowerCase().includes(search.toLowerCase()) ||
         user.company.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus =
-        status === "ALL" ? true :
-        status === "ADMIN" ? user.role.toLowerCase() === "admin" :
-        user.status === status;
-      const matchesRole = role === "ALL" || user.role.toLowerCase() === role.toLowerCase();
-      return matchesSearch && matchesStatus && matchesRole;
+       const matchesStatus =
+       status === "ALL" || user.status === status;
+       const matchesRole = role === "ALL" || user.role.toLowerCase() === role.toLowerCase();
+       return matchesSearch && matchesStatus && matchesRole;
     })
     .sort((a, b) => sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name));
 
@@ -895,10 +963,10 @@ useEffect(() => {
           />
         </div>
         <div className="au-filter-group">
-          {["ALL","ACTIVE","INACTIVE","ADMIN","PENDING"].map(f => (
+          {["ALL","ACTIVE","INACTIVE","PENDING"].map(f => (
             <button key={f} onClick={() => setStatus(f)}
               className={`au-filter-pill ${status === f ? "au-filter-pill--active" : ""}`}>
-              {f === "ALL" ? "All" : f === "ADMIN" ? "Admins" : f[0] + f.slice(1).toLowerCase()}
+              {f === "ALL" ? "All" : f[0] + f.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
