@@ -639,6 +639,86 @@ function ResetPasswordModal({
   );
 }
 
+function InviteModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleInvite = async () => {
+    if (!email) {
+      alert("Email is required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        "https://hostapi.soft7.in/v1/admin/invites",
+        {
+          method: "POST",
+          headers: getExternalHeaders(),
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Invitation sent");
+        onClose();
+      } else {
+        alert(data.message || "Failed to send invite");
+      }
+    } catch (error) {
+      console.error("Invite Error:", error);
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="au-overlay" onClick={onClose}>
+      <div className="au-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="au-modal__header">
+          <div>
+            <div className="au-modal__title">Invite User</div>
+            <div className="au-modal__sub">Send a new user invitation</div>
+          </div>
+          <button className="au-modal__close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="au-modal__body">
+          <div className="au-field">
+            <div className="au-field__label">EMAIL</div>
+            <input
+              type="email"
+              className="au-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="au-modal__actions">
+          <button
+            className="au-btn au-btn--primary"
+            onClick={handleInvite}
+            disabled={loading}
+          >
+            {loading ? "Sending..." : "Send Invite"}
+          </button>
+          <button className="au-btn au-btn--ghost" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── USER CARD ────────────────────────────────────────────────────────────────
 function UserCard({ user, isSelected, onClick }: {
   user: User; isSelected: boolean; onClick: () => void;
