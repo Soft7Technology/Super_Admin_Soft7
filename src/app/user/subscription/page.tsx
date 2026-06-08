@@ -940,8 +940,13 @@ const rev =
   ],
 ] as [string, string, string, string][]).map(([l, v, c, ic]) => (
           <div key={l} className="sb-hist-kpi">
-            <div className="sb-hist-kpi__top"><span className="sb-hist-kpi__lbl">{l}</span><span className="sb-hist-kpi__icon">{ic}</span></div>
-            <div className="sb-hist-kpi__val" style={{ color:c }}>{v}</div>
+            <div className="sb-hist-kpi__top">
+              <span className="sb-hist-kpi__lbl">{l}</span>
+              <span className="sb-hist-kpi__icon">{ic}</span>
+            </div>
+            <div className="sb-hist-kpi__val" style={{ color: c }}>
+              {v}
+            </div>
           </div>
         ))}
       </div>
