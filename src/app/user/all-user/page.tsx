@@ -43,9 +43,7 @@ export default function AllUsers() {
           <h1 className="au-header__title">All Users</h1>
           <p className="au-header__subtitle">All platform users across every company</p>
         </div>
-        <button className="au-btn-invite" onClick={() => setInvite(true)}>
-          + Invite User
-        </button>
+       
       </div>
 
       {/* KPIs */}
