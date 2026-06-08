@@ -235,10 +235,10 @@ function SecurityTab() {
         </div>
         <div className="pf-danger-card__body">
           <div>
-            <div className="pf-danger-card__name">Delete My Account</div>
-            <div className="pf-danger-card__sub">Permanently remove your admin profile and all associated data.</div>
+            <div className="pf-danger-card__name">Change Ownership</div>
+            <div className="pf-danger-card__sub">Permanently transfer ownership of your admin profile to another user.</div>
           </div>
-          <button className="pf-btn-delete">Delete Account</button>
+          <button className="pf-btn-ownership">Change Ownership</button>
         </div>
       </div>
     </div>
@@ -452,7 +452,6 @@ export default function Profile() {
           <h1 className="pf-header__title">My Profile</h1>
           <p className="pf-header__sub">Manage your personal information, security, and preferences.</p>
         </div>
-        <button className="pf-btn-signout">Sign Out</button>
       </div>
 
       {/* ── HERO CARD ── */}
@@ -474,7 +473,7 @@ export default function Profile() {
               <div className="pf-avatar__upload-overlay" onClick={triggerUpload}>📷</div>
             </div>
             <div className="pf-hero__actions">
-              <button className="pf-btn-share">Share Profile</button>
+
               <button className="pf-btn-edit" onClick={() => setTab("personal")}>✏️ Edit Profile</button>
             </div>
           </div>
