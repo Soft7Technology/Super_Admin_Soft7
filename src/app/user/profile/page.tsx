@@ -164,7 +164,122 @@ function PersonalTab() {
     </div>
   );
 }
+function ChangeOwnershipModal({
+  open,
+  step,
+  setStep,
+  onClose,
+}: {
+  open: boolean;
+  step: number;
+  setStep: (step: 1 | 2) => void;
+  onClose: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [reason, setReason] = useState("");
 
+  if (!open) return null;
+
+  const transferOwnership = async () => {
+    try {
+      console.log({
+        newOwnerEmail: email,
+        reason,
+      });
+
+      onClose();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <div className="pf-modal-overlay">
+      <div className="pf-modal">
+
+        {step === 1 && (
+          <>
+            <h2>Transfer Ownership</h2>
+
+            <p>
+              You are about to transfer ownership of this account to another
+              administrator.
+            </p>
+
+            <p>
+              The new owner will receive full administrative control over the
+              platform including users, companies, subscriptions and settings.
+            </p>
+
+            <p>
+              Your role will be downgraded to Administrator after the transfer.
+            </p>
+
+            <div className="pf-modal-actions">
+              <button
+                className="pf-btn-secondary"
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="pf-btn-delete"
+                onClick={() => setStep(2)}
+              >
+                Proceed
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <h2>New Owner Information</h2>
+
+            <div className="pf-field">
+              <label>Email Address</label>
+
+              <input
+                className="pf-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+              />
+            </div>
+
+            <div className="pf-field">
+              <label>Reason (Optional)</label>
+
+              <textarea
+                className="pf-textarea"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="pf-modal-actions">
+              <button
+                className="pf-btn-secondary"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </button>
+
+              <button
+                className="pf-btn-delete"
+                onClick={transferOwnership}
+              >
+                Transfer Ownership
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 // ─── TAB: SECURITY ────────────────────────────────────────────────────────────
 function SecurityTab() {
   const [curPwd,    setCurPwd]    = useState("");
@@ -173,7 +288,11 @@ function SecurityTab() {
   const [pwdSaving, setPwdSaving] = useState(false);
   const [pwdSaved,  setPwdSaved]  = useState(false);
   const [pwdErr,    setPwdErr]    = useState("");
+  const [showOwnershipModal, setShowOwnershipModal] = useState(false);
+  const [ownershipStep, setOwnershipStep] = useState<1 | 2>(1);
 
+  const [newOwnerEmail, setNewOwnerEmail] = useState("");
+  const [reason, setReason] = useState("");
   const strength = newPwd.length === 0 ? 0 : newPwd.length < 6 ? 1 : newPwd.length < 10 ? 2
     : /[A-Z]/.test(newPwd) && /[0-9]/.test(newPwd) && /[^a-zA-Z0-9]/.test(newPwd) ? 4 : 3;
   const strengthLabel = ["","Weak","Fair","Good","Strong"][strength];
@@ -190,7 +309,6 @@ function SecurityTab() {
       setTimeout(() => setPwdSaved(false), 2500);
     }, 1000);
   };
-
   return (
     <div className="pf-tab-section">
       <div className="pf-card">
@@ -238,9 +356,23 @@ function SecurityTab() {
             <div className="pf-danger-card__name">Change Ownership</div>
             <div className="pf-danger-card__sub">Permanently transfer ownership of your admin profile to another user.</div>
           </div>
-          <button className="pf-btn-ownership">Change Ownership</button>
+          <button className="pf-btn-ownership"
+           onClick={() => {
+            setOwnershipStep(1);
+            setShowOwnershipModal(true);
+            }}
+          >Change Ownership</button>
         </div>
       </div>
+          <ChangeOwnershipModal
+      open={showOwnershipModal}
+      step={ownershipStep}
+      setStep={setOwnershipStep}
+      onClose={() => {
+        setShowOwnershipModal(false);
+        setOwnershipStep(1);
+      }}
+    />
     </div>
   );
 }
@@ -532,6 +664,7 @@ export default function Profile() {
       <div key={tab} className="pf-content">
         <Comp />
       </div>
+      
     </div>
   );
 }
