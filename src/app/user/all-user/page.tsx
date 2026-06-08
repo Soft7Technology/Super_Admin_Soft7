@@ -9,7 +9,6 @@ import { KPI } from "./components/KPI";
 import { FilterBar } from "./components/FilterBar";
 import { UserCard } from "./components/UserCard";
 import { DetailPanel } from "./components/DetailPanel";
-import { InviteModal } from "./components/InviteModal";
 
 export default function AllUsers() {
   const [search, setSearch] = useState("");
@@ -20,13 +19,19 @@ export default function AllUsers() {
   const [invite, setInvite] = useState(false);
 
   const { users, stats, loading, error } = useUsers();
+  const query = search.trim().toLowerCase();
 
   const filteredUsers = [...users]
     .filter((user) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase()) ||
-        user.company.toLowerCase().includes(search.toLowerCase());
+      const emailDomain = user.email.includes("@") ? user.email.split("@").pop() ?? "" : "";
+      const searchable = [
+        user.name,
+        user.email,
+        emailDomain,
+        user.company,
+        user.companyDomain,
+      ].join(" ").toLowerCase();
+      const matchesSearch = !query || searchable.includes(query);
       const matchesStatus = status === "ALL" || user.status === status;
       const matchesRole   = role   === "ALL" || user.role.toLowerCase() === role.toLowerCase();
       return matchesSearch && matchesStatus && matchesRole;
@@ -104,8 +109,6 @@ export default function AllUsers() {
           <DetailPanel user={detail} onClose={() => setDetail(null)} />
         )}
       </div>
-
-      {invite && <InviteModal onClose={() => setInvite(false)} />}
     </div>
   );
 }
