@@ -539,8 +539,19 @@ function Overview({
   onUpdatePlan: (plan: SubRow) => void;
 }) {
   const [sel, setSel] = useState<SubRow|null>(null);
-  const active = subs.filter(s => s.status === "ACTIVE");
-  const mrr    = active.reduce((a,s)=>a+s.amt,0);
+ const active = subs.filter(
+  s => s.status === "ACTIVE"
+);
+
+const monthlyPlans = active.filter(
+  s =>
+    s.rawData?.billing_cycle === "Monthly"
+);
+
+const mrr = monthlyPlans.reduce(
+  (sum, s) => sum + s.amt,
+  0
+);
   const exp    = subs.filter(s=>s.status!=="ACTIVE");
 
   return (
@@ -621,7 +632,17 @@ function Overview({
           <div className="sb-mrr-card__value">₹{mrr.toLocaleString()}</div>
           <div className="sb-mrr-card__delta">↑ +12% vs last month</div>
           <div className="sb-mrr-card__grid">
-            {([["ARR",`₹${(mrr*12).toLocaleString()}`,"var(--sb-accent2)"],["ARPU",`₹${active.length>0?Math.round(mrr/active.length).toLocaleString():0}`,"var(--sb-warn)"]] as [string,string,string][]).map(([l,v,c])=>(
+            {([["ARR",`₹${(mrr*12).toLocaleString()}`,"var(--sb-accent2)"],[
+  "ARPU",
+  `₹${
+    monthlyPlans.length > 0
+      ? Math.round(
+          mrr / monthlyPlans.length
+        ).toLocaleString()
+      : 0
+  }`,
+  "var(--sb-warn)"
+]] as [string,string,string][]).map(([l,v,c])=>(
               <div key={l} className="sb-mrr-card__cell">
                 <div className="sb-mrr-card__cell-key">{l}</div>
                 <div className="sb-mrr-card__cell-val" style={{ color:c }}>{v}</div>
@@ -866,18 +887,17 @@ function History({
   subs: SubRow[];
 }) {
   const [tf, setTf] = useState("ALL");
- const historyRows = subs.map((s,index)=>({
-  id:index+1,
-  company:s.company,
-  logo:s.logo,
-  col:s.col,
-  plan:s.plan,
-  amount:s.amt,
-  date:s.start,
-  type:"Renewal",
-  status:"SUCCESS"
+const historyRows: Transaction[] = subs.map((s, index) => ({
+  id: index + 1,
+  company: s.company,
+  logo: s.logo,
+  col: s.col,
+  plan: s.plan,
+  amount: s.amt,
+  date: s.start,
+  type: "Renewal" as TxnType,
+  status: "SUCCESS" as TxnStatus,
 }));
-
 const filtered =
   tf==="ALL"
     ? historyRows
@@ -894,13 +914,31 @@ const rev =
     <div className="sb-history">
       <div className="sb-hist-kpi-grid">
         {([
-          ["Total Revenue",`₹${rev.toLocaleString()}`,"var(--sb-success)","💰"],
-          ["Transactions",
- String(historyRows.length)
-]
-       ["Failed","0"]
-         ["Refunded","0"]
-        ] as [string,string,string,string][]).map(([l,v,c,ic])=>(
+  [
+    "Total Revenue",
+    `₹${rev.toLocaleString()}`,
+    "var(--sb-success)",
+    "💰",
+  ],
+  [
+    "Transactions",
+    String(historyRows.length),
+    "var(--sb-accent2)",
+    "📄",
+  ],
+  [
+    "Failed",
+    "0",
+    "#FF6B6B",
+    "❌",
+  ],
+  [
+    "Refunded",
+    "0",
+    "#FDCB6E",
+    "↩️",
+  ],
+] as [string, string, string, string][]).map(([l, v, c, ic]) => (
           <div key={l} className="sb-hist-kpi">
             <div className="sb-hist-kpi__top"><span className="sb-hist-kpi__lbl">{l}</span><span className="sb-hist-kpi__icon">{ic}</span></div>
             <div className="sb-hist-kpi__val" style={{ color:c }}>{v}</div>
@@ -928,7 +966,15 @@ const rev =
             <span className={`sb-plan-chip sb-plan-chip--${h.plan}`} style={{ fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700 }}>{h.plan}</span>
             <div className="sb-hist-row__amt">{h.amount>0?`₹${h.amount.toLocaleString()}`:"Free"}</div>
             <div className="sb-hist-row__date">{h.date}</div>
-            <span className="sb-type-chip" style={{ background:`${TYPE_COLOR[h.type]}18`, color:TYPE_COLOR[h.type] }}>{h.type}</span>
+           <span
+  className="sb-type-chip"
+  style={{
+    background: `${TYPE_COLOR[h.type as TxnType]}18`,
+    color: TYPE_COLOR[h.type as TxnType],
+  }}
+>
+  {h.type}
+</span>
             <span className={`sb-txn-chip sb-txn-chip--${h.status}`}>
               <span className="sb-txn-chip__dot" />{h.status[0]+h.status.slice(1).toLowerCase()}
             </span>
@@ -1231,7 +1277,13 @@ rawData: plan,
           icon="💳"
           color="#6C5CE7"
         />
-        <KPI label="Monthly Revenue"  value={loading ? "…" : `₹${subs.filter(s=>s.status==="ACTIVE").reduce((a,s)=>a+s.amt,0).toLocaleString()}`} delta="vs last month" icon="📈" color="#00CBA4" up />
+        <KPI label="Monthly Revenue"  value={loading ? "…" : `₹${subs
+.filter(
+  s =>
+    s.status === "ACTIVE" &&
+    s.rawData?.billing_cycle === "Monthly"
+)
+.reduce((a,s)=>a+s.amt,0).toLocaleString()}`} delta="vs last month" icon="📈" color="#00CBA4" up />
         <KPI label="On Trial"         value={loading ? "…" : String(subs.filter(s=>s.status==="TRIAL").length)}     delta="expiring soon" icon="⏳" color="#FDCB6E" />
         <KPI label="Churned (30d)"    value={loading ? "…" : String(subs.filter(s=>s.status==="CANCELLED"||s.status==="EXPIRED").length)} delta="vs last month" icon="📉" color="#FF6B6B" up={false} />
       </div>
