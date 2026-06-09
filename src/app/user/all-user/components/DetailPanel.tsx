@@ -29,7 +29,7 @@ export function DetailPanel({ user, onClose }: DetailPanelProps) {
   const fetchUserStats = async () => {
     try {
       setStatsLoading(true);
-      const { data } = await axiosInstance.get("/v1/admin/users/stats");
+      const { data } = await axiosInstance.get("/v1/admin/users/stats?time_frame=all");
       if (data.success) {
         setUserStats({
           messages:  data?.data?.messages  || data?.data?.total_messages  || 0,
