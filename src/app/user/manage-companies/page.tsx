@@ -8,7 +8,6 @@ import { axiosInstance } from "@/lib/axiosInstance";
 const COMPANIES_API = "/v1/admin/companies";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-// Raw shape returned by the API
 interface RawCompany {
   id: string | number;
   name: string;
@@ -17,7 +16,7 @@ interface RawCompany {
   phone: string | null;
   domain: string | null;
   logo: string | null;
-  status: string;          
+  status: string;
   credit_balance: string;
   created_at: string;
   updated_at: string;
@@ -30,7 +29,6 @@ interface RawCompany {
   deleted_at: string | null;
 }
 
-// Enriched shape used in UI
 type Status = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "TRIAL";
 type Plan   = "Starter" | "Basic" | "Pro" | "Enterprise";
 
@@ -40,8 +38,8 @@ interface Company {
   email: string;
   phone: string;
   domain: string;
-  logo: string;      
-  col: string;        
+  logo: string;
+  col: string;
   status: Status;
   plan: Plan;
   users: number;
@@ -74,7 +72,6 @@ function normaliseStatus(raw: string): Status {
 
 function enrichCompany(raw: RawCompany): Company {
   const email = raw.email || raw.adminEmail || "";
-
   return {
     id:            String(raw.id),
     name:          raw.name || "Unnamed",
@@ -84,9 +81,9 @@ function enrichCompany(raw: RawCompany): Company {
     logo:          (raw.name || "??").slice(0, 2).toUpperCase(),
     col:           avatarColor(String(raw.id)),
     status:        normaliseStatus(raw.status),
-    plan:          "Starter",      
-    users:         0,             
-    mrr:           0,            
+    plan:          "Starter",
+    users:         0,
+    mrr:           0,
     end:           "N/A",
     creditBalance: raw.credit_balance ?? "0.00",
     createdAt:     raw.created_at
@@ -123,6 +120,98 @@ function KPI({
   );
 }
 
+// ─── DELETE CONFIRM MODAL ─────────────────────────────────────────────────────
+function DeleteConfirmModal({
+  companies,
+  onClose,
+  onConfirm,
+  deleting,
+}: {
+  companies: Company[];
+  onClose: () => void;
+  onConfirm: () => void;
+  deleting: boolean;
+}) {
+  const isSingle = companies.length === 1;
+
+  return (
+    <div className="mc-modal-overlay" onClick={onClose}>
+      <div className="mc-modal mc-modal--danger" onClick={(e) => e.stopPropagation()}>
+        <div className="mc-modal__header">
+          <div>
+            <div className="mc-modal__title">
+              {isSingle ? "Delete Company" : `Delete ${companies.length} Companies`}
+            </div>
+            <div className="mc-modal__sub">This action cannot be undone.</div>
+          </div>
+          <button className="mc-modal__close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="mc-modal__body">
+          <div className="mc-delete-warning">
+            <div className="mc-delete-warning__icon">⚠️</div>
+            <div className="mc-delete-warning__text">
+              {isSingle ? (
+                <>
+                  You are about to permanently delete{" "}
+                  <strong>{companies[0].name}</strong>. All associated data will be lost.
+                </>
+              ) : (
+                <>
+                  You are about to permanently delete{" "}
+                  <strong>{companies.length} companies</strong>. All associated data will be lost.
+                </>
+              )}
+            </div>
+          </div>
+
+          {!isSingle && (
+            <div className="mc-delete-list">
+              {companies.slice(0, 5).map((c) => (
+                <div key={c.id} className="mc-delete-list__item">
+                  <div
+                    className="mc-delete-list__logo"
+                    style={{ background: c.col }}
+                  >
+                    {c.logo}
+                  </div>
+                  <div>
+                    <div className="mc-delete-list__name">{c.name}</div>
+                    <div className="mc-delete-list__email">{c.email}</div>
+                  </div>
+                </div>
+              ))}
+              {companies.length > 5 && (
+                <div className="mc-delete-list__more">
+                  +{companies.length - 5} more companies
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mc-modal__divider" />
+          <div className="mc-modal__actions">
+            <button
+              className="mc-btn mc-btn--danger"
+              onClick={onConfirm}
+              disabled={deleting}
+            >
+              {deleting
+                ? "Deleting…"
+                : isSingle
+                ? "Delete Company"
+                : `Delete ${companies.length} Companies`}
+            </button>
+            <button className="mc-btn mc-btn--ghost" onClick={onClose} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ADD / EDIT MODAL ─────────────────────────────────────────────────────────
 function CompanyModal({
   company, onClose, onSuccess,
@@ -139,8 +228,6 @@ function CompanyModal({
   const [saving,   setSaving]   = useState(false);
   const [err,      setErr]      = useState<string | null>(null);
 
-
-  // Reset when target changes
   useEffect(() => {
     setName(company?.name   || "");
     setEmail(company?.email || "");
@@ -150,94 +237,50 @@ function CompanyModal({
     setErr(null);
   }, [company]);
 
- const handleSubmit = async () => {
-  setErr(null);
+  const handleSubmit = async () => {
+    setErr(null);
+    if (!name.trim())  return setErr("Company name is required.");
+    if (!email.trim()) return setErr("Email is required.");
+    if (!company && !password.trim()) return setErr("Password is required.");
 
-  if (!name.trim()) {
-    return setErr("Company name is required.");
-  }
+    setSaving(true);
+    try {
+      const isEdit = !!company;
+      const url = isEdit ? `${COMPANIES_API}/${company.id}` : COMPANIES_API;
 
-  if (!email.trim()) {
-    return setErr("Email is required.");
-  }
+      let body: any = {};
+      body = {
+        name,
+        email,
+        user: { name, email, phone, password },
+      };
 
-  if (!company && !password.trim()) {
-    return setErr("Password is required.");
-  }
+      console.log("REQUEST BODY =>", body);
+      const { data } = await axiosInstance.request({
+        url,
+        method: isEdit ? "PUT" : "POST",
+        data: body,
+      });
+      console.log("COMPANY RESPONSE =>", data);
 
-  setSaving(true);
+      if (!data.success) {
+        if (data?.message?.toLowerCase().includes("already exists")) {
+          setErr("⚠️ Company with this email already exists");
+          return;
+        }
+        setErr(data?.error?.message || data?.message || "Company request failed");
+        return;
+      }
 
-  try {
-    const isEdit = !!company;
-
-    const url = isEdit
-      ? `${COMPANIES_API}/${company.id}`
-      : COMPANIES_API;
-
-    // =========================
-    // CREATE COMPANY BODY
-    // =========================
-    let body: any = {};
-
-  body = {
-  name,
-  email,
-
-  user: {
-    name,
-    email,
-    phone,
-    password,
-  },
-};
-
-    console.log("REQUEST BODY =>", body);
-
-    const { data } = await axiosInstance.request({
-      url,
-      method: isEdit ? "PUT" : "POST",
-      data: body,
-    });
-
-    console.log("COMPANY RESPONSE =>", data);
-
-   if (!data.success) {
-
-  // EMAIL ALREADY EXISTS
-  if (
-    data?.message?.toLowerCase().includes("already exists")
-  ) {
-    setErr("⚠️ Company with this email already exists");
-    return;
-  }
-
-  // GENERAL ERROR
-  setErr(
-    data?.error?.message ||
-    data?.message ||
-    "Company request failed"
-  );
-
-  return;
-}
-    // REFRESH COMPANY LIST
-    await onSuccess();
-
-    // CLOSE MODAL
-    onClose();
-
- } catch (e: any) {
-  console.error(e);
-
-  if (e instanceof Error) {
-    setErr(e.message);
-  } else {
-    setErr("Something went wrong");
-  }
-} finally {
-  setSaving(false);
-}
-};
+      await onSuccess();
+      onClose();
+    } catch (e: any) {
+      console.error(e);
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -255,9 +298,7 @@ function CompanyModal({
         </div>
 
         <div className="mc-modal__body">
-          {err && (
-            <div className="mc-error-banner">⚠️ {err}</div>
-          )}
+          {err && <div className="mc-error-banner">⚠️ {err}</div>}
 
           <div className="mc-field">
             <div className="mc-field__label">COMPANY NAME *</div>
@@ -291,7 +332,6 @@ function CompanyModal({
             />
           </div>
 
-          {/* Password only shown when creating */}
           {!company && (
             <div className="mc-field">
               <div className="mc-field__label">PASSWORD *</div>
@@ -305,7 +345,6 @@ function CompanyModal({
             </div>
           )}
 
-          {/* Status only shown when editing */}
           {company && (
             <div className="mc-field">
               <div className="mc-field__label">STATUS</div>
@@ -343,11 +382,12 @@ function CompanyModal({
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
 function CompanyDetailModal({
-  company, onClose, onEdit,
+  company, onClose, onEdit, onDelete,
 }: {
   company: Company;
   onClose: () => void;
   onEdit: (c: Company) => void;
+  onDelete: (c: Company) => void;
 }) {
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -379,10 +419,10 @@ function CompanyDetailModal({
 
         <div className="mc-detail__metrics">
           {([
-            ["Domain",         company.domain,       "var(--mc-accent2)"],
-            ["Phone",          company.phone,         "var(--mc-success)"],
-            ["Credit Balance", `₹${company.creditBalance}`, "var(--mc-warn)"],
-            ["Member Since",   company.createdAt,     "var(--mc-accent2)"],
+            ["Domain",         company.domain,            "var(--mc-accent2)"],
+            ["Phone",          company.phone,             "var(--mc-success)"],
+            ["Credit Balance", `₹${company.creditBalance}`,"var(--mc-warn)"],
+            ["Member Since",   company.createdAt,         "var(--mc-accent2)"],
           ] as [string, string, string][]).map(([l, v, c]) => (
             <div key={l} className="mc-detail__cell">
               <div className="mc-detail__cell-key">{l.toUpperCase()}</div>
@@ -391,24 +431,13 @@ function CompanyDetailModal({
           ))}
         </div>
 
-        {company.apiKey && (
-          <div className="mc-quickstat">
-            <div className="mc-quickstat__lbl">API KEY</div>
-            <div
-              className="mc-quickstat__row"
-              style={{ fontSize: 11, wordBreak: "break-all", color: "var(--mc-muted)", padding: "8px 0" }}
-            >
-              {company.apiKey.slice(0, 32)}…
-            </div>
-          </div>
-        )}
 
         <div className="mc-detail__actions">
           <button
             className="mc-btn mc-btn--primary"
             onClick={() => { onClose(); onEdit(company); }}
           >
-            ✏️ Edit Company
+            ✏️ Edit 
           </button>
           <button className="mc-btn mc-btn--ghost" onClick={onClose}>
             Close
@@ -417,6 +446,12 @@ function CompanyDetailModal({
             ? <button className="mc-btn mc-btn--danger" onClick={onClose}>⛔ Suspend</button>
             : <button className="mc-btn mc-btn--ghost"  onClick={onClose}>✅ Restore</button>
           }
+          <button
+            className="mc-btn mc-btn--danger"
+            onClick={() => { onClose(); onDelete(company); }}
+          >
+            🗑️ Delete
+          </button>
         </div>
       </div>
     </div>
@@ -425,14 +460,31 @@ function CompanyDetailModal({
 
 // ─── COMPANY CARD ─────────────────────────────────────────────────────────────
 function CompanyCard({
-  company, onEdit, onView,
+  company, onEdit, onView, onDelete, selected, onToggleSelect, selectMode,
 }: {
   company: Company;
   onEdit: (c: Company) => void;
   onView: (c: Company) => void;
+  onDelete: (c: Company) => void;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
+  selectMode: boolean;
 }) {
   return (
-    <div className="mc-card">
+    <div
+      className={`mc-card ${selected ? "mc-card--selected" : ""}`}
+      onClick={() => selectMode && onToggleSelect(company.id)}
+    >
+      {/* Checkbox overlay */}
+      <div
+        className="mc-card__checkbox"
+        onClick={(e) => { e.stopPropagation(); onToggleSelect(company.id); }}
+      >
+        <div className={`mc-checkbox ${selected ? "mc-checkbox--checked" : ""}`}>
+          {selected && <span className="mc-checkbox__tick">✓</span>}
+        </div>
+      </div>
+
       <div className="mc-card__top">
         <div className="mc-card__left">
           <div
@@ -457,10 +509,10 @@ function CompanyCard({
 
       <div className="mc-card__metrics">
         {([
-          ["EMAIL",   company.email,                              "📧"],
-          ["PHONE",   company.phone,                              "📞"],
-          ["CREDIT",  `₹${company.creditBalance}`,               "💰"],
-          ["JOINED",  company.createdAt,                         "📅"],
+          ["EMAIL",  company.email,              "📧"],
+          ["PHONE",  company.phone,              "📞"],
+          ["CREDIT", `₹${company.creditBalance}`,"💰"],
+          ["JOINED", company.createdAt,          "📅"],
         ] as [string, string, string][]).map(([label, value, icon]) => (
           <div key={label} className="mc-metric">
             <div className="mc-metric__label">{icon} {label}</div>
@@ -474,41 +526,87 @@ function CompanyCard({
           className="mc-btn mc-btn--ghost mc-btn--small"
           onClick={(e) => { e.stopPropagation(); onEdit(company); }}
         >
-          ✏️ Edit
+          ✏️Edit 
         </button>
         <button
           className="mc-btn mc-btn--ghost mc-btn--small"
           onClick={(e) => { e.stopPropagation(); onView(company); }}
         >
-          👁 View
+          👁View
         </button>
         {company.status !== "SUSPENDED"
-          ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => e.stopPropagation()}>⛔ Suspend</button>
+          ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => e.stopPropagation()}>⛔Suspend </button>
           : <button className="mc-btn mc-btn--ghost  mc-btn--small" onClick={(e) => e.stopPropagation()}>✅ Restore</button>
         }
+        <button
+          className="mc-btn mc-btn--danger mc-btn--small"
+          onClick={(e) => { e.stopPropagation(); onDelete(company); }}
+        >
+          🗑️Delete
+        </button>
       </div>
+    </div>
+  );
+}
+
+// ─── BULK ACTION BAR ──────────────────────────────────────────────────────────
+function BulkActionBar({
+  count,
+  total,
+  onSelectAll,
+  onClearAll,
+  onDelete,
+}: {
+  count: number;
+  total: number;
+  onSelectAll: () => void;
+  onClearAll: () => void;
+  onDelete: () => void;
+}) {
+  if (count === 0) return null;
+
+  return (
+    <div className="mc-bulk-bar">
+      <div className="mc-bulk-bar__left">
+        <div className="mc-bulk-bar__count">
+          <span className="mc-bulk-bar__num">{count}</span>
+          <span className="mc-bulk-bar__label">
+            {count === 1 ? "company" : "companies"} selected
+          </span>
+        </div>
+       
+        <button className="mc-bulk-bar__link mc-bulk-bar__link--muted" onClick={onClearAll}>
+          Clear selection
+        </button>
+      </div>
+      <button className="mc-btn mc-btn--danger" onClick={onDelete}>
+        🗑️ Delete {count} {count === 1 ? "Company" : "Companies"}
+      </button>
     </div>
   );
 }
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function ManageCompanies() {
-  const [search,     setSearch]     = useState("");
-  const [filter,     setFilter]     = useState<"ALL" | Status>("ALL");
-  const [showModal,  setShowModal]  = useState(false);
-  const [editTarget, setEditTarget] = useState<Company | null>(null);
-  const [viewTarget, setViewTarget] = useState<Company | null>(null);
-  const [companies,  setCompanies]  = useState<Company[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [search,        setSearch]        = useState("");
+  const [filter,        setFilter]        = useState<"ALL" | Status>("ALL");
+  const [showModal,     setShowModal]      = useState(false);
+  const [editTarget,    setEditTarget]     = useState<Company | null>(null);
+  const [viewTarget,    setViewTarget]     = useState<Company | null>(null);
+  const [companies,     setCompanies]      = useState<Company[]>([]);
+  const [loading,       setLoading]        = useState(true);
+  const [fetchError,    setFetchError]     = useState<string | null>(null);
+
+  // ── Selection state ──
+  const [selectedIds,   setSelectedIds]    = useState<Set<string>>(new Set());
+  const [deleteTargets, setDeleteTargets]  = useState<Company[] | null>(null);
+  const [deleting,      setDeleting]       = useState(false);
 
   const fetchCompanies = async () => {
     setLoading(true);
     setFetchError(null);
     try {
       const { data: json } = await axiosInstance.get(COMPANIES_API);
-
-      // Response shape: { success, message, data: [...], meta }
       const raw: RawCompany[] = Array.isArray(json?.data) ? json.data : [];
       setCompanies(raw.map(enrichCompany));
     } catch (e) {
@@ -526,14 +624,64 @@ export default function ManageCompanies() {
 
   const filtered = companies.filter((c) => {
     const emailDomain = c.email.includes("@") ? c.email.split("@").pop() ?? "" : "";
-    const searchable = [c.name, c.email, emailDomain, c.domain].join(" ").toLowerCase();
-
+    const searchable  = [c.name, c.email, emailDomain, c.domain].join(" ").toLowerCase();
     return (filter === "ALL" || c.status === filter) && (!query || searchable.includes(query));
   });
 
-  const openAdd  = ()            => { setEditTarget(null); setShowModal(true); };
-  const openEdit = (c: Company)  => { setEditTarget(c);    setShowModal(true); };
-  const openView = (c: Company)  => setViewTarget(c);
+  // ── Select helpers ──
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () =>
+    setSelectedIds(new Set(filtered.map((c) => c.id)));
+
+  const clearAll = () => setSelectedIds(new Set());
+
+  const allSelected   = filtered.length > 0 && filtered.every((c) => selectedIds.has(c.id));
+  const someSelected  = filtered.some((c) => selectedIds.has(c.id));
+  const selectMode    = someSelected;
+
+  const selectedCount = filtered.filter((c) => selectedIds.has(c.id)).length;
+
+  // ── Delete flow ──
+  const openDeleteSingle = (c: Company) => setDeleteTargets([c]);
+  const openDeleteBulk   = () => {
+    const targets = filtered.filter((c) => selectedIds.has(c.id));
+    if (targets.length > 0) setDeleteTargets(targets);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargets || deleteTargets.length === 0) return;
+    setDeleting(true);
+    try {
+      await Promise.all(
+        deleteTargets.map((c) =>
+          axiosInstance.delete(`${COMPANIES_API}/${c.id}`)
+        )
+      );
+      // Remove deleted companies from selection
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        deleteTargets.forEach((c) => next.delete(c.id));
+        return next;
+      });
+      await fetchCompanies();
+      setDeleteTargets(null);
+    } catch (e) {
+      console.error("Delete failed", e);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const openAdd  = ()           => { setEditTarget(null); setShowModal(true); };
+  const openEdit = (c: Company) => { setEditTarget(c);    setShowModal(true); };
+  const openView = (c: Company) => setViewTarget(c);
 
   return (
     <div className="mc-root">
@@ -552,7 +700,7 @@ export default function ManageCompanies() {
 
       {/* KPIs */}
       <div className="mc-kpi-grid">
-        <KPI label="Total Companies" value={String(companies.length)}                                     icon="🏢" color="#6C5CE7" />
+        <KPI label="Total Companies" value={String(companies.length)}                                      icon="🏢" color="#6C5CE7" />
         <KPI label="Active"          value={String(companies.filter(c => c.status === "ACTIVE").length)}    icon="✅" color="#00CBA4" />
         <KPI label="Suspended"       value={String(companies.filter(c => c.status === "SUSPENDED").length)} icon="⛔" color="#FF6B6B" />
         <KPI label="On Trial"        value={String(companies.filter(c => c.status === "TRIAL").length)}     icon="⏳" color="#FDCB6E" />
@@ -581,8 +729,33 @@ export default function ManageCompanies() {
             </button>
           ))}
         </div>
+
+        {/* Select-all checkbox */}
+        {!loading && filtered.length > 0 && (
+          <button
+            className={`mc-select-all-btn ${allSelected ? "mc-select-all-btn--active" : ""}`}
+            onClick={allSelected ? clearAll : selectAll}
+            title={allSelected ? "Deselect all" : "Select all"}
+          >
+            <div className={`mc-checkbox mc-checkbox--sm ${allSelected ? "mc-checkbox--checked" : someSelected ? "mc-checkbox--partial" : ""}`}>
+              {allSelected  && <span className="mc-checkbox__tick">✓</span>}
+              {someSelected && !allSelected && <span className="mc-checkbox__tick">–</span>}
+            </div>
+            <span>{allSelected ? "Deselect all" : "Select all"}</span>
+          </button>
+        )}
+
         <span className="mc-filter-count">{filtered.length} companies</span>
       </div>
+
+      {/* BULK ACTION BAR */}
+      <BulkActionBar
+        count={selectedCount}
+        total={filtered.length}
+        onSelectAll={selectAll}
+        onClearAll={clearAll}
+        onDelete={openDeleteBulk}
+      />
 
       {/* GRID */}
       {loading ? (
@@ -594,7 +767,16 @@ export default function ManageCompanies() {
       ) : (
         <div className="mc-grid">
           {filtered.map((c) => (
-            <CompanyCard key={c.id} company={c} onEdit={openEdit} onView={openView} />
+            <CompanyCard
+              key={c.id}
+              company={c}
+              onEdit={openEdit}
+              onView={openView}
+              onDelete={openDeleteSingle}
+              selected={selectedIds.has(c.id)}
+              onToggleSelect={toggleSelect}
+              selectMode={selectMode}
+            />
           ))}
         </div>
       )}
@@ -612,6 +794,15 @@ export default function ManageCompanies() {
           company={viewTarget}
           onClose={() => setViewTarget(null)}
           onEdit={(c) => { setViewTarget(null); openEdit(c); }}
+          onDelete={(c) => { setViewTarget(null); openDeleteSingle(c); }}
+        />
+      )}
+      {deleteTargets && (
+        <DeleteConfirmModal
+          companies={deleteTargets}
+          onClose={() => setDeleteTargets(null)}
+          onConfirm={handleDeleteConfirm}
+          deleting={deleting}
         />
       )}
     </div>
