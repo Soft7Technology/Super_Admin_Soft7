@@ -13,7 +13,7 @@ import AuditLogs from "../../../components/AuditLogs";
 const DASHBOARD_API =
   "/v1/admin/companies/dashboard";
   const USERS_API =
-  "/v1/admin/companies/user?role=admin";
+  "/v1/admin/companies/user";
   const COMPANIES_API =
   "/v1/admin/companies";
 const BRAND = "#10b981";
@@ -81,6 +81,14 @@ interface DashboardUser {
 }
 interface DashboardLog {
   id: string; msg: string; actor: string; time: string; sev: string;
+}
+
+function recordsFromResponse(json: any): any[] {
+  if (Array.isArray(json)) return json;
+  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.data?.data)) return json.data.data;
+  if (Array.isArray(json?.users)) return json.users;
+  return [];
 }
 
 function useWindowWidth() {
@@ -161,17 +169,17 @@ function InlineStatCards({
                 {meta.label}
               </span>
         <div style={{
-  width: "42px",
-  height: "42px",
-  borderRadius: "12px",
-  background: `${meta.accent}18`,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "20px",
-}}>
-  {meta.icon}
-</div>
+        width: "42px",
+        height: "42px",
+        borderRadius: "12px",
+        background: `${meta.accent}18`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "20px",
+      }}>
+        {meta.icon}
+      </div>
             </div>
             <div style={{
               fontSize: "30px", fontWeight: 800,
@@ -229,7 +237,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const width = useWindowWidth();
   const isMobile     = width <= 768;
-  const isHalfScreen = width <= 1100;
+  const isHalfScreen = width <= 768;
 
   const [stats, setStats]           = useState<StatCard[]>(DEFAULT_STATS);
   const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
@@ -300,20 +308,29 @@ setCompanies(
   }))
 );
 
-       const { data: usersResponse } = await axiosInstance.get(USERS_API, {
+       const { data: usersResponse } = await axiosInstance.get(`${USERS_API}?role=user&page=1&limit=4`, {
   headers: getExternalHeaders(),
   withCredentials: false,
 });
 
-const usersData =
-  usersResponse?.data?.data || [];
+const { data: adminUsersResponse } = await axiosInstance
+  .get(`${USERS_API}?role=admin`, {
+    headers: getExternalHeaders(),
+    withCredentials: false,
+  })
+  .catch(() => ({ data: null }));
+
+const usersData = [
+  ...recordsFromResponse(usersResponse),
+  ...recordsFromResponse(adminUsersResponse),
+];
 setUsers(
   usersData.slice(0, 4).map((user: any, index: number) => ({
     id: user.id || index.toString(),
 
     un: user.name || "Unknown User",
 
-   role: "User",
+   role: String(user.role || "").toLowerCase() === "admin" ? "Admin" : "User",
     status:
       user.status?.charAt(0).toUpperCase() +
         user.status?.slice(1) || "Active",
