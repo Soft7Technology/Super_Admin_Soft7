@@ -10,9 +10,10 @@ const COMPANIES_API = "/v1/admin/companies";
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 // Raw shape returned by the API
 interface RawCompany {
-  id: string;
+  id: string | number;
   name: string;
-  email: string;
+  email?: string;
+  adminEmail?: string;
   phone: string | null;
   domain: string | null;
   logo: string | null;
@@ -72,14 +73,16 @@ function normaliseStatus(raw: string): Status {
 }
 
 function enrichCompany(raw: RawCompany): Company {
+  const email = raw.email || raw.adminEmail || "";
+
   return {
-    id:            raw.id,
+    id:            String(raw.id),
     name:          raw.name || "Unnamed",
-    email:         raw.email || "",
+    email,
     phone:         raw.phone || "—",
-    domain:        raw.domain || raw.email?.split("@")[1] || "—",
+    domain:        raw.domain || email.split("@")[1] || "—",
     logo:          (raw.name || "??").slice(0, 2).toUpperCase(),
-    col:           avatarColor(raw.id),
+    col:           avatarColor(String(raw.id)),
     status:        normaliseStatus(raw.status),
     plan:          "Starter",      
     users:         0,             
@@ -519,15 +522,14 @@ export default function ManageCompanies() {
   useEffect(() => { fetchCompanies(); }, []);
 
   const FILTERS: ("ALL" | Status)[] = ["ALL", "ACTIVE", "TRIAL", "SUSPENDED", "INACTIVE"];
+  const query = search.trim().toLowerCase();
 
-  const filtered = companies.filter((c) =>
-    (filter === "ALL" || c.status === filter) &&
-    (
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase()) ||
-      c.domain.toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  const filtered = companies.filter((c) => {
+    const emailDomain = c.email.includes("@") ? c.email.split("@").pop() ?? "" : "";
+    const searchable = [c.name, c.email, emailDomain, c.domain].join(" ").toLowerCase();
+
+    return (filter === "ALL" || c.status === filter) && (!query || searchable.includes(query));
+  });
 
   const openAdd  = ()            => { setEditTarget(null); setShowModal(true); };
   const openEdit = (c: Company)  => { setEditTarget(c);    setShowModal(true); };
