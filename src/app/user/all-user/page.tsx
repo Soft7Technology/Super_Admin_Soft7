@@ -810,20 +810,6 @@ function UserCard({ user, isSelected, onClick }: {
   );
 }
 
-function InviteModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="au-overlay">
-      <div className="au-modal">
-        <h2>Invite User</h2>
-
-        <button onClick={onClose}>
-          Close
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── PAGE COMPONENT ───────────────────────────────────────────────────────────
 export default function AllUsers() {
   const [search, setSearch]   = useState("");
@@ -1023,3 +1009,7 @@ useEffect(() => {
     </div>
   );
 }
+function getExternalHeaders(): HeadersInit | undefined {
+  throw new Error("Function not implemented.");
+}
+
