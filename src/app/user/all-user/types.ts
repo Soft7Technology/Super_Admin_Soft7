@@ -8,6 +8,7 @@ export interface User {
   status: string;
   company: string;
   companyId?: string;
+  companyDomain?: string;
   plan: string;
   av: string;
   login: string;

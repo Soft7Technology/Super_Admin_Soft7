@@ -151,26 +151,7 @@ html[data-theme="dark"], body[data-theme="dark"] {
   transition: color 0.3s;
 }
 
-/* ─── INVITE BUTTON ──────────────────────────────────────── */
-.au-btn-invite {
-  background: var(--accent);
-  color: #ffffff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 9px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background 0.15s, box-shadow 0.15s;
-  box-shadow: 0 4px 14px rgba(13,148,136,0.30);
-  letter-spacing: 0.01em;
-}
-.au-btn-invite:hover {
-  background: #059669;
-  box-shadow: 0 6px 20px rgba(13,148,136,0.40);
-  color: #ffffff;
-}
+
 
 /* ─── KPI GRID ───────────────────────────────────────────── */
 .au-kpi-grid {
