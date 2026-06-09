@@ -92,9 +92,21 @@ function recordsFromResponse(json: any): any[] {
 }
 
 function useWindowWidth() {
-  const [width, setWidth] = useState<number>(() =>
-    typeof window !== "undefined" ? window.innerWidth : 1024
-  );
+ const [width, setWidth] = useState<number>(1024);
+
+useEffect(() => {
+  setWidth(window.innerWidth);
+
+  const handleResize = () => {
+    setWidth(window.innerWidth);
+  };
+
+  window.addEventListener("resize", handleResize);
+
+  return () => {
+    window.removeEventListener("resize", handleResize);
+  };
+}, []);
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     handleResize();
@@ -330,10 +342,17 @@ setUsers(
 
     un: user.name || "Unknown User",
 
-   role: String(user.role || "").toLowerCase() === "admin" ? "Admin" : "User",
+    role:
+      user.role
+        ? user.role.charAt(0).toUpperCase() +
+          user.role.slice(1).toLowerCase()
+        : "User",
+
     status:
-      user.status?.charAt(0).toUpperCase() +
-        user.status?.slice(1) || "Active",
+      user.status
+        ? user.status.charAt(0).toUpperCase() +
+          user.status.slice(1).toLowerCase()
+        : "Active",
 
     av: (user.name || "U")
       .split(" ")
