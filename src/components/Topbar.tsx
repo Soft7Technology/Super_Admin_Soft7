@@ -27,10 +27,12 @@ export default function Topbar({ title="Dashboard", adminName="Admin", onMenuCli
   };
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [winWidth, setWinWidth] = useState(1024);
 
 useEffect(() => {
   const handleResize = () => {
     setIsMobile(window.innerWidth < 640);
+    setWinWidth(window.innerWidth);
   };
 
   handleResize();
@@ -38,6 +40,9 @@ useEffect(() => {
 
   return () => window.removeEventListener("resize", handleResize);
 }, []);
+
+  const isCompact = winWidth <= 1300;
+  const isNarrow  = winWidth <= 800;
   
   const pages = [
   { name: "Dashboard", route: "/user/dashboard" },
@@ -107,19 +112,7 @@ const filteredPages = pages.filter((p) =>
     }}
   />
 
-  <div
-   style={{
-  fontSize: isMobile ? "1.1rem" : "1.5rem",
-  fontWeight: 900,
-  letterSpacing: 0,
-  color: isDark ? "#f8fafc" : "#111827",
-  fontFamily: "'Inter', sans-serif",
-  lineHeight: 1.2,
-  paddingBottom: "2px",
-}}
-  >
-    {getTitle()}
-  </div>
+  
 </div>
 
       {/* Search */}
@@ -244,15 +237,17 @@ const filteredPages = pages.filter((p) =>
 
         {/* Avatar */}
         <div style={{ position:"relative" }}>
-          <div onClick={()=>setDd(p=>!p)} style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer", padding:"5px 10px 5px 5px", borderRadius:"10px", background:t.iconBox, border:`1px solid ${t.border}`, transition:"all 0.15s" }}>
-            <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:"linear-gradient(135deg,#10b981,#14b8a6)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.78rem", color:"#fff" }}>
-              {adminName.split(" ").map(word=> word[0]).join("").toUpperCase()}
+          <div onClick={()=>setDd(p=>!p)} style={{ display:"flex", alignItems:"center", gap: isNarrow ? "0" : isCompact ? "7px" : "10px", cursor:"pointer", padding: isNarrow ? "4px" : isCompact ? "4px 8px 4px 4px" : "5px 10px 5px 5px", borderRadius: isCompact ? "8px" : "10px", background:t.iconBox, border:`1px solid ${t.border}`, transition:"all 0.15s" }}>
+            <div style={{ width: isCompact ? "28px" : "32px", height: isCompact ? "28px" : "32px", borderRadius: isCompact ? "6px" : "8px", background:"linear-gradient(135deg,#10b981,#14b8a6)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize: isCompact ? "0.68rem" : "0.78rem", color:"#fff" }}>
+              {adminName.split(" ").map(word=>word[0]).join("").toUpperCase()}
             </div>
-            <div>
-              <div style={{ fontSize:"0.82rem", fontWeight:600, color:t.text, lineHeight:1.2, transition:"color 0.3s" }}>{adminName}</div>
-              <div style={{ fontSize:"0.65rem", color:t.accent, fontWeight:600 }}>Administrator</div>
-            </div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textFaint} strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            {!isNarrow && (
+              <div>
+                <div style={{ fontSize: isCompact ? "0.72rem" : "0.82rem", fontWeight:600, color:t.text, lineHeight:1.2, transition:"color 0.3s" }}>{adminName}</div>
+                <div style={{ fontSize: isCompact ? "0.58rem" : "0.65rem", color:t.accent, fontWeight:600 }}>Administrator</div>
+              </div>
+            )}
+            <svg width={isCompact ? "10" : "12"} height={isCompact ? "10" : "12"} viewBox="0 0 24 24" fill="none" stroke={t.textFaint} strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
 
           {dd && (
