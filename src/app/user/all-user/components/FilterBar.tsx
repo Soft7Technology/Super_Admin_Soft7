@@ -32,7 +32,7 @@ export function FilterBar({
           className="au-search-input"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search name, email, company..."
+          placeholder="Search name, email, domain..."
         />
       </div>
 
