@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
-import NotificationModal from "./NotificationModal";
-
+import NotificationModal from "./NotificationModal";;
 export default function Topbar({
   title = "Dashboard",
   adminName = "Admin",
@@ -22,48 +21,50 @@ export default function Topbar({
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [winWidth, setWinWidth] = useState(1024);
 
-  const router = useRouter();
-  const pathname = usePathname();
-
-  // 🔥 Dropdown ref
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Mobile detection
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
+const router = useRouter();
+const pathname = usePathname();
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
+useEffect(() => {
+  const handleResize = () => {
+    setIsMobile(window.innerWidth < 640);
+    setWinWidth(window.innerWidth);
+  };
 
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  handleResize();
+  window.addEventListener("resize", handleResize);
 
-  // Clear search on route change
-  useEffect(() => {
-    setSearch("");
-  }, [pathname]);
+  return () => {
+    window.removeEventListener("resize", handleResize);
+  };
+}, []);
 
-  // 🔥 Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDd(false);
-      }
-    };
+useEffect(() => {
+  setSearch("");
+}, [pathname]);
 
-    document.addEventListener("mousedown", handleClickOutside);
+useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target as Node)
+    ) {
+      setDd(false);
+    }
+  };
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  document.addEventListener("mousedown", handleClickOutside);
 
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+  const isCompact = winWidth <= 1300;
+  const isNarrow  = winWidth <= 800;
+  
   const pages = [
     { name: "Dashboard", route: "/user/dashboard" },
     { name: "Manage Companies", route: "/user/manage-companies" },
@@ -91,6 +92,8 @@ export default function Topbar({
 
     return "Dashboard";
   };
+
+  const pageTitle = title || getTitle();
 
   return (
     <header
@@ -124,7 +127,6 @@ export default function Topbar({
         </button>
       )}
 
-      {/* Title */}
       <div
         style={{
           display: "flex",
@@ -143,22 +145,8 @@ export default function Topbar({
             background: "linear-gradient(180deg,#10b981,#14b8a6)",
           }}
         />
-
-        <div
-          style={{
-            fontSize: isMobile ? "1.1rem" : "1.5rem",
-            fontWeight: 900,
-            color: isDark ? "#f8fafc" : "#111827",
-            fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-            lineHeight: 1.2,
-            paddingBottom: "2px",
-          }}
-        >
-          {getTitle()}
-        </div>
       </div>
 
-      {/* Search */}
       <div style={{ position: "relative", flex: 1, maxWidth: "420px" }}>
         <div
           style={{
@@ -207,7 +195,6 @@ export default function Topbar({
           />
         </div>
 
-        {/* Suggestions */}
         {sf && search && (
           <div
             style={{
@@ -258,7 +245,6 @@ export default function Topbar({
         )}
       </div>
 
-      {/* Right Section */}
       <div
         style={{
           marginLeft: "auto",
@@ -267,7 +253,6 @@ export default function Topbar({
           gap: "8px",
         }}
       >
-        {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
           style={{
@@ -285,8 +270,7 @@ export default function Topbar({
           {isDark ? "☀️" : "🌙"}
         </button>
 
-        {/* Bell */}
-        <div style={{ position: "relative" }}>
+        <div ref={dropdownRef} style={{ position: "relative" }}>
           <div
             onClick={() => setNotificationOpen(!notificationOpen)}
             style={{
@@ -313,32 +297,36 @@ export default function Topbar({
           }}
         />
 
-        {/* Avatar Dropdown */}
-        <div ref={dropdownRef} style={{ position: "relative" }}>
+        <div style={{ position: "relative" }}>
           <div
             onClick={() => setDd((p) => !p)}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: isNarrow ? "0" : isCompact ? "7px" : "10px",
               cursor: "pointer",
-              padding: "5px 10px 5px 5px",
-              borderRadius: "10px",
+              padding: isNarrow
+                ? "4px"
+                : isCompact
+                ? "4px 8px 4px 4px"
+                : "5px 10px 5px 5px",
+              borderRadius: isCompact ? "8px" : "10px",
               background: t.iconBox,
               border: `1px solid ${t.border}`,
+              transition: "all 0.15s",
             }}
           >
             <div
               style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "8px",
+                width: isCompact ? "28px" : "32px",
+                height: isCompact ? "28px" : "32px",
+                borderRadius: isCompact ? "6px" : "8px",
                 background: "linear-gradient(135deg,#10b981,#14b8a6)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 800,
-                fontSize: "0.78rem",
+                fontSize: isCompact ? "0.68rem" : "0.78rem",
                 color: "#fff",
               }}
             >
@@ -348,28 +336,40 @@ export default function Topbar({
                 .join("")
                 .toUpperCase()}
             </div>
-
-            <div>
-              <div
-                style={{
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  color: t.text,
-                }}
-              >
-                {adminName}
+            {!isNarrow && (
+              <div>
+                <div
+                  style={{
+                    fontSize: isCompact ? "0.72rem" : "0.82rem",
+                    fontWeight: 600,
+                    color: t.text,
+                    lineHeight: 1.2,
+                    transition: "color 0.3s",
+                  }}
+                >
+                  {adminName}
+                </div>
+                <div
+                  style={{
+                    fontSize: isCompact ? "0.58rem" : "0.65rem",
+                    color: t.accent,
+                    fontWeight: 600,
+                  }}
+                >
+                  Administrator
+                </div>
               </div>
-
-              <div
-                style={{
-                  fontSize: "0.65rem",
-                  color: t.accent,
-                  fontWeight: 600,
-                }}
-              >
-                Administrator
-              </div>
-            </div>
+            )}
+            <svg
+              width={isCompact ? "10" : "12"}
+              height={isCompact ? "10" : "12"}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={t.textFaint}
+              strokeWidth="2.5"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </div>
 
           {dd && (
@@ -388,21 +388,9 @@ export default function Topbar({
               }}
             >
               {[
-                {
-                  icon: "👤",
-                  label: "Profile",
-                  route: "/user/profile",
-                },
-                {
-                  icon: "⚙️",
-                  label: "Settings",
-                  route: "/user/system",
-                },
-                {
-                  icon: "🚪",
-                  label: "Logout",
-                  red: true,
-                },
+                { icon: "👤", label: "Profile", route: "/user/profile" },
+                { icon: "⚙️", label: "Settings", route: "/user/system" },
+                { icon: "🚪", label: "Logout", red: true },
               ].map((item, i, arr) => (
                 <div
                   key={item.label}
@@ -430,9 +418,7 @@ export default function Topbar({
                     color: item.red ? "#f03e3e" : t.textSub,
                     cursor: "pointer",
                     borderBottom:
-                      i < arr.length - 1
-                        ? `1px solid ${t.border}`
-                        : "none",
+                      i < arr.length - 1 ? `1px solid ${t.border}` : "none",
                   }}
                 >
                   {item.icon} {item.label}
@@ -443,7 +429,6 @@ export default function Topbar({
         </div>
       </div>
 
-      {/* Notifications */}
       <NotificationModal
         isOpen={notificationOpen}
         onClose={() => setNotificationOpen(false)}
