@@ -175,21 +175,32 @@ function CompanyModal({
       : COMPANIES_API;
 
     // =========================
-    // CREATE COMPANY BODY
+    // BUILD REQUEST BODY
     // =========================
     let body: any = {};
 
-  body = {
-  name,
-  email,
-
-  user: {
-    name,
-    email,
-    phone,
-    password,
-  },
-};
+    if (isEdit) {
+      // Only send updatable fields — no 'user' column on companies table
+      body = {
+        name,
+        email,
+        phone: phone || undefined,
+        status: status.toLowerCase(),
+      };
+    } else {
+      // Create: include initial admin user details
+      body = {
+        name,
+        email,
+        phone: phone || undefined,
+        user: {
+          name,
+          email,
+          phone: phone || undefined,
+          password,
+        },
+      };
+    }
 
     console.log("REQUEST BODY =>", body);
 
@@ -343,11 +354,13 @@ function CompanyModal({
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
 function CompanyDetailModal({
-  company, onClose, onEdit,
+  company, onClose, onEdit, onDelete, onStatusChange,
 }: {
   company: Company;
   onClose: () => void;
   onEdit: (c: Company) => void;
+  onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
 }) {
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -413,9 +426,15 @@ function CompanyDetailModal({
           <button className="mc-btn mc-btn--ghost" onClick={onClose}>
             Close
           </button>
+          <button
+            className="mc-btn mc-btn--danger"
+            onClick={() => { onDelete(company.id); onClose(); }}
+          >
+            🗑️ Delete
+          </button>
           {company.status !== "SUSPENDED"
-            ? <button className="mc-btn mc-btn--danger" onClick={onClose}>⛔ Suspend</button>
-            : <button className="mc-btn mc-btn--ghost"  onClick={onClose}>✅ Restore</button>
+            ? <button className="mc-btn mc-btn--danger" onClick={() => { onStatusChange(company.id, "SUSPENDED"); onClose(); }}>⛔ Suspend</button>
+            : <button className="mc-btn mc-btn--ghost"  onClick={() => { onStatusChange(company.id, "ACTIVE"); onClose(); }}>✅ Restore</button>
           }
         </div>
       </div>
@@ -425,11 +444,13 @@ function CompanyDetailModal({
 
 // ─── COMPANY CARD ─────────────────────────────────────────────────────────────
 function CompanyCard({
-  company, onEdit, onView,
+  company, onEdit, onView, onDelete, onStatusChange,
 }: {
   company: Company;
   onEdit: (c: Company) => void;
   onView: (c: Company) => void;
+  onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
 }) {
   return (
     <div className="mc-card">
@@ -482,9 +503,15 @@ function CompanyCard({
         >
           👁 View
         </button>
+        <button
+          className="mc-btn mc-btn--danger mc-btn--small"
+          onClick={(e) => { e.stopPropagation(); onDelete(company.id); }}
+        >
+          🗑️ Delete
+        </button>
         {company.status !== "SUSPENDED"
-          ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => e.stopPropagation()}>⛔ Suspend</button>
-          : <button className="mc-btn mc-btn--ghost  mc-btn--small" onClick={(e) => e.stopPropagation()}>✅ Restore</button>
+          ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => { e.stopPropagation(); onStatusChange(company.id, "SUSPENDED"); }}>⛔ Suspend</button>
+          : <button className="mc-btn mc-btn--ghost  mc-btn--small" onClick={(e) => { e.stopPropagation(); onStatusChange(company.id, "ACTIVE"); }}>✅ Restore</button>
         }
       </div>
     </div>
@@ -534,6 +561,43 @@ export default function ManageCompanies() {
   const openAdd  = ()            => { setEditTarget(null); setShowModal(true); };
   const openEdit = (c: Company)  => { setEditTarget(c);    setShowModal(true); };
   const openView = (c: Company)  => setViewTarget(c);
+
+  const handleDelete = async (companyId: string) => {
+    if (!confirm("Are you sure you want to delete this company? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const { data } = await axiosInstance.delete(`${COMPANIES_API}/${companyId}`);
+      if (data.success) {
+        await fetchCompanies();
+      } else {
+        alert(data.message || "Failed to delete company");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.response?.data?.message || e.message || "Something went wrong while deleting company");
+    }
+  };
+
+  const handleStatusChange = async (companyId: string, newStatus: "ACTIVE" | "SUSPENDED") => {
+    const actionText = newStatus === "SUSPENDED" ? "suspend" : "restore";
+    if (!confirm(`Are you sure you want to ${actionText} this company?`)) {
+      return;
+    }
+    try {
+      const { data } = await axiosInstance.put(`${COMPANIES_API}/${companyId}`, {
+        status: newStatus.toLowerCase(),
+      });
+      if (data.success) {
+        await fetchCompanies();
+      } else {
+        alert(data.message || `Failed to ${actionText} company`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.response?.data?.message || e.message || `Something went wrong while trying to ${actionText} company`);
+    }
+  };
 
   return (
     <div className="mc-root">
@@ -594,7 +658,7 @@ export default function ManageCompanies() {
       ) : (
         <div className="mc-grid">
           {filtered.map((c) => (
-            <CompanyCard key={c.id} company={c} onEdit={openEdit} onView={openView} />
+            <CompanyCard key={c.id} company={c} onEdit={openEdit} onView={openView} onDelete={handleDelete} onStatusChange={handleStatusChange} />
           ))}
         </div>
       )}
@@ -612,6 +676,8 @@ export default function ManageCompanies() {
           company={viewTarget}
           onClose={() => setViewTarget(null)}
           onEdit={(c) => { setViewTarget(null); openEdit(c); }}
+          onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
         />
       )}
     </div>
