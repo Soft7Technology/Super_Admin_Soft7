@@ -746,8 +746,13 @@
 /* ACTIONS */
 .mc-card__actions {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   margin-top: auto;
+}
+.mc-card__actions .mc-btn--small {
+  padding: 8px 10px;
+  font-size: 12px;
+  gap: 4px;
 }
 
 /* Company grid */
@@ -856,7 +861,7 @@
 .mc-quickstat__val { font-size: 16px; font-weight: 800; color: var(--mc-title); transition: color 0.3s; }
 .mc-quickstat__key { font-size: 10px; color: var(--mc-muted); margin-top: 2px; transition: color 0.3s; }
 
-.mc-detail__actions { display: flex; gap: 8px; }
+.mc-detail__actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width: 1200px) {
