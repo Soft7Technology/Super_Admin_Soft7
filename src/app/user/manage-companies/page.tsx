@@ -136,6 +136,8 @@ function CompanyModal({
   const [phone,    setPhone]    = useState(company?.phone === "—" ? "" : company?.phone || "");
   const [password, setPassword] = useState("");
   const [status,   setStatus]   = useState<Status>(company?.status || "ACTIVE");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [saving,   setSaving]   = useState(false);
   const [err,      setErr]      = useState<string | null>(null);
 
@@ -147,8 +149,22 @@ function CompanyModal({
     setPhone(company?.phone === "—" ? "" : company?.phone || "");
     setPassword("");
     setStatus(company?.status || "ACTIVE");
+    setLogoFile(null);
+    setLogoPreview(null);
     setErr(null);
   }, [company]);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setLogoFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setLogoPreview(null);
+    }
+  };
 
  const handleSubmit = async () => {
   setErr(null);
@@ -174,40 +190,34 @@ function CompanyModal({
       ? `${COMPANIES_API}/${company.id}`
       : COMPANIES_API;
 
-    // =========================
-    // BUILD REQUEST BODY
-    // =========================
-    let body: any = {};
+    // Always use FormData so the image file can be included
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("email", email);
+    if (phone) formData.append("phone", phone);
 
     if (isEdit) {
-      // Only send updatable fields — no 'user' column on companies table
-      body = {
-        name,
-        email,
-        phone: phone || undefined,
-        status: status.toLowerCase(),
-      };
+      formData.append("status", status.toLowerCase());
     } else {
-      // Create: include initial admin user details
-      body = {
+      // Wrap user object as JSON string (backend parses it)
+      formData.append("user", JSON.stringify({
         name,
         email,
         phone: phone || undefined,
-        user: {
-          name,
-          email,
-          phone: phone || undefined,
-          password,
-        },
-      };
+        password,
+      }));
     }
 
-    console.log("REQUEST BODY =>", body);
+    if (logoFile) {
+      formData.append("file", logoFile);
+    }
+
+    console.log("REQUEST BODY =>", Object.fromEntries(formData.entries()));
 
     const { data } = await axiosInstance.request({
       url,
       method: isEdit ? "PUT" : "POST",
-      data: body,
+      data: formData,
     });
 
     console.log("COMPANY RESPONSE =>", data);
@@ -300,6 +310,67 @@ function CompanyModal({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
+          </div>
+
+          <div className="mc-field">
+            <div className="mc-field__label">COMPANY LOGO</div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                cursor: "pointer",
+              }}
+            >
+              {/* Preview circle */}
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  border: "2px dashed var(--mc-border, #333)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  background: "var(--mc-surface, #1a1a2e)",
+                  fontSize: 20,
+                }}
+              >
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  "🏢"
+                )}
+              </div>
+              <div>
+                <div
+                  className="mc-input"
+                  style={{
+                    padding: "8px 14px",
+                    cursor: "pointer",
+                    display: "inline-block",
+                    fontSize: 13,
+                  }}
+                >
+                  {logoFile ? logoFile.name : "Choose image…"}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}>
+                  PNG, JPG or WEBP — max 2MB
+                </div>
+              </div>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: "none" }}
+                onChange={handleLogoChange}
+              />
+            </label>
           </div>
 
           {/* Password only shown when creating */}
