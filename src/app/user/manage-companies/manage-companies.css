@@ -194,24 +194,6 @@
   font-size: 13px;
 }
 
-/* Primary — solid emerald */
-.mc-btn--primary {
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
-  background: #10b981;
-  border: 1px solid #10b981;
-}
-.mc-btn--primary:hover {
-  background: #059669;
-  border-color: #059669;
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.38);
-  transform: translateY(-1px);
-}
-.mc-btn--primary:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
-}
-
 /* Ghost */
 .mc-btn--ghost {
   background: var(--mc-btn-ghost-bg);
@@ -754,7 +736,7 @@
 /* ACTIONS */
 .mc-card__actions {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   margin-top: auto;
   align-items: center;
   flex-wrap: wrap;
@@ -764,6 +746,11 @@
   flex: 1 1 calc(50% - 5px);
   min-width: 0;
   justify-content: center;
+}
+.mc-card__actions .mc-btn--small {
+  padding: 8px 10px;
+  font-size: 12px;
+  gap: 4px;
 }
 
 /* Company grid */

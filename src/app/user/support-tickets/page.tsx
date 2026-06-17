@@ -9,7 +9,7 @@ type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type MessageSender = "USER" | "ADMIN";
 
 interface Message {
- id: string;
+  id: string;
   sender: MessageSender;
   name: string;
   avatar: string;
@@ -42,29 +42,29 @@ interface ReplyActionResult {
 }
 
 const STATUS_META: Record<TicketStatus, { label: string; dot: string }> = {
-  OPEN: { label: "Open", dot: "var(--st-status-open-col)" },
+  OPEN:        { label: "Open",        dot: "var(--st-status-open-col)" },
   IN_PROGRESS: { label: "In Progress", dot: "var(--st-status-inprog-col)" },
-  RESOLVED: { label: "Resolved", dot: "var(--st-status-resolved-col)" },
-  CLOSED: { label: "Closed", dot: "var(--st-status-closed-col)" },
-  WAITING: { label: "Waiting", dot: "var(--st-status-waiting-col)" },
+  RESOLVED:    { label: "Resolved",    dot: "var(--st-status-resolved-col)" },
+  CLOSED:      { label: "Closed",      dot: "var(--st-status-closed-col)" },
+  WAITING:     { label: "Waiting",     dot: "var(--st-status-waiting-col)" },
 };
 
 const PRIORITY_META: Record<TicketPriority, { label: string; icon: string }> = {
-  LOW: { label: "Low", icon: "↓" },
+  LOW:    { label: "Low",    icon: "↓" },
   MEDIUM: { label: "Medium", icon: "→" },
-  HIGH: { label: "High", icon: "↑" },
+  HIGH:   { label: "High",   icon: "↑" },
   URGENT: { label: "Urgent", icon: "⚠" },
 };
 
 const CAT_ICON: Record<string, string> = {
-  Billing: "💳",
-  Technical: "🔧",
-  Account: "👤",
-  WhatsApp: "💬",
+  Billing:      "💳",
+  Technical:    "🔧",
+  Account:      "👤",
+  WhatsApp:     "💬",
   Subscription: "📦",
-  Integration: "🔌",
-  Performance: "⚡",
-  Other: "📋",
+  Integration:  "🔌",
+  Performance:  "⚡",
+  Other:        "📋",
 };
 
 const AVATAR_COLORS: Record<string, string> = {
@@ -79,11 +79,17 @@ const AVATAR_COLORS: Record<string, string> = {
   ST: "#5ce79d",
 };
 
+// Track segment colors
+const TRACK_COLORS: Record<TicketStatus, string> = {
+  OPEN:        "#34d399",
+  IN_PROGRESS: "#FBBF24",
+  WAITING:     "#FB923C",
+  RESOLVED:    "#818CF8",
+  CLOSED:      "#64748B",
+};
+
 const PAGE_SIZE = 8;
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-/** Always returns a safe array, even if the server omits the field. */
 const safeMessages = (ticket: Ticket): Message[] =>
   Array.isArray(ticket.messages) ? ticket.messages : [];
 
@@ -104,15 +110,67 @@ function KPI({
 }) {
   return (
     <div className="st-kpi">
-      <div className="st-kpi__orb" style={{ background: `${color}0D` }} />
+      <div className="st-kpi__orb" style={{ background: `${color}14` }} />
       <div className="st-kpi__top">
         <span className="st-kpi__label">{label}</span>
-        <div className="st-kpi__icon" style={{ background: `${color}18` }}>
+        <div className="st-kpi__icon" style={{ background: `${color}1A` }}>
           {icon}
         </div>
       </div>
       <div className="st-kpi__value">{value}</div>
       <div className="st-kpi__sub">{sub}</div>
+    </div>
+  );
+}
+
+/** Signature element — proportional status bar at top */
+function StatusTrack({ tickets }: { tickets: Ticket[] }) {
+  const total = tickets.length;
+  if (total === 0) return null;
+
+  const counts = {
+    OPEN:        tickets.filter(t => t.status === "OPEN").length,
+    IN_PROGRESS: tickets.filter(t => t.status === "IN_PROGRESS").length,
+    WAITING:     tickets.filter(t => t.status === "WAITING").length,
+    RESOLVED:    tickets.filter(t => t.status === "RESOLVED").length,
+    CLOSED:      tickets.filter(t => t.status === "CLOSED").length,
+  } as Record<TicketStatus, number>;
+
+  const shown: TicketStatus[] = ["OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"];
+  const legend: TicketStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+
+  return (
+    <div className="st-status-track">
+      <div className="st-status-track__bar">
+        {shown.map(s =>
+          counts[s] > 0 ? (
+            <div
+              key={s}
+              className="st-status-track__seg"
+              title={`${STATUS_META[s].label}: ${counts[s]}`}
+              style={{
+                width: `${(counts[s] / total) * 100}%`,
+                background: TRACK_COLORS[s],
+                opacity: 0.88,
+              }}
+            />
+          ) : null
+        )}
+      </div>
+      <div className="st-status-track__legend">
+        {legend.map(s => (
+          <div key={s} className="st-status-track__item">
+            <div className="st-status-track__dot" style={{ background: TRACK_COLORS[s] }} />
+            <span>{STATUS_META[s].label}</span>
+            <span className="st-status-track__num">{counts[s]}</span>
+          </div>
+        ))}
+        <div className="st-status-track__item">
+          <div className="st-status-track__dot" style={{ background: "var(--st-muted)" }} />
+          <span>Total</span>
+          <span className="st-status-track__num">{total}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -135,20 +193,12 @@ function PriorityBadge({ priority }: { priority: TicketPriority }) {
   );
 }
 
-function Ava({
-  init,
-  size = 32,
-  col,
-}: {
-  init: string;
-  size?: number;
-  col?: string;
-}) {
+function Ava({ init, size = 34, col }: { init: string; size?: number; col?: string }) {
   const bg = col ?? AVATAR_COLORS[init] ?? "#6C5CE7";
   return (
     <div
       className="st-ava"
-      style={{ width: size, height: size, background: bg, fontSize: size * 0.31 }}
+      style={{ width: size, height: size, background: bg, fontSize: size * 0.3 }}
     >
       {init}
     </div>
@@ -168,7 +218,7 @@ function Pager({
 }) {
   const pages = Math.max(1, Math.ceil(total / size));
   const nums = Array.from({ length: pages }, (_, i) => i + 1).filter(
-    (v) => v === 1 || v === pages || Math.abs(v - page) <= 1
+    v => v === 1 || v === pages || Math.abs(v - page) <= 1
   );
 
   const withDots: (number | "…")[] = [];
@@ -178,25 +228,17 @@ function Pager({
   });
 
   const from = total === 0 ? 0 : (page - 1) * size + 1;
-  const to = Math.min(page * size, total);
+  const to   = Math.min(page * size, total);
 
   return (
     <div className="st-pager">
-      <span className="st-pager__info">
-        {from}–{to} of {total}
-      </span>
+      <span className="st-pager__info">{from}–{to} of {total}</span>
       <div className="st-pager__btns">
-        <button className="st-pager__btn" onClick={() => onChange(1)} disabled={page === 1}>
-          «
-        </button>
-        <button className="st-pager__btn" onClick={() => onChange(page - 1)} disabled={page === 1}>
-          ‹
-        </button>
+        <button className="st-pager__btn" onClick={() => onChange(1)} disabled={page === 1}>«</button>
+        <button className="st-pager__btn" onClick={() => onChange(page - 1)} disabled={page === 1}>‹</button>
         {withDots.map((v, i) =>
           v === "…" ? (
-            <span key={`dots-${i}`} className="st-pager__dots">
-              …
-            </span>
+            <span key={`dots-${i}`} className="st-pager__dots">…</span>
           ) : (
             <button
               key={v}
@@ -207,16 +249,10 @@ function Pager({
             </button>
           )
         )}
-        <button className="st-pager__btn" onClick={() => onChange(page + 1)} disabled={page === pages}>
-          ›
-        </button>
-        <button className="st-pager__btn" onClick={() => onChange(pages)} disabled={page === pages}>
-          »
-        </button>
+        <button className="st-pager__btn" onClick={() => onChange(page + 1)} disabled={page === pages}>›</button>
+        <button className="st-pager__btn" onClick={() => onChange(pages)} disabled={page === pages}>»</button>
       </div>
-      <span className="st-pager__info">
-        p{page}/{pages}
-      </span>
+      <span className="st-pager__info">Page {page} / {pages}</span>
     </div>
   );
 }
@@ -230,7 +266,7 @@ function ConvPanel({
   ticket: Ticket;
   onClose: () => void;
   onStatusChange: (id: string, status: TicketStatus) => Promise<void>;
- onReply: (id: string, text: string) => Promise<ReplyActionResult>;
+  onReply: (id: string, text: string) => Promise<ReplyActionResult>;
 }) {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
@@ -240,7 +276,6 @@ function ConvPanel({
     text: string;
   }>(null);
 
-  // ✅ Always use the safe accessor inside this component
   const messages = safeMessages(ticket);
 
   useEffect(() => {
@@ -253,31 +288,32 @@ function ConvPanel({
   const send = async () => {
     const text = reply.trim();
     if (!text || sending) return;
-
     setSending(true);
     setFeedback(null);
-
     const result = await onReply(ticket.id, text);
     setSending(false);
-
     if (!result.ok) {
       setFeedback({ type: "error", text: result.error ?? "Failed to send reply." });
       return;
     }
-
     setReply("");
-
     if (result.warning) {
       setFeedback({ type: "warning", text: result.warning });
       return;
     }
-
     setFeedback({ type: "success", text: "Reply sent successfully." });
     setTimeout(() => setFeedback(null), 2500);
   };
 
+  const metaItems = [
+    { key: "🗓 Created",   val: ticket.created },
+    { key: "🕐 Updated",   val: ticket.updated },
+    { key: "💬 Messages",  val: String(messages.length) },
+  ];
+
   return (
     <div className="st-conv">
+      {/* Header */}
       <div className="st-conv__header">
         <div className="st-conv__header-top">
           <div className="st-conv__header-left">
@@ -288,28 +324,30 @@ function ConvPanel({
             </div>
             <div className="st-conv__subject">{ticket.subject}</div>
             <div className="st-conv__meta-row">
-              <div
-                className="st-conv__company-logo"
-                style={{ background: ticket.companyCol }}
-              >
+              <div className="st-conv__company-logo" style={{ background: ticket.companyCol }}>
                 {ticket.companyLogo}
               </div>
               <span className="st-conv__meta-text">{ticket.company}</span>
               <span className="st-conv__meta-sep">·</span>
               <span className="st-conv__meta-text">{ticket.user}</span>
+              {ticket.userEmail && (
+                <>
+                  <span className="st-conv__meta-sep">·</span>
+                  <span className="st-conv__meta-text" style={{ opacity: 0.75 }}>{ticket.userEmail}</span>
+                </>
+              )}
               <span className="st-conv__meta-sep">·</span>
-              <span className="st-conv__meta-text">
-                {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
-              </span>
+              <span className="st-conv__meta-text">{CAT_ICON[ticket.category] ?? "📋"} {ticket.category}</span>
             </div>
           </div>
 
           <div className="st-conv__header-right">
+            {/* Status dropdown */}
             <div className="st-status-dd">
               <button
                 className={`st-status-dd__trigger st-status-badge--${ticket.status}`}
                 style={{ borderColor: `${STATUS_META[ticket.status].dot}35` }}
-                onClick={() => setShowStatus((v) => !v)}
+                onClick={() => setShowStatus(v => !v)}
               >
                 <span
                   className="st-status-dd__trigger-dot"
@@ -320,111 +358,66 @@ function ConvPanel({
 
               {showStatus && (
                 <div className="st-status-dd__menu">
-                  {(
-                    Object.entries(STATUS_META) as [
-                      TicketStatus,
-                      { label: string; dot: string }
-                    ][]
-                  ).map(([key, meta]) => (
-                    <button
-                      key={key}
-                      className="st-status-dd__option"
-                      style={{
-                        background:
-                          ticket.status === key
-                            ? `${meta.dot}12`
-                            : "transparent",
-                        color:
-                          ticket.status === key
-                            ? meta.dot
-                            : "var(--st-muted)",
-                        fontWeight: ticket.status === key ? 700 : 400,
-                      }}
-                      onClick={() => {
-                        void onStatusChange(ticket.id, key);
-                        setShowStatus(false);
-                      }}
-                    >
-                      <span
-                        className="st-status-dd__option-dot"
-                        style={{ background: meta.dot }}
-                      />
-                      {meta.label}
-                      {ticket.status === key && (
-                        <span className="st-status-dd__check">✓</span>
-                      )}
-                    </button>
-                  ))}
+                  {(Object.entries(STATUS_META) as [TicketStatus, { label: string; dot: string }][]).map(
+                    ([key, meta]) => (
+                      <button
+                        key={key}
+                        className="st-status-dd__option"
+                        style={{
+                          background:  ticket.status === key ? `${meta.dot}14` : "transparent",
+                          color:       ticket.status === key ? meta.dot : "var(--st-text-secondary)",
+                          fontWeight:  ticket.status === key ? 700 : 400,
+                        }}
+                        onClick={() => { void onStatusChange(ticket.id, key); setShowStatus(false); }}
+                      >
+                        <span className="st-status-dd__option-dot" style={{ background: meta.dot }} />
+                        {meta.label}
+                        {ticket.status === key && <span className="st-status-dd__check">✓</span>}
+                      </button>
+                    )
+                  )}
                 </div>
               )}
             </div>
-            <button className="st-btn-close" onClick={onClose}>
-              ×
-            </button>
+
+            <button className="st-btn-close" onClick={onClose} title="Close panel">×</button>
           </div>
         </div>
 
+        {/* Meta strip */}
         <div className="st-conv__meta-strip">
-          {[
-            "🗓 Created",
-            ticket.created,
-            "🕐 Updated",
-            ticket.updated,
-            // ✅ Use the safe local variable
-            "💬 Messages",
-            String(messages.length),
-          ]
-            .reduce<string[][]>((acc, v, i, arr) => {
-              if (i % 2 === 0) acc.push([v, arr[i + 1]]);
-              return acc;
-            }, [])
-            .map(([label, value]) => (
-              <div key={label} style={{ display: "flex", gap: 5 }}>
-                <span className="st-conv__meta-key">{label}:</span>
-                <span className="st-conv__meta-val">{value}</span>
-              </div>
-            ))}
+          {metaItems.map(({ key, val }) => (
+            <div key={key} className="st-conv__meta-item">
+              <span className="st-conv__meta-key">{key}</span>
+              <span className="st-conv__meta-val">{val}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ✅ Map over the safe local variable, not ticket.messages */}
+      {/* Messages */}
       <div className="st-messages">
         {messages.length === 0 && (
-          <div
-            style={{
-              padding: "32px 0",
-              textAlign: "center",
-              color: "var(--st-muted)",
-              fontSize: 14,
-            }}
-          >
+          <div style={{ padding: "40px 0", textAlign: "center", color: "var(--st-muted)", fontSize: 14 }}>
             No messages yet.
           </div>
         )}
 
         {messages.map((message, index) => {
           const isAdmin = message.sender === "ADMIN";
-          const isFirst =
-            index === 0 || messages[index - 1].sender !== message.sender;
+          const isFirst = index === 0 || messages[index - 1].sender !== message.sender;
 
           return (
-            <div
-              key={message.id}
-              className={`st-msg ${isAdmin ? "st-msg--admin" : "st-msg--user"}`}
-            >
+            <div key={message.id} className={`st-msg ${isAdmin ? "st-msg--admin" : "st-msg--user"}`}>
               {isFirst ? (
-                <Ava init={message.avatar} size={30} />
+                <Ava init={message.avatar} size={34} />
               ) : (
                 <div className="st-msg__ava-spacer" />
               )}
               <div className="st-msg__body">
                 {isFirst && (
                   <div className="st-msg__name-row">
-                    <span
-                      className={
-                        isAdmin ? "st-msg__name-admin" : "st-msg__name-user"
-                      }
-                    >
+                    <span className={isAdmin ? "st-msg__name-admin" : "st-msg__name-user"}>
                       {message.name}
                     </span>
                     {!message.read && !isAdmin && (
@@ -432,13 +425,7 @@ function ConvPanel({
                     )}
                   </div>
                 )}
-                <div
-                  className={`st-msg__bubble ${
-                    isAdmin
-                      ? "st-msg__bubble--admin"
-                      : "st-msg__bubble--user"
-                  }`}
-                >
+                <div className={`st-msg__bubble ${isAdmin ? "st-msg__bubble--admin" : "st-msg__bubble--user"}`}>
                   <div className="st-msg__text">{message.content}</div>
                 </div>
                 <span className="st-msg__time">{message.time}</span>
@@ -448,23 +435,24 @@ function ConvPanel({
         })}
       </div>
 
+      {/* Reply / Closed footer */}
       {ticket.status !== "CLOSED" ? (
         <div className="st-reply">
+          <div className="st-reply__label">Reply to {ticket.user}</div>
           <textarea
             className="st-reply__textarea"
             value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void send();
-            }}
-            placeholder="Type your reply… (Ctrl+Enter to send)"
+            onChange={e => setReply(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void send(); }}
+            placeholder="Write your reply… (Ctrl+Enter to send)"
             rows={3}
           />
 
           {feedback && (
-            <div
-              className={`st-reply__feedback st-reply__feedback--${feedback.type}`}
-            >
+            <div className={`st-reply__feedback st-reply__feedback--${feedback.type}`}>
+              {feedback.type === "success" && "✓ "}
+              {feedback.type === "error" && "✕ "}
+              {feedback.type === "warning" && "⚠ "}
               {feedback.text}
             </div>
           )}
@@ -475,40 +463,33 @@ function ConvPanel({
                 className="st-btn-resolve"
                 onClick={() => void onStatusChange(ticket.id, "RESOLVED")}
               >
-                ✓ Resolve
+                ✓ Mark Resolved
               </button>
               <button
                 className="st-btn-close-ticket"
                 onClick={() => void onStatusChange(ticket.id, "CLOSED")}
               >
-                ✕ Close
+                ✕ Close Ticket
               </button>
             </div>
 
             <button
-              className={`st-btn-send ${
-                reply.trim() ? "st-btn-send--active" : "st-btn-send--inactive"
-              }`}
+              className={`st-btn-send ${reply.trim() ? "st-btn-send--active" : "st-btn-send--inactive"}`}
               onClick={() => void send()}
               disabled={sending || !reply.trim()}
             >
               {sending ? (
-                <>
-                  <span className="st-btn-send__spinner" /> Sending...
-                </>
+                <><span className="st-btn-send__spinner" /> Sending…</>
               ) : (
-                <>Send Reply ›</>
+                <>Send Reply →</>
               )}
             </button>
           </div>
         </div>
       ) : (
         <div className="st-conv__closed-footer">
-          <div className="st-conv__closed-text">This ticket is closed.</div>
-          <button
-            className="st-btn-reopen"
-            onClick={() => void onStatusChange(ticket.id, "OPEN")}
-          >
+          <div className="st-conv__closed-text">This ticket has been closed.</div>
+          <button className="st-btn-reopen" onClick={() => void onStatusChange(ticket.id, "OPEN")}>
             ↺ Reopen Ticket
           </button>
         </div>
@@ -522,7 +503,7 @@ function ConvPanel({
 export default function SupportTickets() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
- const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
@@ -530,120 +511,113 @@ export default function SupportTickets() {
   const [priorityF, setPriorityF] = useState<"ALL" | TicketPriority>("ALL");
   const [page, setPage] = useState(1);
 
+
+  const selected = useMemo(
+    () => selectedId === null ? null : tickets.find(t => t.id === selectedId) ?? null,
+    [selectedId, tickets]
+  );
+
+  useEffect(() => {
+  if (!selected) return;
+
+  const previousOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+
+  return () => {
+    document.body.style.overflow = previousOverflow;
+  };
+}, [selected]);
+useEffect(() => {
+  if (!selected) return;
+
+  const handleEscape = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      setSelectedId(null);
+    }
+  };
+
+  window.addEventListener("keydown", handleEscape);
+
+  return () => {
+    window.removeEventListener("keydown", handleEscape);
+  };
+}, [selected]);
+  // ─ Fetch all tickets ─
   useEffect(() => {
     let active = true;
-
     const loadTickets = async () => {
       setLoading(true);
       setApiError(null);
-
       try {
-        const { data } = await axiosInstance.get(
-          "/v1/admin/support/tickets/forward"
-        );
-        console.log("Forward Tickets API Response:", data);
-
+        const { data } = await axiosInstance.get("/v1/admin/support/tickets/forward");
         if (!active) return;
 
         const ticketsData = data?.data ?? data?.tickets ?? [];
-
-       const normalised: Ticket[] = (
-  Array.isArray(ticketsData) ? ticketsData : []
-).map((t: any) => ({
-  id:String(t.id),
-
-  subject: t.message || "Support Ticket",
-
-  company: "Soft7 User",
-
-  companyLogo: "S",
-
-  companyCol: "#10b981",
-
-  user: t.name || "Unknown User",
-
-  userEmail: t.email || "",
-
-  status: ((t.status || "OPEN").toUpperCase() as TicketStatus),
-
-  priority: "MEDIUM",
-
-  category: "Support",
-
-  created: new Date(t.created_at).toLocaleDateString(),
-
-  updated: new Date(t.updated_at).toLocaleDateString(),
-
-  unread: 0,
-
-  messages: [
-    {
-      id: "1",
-      sender: "USER",
-      name: t.name || "User",
-      avatar: (t.name || "U")
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase(),
-
-      content: t.message || "",
-
-      time: new Date(t.created_at).toLocaleTimeString(),
-
-      read: true,
-    },
-  ],
-}));
-
+        const normalised: Ticket[] = (Array.isArray(ticketsData) ? ticketsData : []).map(
+          (t: any) => ({
+            id:          String(t.id),
+            subject:     t.message || "Support Ticket",
+            company:     "Soft7 User",
+            companyLogo: "S",
+            companyCol:  "#10b981",
+            user:        t.name || "Unknown User",
+            userEmail:   t.email || "",
+            status:      (t.status || "OPEN").toUpperCase() as TicketStatus,
+            priority:    "MEDIUM" as TicketPriority,
+            category:    "Support",
+            created:     new Date(t.created_at).toLocaleDateString(),
+            updated:     new Date(t.updated_at).toLocaleDateString(),
+            unread:      0,
+            messages: [
+              {
+                id:      "1",
+                sender:  "USER" as MessageSender,
+                name:    t.name || "User",
+                avatar:  (t.name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
+                content: t.message || "",
+                time:    new Date(t.created_at).toLocaleTimeString(),
+                read:    true,
+              },
+            ],
+          })
+        );
         setTickets(normalised);
-      } catch (error) {
-        console.log("Forward API Error:", error);
+      } catch {
         if (!active) return;
-        setApiError("Unable to load support tickets right now.");
+        setApiError("Unable to load support tickets. Please try again.");
         setTickets([]);
       } finally {
         if (active) setLoading(false);
       }
     };
-
     void loadTickets();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
+  // Deselect if ticket disappears
   useEffect(() => {
-    if (
-      selectedId !== null &&
-      !tickets.some((t) => t.id === selectedId)
-    ) {
+    if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {
       setSelectedId(null);
     }
   }, [selectedId, tickets]);
 
-  const selected = useMemo(
-    () =>
-      selectedId === null
-        ? null
-        : tickets.find((t) => t.id === selectedId) ?? null,
-    [selectedId, tickets]
-  );
+
 
   const filtered = useMemo(
     () =>
-      tickets.filter((t) => {
+      tickets.filter(t => {
         const q = search.toLowerCase();
-        const matchesStatus = statusF === "ALL" || t.status === statusF;
-        const matchesPriority = priorityF === "ALL" || t.priority === priorityF;
-        const matchesSearch =
-          (t.subject ?? "").toLowerCase().includes(q) ||
-          (t.company ?? "").toLowerCase().includes(q) ||
-          (t.user ?? "").toLowerCase().includes(q) ||
-          (t.userEmail ?? "").toLowerCase().includes(q) ||
-          (t.category ?? "").toLowerCase().includes(q);
-        return matchesStatus && matchesPriority && matchesSearch;
+        return (
+          (statusF   === "ALL" || t.status   === statusF) &&
+          (priorityF === "ALL" || t.priority === priorityF) &&
+          (
+            t.subject.toLowerCase().includes(q)   ||
+            t.company.toLowerCase().includes(q)   ||
+            t.user.toLowerCase().includes(q)      ||
+            t.userEmail.toLowerCase().includes(q) ||
+            t.category.toLowerCase().includes(q)
+          )
+        );
       }),
     [tickets, search, statusF, priorityF]
   );
@@ -658,122 +632,53 @@ export default function SupportTickets() {
     [filtered, page]
   );
 
- const loadSingleTicket = async (ticketId: string) => {
-  try {
-    setApiError(null);
+  // ─ Load single ticket with full conversation ─
+  const loadSingleTicket = async (ticketId: string) => {
+    try {
+      setApiError(null);
+      const { data } = await axiosInstance.get(`/v1/admin/support/${ticketId}/forward`);
+      const conversations = Array.isArray(data?.data) ? data.data : [];
+      if (conversations.length === 0) { setApiError("No conversation found."); return; }
 
-    const { data } = await axiosInstance.get(
-      `/v1/admin/support/${ticketId}/forward`
-    );
+      const firstMessage = conversations[0];
+      const formattedMessages: Message[] = conversations.map((msg: any, index: number) => ({
+        id:     msg.id || String(index),
+        sender: msg.user_name === "Soft7 Tech" ? "ADMIN" : "USER",
+        name:   msg.user_name || "User",
+        avatar: (msg.user_name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
+        content: msg.message || "",
+        time:   new Date(msg.created_at).toLocaleString(),
+        read:   true,
+      }));
 
-    console.log("Single Ticket Response:", data);
+      const formattedTicket: Ticket = {
+        id:          firstMessage.ticket_id,
+        subject:     firstMessage.message || "Support Ticket",
+        company:     "Soft7 User",
+        companyLogo: "S",
+        companyCol:  "#10b981",
+        user:        firstMessage.user_name || "Unknown User",
+        userEmail:   firstMessage.user_email || "",
+        status:      "OPEN",
+        priority:    "MEDIUM",
+        category:    "Support",
+        created:     new Date(firstMessage.created_at).toLocaleDateString(),
+        updated:     new Date(conversations[conversations.length - 1].created_at).toLocaleDateString(),
+        unread:      0,
+        messages:    formattedMessages,
+      };
 
-const conversations = Array.isArray(data?.data)
-  ? data.data
-  : [];
+      setSelectedId(formattedTicket.id);
+      setTickets(prev => prev.map(t => t.id === formattedTicket.id ? formattedTicket : t));
+    } catch {
+      setApiError("Failed to load ticket details.");
+    }
+  };
 
-if (conversations.length === 0) {
-  setApiError("No conversation found.");
-  return;
-}
+  const applyServerTicket = (updatedTicket: Ticket) => {
+    setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
+  };
 
-const firstMessage = conversations[0];
-
-const formattedMessages: Message[] = conversations.map(
-  (msg: any, index: number) => ({
-    id: msg.id || String(index),
-
-    sender:
-      msg.user_name === "Soft7 Tech"
-        ? "ADMIN"
-        : "USER",
-
-    name: msg.user_name || "User",
-
-    avatar: (msg.user_name || "U")
-      .split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase(),
-
-    content: msg.message || "",
-
-    time: new Date(
-      msg.created_at
-    ).toLocaleString(),
-
-    read: true,
-  })
-);
-
-const formattedTicket: Ticket = {
-  id: firstMessage.ticket_id,
-
-  subject:
-    firstMessage.message || "Support Ticket",
-
-  company: "Soft7 User",
-
-  companyLogo: "S",
-
-  companyCol: "#10b981",
-
-  user:
-    firstMessage.user_name ||
-    "Unknown User",
-
-  userEmail:
-    firstMessage.user_email || "",
-
-  status: "OPEN",
-
-  priority: "MEDIUM",
-
-  category: "Support",
-
-  created: new Date(
-    firstMessage.created_at
-  ).toLocaleDateString(),
-
-  updated: new Date(
-    conversations[
-      conversations.length - 1
-    ].created_at
-  ).toLocaleDateString(),
-
-  unread: 0,
-
-  messages: formattedMessages,
-};
-
-setSelectedId(formattedTicket.id);
-
-setTickets((prev) =>
-  prev.map((ticket) =>
-    ticket.id === formattedTicket.id
-      ? formattedTicket
-      : ticket
-  )
-);
-    
- 
-   
-  } catch (error) {
-    console.log("Single Ticket Error:", error);
-
-    setApiError("Failed to load ticket details.");
-  }
-};
-const applyServerTicket = (updatedTicket: Ticket) => {
-  setTickets((prev) =>
-    prev.map((ticket) =>
-      ticket.id === updatedTicket.id
-        ? updatedTicket
-        : ticket
-    )
-  );
-};
   const handleStatusChange = async (id: string, status: TicketStatus) => {
     setApiError(null);
     try {
@@ -782,179 +687,99 @@ const applyServerTicket = (updatedTicket: Ticket) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ticketId: id, status }),
       });
-      const payload = (await response.json().catch(() => null)) as {
-        ticket?: Ticket;
-        error?: string;
-      } | null;
-
-      if (!response.ok || !payload?.ticket) {
-        throw new Error(payload?.error ?? "Failed to update ticket status.");
-      }
+      const payload = (await response.json().catch(() => null)) as { ticket?: Ticket; error?: string } | null;
+      if (!response.ok || !payload?.ticket) throw new Error(payload?.error ?? "Failed to update status.");
       applyServerTicket(payload.ticket);
     } catch (error) {
-      setApiError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update ticket status."
-      );
+      setApiError(error instanceof Error ? error.message : "Failed to update ticket status.");
     }
   };
 
- const handleReply = async (
-  id: string,
-  text: string
-): Promise<ReplyActionResult> => {
-  setApiError(null);
-
-  try {
-    const selectedTicket = tickets.find(
-      (t) => t.id === id
-    );
-
-    const { data } = await axiosInstance.post(
-      `/v1/admin/support/${id}/forward/reply`,
-      {
+  const handleReply = async (id: string, text: string): Promise<ReplyActionResult> => {
+    setApiError(null);
+    try {
+      const selectedTicket = tickets.find(t => t.id === id);
+      const { data } = await axiosInstance.post(`/v1/admin/support/${id}/forward/reply`, {
         message: text,
-        email: selectedTicket?.userEmail || "",
-        phone: "9372597458",
-      }
-    );
+        email:   selectedTicket?.userEmail || "",
+        phone:   "9372597458",
+      });
+      console.log("Reply API Response:", data);
 
-    console.log("Reply API Response:", data);
+      const newMessage: Message = {
+        id:      Date.now().toString(),
+        sender:  "ADMIN",
+        name:    "Soft7 Tech",
+        avatar:  "ST",
+        content: text,
+        time:    new Date().toLocaleString(),
+        read:    true,
+      };
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
+      setTickets(prev =>
+        prev.map(t =>
+          t.id === id
+            ? { ...t, updated: new Date().toLocaleDateString(), messages: [...(t.messages || []), newMessage] }
+            : t
+        )
+      );
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "Unable to send reply right now." };
+    }
+  };
 
-      sender: "ADMIN",
-
-      name: "Soft7 Tech",
-
-      avatar: "ST",
-
-      content: text,
-
-      time: new Date().toLocaleString(),
-
-      read: true,
-    };
-
-    setTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.id === id
-          ? {
-              ...ticket,
-              updated:
-                new Date().toLocaleDateString(),
-
-              messages: [
-                ...(ticket.messages || []),
-                newMessage,
-              ],
-            }
-          : ticket
-      )
-    );
-
-    return { ok: true };
-  } catch (error) {
-    console.log("Reply API Error:", error);
-
-    return {
-      ok: false,
-      error:
-        "Unable to send reply right now.",
-    };
-  }
-};
-  const openCount = tickets.filter((t) => t.status === "OPEN").length;
-  const inProgress = tickets.filter((t) => t.status === "IN_PROGRESS").length;
-  const resolved = tickets.filter((t) => t.status === "RESOLVED").length;
-  const urgent = tickets.filter((t) => t.priority === "URGENT").length;
-  // ✅ Guard against undefined unread field
-  const totalUnread = tickets.reduce(
-    (acc, t) => acc + (typeof t.unread === "number" ? t.unread : 0),
-    0
-  );
+  // ─ Derived counts ─
+  const openCount  = tickets.filter(t => t.status === "OPEN").length;
+  const inProgress = tickets.filter(t => t.status === "IN_PROGRESS").length;
+  const resolved   = tickets.filter(t => t.status === "RESOLVED").length;
+  const urgent     = tickets.filter(t => t.priority === "URGENT").length;
+  const totalUnread = tickets.reduce((acc, t) => acc + (typeof t.unread === "number" ? t.unread : 0), 0);
 
   return (
     <div className="st-root">
       {loading && (
-        <div
-          style={{
-            padding: "60px 0",
-            textAlign: "center",
-            color: "var(--st-muted, #888)",
-            fontSize: 16,
-          }}
-        >
-          Loading tickets...
+        <div style={{ padding: "80px 0", textAlign: "center", color: "var(--st-muted)", fontSize: 15 }}>
+          Loading tickets…
         </div>
       )}
 
       {!loading && (
         <>
+          {/* Header */}
           <div className="st-header">
             <div>
               <h1 className="st-header__title">Support Tickets</h1>
-              <p className="st-header__sub">
-                Manage and respond to all customer support requests.
-              </p>
+              <p className="st-header__sub">Manage and respond to customer support requests.</p>
             </div>
             <div className="st-header__actions">
               {totalUnread > 0 && (
                 <div className="st-unread-banner">
                   <span className="st-unread-banner__dot" />
-                  <span className="st-unread-banner__text">
-                    {totalUnread} unread
-                  </span>
+                  <span className="st-unread-banner__text">{totalUnread} unread</span>
                 </div>
               )}
             </div>
           </div>
 
+          {/* Status track — signature element */}
+          <StatusTrack tickets={tickets} />
+
           {apiError && <div className="st-page-alert">{apiError}</div>}
 
+          {/* KPI grid */}
           <div className="st-kpi-grid">
-            <KPI
-              label="Open Tickets"
-              value={String(openCount)}
-              sub={`${urgent} urgent`}
-              icon="🎫"
-              color="#74ff76"
-            />
-            <KPI
-              label="In Progress"
-              value={String(inProgress)}
-              sub="being handled"
-              icon="⚙️"
-              color="#FDCB6E"
-            />
-            <KPI
-              label="Resolved (7d)"
-              value={String(resolved)}
-              sub="closed this week"
-              icon="✅"
-              color="#00CBA4"
-            />
-            <KPI
-              label="Avg Response"
-              value="18m"
-              sub="across all tickets"
-              icon="⚡"
-              color="#41c993"
-            />
+            <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon="🎫" color="#34d399" />
+            <KPI label="In Progress"    value={String(inProgress)} sub="being handled"              icon="⚙️" color="#FBBF24" />
+            <KPI label="Resolved (7d)"  value={String(resolved)}   sub="closed this week"           icon="✅" color="#818CF8" />
+            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon="⚡" color="#34d399" />
           </div>
 
-          <div
-            className={`st-main-grid ${
-              selected ? "st-main-grid--split" : "st-main-grid--full"
-            }`}
-          >
-            <div
-              className={`st-list-panel ${
-                selected ? "st-list-panel--selection-open" : ""
-              }`}
-            >
+          {/* Main grid */}
+          <div className="st-main-grid st-main-grid--full">
+
+            {/* List panel */}
+           <div className="st-list-panel">
               <div className="st-filters st-filters-row">
                 {/* Search */}
                 <div className="st-search-wrap">
@@ -962,182 +787,121 @@ const applyServerTicket = (updatedTicket: Ticket) => {
                   <input
                     className="st-search-input"
                     value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setPage(1);
-                    }}
-                    placeholder="Search tickets..."
+                    onChange={e => { setSearch(e.target.value); setPage(1); }}
+                    placeholder="Search by subject, user, or email…"
                   />
                 </div>
 
-                {/* Status */}
+                {/* Status pills */}
                 <div className="st-group st-status-group">
-                  {(
-                    [
-                      "ALL",
-                      "OPEN",
-                      "IN_PROGRESS",
-                      "WAITING",
-                      "RESOLVED",
-                      "CLOSED",
-                    ] as const
-                  ).map((status) => (
+                  {(["ALL", "OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"] as const).map(s => (
                     <button
-                      key={status}
-                      onClick={() => {
-                        setStatusF(status);
-                        setPage(1);
-                      }}
-                      className={`st-pill ${
-                        statusF === status ? "st-pill--active" : ""
-                      }`}
+                      key={s}
+                      onClick={() => { setStatusF(s); setPage(1); }}
+                      className={`st-pill ${statusF === s ? "st-pill--active" : ""}`}
                       style={
-                        statusF === status && status !== "ALL"
+                        statusF === s && s !== "ALL"
                           ? {
-                              background: `var(--st-status-${
-                                status === "IN_PROGRESS"
-                                  ? "inprog"
-                                  : status.toLowerCase()
-                              }-bg)`,
-                              color: `var(--st-status-${
-                                status === "IN_PROGRESS"
-                                  ? "inprog"
-                                  : status.toLowerCase()
-                              }-col)`,
-                              borderColor: `var(--st-status-${
-                                status === "IN_PROGRESS"
-                                  ? "inprog"
-                                  : status.toLowerCase()
-                              }-col)`,
+                              background: `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-bg)`,
+                              color:      `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
+                              borderColor:`var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
                             }
-                          : statusF === status
-                          ? {
-                              background: "var(--st-surf3)",
-                              color: "#10b981",
-                              borderColor: "rgba(16,185,129,0.35)",
-                            }
+                          : statusF === s
+                          ? { background: "var(--st-surf3)", color: "var(--st-accent2)", borderColor: "rgba(16,185,129,0.35)" }
                           : {}
                       }
                     >
-                      {status === "ALL" ? "All" : STATUS_META[status]?.label}
+                      {s === "ALL" ? "All Status" : STATUS_META[s]?.label}
                     </button>
                   ))}
                 </div>
 
-                {/* Priority */}
+                {/* Priority pills */}
                 <div className="st-group st-priority-group">
                   <span className="st-priority-label">Priority:</span>
-                  {(["ALL", "URGENT", "HIGH", "MEDIUM", "LOW"] as const).map(
-                    (priority) => (
-                      <button
-                        key={priority}
-                        onClick={() => {
-                          setPriorityF(priority);
-                          setPage(1);
-                        }}
-                        className={`st-pill ${
-                          priorityF === priority ? "st-pill--active" : ""
-                        }`}
-                        style={
-                          priorityF === priority && priority !== "ALL"
-                            ? {
-                                background: `var(--st-pri-${priority.toLowerCase()}-bg)`,
-                                color: `var(--st-pri-${priority.toLowerCase()}-col)`,
-                                borderColor: `var(--st-pri-${priority.toLowerCase()}-col)`,
-                              }
-                            : priorityF === priority
-                            ? {
-                                background: "var(--st-surf3)",
-                                color: "var(--st-accent2)",
-                                borderColor: "rgba(108,92,231,0.35)",
-                              }
-                            : {}
-                        }
-                      >
-                        {priority === "ALL"
-                          ? "All"
-                          : PRIORITY_META[priority]?.label}
-                      </button>
-                    )
-                  )}
+                  {(["ALL", "URGENT", "HIGH", "MEDIUM", "LOW"] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => { setPriorityF(p); setPage(1); }}
+                      className={`st-pill ${priorityF === p ? "st-pill--active" : ""}`}
+                      style={
+                        priorityF === p && p !== "ALL"
+                          ? {
+                              background: `var(--st-pri-${p.toLowerCase()}-bg)`,
+                              color:      `var(--st-pri-${p.toLowerCase()}-col)`,
+                              borderColor:`var(--st-pri-${p.toLowerCase()}-col)`,
+                            }
+                          : priorityF === p
+                          ? { background: "var(--st-surf3)", color: "var(--st-accent2)", borderColor: "rgba(16,185,129,0.35)" }
+                          : {}
+                      }
+                    >
+                      {p === "ALL" ? "All" : PRIORITY_META[p]?.label}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Count */}
                 <div className="st-count-group">
                   <span className="st-filter-count">
-                    {filtered.length} ticket
-                    {filtered.length !== 1 ? "s" : ""}
+                    {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
                   </span>
                 </div>
               </div>
 
+              {/* Ticket rows */}
               <div className="st-list">
-                {paginated.map((ticket) => {
-                  const isActive = selected?.id === ticket.id;
-                  // ✅ Safe message count in the row badge
-                  const msgCount = safeMessages(ticket).length;
+                {paginated.map(ticket => {
+                  const isActive  = selected?.id === ticket.id;
+                  const msgCount  = safeMessages(ticket).length;
 
                   return (
                     <div
                       key={ticket.id}
-                      className={`st-ticket-row ${
-                        isActive ? "st-ticket-row--active" : ""
-                      }`}
-                    onClick={() => {
-  void loadSingleTicket(ticket.id);
-}}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setSelectedId(ticket.id);
-                        }
-                      }}
+                      className={`st-ticket-row ${isActive ? "st-ticket-row--active" : ""}`}
+                      onClick={() => void loadSingleTicket(ticket.id)}
+                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); void loadSingleTicket(ticket.id); } }}
                       role="button"
                       tabIndex={0}
                       aria-current={isActive ? "true" : "false"}
                     >
                       <div className="st-ticket-row__top">
                         <div className="st-ticket-row__left">
-                          <div
-                            className="st-company-logo"
-                            style={{ background: ticket.companyCol }}
-                          >
+                          <div className="st-company-logo" style={{ background: ticket.companyCol }}>
                             {ticket.companyLogo}
                           </div>
-                          <div>
+                          <div className="st-ticket-row__info">
                             <div className="st-ticket-row__subject-row">
-                              <div className="st-ticket-row__subject">
-                                {ticket.subject}
-                              </div>
+                              <div className="st-ticket-row__subject">{ticket.subject}</div>
                               {isActive && (
-                                <span className="st-ticket-row__selected-pill">
-                                  Selected
-                                </span>
+                                <span className="st-ticket-row__selected-pill">Selected</span>
                               )}
                             </div>
                             <div className="st-ticket-row__meta">
-                              {ticket.company} · {ticket.user}
+                              <span>{ticket.user}</span>
+                              {ticket.userEmail && (
+                                <>
+                                  <span className="st-ticket-row__meta-sep">·</span>
+                                  <span style={{ opacity: 0.75 }}>{ticket.userEmail}</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
                         <div className="st-ticket-row__right">
                           {(ticket.unread ?? 0) > 0 && (
-                            <span className="st-unread-dot">
-                              {ticket.unread}
-                            </span>
+                            <span className="st-unread-dot">{ticket.unread}</span>
                           )}
-                          <span className="st-ticket-row__time">
-                            {ticket.updated}
-                          </span>
+                          <span className="st-ticket-row__time">{ticket.updated}</span>
                         </div>
                       </div>
+
                       <div className="st-ticket-row__badges">
                         <StatusBadge status={ticket.status} />
                         <PriorityBadge priority={ticket.priority} />
                         <span className="st-cat-chip">
                           {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
                         </span>
-                        {/* ✅ Safe message count */}
                         <span className="st-msg-count">💬 {msgCount}</span>
                       </div>
                     </div>
@@ -1146,60 +910,57 @@ const applyServerTicket = (updatedTicket: Ticket) => {
 
                 {filtered.length === 0 && (
                   <div className="st-empty">
-                    <div style={{ fontSize: 32, marginBottom: 10 }}>🎫</div>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>🎫</div>
                     <div className="st-empty__title">No tickets found</div>
-                    <div className="st-empty__desc">
-                      Try adjusting your filters.
-                    </div>
+                    <div className="st-empty__desc">Try adjusting your filters or search term.</div>
                   </div>
                 )}
               </div>
 
               {filtered.length > 0 && (
-                <Pager
-                  page={page}
-                  total={filtered.length}
-                  size={PAGE_SIZE}
-                  onChange={(p) => setPage(p)}
-                />
+                <Pager page={page} total={filtered.length} size={PAGE_SIZE} onChange={p => setPage(p)} />
               )}
             </div>
 
+            {/* Conversation panel or empty state */}
             {selected ? (
-              <ConvPanel
-                ticket={selected}
-                onClose={() => setSelectedId(null)}
-                onStatusChange={handleStatusChange}
-                onReply={handleReply}
-              />
-            ) : (
+  <>
+    <div
+      className="st-conv-overlay"
+      onClick={() => setSelectedId(null)}
+    />
+
+    <div
+      className="st-conv-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Ticket ${selected.id} details`}
+    >
+      <ConvPanel
+        ticket={selected}
+        onClose={() => setSelectedId(null)}
+        onStatusChange={handleStatusChange}
+        onReply={handleReply}
+      />
+    </div>
+  </>
+) : (
               <div className="st-conv-empty">
                 <div className="st-conv-empty__icon">🎫</div>
                 <div style={{ textAlign: "center" }}>
-                  <div className="st-conv-empty__title">Select a ticket</div>
+                  <div className="st-conv-empty__title">Select a ticket to view</div>
                   <div className="st-conv-empty__desc">
-                    Click any ticket from the list to view the conversation and
-                    reply.
+                    Click any ticket from the list to read the conversation and send a reply.
                   </div>
                 </div>
                 <div className="st-conv-empty__chips">
                   <div className="st-conv-empty__chip">
-                    <span
-                      className="st-conv-empty__chip-dot"
-                      style={{ background: "var(--st-info)" }}
-                    />
-                    <span className="st-conv-empty__chip-text">
-                      {openCount} open
-                    </span>
+                    <span className="st-conv-empty__chip-dot" style={{ background: "var(--st-status-open-col)" }} />
+                    <span className="st-conv-empty__chip-text">{openCount} open</span>
                   </div>
                   <div className="st-conv-empty__chip">
-                    <span
-                      className="st-conv-empty__chip-dot"
-                      style={{ background: "var(--st-danger)" }}
-                    />
-                    <span className="st-conv-empty__chip-text">
-                      {urgent} urgent
-                    </span>
+                    <span className="st-conv-empty__chip-dot" style={{ background: "var(--st-pri-urgent-col)" }} />
+                    <span className="st-conv-empty__chip-text">{urgent} urgent</span>
                   </div>
                 </div>
               </div>
