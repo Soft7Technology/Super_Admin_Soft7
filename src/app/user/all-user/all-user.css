@@ -216,7 +216,9 @@ html[data-theme="dark"], body[data-theme="dark"] {
   flex-wrap: wrap; align-items: center;
 }
 .au-search-wrap {
-  position: relative; flex: 1; min-width: 240px;
+  position: relative;
+  flex: 0 0 420px;
+  max-width: 420px;
 }
 .mc-search-icon {
   position: absolute; left: 12px; top: 50%;
@@ -545,4 +547,236 @@ html[data-theme="dark"], body[data-theme="dark"] {
   .au-modal          { width: 95vw; padding: 22px 18px; }
   .au-modal__grid-2  { grid-template-columns: 1fr; }
   .au-stats-grid     { grid-template-columns: 1fr 1fr; }
+}
+.au-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.au-card {
+  position: relative;
+}
+
+.au-card__checkbox {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.au-card__checkbox input {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+
+.au-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.au-btn--bulk-delete {
+  width: auto !important;
+  min-width: 180px;
+  padding: 10px 20px;
+}
+.au-selection-toolbar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.au-btn--bulk-delete {
+  width: auto !important;
+  min-width: 180px;
+  padding: 10px 20px;
+}
+.au-selection-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+
+  margin-top: -48px;
+  margin-bottom: 18px;
+
+  padding-right: 10px;
+}
+
+.au-btn--bulk-delete {
+  width: auto !important;
+  min-width: 170px;
+  height: 34px;
+  padding: 0 14px;
+}
+
+.au-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+/* =========================
+   TABLE
+========================= */
+
+.au-table-wrapper {
+  margin-top: 20px;
+  overflow-x: auto;
+  background: var(--surf);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+.au-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.au-table thead {
+  background: var(--surf2);
+}
+
+.au-table th {
+  padding: 18px 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+
+.au-table td {
+  padding: 18px 16px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.au-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.au-table tbody tr:hover {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+/* vertical separators */
+.au-table th,
+.au-table td {
+  border-right: 1px solid var(--border);
+}
+
+.au-table th:last-child,
+.au-table td:last-child {
+  border-right: none;
+}
+.au-action-btn {
+  width: 34px;
+  height: 34px;
+
+  border-radius: 10px;
+  border: 1px solid var(--border);
+
+  background: var(--surf2);
+  color: var(--text);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.au-action-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.au-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 18px 20px;
+
+  border-top: 1px solid var(--border);
+}
+
+.au-pagination button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surf2);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.au-pagination button:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.au-pagination button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+/* USER COLUMN */
+
+.au-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.au-avatar--table {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px;
+  min-height: 40px;
+
+  border-radius: 50% !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+
+  flex-shrink: 0;
+}
+
+.au-user-name {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.au-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(6px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+}
+
+.au-modal--detail {
+  width: 520px;
+  max-width: 95vw;
+  max-height: 85vh;
+
+  overflow-y: auto;
+
+  background: #0f1120;
+  border-radius: 20px;
 }

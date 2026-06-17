@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";          // ← ADD
 import { useTheme, tokens } from "../../../../context/ThemeContext";
+import { uploadToCloudinary } from "../../../../lib/cloudinary";
 
 interface FileState {
   file: File | null;
@@ -18,6 +19,14 @@ export default function AddCompanyPage() {
   const router = useRouter();                          // ← ADD
 
   const [name,    setName]    = useState("");
+  const [email,   setEmail]   = useState("");
+  const [phone,   setPhone]   = useState("");
+  const [businessId, setBusinessId] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [initialCredit, setInitialCredit] = useState<number | string>(1000);
+  const [adminName, setAdminName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [logo,    setLogo]    = useState<FileState>(empty());
   const [favicon, setFavicon] = useState<FileState>(empty());
   const [saving,  setSaving]  = useState(false);
@@ -43,6 +52,11 @@ export default function AddCompanyPage() {
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!name.trim())  errs.name = "Company name is required";
+    if (!email.trim()) errs.email = "Email is required";
+    if (!phone.trim()) errs.phone = "Phone is required";
+    if (!adminName.trim()) errs.adminName = "Admin name is required";
+    if (!adminEmail.trim()) errs.adminEmail = "Admin email is required";
+    if (!adminPassword.trim()) errs.adminPassword = "Admin password is required";
     if (!logo.file)    errs.logo = "Please upload a company logo";
     setErrors(errs);
     return !Object.keys(errs).length;
@@ -51,9 +65,54 @@ export default function AddCompanyPage() {
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false); setSaved(true);
- 
+    
+    let logoUrl = null;
+    if (logo.file) {
+      logoUrl = await uploadToCloudinary(logo.file);
+    }
+
+    const payload = {
+      name: name,
+      email: email,
+      phone: phone,
+      business_id: businessId,
+      webhook_url: webhookUrl,
+      initial_credit: Number(initialCredit) || 0,
+      logo: logoUrl,
+      user: {
+        name: adminName,
+        email: adminEmail,
+        password: adminPassword
+      }
+    };
+
+    try {
+      const token = localStorage.getItem("console_access_token");
+      const response = await fetch("https://hostapi.soft7.in/v1/admin/companies/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setSaved(true);
+        setTimeout(() => {
+          router.push("/user/dashboard");
+        }, 1500);
+      } else {
+        const errorData = await response.json();
+        console.error("API error:", errorData);
+        alert("Failed to save company.");
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      alert("Error saving company.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Cancel → go back to dashboard ──────────────────
@@ -112,23 +171,27 @@ export default function AddCompanyPage() {
 
         <div style={{ padding: "32px 36px 36px" }}>
 
-          {/* Company Name */}
-          <div style={{ marginBottom: 26 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: "0.9rem", color: C.label }}>Company Name</span>
-              <span style={{ color: "#f87171" }}>*</span>
-            </div>
-            <input
-              type="text" placeholder="e.g. Acme Corporation" value={name}
-              onChange={e => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: "" })); }}
-              onFocus={e  => (e.target.style.borderColor = "#3b5bdb")}
-              onBlur={e   => (e.target.style.borderColor = errors.name ? "#f87171" : C.border)}
-              style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 9, border: `1.5px solid ${errors.name ? "#f87171" : C.border}`, background: C.inputBg, color: C.inputClr, fontSize: "0.9rem", fontFamily: "'DM Sans', 'Segoe UI', sans-serif", outline: "none", transition: "border .2s" }}
-            />
-            {errors.name && <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "#f87171" }}>⚠ {errors.name}</p>}
+          {/* Company Info */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <TextInput label="Company Name" required value={name} onChange={(e: any) => { setName(e.target.value); if (errors.name) setErrors(p => ({...p, name: ""})); }} error={errors.name} C={C} placeholder="e.g. Acme Corporation" />
+            <TextInput label="Company Email" required value={email} onChange={(e: any) => { setEmail(e.target.value); if (errors.email) setErrors(p => ({...p, email: ""})); }} error={errors.email} C={C} placeholder="hello@acme.com" type="email" />
+            <TextInput label="Company Phone" required value={phone} onChange={(e: any) => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({...p, phone: ""})); }} error={errors.phone} C={C} placeholder="e.g. +1 234 567 890" />
+            <TextInput label="Business ID" value={businessId} onChange={(e: any) => setBusinessId(e.target.value)} C={C} placeholder="e.g. BIZ-123" />
+            <TextInput label="Webhook URL" value={webhookUrl} onChange={(e: any) => setWebhookUrl(e.target.value)} C={C} placeholder="https://..." />
+            <TextInput label="Initial Credit" value={initialCredit} onChange={(e: any) => setInitialCredit(e.target.value)} C={C} placeholder="1000" type="number" />
           </div>
 
-          <div style={{ height: 1, background: C.divider, marginBottom: 26 }} />
+          <div style={{ height: 1, background: C.divider, margin: "10px 0 26px" }} />
+
+          {/* Admin User */}
+          <h3 style={{ margin: "0 0 16px", fontSize: "1.05rem", color: C.heading }}>Admin User Details</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <TextInput label="Admin Name" required value={adminName} onChange={(e: any) => { setAdminName(e.target.value); if (errors.adminName) setErrors(p => ({...p, adminName: ""})); }} error={errors.adminName} C={C} placeholder="Admin Name" />
+            <TextInput label="Admin Email" required value={adminEmail} onChange={(e: any) => { setAdminEmail(e.target.value); if (errors.adminEmail) setErrors(p => ({...p, adminEmail: ""})); }} error={errors.adminEmail} C={C} placeholder="admin@acme.com" type="email" />
+            <TextInput label="Admin Password" required value={adminPassword} onChange={(e: any) => { setAdminPassword(e.target.value); if (errors.adminPassword) setErrors(p => ({...p, adminPassword: ""})); }} error={errors.adminPassword} C={C} placeholder="••••••••" type="password" />
+          </div>
+
+          <div style={{ height: 1, background: C.divider, margin: "10px 0 26px" }} />
 
           {/* Logo */}
           <div style={{ marginBottom: 26 }}>
@@ -337,5 +400,24 @@ function BtnSave({
         <>💾 Save Company</>
       )}
     </button>
+  );
+}
+
+/* ── Text Input ──────────────────────────────────────────────── */
+function TextInput({ label, required = false, type = "text", placeholder, value, onChange, error, C }: any) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+        <span style={{ fontWeight: 700, fontSize: "0.9rem", color: C.label }}>{label}</span>
+        {required && <span style={{ color: "#f87171" }}>*</span>}
+      </div>
+      <input
+        type={type} placeholder={placeholder} value={value}
+        onChange={onChange} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+        style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 9, border: `1.5px solid ${error ? "#f87171" : focus ? "#3b5bdb" : C.border}`, background: C.inputBg, color: C.inputClr, fontSize: "0.9rem", fontFamily: "'Inter', sans-serif", outline: "none", transition: "border .2s" }}
+      />
+      {error && <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "#f87171" }}>⚠ {error}</p>}
+    </div>
   );
 }

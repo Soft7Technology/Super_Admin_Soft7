@@ -47,7 +47,7 @@ export function useLogin() {
       }
 
       localStorage.setItem("console_access_token", token);
-      document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+     // document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
 
       if (data?.success !== false) {
         router.replace("/user/dashboard");
