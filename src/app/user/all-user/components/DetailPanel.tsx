@@ -10,6 +10,7 @@ import { ResetPasswordModal } from "./ResetPasswordModal";
 interface DetailPanelProps {
   user: User;
   onClose: () => void;
+  onRefresh?: () => void;
 }
 
 interface UserActivityStats {
@@ -19,12 +20,14 @@ interface UserActivityStats {
   flows: number;
 }
 
-export function DetailPanel({ user, onClose }: DetailPanelProps) {
+export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
   const [tab,           setTab]           = useState<"info" | "stats">("info");
   const [passwordOpen,  setPasswordOpen]  = useState(false);
   const [editOpen,      setEditOpen]      = useState(false);
   const [userStats,     setUserStats]     = useState<UserActivityStats | null>(null);
   const [statsLoading,  setStatsLoading]  = useState(false);
+  const [suspending,    setSuspending]    = useState(false);
+  const [localStatus,   setLocalStatus]   = useState(user.status);
 
   const fetchUserStats = async () => {
     try {
@@ -48,6 +51,35 @@ export function DetailPanel({ user, onClose }: DetailPanelProps) {
   const handleTabChange = (key: "info" | "stats") => {
     setTab(key);
     if (key === "stats") fetchUserStats();
+  };
+
+  const handleSuspendToggle = async () => {
+    const isSuspended = localStatus === "SUSPENDED";
+    const action = isSuspended ? "restore" : "suspend";
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+    try {
+      setSuspending(true);
+      const endpoint = isSuspended
+        ? `/v1/admin/users/${user.id}/active-user`
+        : `/v1/admin/users/${user.id}/suspend-user`;
+
+      const { data } = await axiosInstance.put(endpoint);
+      if (data.success !== false) {
+        const newStatus = isSuspended ? "ACTIVE" : "SUSPENDED";
+        setLocalStatus(newStatus);
+        user.status = newStatus;
+        onRefresh?.();
+        alert(`✅ User ${isSuspended ? "restored" : "suspended"} successfully`);
+      } else {
+        alert(data.message || `Failed to ${action} user`);
+      }
+    } catch (error: any) {
+      console.error("Suspend/Restore Error:", error);
+      alert(error?.response?.data?.message || "Something went wrong");
+    } finally {
+      setSuspending(false);
+    }
   };
 
   return (
@@ -80,14 +112,14 @@ export function DetailPanel({ user, onClose }: DetailPanelProps) {
                 </div>
                 <div
                   className={`au-status-dot au-status-dot--panel ${
-                    STATUS_DOT[user.status] ?? "au-status-dot--other"
+                    STATUS_DOT[localStatus] ?? "au-status-dot--other"
                   }`}
                 />
               </div>
               <div className="au-panel__name">{user.name}</div>
               <div className="au-panel__email">{user.email}</div>
               <div className="au-panel__badges">
-                <Badge status={user.status} />
+                <Badge status={localStatus} />
                 <span
                   className="au-role-chip"
                   style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}
@@ -170,10 +202,22 @@ export function DetailPanel({ user, onClose }: DetailPanelProps) {
                 <button className="au-btn au-btn--ghost" onClick={() => setPasswordOpen(true)}>
                   Reset Password
                 </button>
-                {user.status === "SUSPENDED" ? (
-                  <button className="au-btn au-btn--success">Restore Account</button>
+                {localStatus === "SUSPENDED" ? (
+                  <button
+                    className="au-btn au-btn--success"
+                    onClick={handleSuspendToggle}
+                    disabled={suspending}
+                  >
+                    {suspending ? "Restoring…" : "Restore Account"}
+                  </button>
                 ) : (
-                  <button className="au-btn au-btn--danger">Suspend User</button>
+                  <button
+                    className="au-btn au-btn--danger"
+                    onClick={handleSuspendToggle}
+                    disabled={suspending}
+                  >
+                    {suspending ? "Suspending…" : "Suspend User"}
+                  </button>
                 )}
               </div>
             )}
@@ -185,7 +229,10 @@ export function DetailPanel({ user, onClose }: DetailPanelProps) {
         <EditUserModal
           user={user}
           onClose={() => setEditOpen(false)}
-          onUpdated={(updatedUser) => Object.assign(user, updatedUser)}
+          onUpdated={(updatedUser) => {
+            Object.assign(user, updatedUser);
+            onRefresh?.();
+          }}
         />
       )}
 
