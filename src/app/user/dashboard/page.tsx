@@ -1,4 +1,4 @@
-﻿﻿﻿﻿"use client";
+﻿﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
@@ -16,10 +16,6 @@ const DASHBOARD_API =
   "/v1/admin/companies/user";
   const COMPANIES_API =
   "/v1/admin/companies";
-const BRAND = "#10b981";
-const BRAND_HOVER = "#059669";
-const BRAND_SOFT = "rgba(16, 22, 185, 0.16)";
-const BRAND_GLOW = "rgba(16,185,129,0.32)";
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -449,11 +445,6 @@ setUsers(
           </p>
         </div>
 
-        <DashboardButton
-          label="Add Company"
-          onClick={() => router.push("/user/dashboard/create")}
-          isDark={isDark}
-        />
       </div>
 
       {/* Stats */}
@@ -543,40 +534,3 @@ setUsers(
   );
 }
 
-/* ─── Dashboard Button ────────────────────────────────────── */
-function DashboardButton({
-  label,
-  onClick,
-  isDark,
-}: {
-  label: string;
-  onClick?: () => void;
-  isDark: boolean;
-}) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: "8px",
-        padding: "11px 22px",
-        borderRadius: "10px",
-        fontSize: "0.85rem", fontWeight: 700,
-        cursor: "pointer",
-        border: `1px solid ${BRAND}`,
-        background: hovered ? BRAND_HOVER : BRAND,
-        color: "#fff",
-       boxShadow: hovered
-        ? "0 8px 24px rgba(16,185,129,0.38)"
-        : "0 4px 14px rgba(16,185,129,0.24)",
-        transition: "all 0.15s ease",
-        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-        whiteSpace: "nowrap",
-      }}
-    >
-      + {label}
-    </button>
-  );
-}
