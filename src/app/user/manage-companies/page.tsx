@@ -787,6 +787,8 @@ function EditCompanyModal({
   const [email,    setEmail]    = useState(company?.email  || "");
   const [phone,    setPhone]    = useState(company?.phone === "—" ? "" : company?.phone || "");
   const [status,   setStatus]   = useState<Status>(company?.status || "ACTIVE");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [saving,   setSaving]   = useState(false);
   const [err,      setErr]      = useState<string | null>(null);
 
@@ -795,53 +797,116 @@ function EditCompanyModal({
     setEmail(company?.email || "");
     setPhone(company?.phone === "—" ? "" : company?.phone || "");
     setStatus(company?.status || "ACTIVE");
+    setLogoFile(null);
+    setLogoPreview(null);
     setErr(null);
   }, [company]);
 
-  const handleSubmit = async () => {
-    setErr(null);
-    if (!name.trim())  return setErr("Company name is required.");
-    if (!email.trim()) return setErr("Email is required.");
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setLogoFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setLogoPreview(null);
+    }
+  };
+
+ const handleSubmit = async () => {
+  setErr(null);
 
     setSaving(true);
     try {
       const url = `${COMPANIES_API}/${company.id}`;
 
-      let body: any = {};
-      body = {
+  if (!email.trim()) {
+    return setErr("Email is required.");
+  }
+
+  if (!company && !password.trim()) {
+    return setErr("Password is required.");
+  }
+
+  setSaving(true);
+
+  try {
+    const isEdit = !!company;
+
+    const url = isEdit
+      ? `${COMPANIES_API}/${company.id}`
+      : COMPANIES_API;
+
+    // Always use FormData so the image file can be included
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("email", email);
+    if (phone) formData.append("phone", phone);
+
+    if (isEdit) {
+      formData.append("status", status.toLowerCase());
+    } else {
+      // Wrap user object as JSON string (backend parses it)
+      formData.append("user", JSON.stringify({
         name,
         email,
-        phone,
-        status: status.toLowerCase(),
-        user: { name, email, phone },
-      };
-
-      console.log("REQUEST BODY =>", body);
-      const { data } = await axiosInstance.request({
-        url,
-        method: "PUT",
-        data: body,
-      });
-      console.log("COMPANY RESPONSE =>", data);
-
-      if (!data.success) {
-        if (data?.message?.toLowerCase().includes("already exists")) {
-          setErr("⚠️ Company with this email already exists");
-          return;
-        }
-        setErr(data?.error?.message || data?.message || "Company request failed");
-        return;
-      }
-
-      await onSuccess();
-      onClose();
-    } catch (e: any) {
-      console.error(e);
-      setErr(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setSaving(false);
+        phone: phone || undefined,
+        password,
+      }));
     }
-  };
+
+    if (logoFile) {
+      formData.append("file", logoFile);
+    }
+
+    console.log("REQUEST BODY =>", Object.fromEntries(formData.entries()));
+
+    const { data } = await axiosInstance.request({
+      url,
+      method: isEdit ? "PUT" : "POST",
+      data: formData,
+    });
+
+    console.log("COMPANY RESPONSE =>", data);
+
+   if (!data.success) {
+
+  // EMAIL ALREADY EXISTS
+  if (
+    data?.message?.toLowerCase().includes("already exists")
+  ) {
+    setErr("⚠️ Company with this email already exists");
+    return;
+  }
+
+  // GENERAL ERROR
+  setErr(
+    data?.error?.message ||
+    data?.message ||
+    "Company request failed"
+  );
+
+  return;
+}
+    // REFRESH COMPANY LIST
+    await onSuccess();
+
+    // CLOSE MODAL
+    onClose();
+
+ } catch (e: any) {
+  console.error(e);
+
+  if (e instanceof Error) {
+    setErr(e.message);
+  } else {
+    setErr("Something went wrong");
+  }
+} finally {
+  setSaving(false);
+}
+};
 
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -890,18 +955,96 @@ function EditCompanyModal({
           </div>
 
           <div className="mc-field">
-            <div className="mc-field__label">STATUS</div>
-            <select
-              className="mc-select"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Status)}
+            <div className="mc-field__label">COMPANY LOGO</div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                cursor: "pointer",
+              }}
             >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="TRIAL">Trial</option>
-            </select>
+              {/* Preview circle */}
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  border: "2px dashed var(--mc-border, #333)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  background: "var(--mc-surface, #1a1a2e)",
+                  fontSize: 20,
+                }}
+              >
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  "🏢"
+                )}
+              </div>
+              <div>
+                <div
+                  className="mc-input"
+                  style={{
+                    padding: "8px 14px",
+                    cursor: "pointer",
+                    display: "inline-block",
+                    fontSize: 13,
+                  }}
+                >
+                  {logoFile ? logoFile.name : "Choose image…"}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}>
+                  PNG, JPG or WEBP — max 2MB
+                </div>
+              </div>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: "none" }}
+                onChange={handleLogoChange}
+              />
+            </label>
           </div>
+
+          {/* Password only shown when creating */}
+          {!company && (
+            <div className="mc-field">
+              <div className="mc-field__label">PASSWORD *</div>
+              <input
+                className="mc-input"
+                type="password"
+                placeholder="Min 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Status only shown when editing */}
+          {company && (
+            <div className="mc-field">
+              <div className="mc-field__label">STATUS</div>
+              <select
+                className="mc-select"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status)}
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="SUSPENDED">Suspended</option>
+                <option value="TRIAL">Trial</option>
+              </select>
+            </div>
+          )}
 
           <div className="mc-modal__divider" />
           <div className="mc-modal__actions">
