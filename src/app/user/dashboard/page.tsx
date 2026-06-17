@@ -1,4 +1,4 @@
-"use client";
+﻿﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
@@ -16,10 +16,6 @@ const DASHBOARD_API =
   "/v1/admin/companies/user";
   const COMPANIES_API =
   "/v1/admin/companies";
-const BRAND = "#10b981";
-const BRAND_HOVER = "#059669";
-const BRAND_SOFT = "rgba(16, 22, 185, 0.16)";
-const BRAND_GLOW = "rgba(16,185,129,0.32)";
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -129,32 +125,18 @@ function InlineStatCards({
   stats,
   isDark,
   isMobile,
-  width,
 }: {
   stats: StatCard[];
   isDark: boolean;
   isMobile: boolean;
-  width: number;
 }) {
-  const isSmall  = width <= 1000;
-  const isMedium = width <= 1300;
-
-  // Responsive sizes
-  const labelSize  = isSmall ? "9px"  : isMedium ? "10px" : "11px";
-  const valueSize  = isSmall ? "20px" : isMedium ? "24px" : "30px";
-  const iconBoxSize = isSmall ? 26     : isMedium ? 28    : 32;
-  const iconFontSize = isSmall ? "12px" : isMedium ? "13px" : "15px";
-  const cardPad    = isSmall ? "14px 16px" : isMedium ? "16px 18px" : "20px 22px";
-  const orbSize    = isSmall ? 48 : isMedium ? 56 : 64;
-  const accentBar  = isSmall ? "28px" : isMedium ? "32px" : "36px";
-
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
-        gap: isSmall ? "10px" : isMedium ? "12px" : "16px",
-        marginBottom: isSmall ? "20px" : isMedium ? "24px" : "28px",
+        gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+        gap: "16px",
+        marginBottom: "28px",
       }}
     >
       {stats.map((s, i) => {
@@ -165,8 +147,8 @@ function InlineStatCards({
             style={{
               background: isDark ? "rgba(15,17,32,0.9)" : "#ffffff",
               border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-              borderRadius: isSmall ? "10px" : "14px",
-              padding: cardPad,
+              borderRadius: "14px",
+              padding: "20px 22px",
               position: "relative",
               overflow: "hidden",
               transition: "box-shadow 0.2s, transform 0.2s",
@@ -179,32 +161,36 @@ function InlineStatCards({
             <div
               style={{
                 position: "absolute", top: -10, right: -10,
-                width: orbSize, height: orbSize, borderRadius: "50%",
+                width: 64, height: 64, borderRadius: "50%",
                 background: meta.glow, pointerEvents: "none",
               }}
             />
             <div style={{
               display: "flex", justifyContent: "space-between",
-              alignItems: "flex-start", marginBottom: isSmall ? "10px" : isMedium ? "12px" : "14px",
+              alignItems: "flex-start", marginBottom: "14px",
             }}>
               <span style={{
-                fontSize: labelSize, fontWeight: 600, letterSpacing: "0.04em",
+                fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em",
                 color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
                 textTransform: "uppercase",
               }}>
                 {meta.label}
               </span>
-              <div style={{
-                width: `${iconBoxSize}px`, height: `${iconBoxSize}px`, borderRadius: "9px",
-                background: `${meta.accent}18`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: iconFontSize,
-              }}>
-                {meta.icon}
-              </div>
+        <div style={{
+        width: "42px",
+        height: "42px",
+        borderRadius: "12px",
+        background: `${meta.accent}18`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "20px",
+      }}>
+        {meta.icon}
+      </div>
             </div>
             <div style={{
-              fontSize: valueSize, fontWeight: 800,
+              fontSize: "30px", fontWeight: 800,
               color: isDark ? "#f1f5f9" : "#0f172a",
               letterSpacing: "-0.03em", lineHeight: 1,
               marginBottom: "6px",
@@ -212,7 +198,7 @@ function InlineStatCards({
               {s.value}
             </div>
             <div style={{
-              height: "2px", width: accentBar,
+              height: "2px", width: "36px",
               borderRadius: "2px",
               background: meta.accent,
               opacity: 0.7,
@@ -229,24 +215,19 @@ function Section({
   children,
   isDark,
   isMobile,
-  width,
 }: {
   children: React.ReactNode;
   isDark: boolean;
   isMobile: boolean;
-  width: number;
 }) {
-  const isSmall  = width <= 1000;
-  const isMedium = width <= 1300;
-  const pad = isMobile ? "14px" : isSmall ? "16px 18px" : isMedium ? "20px 22px" : "26px 28px";
-
   return (
     <div
       style={{
         background: isDark ? "rgba(15,17,32,0.85)" : "#ffffff",
-        border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-        borderRadius: isSmall ? "12px" : "16px",
-        padding: pad,
+        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.07)"}`,
+        borderRadius: "16px",
+        padding: isMobile ? "20px" : "26px 28px",
+        minWidth: 0,
         boxShadow: isDark
           ? "0 2px 10px rgba(0,0,0,0.22)"
           : "0 1px 8px rgba(0,0,0,0.06)",
@@ -264,9 +245,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const width = useWindowWidth();
   const isMobile     = width <= 768;
-  const isSmall      = width <= 1000;
-  const isMedium     = width <= 1300;
-  const isHalfScreen = width <= 1100;
+  const isHalfScreen = width <= 768;
 
   const [stats, setStats]           = useState<StatCard[]>(DEFAULT_STATS);
   const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
@@ -424,7 +403,7 @@ setUsers(
   return (
     <div
       style={{
-        padding: isMobile ? "16px" : isSmall ? "24px 22px 36px" : isMedium ? "28px 30px 44px" : "36px 38px 56px",
+        padding: isMobile ? "24px" : "36px 38px 56px",
         background: t.bg,
         minHeight: "100%",
         transition: "background 0.3s ease",
@@ -437,15 +416,15 @@ setUsers(
           flexDirection: isMobile ? "column" : "row",
           alignItems: isMobile ? "flex-start" : "center",
           justifyContent: "space-between",
-          gap: isSmall ? "12px" : "18px",
-          marginBottom: isSmall ? "20px" : isMedium ? "24px" : "30px",
+          gap: "18px",
+          marginBottom: "30px",
         }}
       >
         <div>
           <h1
             style={{
               fontWeight: 800,
-              fontSize: isMobile ? "1.35rem" : isSmall ? "1.45rem" : isMedium ? "1.65rem" : "2rem",
+              fontSize: isMobile ? "1.75rem" : "2rem",
               color: t.text,
               margin: 0,
               letterSpacing: "-0.025em",
@@ -456,9 +435,9 @@ setUsers(
           </h1>
           <p
             style={{
-              fontSize: isSmall ? "0.8rem" : isMedium ? "0.85rem" : "0.95rem",
+              fontSize: "0.95rem",
               color: isDark ? t.textMuted : "#64748b",
-              margin: isSmall ? "4px 0 0" : "7px 0 0",
+              margin: "7px 0 0",
               transition: "color 0.3s",
             }}
           >
@@ -466,16 +445,10 @@ setUsers(
           </p>
         </div>
 
-        <DashboardButton
-          label="Add Company"
-          onClick={() => router.push("/user/dashboard/create")}
-          isDark={isDark}
-          width={width}
-        />
       </div>
 
       {/* Stats */}
-      <InlineStatCards stats={stats} isDark={isDark} isMobile={isMobile} width={width} />
+      <InlineStatCards stats={stats} isDark={isDark} isMobile={isMobile} />
 
       {error && (
         <div
@@ -495,15 +468,20 @@ setUsers(
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isHalfScreen ? "1fr" : "1fr 1fr",
+          gridTemplateColumns: isHalfScreen ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
           gap: "20px",
           marginBottom: "20px",
         }}
       >
-        <Section isDark={isDark} isMobile={isMobile} width={width}>
-          <CompanyOverview companies={companies} loading={loading} error={error} />
+        <Section isDark={isDark} isMobile={isMobile}>
+       <CompanyOverview
+  companies={companies}
+  loading={loading}
+  error={error}
+  onViewAll={() => router.push("/user/manage-companies")}
+/>
         </Section>
-        <Section isDark={isDark} isMobile={isMobile} width={width}>
+        <Section isDark={isDark} isMobile={isMobile}>
           <UserManagement users={users} loading={loading} error={error} />
         </Section>
       </div>
@@ -512,21 +490,21 @@ setUsers(
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isSmall ? "1fr" : "1fr 1fr",
+          gridTemplateColumns: isHalfScreen ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
           gap: "20px",
         }}
       >
         
-       <Section isDark={isDark} isMobile={isMobile} width={width}>
+       <Section isDark={isDark} isMobile={isMobile}>
   <div
     style={{
-      marginBottom: isSmall ? "12px" : isMedium ? "14px" : "18px",
+      marginBottom: "18px",
     }}
   >
     <h2
       style={{
         margin: 0,
-        fontSize: isSmall ? "0.85rem" : isMedium ? "0.92rem" : "1rem",
+        fontSize: "0.85rem",
         fontWeight: 700,
         color: t.text,
         letterSpacing: "-0.02em",
@@ -538,7 +516,7 @@ setUsers(
     <p
       style={{
         margin: "4px 0 0",
-        fontSize: isSmall ? "0.75rem" : isMedium ? "0.8rem" : "0.85rem",
+        fontSize: "0.75rem",
         color: isDark ? t.textMuted : "#64748b",
       }}
     >
@@ -548,7 +526,7 @@ setUsers(
 
   <PlatformGrowthChart />
 </Section>
-        <Section isDark={isDark} isMobile={isMobile} width={width}>
+        <Section isDark={isDark} isMobile={isMobile}>
           <AuditLogs logs={logs} loading={loading} error={error} />
         </Section>
       </div>
@@ -556,46 +534,3 @@ setUsers(
   );
 }
 
-/* ─── Dashboard Button ────────────────────────────────────── */
-function DashboardButton({
-  label,
-  onClick,
-  isDark,
-  width = 1400,
-}: {
-  label: string;
-  onClick?: () => void;
-  isDark: boolean;
-  width?: number;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const isSmall  = width <= 1000;
-  const isMedium = width <= 1300;
-
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: isSmall ? "6px" : "8px",
-        padding: isSmall ? "8px 16px" : isMedium ? "9px 18px" : "11px 22px",
-        borderRadius: isSmall ? "8px" : "10px",
-        fontSize: isSmall ? "0.78rem" : isMedium ? "0.82rem" : "0.9rem",
-        fontWeight: 700,
-        cursor: "pointer",
-        border: `1px solid ${BRAND}`,
-        background: hovered ? BRAND_HOVER : BRAND,
-        color: "#fff",
-       boxShadow: hovered
-        ? "0 8px 24px rgba(16,185,129,0.38)"
-        : "0 4px 14px rgba(16,185,129,0.24)",
-        transition: "all 0.15s ease",
-        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-        whiteSpace: "nowrap",
-      }}
-    >
-      + {label}
-    </button>
-  );
-}
