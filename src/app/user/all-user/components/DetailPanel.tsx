@@ -10,63 +10,42 @@ import { ResetPasswordModal } from "./ResetPasswordModal";
 interface DetailPanelProps {
   user: User;
   onClose: () => void;
-  onDeleted?: () => void;
+  onRefresh?: () => void;
 }
 
 interface UserActivityStats {
   messages: number;
   campaigns: number;
-  chatbots: number;
-  flows: number;
+  contacts: number;
+  templates: number;
+  delivered: number;
+  failed: number;
 }
 
-export function DetailPanel({
-  user,
-  onClose,
-  onDeleted,
-}: DetailPanelProps) {
+export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
   const [tab,           setTab]           = useState<"info" | "stats">("info");
   const [passwordOpen,  setPasswordOpen]  = useState(false);
   const [editOpen,      setEditOpen]      = useState(false);
   const [userStats,     setUserStats]     = useState<UserActivityStats | null>(null);
   const [statsLoading,  setStatsLoading]  = useState(false);
-  const handleDeleteUser = async () => {
-  const confirmDelete = window.confirm(
-    `Delete ${user.name}?`
-  );
-
-  if (!confirmDelete) return;
-
-  try {
-    await axiosInstance.delete(`/v1/admin/users/${user.id}`);
-
-    onDeleted?.();
-    onClose();
-  } catch (error) {
-    console.error(error);
-  }
-};
+  const [suspending,    setSuspending]    = useState(false);
+  const [deleting,      setDeleting]      = useState(false);
+  const [localStatus,   setLocalStatus]   = useState(user.status);
 
   const fetchUserStats = async () => {
     try {
       setStatsLoading(true);
-      const { data } = await axiosInstance.get("/v1/admin/users/stats?time_frame=all");
-      if (data.success) {
+      const { data } = await axiosInstance.get(`/v1/admin/companies/user-details/${user.id}`);
+      if (data.success !== false) {
+        const s = data?.data ?? data;
         setUserStats({
-  messages: Number(data?.data?.total_messages || 0),
-
-  campaigns: Number(
-    data?.data?.campaigns_count || 0
-  ),
-
-  chatbots: Number(
-    data?.data?.chatbot_count || 0
-  ),
-
-  flows: Number(
-    data?.data?.contact_lists_count || 0
-  ),
-});
+          messages:  Number(s?.sent_count   ?? s?.messages  ?? 0),
+          campaigns: Number(s?.campaigns_count ?? s?.campaigns ?? 0),
+          contacts:  Number(s?.contacts_count  ?? s?.contacts  ?? 0),
+          templates: Number(s?.template_count  ?? s?.templates ?? 0),
+          delivered: Number(s?.delivered_count ?? 0),
+          failed:    Number(s?.failed_count    ?? 0),
+        });
       }
     } catch (error) {
       console.error("Stats Error:", error);
@@ -78,6 +57,55 @@ export function DetailPanel({
   const handleTabChange = (key: "info" | "stats") => {
     setTab(key);
     if (key === "stats") fetchUserStats();
+  };
+
+  const handleDeleteUser = async () => {
+    if (!confirm(`Are you sure you want to permanently delete "${user.name}"? This cannot be undone.`)) return;
+    try {
+      setDeleting(true);
+      const { data } = await axiosInstance.delete(`/v1/admin/users/${user.id}`);
+      if (data.success !== false) {
+        alert("✅ User deleted successfully");
+        onRefresh?.();
+        onClose();
+      } else {
+        alert(data.message || "Failed to delete user");
+      }
+    } catch (error: any) {
+      console.error("Delete User Error:", error);
+      alert(error?.response?.data?.message || "Something went wrong");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleSuspendToggle = async () => {
+    const isSuspended = localStatus === "SUSPENDED";
+    const action = isSuspended ? "restore" : "suspend";
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+    try {
+      setSuspending(true);
+      const endpoint = isSuspended
+        ? `/v1/admin/users/${user.id}/active-user`
+        : `/v1/admin/users/${user.id}/suspend-user`;
+
+      const { data } = await axiosInstance.put(endpoint);
+      if (data.success !== false) {
+        const newStatus = isSuspended ? "ACTIVE" : "SUSPENDED";
+        setLocalStatus(newStatus);
+        user.status = newStatus;
+        onRefresh?.();
+        alert(`✅ User ${isSuspended ? "restored" : "suspended"} successfully`);
+      } else {
+        alert(data.message || `Failed to ${action} user`);
+      }
+    } catch (error: any) {
+      console.error("Suspend/Restore Error:", error);
+      alert(error?.response?.data?.message || "Something went wrong");
+    } finally {
+      setSuspending(false);
+    }
   };
 
   return (
@@ -110,14 +138,14 @@ export function DetailPanel({
                 </div>
                 <div
                   className={`au-status-dot au-status-dot--panel ${
-                    STATUS_DOT[user.status] ?? "au-status-dot--other"
+                    STATUS_DOT[localStatus] ?? "au-status-dot--other"
                   }`}
                 />
               </div>
               <div className="au-panel__name">{user.name}</div>
               <div className="au-panel__email">{user.email}</div>
               <div className="au-panel__badges">
-                <Badge status={user.status} />
+                <Badge status={localStatus} />
                 <span
                   className="au-role-chip"
                   style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}
@@ -175,10 +203,12 @@ export function DetailPanel({
                   <>
                     {(
                       [
-                        ["messages",  userStats?.messages  ?? 0, "#10b981", "Messages"],
+                        ["messages",  userStats?.messages  ?? 0, "#10b981", "Messages Sent"],
                         ["campaigns", userStats?.campaigns ?? 0, "#6366f1", "Campaigns"],
-                        ["chatbots",  userStats?.chatbots  ?? 0, "#f59e0b", "Chatbots"],
-                        ["flows",     userStats?.flows     ?? 0, "#34d399", "Flows"],
+                        ["contacts",  userStats?.contacts  ?? 0, "#3b82f6", "Contacts"],
+                        ["templates", userStats?.templates ?? 0, "#f59e0b", "Templates"],
+                        ["delivered", userStats?.delivered ?? 0, "#34d399", "Delivered"],
+                        ["failed",    userStats?.failed    ?? 0, "#ef4444", "Failed"],
                       ] as [string, number, string, string][]
                     ).map(([key, val, color, lbl]) => (
                       <div key={key} className="au-stats-cell">
@@ -200,18 +230,31 @@ export function DetailPanel({
                 <button className="au-btn au-btn--ghost" onClick={() => setPasswordOpen(true)}>
                   Reset Password
                 </button>
-               {user.status === "SUSPENDED" ? (
-  <button className="au-btn au-btn--success">Restore Account</button>
-) : (
-  <button className="au-btn au-btn--danger">Suspend User</button>
-)}
-
-<button
-  className="au-btn au-btn--danger"
-  onClick={handleDeleteUser}
->
-  Delete User
-</button>
+                {localStatus === "SUSPENDED" ? (
+                  <button
+                    className="au-btn au-btn--success"
+                    onClick={handleSuspendToggle}
+                    disabled={suspending}
+                  >
+                    {suspending ? "Restoring…" : "Restore Account"}
+                  </button>
+                ) : (
+                  <button
+                    className="au-btn au-btn--danger"
+                    onClick={handleSuspendToggle}
+                    disabled={suspending}
+                  >
+                    {suspending ? "Suspending…" : "Suspend User"}
+                  </button>
+                )}
+                <button
+                  className="au-btn au-btn--danger"
+                  onClick={handleDeleteUser}
+                  disabled={deleting}
+                  style={{ marginTop: 4 }}
+                >
+                  {deleting ? "Deleting…" : "Delete User"}
+                </button>
               </div>
             )}
           </div>
@@ -222,7 +265,10 @@ export function DetailPanel({
         <EditUserModal
           user={user}
           onClose={() => setEditOpen(false)}
-          onUpdated={(updatedUser) => Object.assign(user, updatedUser)}
+          onUpdated={(updatedUser) => {
+            Object.assign(user, updatedUser);
+            onRefresh?.();
+          }}
         />
       )}
 

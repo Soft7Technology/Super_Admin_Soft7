@@ -108,7 +108,8 @@ export async function GET(req: NextRequest) {
               updatedAt: latestPlan.updatedAt.toISOString(),
             }
           : null,
-        plans: company.subscription_plans.map((plan) => ({
+        plans: company.subscription_plans.map(
+        (plan: typeof company.subscription_plans[number]) => ({
           id: String(plan.id),
           name: plan.name,
           description: plan.description,
@@ -119,7 +120,8 @@ export async function GET(req: NextRequest) {
           displayOrder: plan.displayOrder,
           createdAt: plan.createdAt.toISOString(),
           updatedAt: plan.updatedAt.toISOString(),
-        })),
+        })
+      ),
       },
       error: null,
     });
