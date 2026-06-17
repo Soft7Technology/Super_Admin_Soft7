@@ -736,7 +736,7 @@
 /* ACTIONS */
 .mc-card__actions {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   margin-top: auto;
   align-items: center;
   flex-wrap: wrap;
@@ -746,6 +746,11 @@
   flex: 1 1 calc(50% - 5px);
   min-width: 0;
   justify-content: center;
+}
+.mc-card__actions .mc-btn--small {
+  padding: 8px 10px;
+  font-size: 12px;
+  gap: 4px;
 }
 
 /* Company grid */

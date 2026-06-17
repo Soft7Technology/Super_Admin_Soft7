@@ -1007,9 +1007,15 @@ function CompanyDetailModal({
           <button className="mc-btn mc-btn--ghost" onClick={onClose}>
             Close
           </button>
+          <button
+            className="mc-btn mc-btn--danger"
+            onClick={() => { onDelete(company.id); onClose(); }}
+          >
+            🗑️ Delete
+          </button>
           {company.status !== "SUSPENDED"
-            ? <button className="mc-btn mc-btn--danger" onClick={onClose}>⛔ Suspend</button>
-            : <button className="mc-btn mc-btn--ghost"  onClick={onClose}>✅ Restore</button>
+            ? <button className="mc-btn mc-btn--danger" onClick={() => { onStatusChange(company.id, "SUSPENDED"); onClose(); }}>⛔ Suspend</button>
+            : <button className="mc-btn mc-btn--ghost"  onClick={() => { onStatusChange(company.id, "ACTIVE"); onClose(); }}>✅ Restore</button>
           }
           <button
             className="mc-btn mc-btn--danger"
@@ -1098,6 +1104,12 @@ function CompanyCard({
           onClick={(e) => { e.stopPropagation(); onView(company); }}
         >
           👁View
+        </button>
+        <button
+          className="mc-btn mc-btn--danger mc-btn--small"
+          onClick={(e) => { e.stopPropagation(); onDelete(company.id); }}
+        >
+          🗑️ Delete
         </button>
         {company.status !== "SUSPENDED"
           ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => e.stopPropagation()}>⛔Suspend </button>
@@ -1247,6 +1259,43 @@ export default function ManageCompanies() {
   const openAdd  = ()           => { setShowAddModal(true); };
   const openEdit = (c: Company) => { setEditTarget(c); };
   const openView = (c: Company) => setViewTarget(c);
+
+  const handleDelete = async (companyId: string) => {
+    if (!confirm("Are you sure you want to delete this company? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const { data } = await axiosInstance.delete(`${COMPANIES_API}/${companyId}`);
+      if (data.success) {
+        await fetchCompanies();
+      } else {
+        alert(data.message || "Failed to delete company");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.response?.data?.message || e.message || "Something went wrong while deleting company");
+    }
+  };
+
+  const handleStatusChange = async (companyId: string, newStatus: "ACTIVE" | "SUSPENDED") => {
+    const actionText = newStatus === "SUSPENDED" ? "suspend" : "restore";
+    if (!confirm(`Are you sure you want to ${actionText} this company?`)) {
+      return;
+    }
+    try {
+      const { data } = await axiosInstance.put(`${COMPANIES_API}/${companyId}`, {
+        status: newStatus.toLowerCase(),
+      });
+      if (data.success) {
+        await fetchCompanies();
+      } else {
+        alert(data.message || `Failed to ${actionText} company`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.response?.data?.message || e.message || `Something went wrong while trying to ${actionText} company`);
+    }
+  };
 
   return (
     <div className="mc-root">
