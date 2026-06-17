@@ -371,11 +371,11 @@ const handleSave = async () => {
   try {
     // Upload images to Cloudinary first
     const logoUrl = logo.file
-      ? await uploadToCloudinary(logo.file)
+      ? (await uploadToCloudinary(logo.file)) ?? ""
       : "";
 
     const faviconUrl = favicon.file
-      ? await uploadToCloudinary(favicon.file)
+      ? (await uploadToCloudinary(favicon.file)) ?? ""
       : "";
 
     const formData = new FormData();
@@ -402,9 +402,9 @@ const handleSave = async () => {
     formData.append("user[password]", adminPassword);
 
     // Useful for checking exactly what is sent
-    for (const [key, value] of formData.entries()) {
+    Array.from(formData.entries()).forEach(([key, value]) => {
       console.log(key, value);
-    }
+    });
 
     const { data } = await axiosInstance.post(
       COMPANIES_API,
@@ -814,99 +814,63 @@ function EditCompanyModal({
     }
   };
 
- const handleSubmit = async () => {
-  setErr(null);
+  const handleSubmit = async () => {
+    setErr(null);
+
+    if (!email.trim()) {
+      setErr("Email is required.");
+      return;
+    }
 
     setSaving(true);
+
     try {
       const url = `${COMPANIES_API}/${company.id}`;
+      const formData = new FormData();
 
-  if (!email.trim()) {
-    return setErr("Email is required.");
-  }
-
-  if (!company && !password.trim()) {
-    return setErr("Password is required.");
-  }
-
-  setSaving(true);
-
-  try {
-    const isEdit = !!company;
-
-    const url = isEdit
-      ? `${COMPANIES_API}/${company.id}`
-      : COMPANIES_API;
-
-    // Always use FormData so the image file can be included
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
-    if (phone) formData.append("phone", phone);
-
-    if (isEdit) {
+      formData.append("name", name);
+      formData.append("email", email);
+      if (phone) formData.append("phone", phone);
       formData.append("status", status.toLowerCase());
-    } else {
-      // Wrap user object as JSON string (backend parses it)
-      formData.append("user", JSON.stringify({
-        name,
-        email,
-        phone: phone || undefined,
-        password,
-      }));
+
+      if (logoFile) {
+        formData.append("file", logoFile);
+      }
+
+      console.log("REQUEST BODY =>", Object.fromEntries(formData.entries()));
+
+      const { data } = await axiosInstance.put(url, formData);
+
+      console.log("COMPANY RESPONSE =>", data);
+
+      if (!data.success) {
+        if (data?.message?.toLowerCase().includes("already exists")) {
+          setErr("⚠️ Company with this email already exists");
+          return;
+        }
+
+        setErr(
+          data?.error?.message ||
+          data?.message ||
+          "Company request failed"
+        );
+        return;
+      }
+
+      await onSuccess();
+      onClose();
+    } catch (e: any) {
+      console.error(e);
+
+      if (e instanceof Error) {
+        setErr(e.message);
+      } else {
+        setErr("Something went wrong");
+      }
+    } finally {
+      setSaving(false);
     }
-
-    if (logoFile) {
-      formData.append("file", logoFile);
-    }
-
-    console.log("REQUEST BODY =>", Object.fromEntries(formData.entries()));
-
-    const { data } = await axiosInstance.request({
-      url,
-      method: isEdit ? "PUT" : "POST",
-      data: formData,
-    });
-
-    console.log("COMPANY RESPONSE =>", data);
-
-   if (!data.success) {
-
-  // EMAIL ALREADY EXISTS
-  if (
-    data?.message?.toLowerCase().includes("already exists")
-  ) {
-    setErr("⚠️ Company with this email already exists");
-    return;
-  }
-
-  // GENERAL ERROR
-  setErr(
-    data?.error?.message ||
-    data?.message ||
-    "Company request failed"
-  );
-
-  return;
-}
-    // REFRESH COMPANY LIST
-    await onSuccess();
-
-    // CLOSE MODAL
-    onClose();
-
- } catch (e: any) {
-  console.error(e);
-
-  if (e instanceof Error) {
-    setErr(e.message);
-  } else {
-    setErr("Something went wrong");
-  }
-} finally {
-  setSaving(false);
-}
-};
+  };
 
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -1015,36 +979,19 @@ function EditCompanyModal({
             </label>
           </div>
 
-          {/* Password only shown when creating */}
-          {!company && (
-            <div className="mc-field">
-              <div className="mc-field__label">PASSWORD *</div>
-              <input
-                className="mc-input"
-                type="password"
-                placeholder="Min 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          )}
-
-          {/* Status only shown when editing */}
-          {company && (
-            <div className="mc-field">
-              <div className="mc-field__label">STATUS</div>
-              <select
-                className="mc-select"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as Status)}
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="SUSPENDED">Suspended</option>
-                <option value="TRIAL">Trial</option>
-              </select>
-            </div>
-          )}
+          <div className="mc-field">
+            <div className="mc-field__label">STATUS</div>
+            <select
+              className="mc-select"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as Status)}
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="SUSPENDED">Suspended</option>
+              <option value="TRIAL">Trial</option>
+            </select>
+          </div>
 
           <div className="mc-modal__divider" />
           <div className="mc-modal__actions">
@@ -1063,12 +1010,13 @@ function EditCompanyModal({
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
 function CompanyDetailModal({
-  company, onClose, onEdit, onDelete,
+  company, onClose, onEdit, onDelete, onStatusChange,
 }: {
   company: Company;
   onClose: () => void;
   onEdit: (c: Company) => void;
   onDelete: (c: Company) => void;
+  onStatusChange: (companyId: string, newStatus: "ACTIVE" | "SUSPENDED") => void;
 }) {
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -1145,27 +1093,21 @@ function CompanyDetailModal({
 
         <div className="mc-detail__actions">
           <PrimaryButton onClick={() => { onClose(); onEdit(company); }}>
-            ✏️ Edit 
+            ✏️ Edit
           </PrimaryButton>
           <button className="mc-btn mc-btn--ghost" onClick={onClose}>
             Close
           </button>
           <button
             className="mc-btn mc-btn--danger"
-            onClick={() => { onDelete(company.id); onClose(); }}
+            onClick={() => { onClose(); onDelete(company); }}
           >
             🗑️ Delete
           </button>
           {company.status !== "SUSPENDED"
             ? <button className="mc-btn mc-btn--danger" onClick={() => { onStatusChange(company.id, "SUSPENDED"); onClose(); }}>⛔ Suspend</button>
-            : <button className="mc-btn mc-btn--ghost"  onClick={() => { onStatusChange(company.id, "ACTIVE"); onClose(); }}>✅ Restore</button>
+            : <button className="mc-btn mc-btn--ghost" onClick={() => { onStatusChange(company.id, "ACTIVE"); onClose(); }}>✅ Restore</button>
           }
-          <button
-            className="mc-btn mc-btn--danger"
-            onClick={() => { onClose(); onDelete(company); }}
-          >
-            🗑️ Delete
-          </button>
         </div>
       </div>
     </div>
@@ -1250,7 +1192,7 @@ function CompanyCard({
         </button>
         <button
           className="mc-btn mc-btn--danger mc-btn--small"
-          onClick={(e) => { e.stopPropagation(); onDelete(company.id); }}
+          onClick={(e) => { e.stopPropagation(); onDelete(company); }}
         >
           🗑️ Delete
         </button>
@@ -1258,12 +1200,6 @@ function CompanyCard({
           ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => e.stopPropagation()}>⛔Suspend </button>
           : <button className="mc-btn mc-btn--ghost  mc-btn--small" onClick={(e) => e.stopPropagation()}>✅ Restore</button>
         }
-        <button
-          className="mc-btn mc-btn--danger mc-btn--small"
-          onClick={(e) => { e.stopPropagation(); onDelete(company); }}
-        >
-          🗑️Delete
-        </button>
       </div>
     </div>
   );
@@ -1556,6 +1492,7 @@ export default function ManageCompanies() {
           onClose={() => setViewTarget(null)}
           onEdit={(c) => { setViewTarget(null); openEdit(c); }}
           onDelete={(c) => { setViewTarget(null); openDeleteSingle(c); }}
+          onStatusChange={handleStatusChange}
         />
       )}
       {deleteTargets && (
