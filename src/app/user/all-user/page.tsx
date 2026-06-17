@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
+import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
 
 import { User, UserStats } from "./types";
@@ -17,9 +18,47 @@ export default function AllUsers() {
   const [sort,   setSort]   = useState("name");
   const [detail, setDetail] = useState<User | null>(null);
   const [invite, setInvite] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const { users, stats, loading, error } = useUsers();
   const query = search.trim().toLowerCase();
+  const handleSelectUser = (userId: string) => {
+  setSelectedUsers((prev) =>
+    prev.includes(userId)
+      ? prev.filter((id) => id !== userId)
+      : [...prev, userId]
+  );
+};
+
+const handleSelectAll = () => {
+  if (selectedUsers.length === filteredUsers.length) {
+    setSelectedUsers([]);
+  } else {
+    setSelectedUsers(filteredUsers.map((u) => u.id));
+  }
+};
+
+const handleDeleteSelected = async () => {
+  if (!selectedUsers.length) return;
+
+  const confirmDelete = window.confirm(
+    `Delete ${selectedUsers.length} users?`
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    await axiosInstance.delete("/v1/admin/users/bulk-delete", {
+      data: {
+        user_ids: selectedUsers,
+      },
+    });
+
+    window.location.reload();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const filteredUsers = [...users]
     .filter((user) => {
@@ -68,7 +107,28 @@ export default function AllUsers() {
         count={filteredUsers.length}
         loading={loading}
       />
+<div className="au-selection-toolbar">
+  {selectedUsers.length > 0 && (
+    <button
+      className="au-btn au-btn--danger au-btn--bulk-delete"
+      onClick={handleDeleteSelected}
+    >
+      Delete Selected ({selectedUsers.length})
+    </button>
+  )}
 
+  <label className="au-select-all">
+    <input
+      type="checkbox"
+      checked={
+        filteredUsers.length > 0 &&
+        selectedUsers.length === filteredUsers.length
+      }
+      onChange={handleSelectAll}
+    />
+    Select All
+  </label>
+</div>
       {/* Grid */}
       <div className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"}`}>
         <div className="au-cards-grid">
@@ -89,11 +149,13 @@ export default function AllUsers() {
 
           {!loading && !error && filteredUsers.map((u) => (
             <UserCard
-              key={u.id}
-              user={u}
-              isSelected={detail?.id === u.id}
-              onClick={() => setDetail(detail?.id === u.id ? null : u)}
-            />
+  key={u.id}
+  user={u}
+  isSelected={detail?.id === u.id}
+  checked={selectedUsers.includes(u.id)}
+  onCheck={() => handleSelectUser(u.id)}
+  onClick={() => setDetail(detail?.id === u.id ? null : u)}
+/>
           ))}
 
           {!loading && !error && filteredUsers.length === 0 && (
@@ -104,10 +166,16 @@ export default function AllUsers() {
             </div>
           )}
         </div>
-
-        {detail && (
-          <DetailPanel user={detail} onClose={() => setDetail(null)} />
-        )}
+{detail && (
+  <DetailPanel
+    user={detail}
+    onClose={() => setDetail(null)}
+    onDeleted={() => {
+      setDetail(null);
+      window.location.reload();
+    }}
+  />
+)}
       </div>
     </div>
   );
