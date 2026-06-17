@@ -136,6 +136,8 @@ function CompanyModal({
   const [phone,    setPhone]    = useState(company?.phone === "—" ? "" : company?.phone || "");
   const [password, setPassword] = useState("");
   const [status,   setStatus]   = useState<Status>(company?.status || "ACTIVE");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [saving,   setSaving]   = useState(false);
   const [err,      setErr]      = useState<string | null>(null);
 
@@ -147,8 +149,22 @@ function CompanyModal({
     setPhone(company?.phone === "—" ? "" : company?.phone || "");
     setPassword("");
     setStatus(company?.status || "ACTIVE");
+    setLogoFile(null);
+    setLogoPreview(null);
     setErr(null);
   }, [company]);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setLogoFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setLogoPreview(null);
+    }
+  };
 
  const handleSubmit = async () => {
   setErr(null);
@@ -174,29 +190,34 @@ function CompanyModal({
       ? `${COMPANIES_API}/${company.id}`
       : COMPANIES_API;
 
-    // =========================
-    // CREATE COMPANY BODY
-    // =========================
-    let body: any = {};
+    // Always use FormData so the image file can be included
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("email", email);
+    if (phone) formData.append("phone", phone);
 
-  body = {
-  name,
-  email,
+    if (isEdit) {
+      formData.append("status", status.toLowerCase());
+    } else {
+      // Wrap user object as JSON string (backend parses it)
+      formData.append("user", JSON.stringify({
+        name,
+        email,
+        phone: phone || undefined,
+        password,
+      }));
+    }
 
-  user: {
-    name,
-    email,
-    phone,
-    password,
-  },
-};
+    if (logoFile) {
+      formData.append("file", logoFile);
+    }
 
-    console.log("REQUEST BODY =>", body);
+    console.log("REQUEST BODY =>", Object.fromEntries(formData.entries()));
 
     const { data } = await axiosInstance.request({
       url,
       method: isEdit ? "PUT" : "POST",
-      data: body,
+      data: formData,
     });
 
     console.log("COMPANY RESPONSE =>", data);
@@ -291,6 +312,67 @@ function CompanyModal({
             />
           </div>
 
+          <div className="mc-field">
+            <div className="mc-field__label">COMPANY LOGO</div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                cursor: "pointer",
+              }}
+            >
+              {/* Preview circle */}
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  border: "2px dashed var(--mc-border, #333)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  background: "var(--mc-surface, #1a1a2e)",
+                  fontSize: 20,
+                }}
+              >
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  "🏢"
+                )}
+              </div>
+              <div>
+                <div
+                  className="mc-input"
+                  style={{
+                    padding: "8px 14px",
+                    cursor: "pointer",
+                    display: "inline-block",
+                    fontSize: 13,
+                  }}
+                >
+                  {logoFile ? logoFile.name : "Choose image…"}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}>
+                  PNG, JPG or WEBP — max 2MB
+                </div>
+              </div>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: "none" }}
+                onChange={handleLogoChange}
+              />
+            </label>
+          </div>
+
           {/* Password only shown when creating */}
           {!company && (
             <div className="mc-field">
@@ -343,11 +425,13 @@ function CompanyModal({
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
 function CompanyDetailModal({
-  company, onClose, onEdit,
+  company, onClose, onEdit, onDelete, onStatusChange,
 }: {
   company: Company;
   onClose: () => void;
   onEdit: (c: Company) => void;
+  onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
 }) {
   return (
     <div className="mc-modal-overlay" onClick={onClose}>
@@ -413,9 +497,15 @@ function CompanyDetailModal({
           <button className="mc-btn mc-btn--ghost" onClick={onClose}>
             Close
           </button>
+          <button
+            className="mc-btn mc-btn--danger"
+            onClick={() => { onDelete(company.id); onClose(); }}
+          >
+            🗑️ Delete
+          </button>
           {company.status !== "SUSPENDED"
-            ? <button className="mc-btn mc-btn--danger" onClick={onClose}>⛔ Suspend</button>
-            : <button className="mc-btn mc-btn--ghost"  onClick={onClose}>✅ Restore</button>
+            ? <button className="mc-btn mc-btn--danger" onClick={() => { onStatusChange(company.id, "SUSPENDED"); onClose(); }}>⛔ Suspend</button>
+            : <button className="mc-btn mc-btn--ghost"  onClick={() => { onStatusChange(company.id, "ACTIVE"); onClose(); }}>✅ Restore</button>
           }
         </div>
       </div>
@@ -425,11 +515,13 @@ function CompanyDetailModal({
 
 // ─── COMPANY CARD ─────────────────────────────────────────────────────────────
 function CompanyCard({
-  company, onEdit, onView,
+  company, onEdit, onView, onDelete, onStatusChange,
 }: {
   company: Company;
   onEdit: (c: Company) => void;
   onView: (c: Company) => void;
+  onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
 }) {
   return (
     <div className="mc-card">
@@ -482,9 +574,15 @@ function CompanyCard({
         >
           👁 View
         </button>
+        <button
+          className="mc-btn mc-btn--danger mc-btn--small"
+          onClick={(e) => { e.stopPropagation(); onDelete(company.id); }}
+        >
+          🗑️ Delete
+        </button>
         {company.status !== "SUSPENDED"
-          ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => e.stopPropagation()}>⛔ Suspend</button>
-          : <button className="mc-btn mc-btn--ghost  mc-btn--small" onClick={(e) => e.stopPropagation()}>✅ Restore</button>
+          ? <button className="mc-btn mc-btn--danger mc-btn--small" onClick={(e) => { e.stopPropagation(); onStatusChange(company.id, "SUSPENDED"); }}>⛔ Suspend</button>
+          : <button className="mc-btn mc-btn--ghost  mc-btn--small" onClick={(e) => { e.stopPropagation(); onStatusChange(company.id, "ACTIVE"); }}>✅ Restore</button>
         }
       </div>
     </div>
@@ -534,6 +632,43 @@ export default function ManageCompanies() {
   const openAdd  = ()            => { setEditTarget(null); setShowModal(true); };
   const openEdit = (c: Company)  => { setEditTarget(c);    setShowModal(true); };
   const openView = (c: Company)  => setViewTarget(c);
+
+  const handleDelete = async (companyId: string) => {
+    if (!confirm("Are you sure you want to delete this company? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const { data } = await axiosInstance.delete(`${COMPANIES_API}/${companyId}`);
+      if (data.success) {
+        await fetchCompanies();
+      } else {
+        alert(data.message || "Failed to delete company");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.response?.data?.message || e.message || "Something went wrong while deleting company");
+    }
+  };
+
+  const handleStatusChange = async (companyId: string, newStatus: "ACTIVE" | "SUSPENDED") => {
+    const actionText = newStatus === "SUSPENDED" ? "suspend" : "restore";
+    if (!confirm(`Are you sure you want to ${actionText} this company?`)) {
+      return;
+    }
+    try {
+      const { data } = await axiosInstance.put(`${COMPANIES_API}/${companyId}`, {
+        status: newStatus.toLowerCase(),
+      });
+      if (data.success) {
+        await fetchCompanies();
+      } else {
+        alert(data.message || `Failed to ${actionText} company`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.response?.data?.message || e.message || `Something went wrong while trying to ${actionText} company`);
+    }
+  };
 
   return (
     <div className="mc-root">
@@ -594,7 +729,7 @@ export default function ManageCompanies() {
       ) : (
         <div className="mc-grid">
           {filtered.map((c) => (
-            <CompanyCard key={c.id} company={c} onEdit={openEdit} onView={openView} />
+            <CompanyCard key={c.id} company={c} onEdit={openEdit} onView={openView} onDelete={handleDelete} onStatusChange={handleStatusChange} />
           ))}
         </div>
       )}
@@ -612,6 +747,8 @@ export default function ManageCompanies() {
           company={viewTarget}
           onClose={() => setViewTarget(null)}
           onEdit={(c) => { setViewTarget(null); openEdit(c); }}
+          onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
         />
       )}
     </div>
