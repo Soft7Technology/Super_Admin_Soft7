@@ -10,6 +10,7 @@ import { ResetPasswordModal } from "./ResetPasswordModal";
 interface DetailPanelProps {
   user: User;
   onClose: () => void;
+  onDeleted?: () => void;
 }
 
 interface UserActivityStats {
@@ -19,12 +20,32 @@ interface UserActivityStats {
   flows: number;
 }
 
-export function DetailPanel({ user, onClose }: DetailPanelProps) {
+export function DetailPanel({
+  user,
+  onClose,
+  onDeleted,
+}: DetailPanelProps) {
   const [tab,           setTab]           = useState<"info" | "stats">("info");
   const [passwordOpen,  setPasswordOpen]  = useState(false);
   const [editOpen,      setEditOpen]      = useState(false);
   const [userStats,     setUserStats]     = useState<UserActivityStats | null>(null);
   const [statsLoading,  setStatsLoading]  = useState(false);
+  const handleDeleteUser = async () => {
+  const confirmDelete = window.confirm(
+    `Delete ${user.name}?`
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    await axiosInstance.delete(`/v1/admin/users/${user.id}`);
+
+    onDeleted?.();
+    onClose();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const fetchUserStats = async () => {
     try {
@@ -32,11 +53,20 @@ export function DetailPanel({ user, onClose }: DetailPanelProps) {
       const { data } = await axiosInstance.get("/v1/admin/users/stats?time_frame=all");
       if (data.success) {
         setUserStats({
-          messages:  data?.data?.messages  || data?.data?.total_messages  || 0,
-          campaigns: data?.data?.campaigns || data?.data?.total_campaigns || 0,
-          chatbots:  data?.data?.chatbots  || data?.data?.total_chatbots  || 0,
-          flows:     data?.data?.flows     || data?.data?.total_flows     || 0,
-        });
+  messages: Number(data?.data?.total_messages || 0),
+
+  campaigns: Number(
+    data?.data?.campaigns_count || 0
+  ),
+
+  chatbots: Number(
+    data?.data?.chatbot_count || 0
+  ),
+
+  flows: Number(
+    data?.data?.contact_lists_count || 0
+  ),
+});
       }
     } catch (error) {
       console.error("Stats Error:", error);
@@ -170,11 +200,18 @@ export function DetailPanel({ user, onClose }: DetailPanelProps) {
                 <button className="au-btn au-btn--ghost" onClick={() => setPasswordOpen(true)}>
                   Reset Password
                 </button>
-                {user.status === "SUSPENDED" ? (
-                  <button className="au-btn au-btn--success">Restore Account</button>
-                ) : (
-                  <button className="au-btn au-btn--danger">Suspend User</button>
-                )}
+               {user.status === "SUSPENDED" ? (
+  <button className="au-btn au-btn--success">Restore Account</button>
+) : (
+  <button className="au-btn au-btn--danger">Suspend User</button>
+)}
+
+<button
+  className="au-btn au-btn--danger"
+  onClick={handleDeleteUser}
+>
+  Delete User
+</button>
               </div>
             )}
           </div>

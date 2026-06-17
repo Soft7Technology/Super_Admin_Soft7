@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./profile.css";
 
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
@@ -8,7 +8,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <div className={`pf-toggle ${on ? "pf-toggle--on" : ""}`} onClick={() => onChange(!on)}>
       <div className="pf-toggle__knob" />
-    </div>    
+    </div>
   );
 }
 
@@ -65,29 +65,125 @@ function SaveBtn({ onClick, saving, saved }: { onClick: () => void; saving: bool
   );
 }
 
+// ─── PROFILE DATA TYPE ────────────────────────────────────────────────────────
+interface ProfileData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+  avatar: string | null;
+  last_login_at: string | null;
+  last_login_ip: string | null;
+  created_at: string;
+  settings: Record<string, unknown> | null;
+}
+
+// ─── HERO CARD (shared, receives profile data) ────────────────────────────────
+function HeroCard({
+  profile,
+  uploading,
+  avatarEmoji,
+  onUpload,
+}: {
+  profile: ProfileData | null;
+  uploading: boolean;
+  avatarEmoji: string | null;
+  onUpload: () => void;
+}) {
+  // Derive initials from name
+  const initials = profile?.name
+    ? profile.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
+    : "??";
+
+  const displayName = profile?.name ?? "—";
+  const roleLabel   = profile?.role?.toUpperCase().replace("superadmin", "SUPER ADMIN") ?? "—";
+
+  // Format last login
+  const lastLogin = profile?.last_login_at
+    ? new Date(profile.last_login_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+    : null;
+
+  return (
+    <div className="pf-hero">
+      <div className="pf-hero__banner">
+        <div className="pf-hero__banner-orb1" />
+        <div className="pf-hero__banner-orb2" />
+        <div className="pf-hero__banner-orb3" />
+        <div className="pf-hero__banner-grid" />
+      </div>
+
+      <div className="pf-hero__body">
+        <div className="pf-hero__top-row">
+          <div className="pf-avatar-wrap">
+            <div className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}>
+              {uploading ? "⬆" : (avatarEmoji ?? initials)}
+            </div>
+            <div className="pf-avatar__online" />
+            <div className="pf-avatar__upload-overlay" onClick={onUpload}>📷</div>
+          </div>
+        </div>
+
+        <div className="pf-hero__info">
+          <div className="pf-hero__name-row">
+            <span className="pf-hero__name">{displayName}</span>
+            <span className="pf-hero__role">{roleLabel}</span>
+          </div>
+          <div className="pf-hero__meta">
+            {[
+              { icon: "📧", val: profile?.email ?? "—" },
+              { icon: "📱", val: profile?.phone ? `+91 ${profile.phone}` : "—" },
+              ...(lastLogin ? [{ icon: "🕐", val: `Last login: ${lastLogin}` }] : []),
+              { icon: "🌐", val: profile?.status === "active" ? "Active" : profile?.status ?? "—" },
+            ].map(({ icon, val }) => (
+              <span key={val} className="pf-hero__meta-item">
+                <span className="pf-hero__meta-icon">{icon}</span>{val}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── TAB: PERSONAL INFO ───────────────────────────────────────────────────────
-function PersonalTab() {
-  const [firstName,  setFirstName]  = useState("Soft7");
-  const [lastName,   setLastName]   = useState("Technology");
-  const [email,      setEmail]      = useState("soft7.in@gmail.com");
-  const [phone,      setPhone]      = useState("+91 98765 43210");
-  const [bio,        setBio]        = useState("Super administrator for the WhatsApp SaaS platform. Overseeing all companies, subscriptions, and system health.");
-  const [location,   setLocation]   = useState("Mumbai, India");
-  const [timezone,   setTimezone]   = useState("Asia/Kolkata");
-  const [language,   setLanguage]   = useState("en");
-  const [website,    setWebsite]    = useState("https://soft7.in");
-  const [weekStart,  setWeekStart]  = useState("Mon");
+function PersonalTab({ profile }: { profile: ProfileData | null }) {
+  // Split `name` into first/last for display; API returns single `name` field
+  const nameParts  = (profile?.name ?? "").split(" ");
+  const [firstName, setFirstName] = useState(nameParts[0] ?? "");
+  const [lastName,  setLastName]  = useState(nameParts.slice(1).join(" ") ?? "");
+  const [email,     setEmail]     = useState(profile?.email    ?? "");
+  const [phone,     setPhone]     = useState(profile?.phone    ?? "");
+  const [location,  setLocation]  = useState("");
+  const [website,   setWebsite]   = useState("");
+  const [timezone,  setTimezone]  = useState("Asia/Kolkata");
+  const [language,  setLanguage]  = useState("en");
+  const [weekStart, setWeekStart] = useState("Mon");
+
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif,   setSmsNotif]   = useState(false);
   const [darkMode,   setDarkMode]   = useState(true);
   const [compactUI,  setCompactUI]  = useState(false);
+
   const { saving, saved, go } = useSave();
 
+  // Sync when profile loads
+  useEffect(() => {
+    if (!profile) return;
+    const parts = (profile.name ?? "").split(" ");
+    setFirstName(parts[0] ?? "");
+    setLastName(parts.slice(1).join(" ") ?? "");
+    setEmail(profile.email    ?? "");
+    setPhone(profile.phone    ?? "");
+  }, [profile]);
+
   const prefs = [
-    { label:"Email Notifications", desc:"Receive system alerts and updates via email",  val:emailNotif, set:setEmailNotif },
-    { label:"SMS Notifications",   desc:"Receive critical alerts via SMS",               val:smsNotif,   set:setSmsNotif   },
-    { label:"Dark Mode",           desc:"Use dark theme across the admin portal",        val:darkMode,   set:setDarkMode   },
-    { label:"Compact UI",          desc:"Reduce spacing for a denser information layout",val:compactUI,  set:setCompactUI  },
+    { label: "Email Notifications", desc: "Receive system alerts and updates via email",   val: emailNotif, set: setEmailNotif },
+    { label: "SMS Notifications",   desc: "Receive critical alerts via SMS",                val: smsNotif,   set: setSmsNotif   },
+    { label: "Dark Mode",           desc: "Use dark theme across the admin portal",         val: darkMode,   set: setDarkMode   },
+    { label: "Compact UI",          desc: "Reduce spacing for a denser information layout", val: compactUI,  set: setCompactUI  },
   ];
 
   return (
@@ -100,17 +196,35 @@ function PersonalTab() {
         </div>
         <div className="pf-card__body">
           <div className="pf-grid-2" style={{ marginBottom: 16 }}>
-            <Inp label="First Name" value={firstName} onChange={setFirstName} placeholder="Soft7" />
-            <Inp label="Last Name"  value={lastName}  onChange={setLastName}  placeholder="Technology" />
+            <Inp label="First Name" value={firstName} onChange={setFirstName} placeholder="First name" />
+            <Inp label="Last Name"  value={lastName}  onChange={setLastName}  placeholder="Last name" />
             <Inp label="Email"      value={email}     onChange={setEmail}     type="email" hint="Used for login and notifications" />
-            <Inp label="Phone"      value={phone}     onChange={setPhone}     type="tel" prefix="📱" />
+            <Inp label="Phone"      value={phone}     onChange={setPhone}     type="tel"   prefix="📱" />
             <Inp label="Location"   value={location}  onChange={setLocation}  placeholder="City, Country" />
-            <Inp label="Website"    value={website}   onChange={setWebsite}   type="url" placeholder="https://…" />
+            <Inp label="Website"    value={website}   onChange={setWebsite}   type="url"   placeholder="https://…" />
           </div>
-          <div className="pf-field">
-            <label className="pf-field__label">BIO</label>
-            <textarea className="pf-textarea" value={bio} onChange={e => setBio(e.target.value)} rows={3} />
-            <span className="pf-field__char-count">{bio.length}/240 characters</span>
+        </div>
+      </div>
+
+      {/* Account info (read-only from API) */}
+      <div className="pf-card">
+        <div className="pf-card__header">
+          <div className="pf-card__title">Account Details</div>
+          <div className="pf-card__desc">Read-only information from your account record.</div>
+        </div>
+        <div className="pf-card__body">
+          <div className="pf-grid-2">
+            <Inp label="Role"      value={profile?.role ?? "—"}    onChange={() => {}} disabled />
+            <Inp label="Status"    value={profile?.status ?? "—"}  onChange={() => {}} disabled />
+            <Inp label="Account ID" value={profile?.id ?? "—"}     onChange={() => {}} disabled />
+            <Inp
+              label="Member Since"
+              value={profile?.created_at
+                ? new Date(profile.created_at).toLocaleDateString("en-IN", { dateStyle: "medium" })
+                : "—"}
+              onChange={() => {}}
+              disabled
+            />
           </div>
         </div>
       </div>
@@ -123,24 +237,24 @@ function PersonalTab() {
         <div className="pf-card__body">
           <div className="pf-grid-3">
             <Sel label="Timezone" value={timezone} onChange={setTimezone} options={[
-              { value:"Asia/Kolkata",    label:"Asia/Kolkata (IST +5:30)" },
-              { value:"UTC",             label:"UTC (±0:00)" },
-              { value:"America/New_York",label:"America/New_York (EST)" },
-              { value:"Europe/London",   label:"Europe/London (GMT)" },
-              { value:"Asia/Dubai",      label:"Asia/Dubai (GST +4:00)" },
+              { value: "Asia/Kolkata",     label: "Asia/Kolkata (IST +5:30)" },
+              { value: "UTC",              label: "UTC (±0:00)" },
+              { value: "America/New_York", label: "America/New_York (EST)" },
+              { value: "Europe/London",    label: "Europe/London (GMT)" },
+              { value: "Asia/Dubai",       label: "Asia/Dubai (GST +4:00)" },
             ]} />
             <Sel label="Language" value={language} onChange={setLanguage} options={[
-              { value:"en",label:"English" },{ value:"hi",label:"Hindi" },
-              { value:"es",label:"Spanish"},{ value:"ar",label:"Arabic" },
+              { value: "en", label: "English" }, { value: "hi", label: "Hindi" },
+              { value: "es", label: "Spanish"  }, { value: "ar", label: "Arabic" },
             ]} />
             <Sel label="Week Starts" value={weekStart} onChange={setWeekStart} options={[
-              { value:"Mon",label:"Monday" },{ value:"Sun",label:"Sunday" },{ value:"Sat",label:"Saturday" },
+              { value: "Mon", label: "Monday" }, { value: "Sun", label: "Sunday" }, { value: "Sat", label: "Saturday" },
             ]} />
           </div>
         </div>
       </div>
 
-      {/* Prefs */}
+      {/* Preferences */}
       <div className="pf-card">
         <div className="pf-card__header">
           <div className="pf-card__title">Display & Notification Preferences</div>
@@ -164,29 +278,21 @@ function PersonalTab() {
     </div>
   );
 }
+
+// ─── CHANGE OWNERSHIP MODAL ───────────────────────────────────────────────────
 function ChangeOwnershipModal({
-  open,
-  step,
-  setStep,
-  onClose,
+  open, step, setStep, onClose,
 }: {
-  open: boolean;
-  step: number;
-  setStep: (step: 1 | 2) => void;
-  onClose: () => void;
+  open: boolean; step: number; setStep: (step: 1 | 2) => void; onClose: () => void;
 }) {
-  const [email, setEmail] = useState("");
+  const [email,  setEmail]  = useState("");
   const [reason, setReason] = useState("");
 
   if (!open) return null;
 
   const transferOwnership = async () => {
     try {
-      console.log({
-        newOwnerEmail: email,
-        reason,
-      });
-
+      console.log({ newOwnerEmail: email, reason });
       onClose();
     } catch (error) {
       console.error(error);
@@ -196,83 +302,32 @@ function ChangeOwnershipModal({
   return (
     <div className="pf-modal-overlay">
       <div className="pf-modal">
-
         {step === 1 && (
           <>
             <h2>Transfer Ownership</h2>
-
-            <p>
-              You are about to transfer ownership of this account to another
-              administrator.
-            </p>
-
-            <p>
-              The new owner will receive full administrative control over the
-              platform including users, companies, subscriptions and settings.
-            </p>
-
-            <p>
-              Your role will be downgraded to Administrator after the transfer.
-            </p>
-
+            <p>You are about to transfer ownership of this account to another administrator.</p>
+            <p>The new owner will receive full administrative control over the platform including users, companies, subscriptions and settings.</p>
+            <p>Your role will be downgraded to Administrator after the transfer.</p>
             <div className="pf-modal-actions">
-              <button
-                className="pf-btn-secondary"
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-
-              <button
-                className="pf-btn-delete"
-                onClick={() => setStep(2)}
-              >
-                Proceed
-              </button>
+              <button className="pf-btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="pf-btn-delete"    onClick={() => setStep(2)}>Proceed</button>
             </div>
           </>
         )}
-
         {step === 2 && (
           <>
             <h2>New Owner Information</h2>
-
             <div className="pf-field">
               <label>Email Address</label>
-
-              <input
-                className="pf-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-              />
+              <input className="pf-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@example.com" />
             </div>
-
             <div className="pf-field">
               <label>Reason (Optional)</label>
-
-              <textarea
-                className="pf-textarea"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={3}
-              />
+              <textarea className="pf-textarea" value={reason} onChange={e => setReason(e.target.value)} rows={3} />
             </div>
-
             <div className="pf-modal-actions">
-              <button
-                className="pf-btn-secondary"
-                onClick={() => setStep(1)}
-              >
-                Back
-              </button>
-
-              <button
-                className="pf-btn-delete"
-                onClick={transferOwnership}
-              >
-                Transfer Ownership
-              </button>
+              <button className="pf-btn-secondary" onClick={() => setStep(1)}>Back</button>
+              <button className="pf-btn-delete"    onClick={transferOwnership}>Transfer Ownership</button>
             </div>
           </>
         )}
@@ -280,8 +335,9 @@ function ChangeOwnershipModal({
     </div>
   );
 }
+
 // ─── TAB: SECURITY ────────────────────────────────────────────────────────────
-function SecurityTab() {
+function SecurityTab({ profile }: { profile: ProfileData | null }) {
   const [curPwd,    setCurPwd]    = useState("");
   const [newPwd,    setNewPwd]    = useState("");
   const [confPwd,   setConfPwd]   = useState("");
@@ -289,14 +345,12 @@ function SecurityTab() {
   const [pwdSaved,  setPwdSaved]  = useState(false);
   const [pwdErr,    setPwdErr]    = useState("");
   const [showOwnershipModal, setShowOwnershipModal] = useState(false);
-  const [ownershipStep, setOwnershipStep] = useState<1 | 2>(1);
+  const [ownershipStep,      setOwnershipStep]      = useState<1 | 2>(1);
 
-  const [newOwnerEmail, setNewOwnerEmail] = useState("");
-  const [reason, setReason] = useState("");
   const strength = newPwd.length === 0 ? 0 : newPwd.length < 6 ? 1 : newPwd.length < 10 ? 2
     : /[A-Z]/.test(newPwd) && /[0-9]/.test(newPwd) && /[^a-zA-Z0-9]/.test(newPwd) ? 4 : 3;
-  const strengthLabel = ["","Weak","Fair","Good","Strong"][strength];
-  const strengthColor = ["","var(--pf-danger)","var(--pf-warn)","var(--pf-info)","var(--pf-success)"][strength];
+  const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][strength];
+  const strengthColor = ["", "var(--pf-danger)", "var(--pf-warn)", "var(--pf-info)", "var(--pf-success)"][strength];
 
   const savePwd = () => {
     if (!curPwd.trim())     { setPwdErr("Current password is required."); return; }
@@ -309,8 +363,33 @@ function SecurityTab() {
       setTimeout(() => setPwdSaved(false), 2500);
     }, 1000);
   };
+
+  // Last login info from API
+  const lastLoginAt = profile?.last_login_at
+    ? new Date(profile.last_login_at).toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" })
+    : "—";
+  const lastLoginIp = profile?.last_login_ip ?? "—";
+
   return (
     <div className="pf-tab-section">
+
+      {/* Last login info card */}
+      {profile && (
+        <div className="pf-card">
+          <div className="pf-card__header">
+            <div className="pf-card__title">Last Login</div>
+            <div className="pf-card__desc">Most recent login session details from the server.</div>
+          </div>
+          <div className="pf-card__body">
+            <div className="pf-grid-2">
+              <Inp label="Last Login At" value={lastLoginAt} onChange={() => {}} disabled />
+              <Inp label="Last Login IP" value={lastLoginIp} onChange={() => {}} disabled />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change password */}
       <div className="pf-card">
         <div className="pf-card__header">
           <div className="pf-card__title">Change Password</div>
@@ -325,7 +404,7 @@ function SecurityTab() {
                 {newPwd.length > 0 && (
                   <div className="pf-strength">
                     <div className="pf-strength__bars">
-                      {[1,2,3,4].map(i => (
+                      {[1, 2, 3, 4].map(i => (
                         <div key={i} className="pf-strength__bar"
                           style={{ background: i <= strength ? strengthColor : "var(--pf-surf3)" }} />
                       ))}
@@ -346,6 +425,7 @@ function SecurityTab() {
         </div>
       </div>
 
+      {/* Danger zone */}
       <div className="pf-danger-card">
         <div className="pf-danger-card__header">
           <div className="pf-danger-card__title">⚠ Danger Zone</div>
@@ -357,116 +437,18 @@ function SecurityTab() {
             <div className="pf-danger-card__sub">Permanently transfer ownership of your admin profile to another user.</div>
           </div>
           <button className="pf-btn-ownership"
-           onClick={() => {
-            setOwnershipStep(1);
-            setShowOwnershipModal(true);
-            }}
-          >Change Ownership</button>
-        </div>
-      </div>
-          <ChangeOwnershipModal
-      open={showOwnershipModal}
-      step={ownershipStep}
-      setStep={setOwnershipStep}
-      onClose={() => {
-        setShowOwnershipModal(false);
-        setOwnershipStep(1);
-      }}
-    />
-    </div>
-  );
-}
-
-// ─── TAB: PERMISSIONS ─────────────────────────────────────────────────────────
-function PermissionsTab() {
-  const groups = [
-    { group:"Company Management", icon:"🏢", color:"#74B9FF", perms:[
-      { label:"View Companies",    desc:"Read company profiles and details",       granted:true  },
-      { label:"Create Companies",  desc:"Register new companies on the platform",  granted:true  },
-      { label:"Edit Companies",    desc:"Modify company settings and metadata",    granted:true  },
-      { label:"Suspend Companies", desc:"Suspend or restore company accounts",     granted:true  },
-      { label:"Delete Companies",  desc:"Permanently remove company data",         granted:true  },
-    ]},
-    { group:"User Management", icon:"👥", color:"#00CBA4", perms:[
-      { label:"View Users",   desc:"Browse all user accounts",            granted:true },
-      { label:"Create Users", desc:"Invite and create new user accounts", granted:true },
-      { label:"Edit Users",   desc:"Modify user roles and settings",      granted:true },
-      { label:"Suspend Users",desc:"Suspend or restore user accounts",    granted:true },
-      { label:"Delete Users", desc:"Permanently delete user accounts",    granted:true },
-    ]},
-    { group:"Billing & Subscriptions", icon:"💳", color:"#A29BFE", perms:[
-      { label:"View Billing",        desc:"View subscription and payment data",    granted:true },
-      { label:"Manage Plans",        desc:"Create, edit, and delete pricing plans",granted:true },
-      { label:"Process Refunds",     desc:"Issue refunds to customers",            granted:true },
-      { label:"Export Billing Data", desc:"Download billing reports and invoices", granted:true },
-    ]},
-    { group:"System & Settings", icon:"⚙️", color:"#FDCB6E", perms:[
-      { label:"View Settings",       desc:"Read system configuration",             granted:true },
-      { label:"Edit Settings",       desc:"Modify platform-wide settings",         granted:true },
-      { label:"Manage Integrations", desc:"Configure API and webhook integrations",granted:true },
-      { label:"View Audit Logs",     desc:"Access the full audit trail",           granted:true },
-      { label:"Export Audit Logs",   desc:"Download audit log CSV exports",        granted:true },
-    ]},
-    { group:"Support", icon:"🎫", color:"#FD79A8", perms:[
-      { label:"View Tickets",   desc:"Read all support tickets",               granted:true  },
-      { label:"Reply to Tickets",desc:"Post replies on behalf of support team",granted:true  },
-      { label:"Close Tickets",  desc:"Resolve and close open tickets",         granted:true  },
-      { label:"Delete Tickets", desc:"Permanently remove tickets",             granted:false },
-    ]},
-  ];
-
-  const total   = groups.reduce((a,g) => a + g.perms.length, 0);
-  const granted = groups.reduce((a,g) => a + g.perms.filter(p => p.granted).length, 0);
-
-  return (
-    <div className="pf-tab-section">
-      <div className="pf-perm-overview">
-        <div className="pf-perm-overview__row">
-          <div>
-            <div className="pf-perm-overview__title">Permission Overview</div>
-            <div className="pf-perm-overview__desc">Super Admin has full platform access. Permissions are inherited from the role.</div>
-          </div>
-          <div className="pf-perm-overview__badge">
-            <div className="pf-perm-overview__count">{granted}/{total}</div>
-            <div className="pf-perm-overview__sublbl">PERMISSIONS</div>
-          </div>
-        </div>
-        <div className="pf-perm-overview__track">
-          <div className="pf-perm-overview__fill" style={{ width: `${(granted/total)*100}%` }} />
+            onClick={() => { setOwnershipStep(1); setShowOwnershipModal(true); }}>
+            Change Ownership
+          </button>
         </div>
       </div>
 
-      {groups.map(g => (
-        <div key={g.group} className="pf-perm-group">
-          <div className="pf-perm-group__header">
-            <div className="pf-perm-group__icon" style={{ background: `${g.color}15`, border: `1px solid ${g.color}28` }}>
-              {g.icon}
-            </div>
-            <div className="pf-perm-group__name">{g.group}</div>
-            <span className="pf-perm-group__count">{g.perms.filter(p=>p.granted).length}/{g.perms.length} granted</span>
-          </div>
-          <div className="pf-perm-grid">
-            {g.perms.map(p => (
-              <div key={p.label} className="pf-perm-cell">
-                <div>
-                  <div className="pf-perm-cell__label" style={{ color: p.granted ? "var(--pf-text)" : "var(--pf-muted)" }}>{p.label}</div>
-                  <div className="pf-perm-cell__desc">{p.desc}</div>
-                </div>
-                <div className="pf-perm-cell__status">
-                  <span className={`pf-perm-cell__dot ${p.granted ? "pf-perm-cell__dot--granted" : "pf-perm-cell__dot--denied"}`} />
-                  <span className={p.granted ? "pf-perm-cell__lbl--granted" : "pf-perm-cell__lbl--denied"}>
-                    {p.granted ? "Granted" : "Denied"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <div className="pf-perm-note">
-        🔒 Permissions are controlled by your role assignment. Contact your system owner to modify role-based access.
-      </div>
+      <ChangeOwnershipModal
+        open={showOwnershipModal}
+        step={ownershipStep}
+        setStep={setOwnershipStep}
+        onClose={() => { setShowOwnershipModal(false); setOwnershipStep(1); }}
+      />
     </div>
   );
 }
@@ -474,25 +456,25 @@ function PermissionsTab() {
 // ─── TAB: ACTIVITY ────────────────────────────────────────────────────────────
 function ActivityTab() {
   const activities = [
-    { icon:"🏢", color:"#00CBA4", action:"Created company",       detail:"Orbit Analytics",              time:"2 mins ago",  date:"Mar 11, 2026", badge:"CREATE",   badgeCol:"#00CBA4" },
-    { icon:"⛔", color:"#FF6B6B", action:"Suspended company",     detail:"Delta Forge (overdue payment)", time:"2 hrs ago",   date:"Mar 11, 2026", badge:"SUSPEND",  badgeCol:"#FF6B6B" },
-    { icon:"📦", color:"#A29BFE", action:"Updated plan pricing",  detail:"Starter plan ₹399 → ₹499",     time:"5 hrs ago",   date:"Mar 11, 2026", badge:"UPDATE",   badgeCol:"#74B9FF" },
-    { icon:"🔐", color:"#FDCB6E", action:"Changed password",      detail:"Account security updated",     time:"Yesterday",   date:"Mar 10, 2026", badge:"SECURITY", badgeCol:"#FDCB6E" },
-    { icon:"📤", color:"#74B9FF", action:"Exported audit logs",   detail:"12 admin accounts CSV",        time:"Yesterday",   date:"Mar 10, 2026", badge:"EXPORT",   badgeCol:"#74B9FF" },
-    { icon:"👤", color:"#A29BFE", action:"Updated user role",     detail:"Carlos Mendes → Manager",      time:"2 days ago",  date:"Mar 9, 2026",  badge:"UPDATE",   badgeCol:"#74B9FF" },
-    { icon:"⚙️", color:"#565875", action:"Updated SMTP settings", detail:"smtp.sendgrid.net port 587",   time:"4 days ago",  date:"Mar 7, 2026",  badge:"SETTINGS", badgeCol:"#565875" },
-    { icon:"🔑", color:"#00CBA4", action:"Enabled 2FA",           detail:"Authenticator app linked",     time:"1 week ago",  date:"Mar 4, 2026",  badge:"SECURITY", badgeCol:"#FDCB6E" },
-    { icon:"🏢", color:"#74B9FF", action:"Viewed company profile",detail:"Nexus Ltd — full details",     time:"1 week ago",  date:"Mar 4, 2026",  badge:"VIEW",     badgeCol:"#565875" },
-    { icon:"💳", color:"#A29BFE", action:"Processed refund",      detail:"Prism Analytics — ₹2,499",    time:"8 days ago",  date:"Mar 3, 2026",  badge:"BILLING",  badgeCol:"#A29BFE" },
-    { icon:"📋", color:"#565875", action:"Exported billing report",detail:"Q1 2026 PDF — 3.2 MB",       time:"10 days ago", date:"Mar 1, 2026",  badge:"EXPORT",   badgeCol:"#74B9FF" },
-    { icon:"🎫", color:"#FD79A8", action:"Closed support ticket", detail:"Ticket #1007 — SSL issue",    time:"11 days ago", date:"Feb 28, 2026", badge:"SUPPORT",  badgeCol:"#FD79A8" },
+    { icon: "🏢", color: "#00CBA4", action: "Created company",        detail: "Orbit Analytics",              time: "2 mins ago",  date: "Mar 11, 2026", badge: "CREATE",   badgeCol: "#00CBA4" },
+    { icon: "⛔", color: "#FF6B6B", action: "Suspended company",      detail: "Delta Forge (overdue payment)", time: "2 hrs ago",   date: "Mar 11, 2026", badge: "SUSPEND",  badgeCol: "#FF6B6B" },
+    { icon: "📦", color: "#A29BFE", action: "Updated plan pricing",   detail: "Starter plan ₹399 → ₹499",     time: "5 hrs ago",   date: "Mar 11, 2026", badge: "UPDATE",   badgeCol: "#74B9FF" },
+    { icon: "🔐", color: "#FDCB6E", action: "Changed password",       detail: "Account security updated",     time: "Yesterday",   date: "Mar 10, 2026", badge: "SECURITY", badgeCol: "#FDCB6E" },
+    { icon: "📤", color: "#74B9FF", action: "Exported audit logs",    detail: "12 admin accounts CSV",        time: "Yesterday",   date: "Mar 10, 2026", badge: "EXPORT",   badgeCol: "#74B9FF" },
+    { icon: "👤", color: "#A29BFE", action: "Updated user role",      detail: "Carlos Mendes → Manager",      time: "2 days ago",  date: "Mar 9, 2026",  badge: "UPDATE",   badgeCol: "#74B9FF" },
+    { icon: "⚙️", color: "#565875", action: "Updated SMTP settings",  detail: "smtp.sendgrid.net port 587",   time: "4 days ago",  date: "Mar 7, 2026",  badge: "SETTINGS", badgeCol: "#565875" },
+    { icon: "🔑", color: "#00CBA4", action: "Enabled 2FA",            detail: "Authenticator app linked",     time: "1 week ago",  date: "Mar 4, 2026",  badge: "SECURITY", badgeCol: "#FDCB6E" },
+    { icon: "🏢", color: "#74B9FF", action: "Viewed company profile", detail: "Nexus Ltd — full details",     time: "1 week ago",  date: "Mar 4, 2026",  badge: "VIEW",     badgeCol: "#565875" },
+    { icon: "💳", color: "#A29BFE", action: "Processed refund",       detail: "Prism Analytics — ₹2,499",    time: "8 days ago",  date: "Mar 3, 2026",  badge: "BILLING",  badgeCol: "#A29BFE" },
+    { icon: "📋", color: "#565875", action: "Exported billing report", detail: "Q1 2026 PDF — 3.2 MB",       time: "10 days ago", date: "Mar 1, 2026",  badge: "EXPORT",   badgeCol: "#74B9FF" },
+    { icon: "🎫", color: "#FD79A8", action: "Closed support ticket",  detail: "Ticket #1007 — SSL issue",    time: "11 days ago", date: "Feb 28, 2026", badge: "SUPPORT",  badgeCol: "#FD79A8" },
   ];
 
   const stats = [
-    { label:"Actions (30d)",    value:"247", icon:"📊", color:"#6C5CE7" },
-    { label:"Logins (30d)",     value:"31",  icon:"🔑", color:"#74B9FF" },
-    { label:"Exports",          value:"12",  icon:"📤", color:"#FDCB6E" },
-    { label:"Companies Created",value:"8",   icon:"🏢", color:"#00CBA4" },
+    { label: "Actions (30d)",     value: "247", icon: "📊", color: "#6C5CE7" },
+    { label: "Logins (30d)",      value: "31",  icon: "🔑", color: "#74B9FF" },
+    { label: "Exports",           value: "12",  icon: "📤", color: "#FDCB6E" },
+    { label: "Companies Created", value: "8",   icon: "🏢", color: "#00CBA4" },
   ];
 
   return (
@@ -549,10 +531,9 @@ function ActivityTab() {
 
 // ─── TABS CONFIG ──────────────────────────────────────────────────────────────
 const TABS = [
-  { id:"personal",    label:"Personal Info", icon:"👤" },
-  { id:"security",    label:"Security",      icon:"🔐" },
-  { id:"permissions", label:"Permissions",   icon:"🛡" },
-  { id:"activity",    label:"Activity",      icon:"📊" },
+  { id: "personal", label: "Personal Info", icon: "👤" },
+  { id: "security", label: "Security",      icon: "🔐" },
+  { id: "activity", label: "Activity",      icon: "📊" },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -562,18 +543,41 @@ export default function Profile() {
   const [uploading,   setUploading]   = useState(false);
   const [avatarEmoji, setAvatarEmoji] = useState<string | null>(null);
 
+  // ── Shared profile state fetched once ──
+  const [profile,  setProfile]  = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("console_access_token");
+        const response = await fetch("https://hostapi.soft7.in/v1/admin/users/", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "ngrok-skip-browser-warning": "true",
+          },
+        });
+        const result = await response.json();
+        console.log("PROFILE API", result);
+        if (result?.success && result?.data) {
+          setProfile(result.data as ProfileData);
+        }
+      } catch (error) {
+        console.error("Profile fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   const triggerUpload = () => {
     setUploading(true);
     setTimeout(() => { setUploading(false); setAvatarEmoji("🧑‍💻"); }, 1200);
   };
 
-  const TabComp: Record<TabId, React.ComponentType> = {
-    personal:    PersonalTab,
-    security:    SecurityTab,
-    permissions: PermissionsTab,
-    activity:    ActivityTab,
-  };
-  const Comp = TabComp[tab];
+ 
 
   return (
     <div className="pf-root">
@@ -586,68 +590,25 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* ── HERO CARD ── */}
-      <div className="pf-hero">
-        <div className="pf-hero__banner">
-          <div className="pf-hero__banner-orb1" />
-          <div className="pf-hero__banner-orb2" />
-          <div className="pf-hero__banner-orb3" />
-          <div className="pf-hero__banner-grid" />
-        </div>
-
-        <div className="pf-hero__body">
-          <div className="pf-hero__top-row">
-            <div className="pf-avatar-wrap">
-              <div className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}>
-                {uploading ? "⬆" : (avatarEmoji ?? "S7")}
-              </div>
-              <div className="pf-avatar__online" />
-              <div className="pf-avatar__upload-overlay" onClick={triggerUpload}>📷</div>
-            </div>
-            <div className="pf-hero__actions">
-
-              <button className="pf-btn-edit" onClick={() => setTab("personal")}>✏️ Edit Profile</button>
-            </div>
-          </div>
-
-          <div className="pf-hero__info">
-            <div className="pf-hero__name-row">
-              <span className="pf-hero__name">Soft7 Technology</span>
-              <span className="pf-hero__role">SUPER ADMIN</span>
-            </div>
-            <div className="pf-hero__meta">
-              {[
-                { icon:"📧", val:"soft7.in@gmail.com" },
-                { icon:"📱", val:"+91 98765 43210" },
-                { icon:"📍", val:"Mumbai, India" },
-                { icon:"🕐", val:"IST +5:30" },
-              ].map(({ icon, val }) => (
-                <span key={val} className="pf-hero__meta-item">
-                  <span className="pf-hero__meta-icon">{icon}</span>{val}
-                </span>
-              ))}
-            </div>
-            <div className="pf-hero__bio">
-              Super administrator for the WhatsApp SaaS platform. Overseeing all companies, subscriptions, and system health.
-            </div>
-          </div>
-
-          <div className="pf-stat-strip">
-            {[
-              { label:"Companies",  value:"47",      color:"#74B9FF" },
-              { label:"Users",      value:"5,831",   color:"#A29BFE" },
-              { label:"Actions/mo", value:"247",     color:"#00CBA4" },
-              { label:"Tickets",    value:"12 open", color:"#FD79A8" },
-              { label:"Last Login", value:"Now",     color:"#00CBA4" },
-            ].map(s => (
-              <div key={s.label} className="pf-stat-strip__cell">
-                <div className="pf-stat-strip__val" style={{ color: s.color }}>{s.value}</div>
-                <div className="pf-stat-strip__label">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* ── HERO CARD (shared, data-driven) ── */}
+      <HeroCard
+  profile={profile ?? {
+    id: "",
+    name: "Loading...",
+    email: "",
+    phone: "",
+    role: "",
+    status: "",
+    avatar: null,
+    last_login_at: null,
+    last_login_ip: null,
+    created_at: "",
+    settings: null,
+  }}
+  uploading={uploading}
+  avatarEmoji={avatarEmoji}
+  onUpload={triggerUpload}
+/>
 
       {/* ── TAB BAR ── */}
       <div className="pf-tabbar">
@@ -662,9 +623,11 @@ export default function Profile() {
 
       {/* ── TAB CONTENT ── */}
       <div key={tab} className="pf-content">
-        <Comp />
+        {tab === "personal" && <PersonalTab profile={profile} />}
+        {tab === "security" && <SecurityTab profile={profile} />}
+        {tab === "activity" && <ActivityTab />}
       </div>
-      
+
     </div>
   );
 }

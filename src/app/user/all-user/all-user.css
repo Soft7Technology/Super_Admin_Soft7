@@ -216,7 +216,9 @@ html[data-theme="dark"], body[data-theme="dark"] {
   flex-wrap: wrap; align-items: center;
 }
 .au-search-wrap {
-  position: relative; flex: 1; min-width: 240px;
+  position: relative;
+  flex: 0 0 420px;
+  max-width: 420px;
 }
 .mc-search-icon {
   position: absolute; left: 12px; top: 50%;
@@ -545,4 +547,78 @@ html[data-theme="dark"], body[data-theme="dark"] {
   .au-modal          { width: 95vw; padding: 22px 18px; }
   .au-modal__grid-2  { grid-template-columns: 1fr; }
   .au-stats-grid     { grid-template-columns: 1fr 1fr; }
+}
+.au-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.au-card {
+  position: relative;
+}
+
+.au-card__checkbox {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.au-card__checkbox input {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+
+.au-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.au-btn--bulk-delete {
+  width: auto !important;
+  min-width: 180px;
+  padding: 10px 20px;
+}
+.au-selection-toolbar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.au-btn--bulk-delete {
+  width: auto !important;
+  min-width: 180px;
+  padding: 10px 20px;
+}
+.au-selection-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+
+  margin-top: -48px;
+  margin-bottom: 18px;
+
+  padding-right: 10px;
+}
+
+.au-btn--bulk-delete {
+  width: auto !important;
+  min-width: 170px;
+  height: 34px;
+  padding: 0 14px;
+}
+
+.au-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  white-space: nowrap;
 }
