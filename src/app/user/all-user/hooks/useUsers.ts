@@ -9,6 +9,7 @@ interface UseUsersReturn {
   stats: UserStats;
   loading: boolean;
   error: string | null;
+  refresh: () => void;
 }
 
 const EMPTY_STATS: UserStats = {
@@ -79,6 +80,9 @@ export function useUsers(): UseUsersReturn {
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
+  const refresh = () => setTick((t) => t + 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +142,7 @@ export function useUsers(): UseUsersReturn {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tick]);
 
-  return { users, stats, loading, error };
+  return { users, stats, loading, error, refresh };
 }

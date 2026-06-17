@@ -18,7 +18,7 @@ export default function AllUsers() {
   const [detail, setDetail] = useState<User | null>(null);
   const [invite, setInvite] = useState(false);
 
-  const { users, stats, loading, error } = useUsers();
+  const { users, stats, loading, error, refresh } = useUsers();
   const query = search.trim().toLowerCase();
 
   const filteredUsers = [...users]
@@ -106,7 +106,7 @@ export default function AllUsers() {
         </div>
 
         {detail && (
-          <DetailPanel user={detail} onClose={() => setDetail(null)} />
+          <DetailPanel user={detail} onClose={() => setDetail(null)} onRefresh={refresh} />
         )}
       </div>
     </div>
