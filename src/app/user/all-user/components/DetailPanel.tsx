@@ -16,8 +16,10 @@ interface DetailPanelProps {
 interface UserActivityStats {
   messages: number;
   campaigns: number;
-  chatbots: number;
-  flows: number;
+  contacts: number;
+  templates: number;
+  delivered: number;
+  failed: number;
 }
 
 export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
@@ -27,18 +29,22 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
   const [userStats,     setUserStats]     = useState<UserActivityStats | null>(null);
   const [statsLoading,  setStatsLoading]  = useState(false);
   const [suspending,    setSuspending]    = useState(false);
+  const [deleting,      setDeleting]      = useState(false);
   const [localStatus,   setLocalStatus]   = useState(user.status);
 
   const fetchUserStats = async () => {
     try {
       setStatsLoading(true);
-      const { data } = await axiosInstance.get("/v1/admin/users/stats");
-      if (data.success) {
+      const { data } = await axiosInstance.get(`/v1/admin/companies/user-details/${user.id}`);
+      if (data.success !== false) {
+        const s = data?.data ?? data;
         setUserStats({
-          messages:  data?.data?.messages  || data?.data?.total_messages  || 0,
-          campaigns: data?.data?.campaigns || data?.data?.total_campaigns || 0,
-          chatbots:  data?.data?.chatbots  || data?.data?.total_chatbots  || 0,
-          flows:     data?.data?.flows     || data?.data?.total_flows     || 0,
+          messages:  Number(s?.sent_count   ?? s?.messages  ?? 0),
+          campaigns: Number(s?.campaigns_count ?? s?.campaigns ?? 0),
+          contacts:  Number(s?.contacts_count  ?? s?.contacts  ?? 0),
+          templates: Number(s?.template_count  ?? s?.templates ?? 0),
+          delivered: Number(s?.delivered_count ?? 0),
+          failed:    Number(s?.failed_count    ?? 0),
         });
       }
     } catch (error) {
@@ -51,6 +57,26 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
   const handleTabChange = (key: "info" | "stats") => {
     setTab(key);
     if (key === "stats") fetchUserStats();
+  };
+
+  const handleDeleteUser = async () => {
+    if (!confirm(`Are you sure you want to permanently delete "${user.name}"? This cannot be undone.`)) return;
+    try {
+      setDeleting(true);
+      const { data } = await axiosInstance.delete(`/v1/admin/users/${user.id}`);
+      if (data.success !== false) {
+        alert("✅ User deleted successfully");
+        onRefresh?.();
+        onClose();
+      } else {
+        alert(data.message || "Failed to delete user");
+      }
+    } catch (error: any) {
+      console.error("Delete User Error:", error);
+      alert(error?.response?.data?.message || "Something went wrong");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleSuspendToggle = async () => {
@@ -177,10 +203,12 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                   <>
                     {(
                       [
-                        ["messages",  userStats?.messages  ?? 0, "#10b981", "Messages"],
+                        ["messages",  userStats?.messages  ?? 0, "#10b981", "Messages Sent"],
                         ["campaigns", userStats?.campaigns ?? 0, "#6366f1", "Campaigns"],
-                        ["chatbots",  userStats?.chatbots  ?? 0, "#f59e0b", "Chatbots"],
-                        ["flows",     userStats?.flows     ?? 0, "#34d399", "Flows"],
+                        ["contacts",  userStats?.contacts  ?? 0, "#3b82f6", "Contacts"],
+                        ["templates", userStats?.templates ?? 0, "#f59e0b", "Templates"],
+                        ["delivered", userStats?.delivered ?? 0, "#34d399", "Delivered"],
+                        ["failed",    userStats?.failed    ?? 0, "#ef4444", "Failed"],
                       ] as [string, number, string, string][]
                     ).map(([key, val, color, lbl]) => (
                       <div key={key} className="au-stats-cell">
@@ -219,6 +247,14 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                     {suspending ? "Suspending…" : "Suspend User"}
                   </button>
                 )}
+                <button
+                  className="au-btn au-btn--danger"
+                  onClick={handleDeleteUser}
+                  disabled={deleting}
+                  style={{ marginTop: 4 }}
+                >
+                  {deleting ? "Deleting…" : "Delete User"}
+                </button>
               </div>
             )}
           </div>
