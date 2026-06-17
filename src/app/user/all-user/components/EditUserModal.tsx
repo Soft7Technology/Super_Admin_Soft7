@@ -24,7 +24,7 @@ export function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) 
 
     try {
       setLoading(true);
-      const { data } = await axiosInstance.put(`/v1/admin/user/${user.id}`, {
+      const { data } = await axiosInstance.put(`/v1/admin/users/${user.id}`, {
         name,
         email,
         phone,
