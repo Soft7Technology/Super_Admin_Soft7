@@ -377,99 +377,6 @@ function SecurityTab() {
   );
 }
 
-// ─── TAB: PERMISSIONS ─────────────────────────────────────────────────────────
-function PermissionsTab() {
-  const groups = [
-    { group:"Company Management", icon:"🏢", color:"#74B9FF", perms:[
-      { label:"View Companies",    desc:"Read company profiles and details",       granted:true  },
-      { label:"Create Companies",  desc:"Register new companies on the platform",  granted:true  },
-      { label:"Edit Companies",    desc:"Modify company settings and metadata",    granted:true  },
-      { label:"Suspend Companies", desc:"Suspend or restore company accounts",     granted:true  },
-      { label:"Delete Companies",  desc:"Permanently remove company data",         granted:true  },
-    ]},
-    { group:"User Management", icon:"👥", color:"#00CBA4", perms:[
-      { label:"View Users",   desc:"Browse all user accounts",            granted:true },
-      { label:"Create Users", desc:"Invite and create new user accounts", granted:true },
-      { label:"Edit Users",   desc:"Modify user roles and settings",      granted:true },
-      { label:"Suspend Users",desc:"Suspend or restore user accounts",    granted:true },
-      { label:"Delete Users", desc:"Permanently delete user accounts",    granted:true },
-    ]},
-    { group:"Billing & Subscriptions", icon:"💳", color:"#A29BFE", perms:[
-      { label:"View Billing",        desc:"View subscription and payment data",    granted:true },
-      { label:"Manage Plans",        desc:"Create, edit, and delete pricing plans",granted:true },
-      { label:"Process Refunds",     desc:"Issue refunds to customers",            granted:true },
-      { label:"Export Billing Data", desc:"Download billing reports and invoices", granted:true },
-    ]},
-    { group:"System & Settings", icon:"⚙️", color:"#FDCB6E", perms:[
-      { label:"View Settings",       desc:"Read system configuration",             granted:true },
-      { label:"Edit Settings",       desc:"Modify platform-wide settings",         granted:true },
-      { label:"Manage Integrations", desc:"Configure API and webhook integrations",granted:true },
-      { label:"View Audit Logs",     desc:"Access the full audit trail",           granted:true },
-      { label:"Export Audit Logs",   desc:"Download audit log CSV exports",        granted:true },
-    ]},
-    { group:"Support", icon:"🎫", color:"#FD79A8", perms:[
-      { label:"View Tickets",   desc:"Read all support tickets",               granted:true  },
-      { label:"Reply to Tickets",desc:"Post replies on behalf of support team",granted:true  },
-      { label:"Close Tickets",  desc:"Resolve and close open tickets",         granted:true  },
-      { label:"Delete Tickets", desc:"Permanently remove tickets",             granted:false },
-    ]},
-  ];
-
-  const total   = groups.reduce((a,g) => a + g.perms.length, 0);
-  const granted = groups.reduce((a,g) => a + g.perms.filter(p => p.granted).length, 0);
-
-  return (
-    <div className="pf-tab-section">
-      <div className="pf-perm-overview">
-        <div className="pf-perm-overview__row">
-          <div>
-            <div className="pf-perm-overview__title">Permission Overview</div>
-            <div className="pf-perm-overview__desc">Super Admin has full platform access. Permissions are inherited from the role.</div>
-          </div>
-          <div className="pf-perm-overview__badge">
-            <div className="pf-perm-overview__count">{granted}/{total}</div>
-            <div className="pf-perm-overview__sublbl">PERMISSIONS</div>
-          </div>
-        </div>
-        <div className="pf-perm-overview__track">
-          <div className="pf-perm-overview__fill" style={{ width: `${(granted/total)*100}%` }} />
-        </div>
-      </div>
-
-      {groups.map(g => (
-        <div key={g.group} className="pf-perm-group">
-          <div className="pf-perm-group__header">
-            <div className="pf-perm-group__icon" style={{ background: `${g.color}15`, border: `1px solid ${g.color}28` }}>
-              {g.icon}
-            </div>
-            <div className="pf-perm-group__name">{g.group}</div>
-            <span className="pf-perm-group__count">{g.perms.filter(p=>p.granted).length}/{g.perms.length} granted</span>
-          </div>
-          <div className="pf-perm-grid">
-            {g.perms.map(p => (
-              <div key={p.label} className="pf-perm-cell">
-                <div>
-                  <div className="pf-perm-cell__label" style={{ color: p.granted ? "var(--pf-text)" : "var(--pf-muted)" }}>{p.label}</div>
-                  <div className="pf-perm-cell__desc">{p.desc}</div>
-                </div>
-                <div className="pf-perm-cell__status">
-                  <span className={`pf-perm-cell__dot ${p.granted ? "pf-perm-cell__dot--granted" : "pf-perm-cell__dot--denied"}`} />
-                  <span className={p.granted ? "pf-perm-cell__lbl--granted" : "pf-perm-cell__lbl--denied"}>
-                    {p.granted ? "Granted" : "Denied"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <div className="pf-perm-note">
-        🔒 Permissions are controlled by your role assignment. Contact your system owner to modify role-based access.
-      </div>
-    </div>
-  );
-}
 
 // ─── TAB: ACTIVITY ────────────────────────────────────────────────────────────
 function ActivityTab() {
@@ -551,7 +458,6 @@ function ActivityTab() {
 const TABS = [
   { id:"personal",    label:"Personal Info", icon:"👤" },
   { id:"security",    label:"Security",      icon:"🔐" },
-  { id:"permissions", label:"Permissions",   icon:"🛡" },
   { id:"activity",    label:"Activity",      icon:"📊" },
 ] as const;
 type TabId = typeof TABS[number]["id"];
@@ -570,7 +476,6 @@ export default function Profile() {
   const TabComp: Record<TabId, React.ComponentType> = {
     personal:    PersonalTab,
     security:    SecurityTab,
-    permissions: PermissionsTab,
     activity:    ActivityTab,
   };
   const Comp = TabComp[tab];
