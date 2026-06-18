@@ -780,3 +780,105 @@ html[data-theme="dark"], body[data-theme="dark"] {
   background: #0f1120;
   border-radius: 20px;
 }
+/* ─── ACTION GROUP (table Actions column) ────────────────── */
+.au-action-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+/* base icon button */
+.au-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surf2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.au-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* View — teal on hover */
+.au-action-btn:not([class*="--"]):hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Edit — indigo */
+.au-action-btn--edit:hover {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+
+/* Key / Password — amber */
+.au-action-btn--key:hover {
+  background: #f59e0b;
+  color: #fff;
+  border-color: #f59e0b;
+}
+
+/* Suspend — orange-red */
+.au-action-btn--suspend:hover {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+
+/* Restore — green */
+.au-action-btn--restore:hover {
+  background: #10b981;
+  color: #fff;
+  border-color: #10b981;
+}
+
+/* Delete — red */
+.au-action-btn--delete:hover {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+
+/* Widen the ACTIONS column enough for 5 buttons */
+.au-table th:last-child,
+.au-table td:last-child {
+  min-width: 200px;
+}
+/* ─── FIX: USER COLUMN — prevent name overflow ───────────── */
+.au-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0; /* allow flex child to shrink */
+  overflow: hidden;
+}
+
+.au-user-name {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Also truncate email cell */
+.au-table td:nth-child(3) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0; /* forces ellipsis inside fixed table-layout */
+}

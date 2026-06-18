@@ -837,9 +837,30 @@
 
 .mc-modal__grid-2  { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .mc-modal__divider { height: 1px; background: var(--mc-border); transition: background 0.3s; }
-.mc-modal__actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.mc-modal__actions .mc-btn { justify-content: center; }
+.mc-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
 
+.mc-modal__actions .mc-btn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  justify-content: center;
+  border-radius: 12px;
+}
+.mc-btn--ghost {
+  background: #1a2035;
+  color: #cbd5e1;
+  border: 1px solid #2d3748;
+}
+
+.mc-btn--ghost:hover {
+  background: #242b45;
+  color: #ffffff;
+}
 /* ─── DETAIL MODAL ───────────────────────────────────────── */
 .mc-detail          { width: 480px; }
 .mc-detail__header  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
@@ -1366,4 +1387,33 @@
 .mc-detail__logo,
 .mc-card__logo {
   overflow: hidden;
+}
+/* ==========================
+   PRIMARY BUTTON - GREEN 400
+========================== */
+.mc-btn--primary {
+  background: #4ade80 !important; /* Green 400 */
+  color: #ffffff !important;
+  border: 1px solid #4ade80 !important;
+}
+
+.mc-btn--primary:hover {
+  background: #22c55e !important;
+  border-color: #22c55e !important;
+  transform: translateY(-1px);
+}
+
+/* ==========================
+   CANCEL BUTTON - RED 200
+========================== */
+.mc-btn--ghost {
+  background: #fecaca !important; /* Red 200 */
+  color: #991b1b !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.mc-btn--ghost:hover {
+  background: #fca5a5 !important;
+  color: #7f1d1d !important;
+  border-color: #f87171 !important;
 }
