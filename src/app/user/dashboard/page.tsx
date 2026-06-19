@@ -1,4 +1,4 @@
-﻿﻿﻿"use client";
+﻿﻿﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
@@ -15,7 +15,7 @@ const DASHBOARD_API =
   const USERS_API =
   "/v1/admin/companies/user";
   const COMPANIES_API =
-  "/v1/admin/companies";
+  "/v1/admin/companies?status=active";
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
