@@ -1004,65 +1004,69 @@ const handleStatusChange = async (
   companyId: string,
   newStatus: "ACTIVE" | "SUSPENDED"
 ) => {
-  const actionText =
-    newStatus === "SUSPENDED"
-      ? "suspend"
-      : "activate";
+  const isSuspending = newStatus === "SUSPENDED";
 
   const result = await Swal.fire({
-  title:
-    newStatus === "SUSPENDED"
+    title: isSuspending
       ? "Suspend Company?"
       : "Activate Company?",
-  text:
-    newStatus === "SUSPENDED"
+    text: isSuspending
       ? "Company access will be blocked."
       : "Company access will be restored.",
-  icon: "warning",
-  showCancelButton: true,
-  confirmButtonColor:
-    newStatus === "SUSPENDED"
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: isSuspending
       ? "#ef4444"
       : "#10b981",
-  confirmButtonText:
-    newStatus === "SUSPENDED"
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: isSuspending
       ? "Suspend"
       : "Activate",
-});
+  });
 
-if (!result.isConfirmed) {
-  return;
-}
+  if (!result.isConfirmed) return;
 
   try {
-    const endpoint =
-      newStatus === "SUSPENDED"
-        ? `/v1/admin/companies/${companyId}/suspend`
-        : `/v1/admin/companies/${companyId}/active`;
+    let endpoint = "";
+
+    // ACTIVE API
+    if (newStatus === "ACTIVE") {
+      endpoint = `/v1/admin/companies/${companyId}/active`;
+    }
+
+    // SUSPEND API
+    if (newStatus === "SUSPENDED") {
+      endpoint = `/v1/admin/companies/${companyId}/suspend`;
+    }
+
+    console.log("STATUS API =>", endpoint);
 
     const { data } = await axiosInstance.put(endpoint);
-if (data.success) {
-  toast.success(
-    newStatus === "SUSPENDED"
-      ? "Company suspended successfully"
-      : "Company activated successfully"
-  );
 
-  await fetchCompanies();
-} else {
+    console.log("STATUS RESPONSE =>", data);
+
+    if (data?.success) {
+      toast.success(
+        newStatus === "SUSPENDED"
+          ? "Company suspended successfully"
+          : "Company activated successfully"
+      );
+
+      await fetchCompanies();
+    } else {
       toast.error(
-  data.message ||
-  `Failed to ${actionText} company`
-);
+        data?.message ||
+          "Failed to update company status"
+      );
     }
   } catch (error: any) {
-    console.error(error);
+    console.error("STATUS ERROR =>", error);
 
     toast.error(
-  error?.response?.data?.message ||
-  error.message ||
-  `Failed to ${actionText} company`
-);
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to update company status"
+    );
   }
 };
 
