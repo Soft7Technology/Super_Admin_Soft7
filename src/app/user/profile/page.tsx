@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import "./profile.css";
+import { axiosInstance } from "@/lib/axiosInstance";
 
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -546,38 +547,36 @@ export default function Profile() {
   // ── Shared profile state fetched once ──
   const [profile,  setProfile]  = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
+
   useEffect(() => {
+    let mounted = true;
+
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem("console_access_token");
-        const response = await fetch("https://hostapi.soft7.in/v1/admin/users/", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            "ngrok-skip-browser-warning": "true",
-          },
-        });
-        const result = await response.json();
+        const { data: result } = await axiosInstance.get("/v1/admin/users/");
+
+        if (!mounted) return;
+
         console.log("PROFILE API", result);
         if (result?.success && result?.data) {
           setProfile(result.data as ProfileData);
         }
       } catch (error) {
+        if (!mounted) return;
         console.error("Profile fetch error:", error);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
+
     fetchProfile();
+    return () => { mounted = false; };
   }, []);
 
   const triggerUpload = () => {
     setUploading(true);
     setTimeout(() => { setUploading(false); setAvatarEmoji("🧑‍💻"); }, 1200);
   };
-
- 
 
   return (
     <div className="pf-root">
@@ -592,23 +591,23 @@ export default function Profile() {
 
       {/* ── HERO CARD (shared, data-driven) ── */}
       <HeroCard
-  profile={profile ?? {
-    id: "",
-    name: "Loading...",
-    email: "",
-    phone: "",
-    role: "",
-    status: "",
-    avatar: null,
-    last_login_at: null,
-    last_login_ip: null,
-    created_at: "",
-    settings: null,
-  }}
-  uploading={uploading}
-  avatarEmoji={avatarEmoji}
-  onUpload={triggerUpload}
-/>
+        profile={profile ?? {
+          id: "",
+          name: "Loading...",
+          email: "",
+          phone: "",
+          role: "",
+          status: "",
+          avatar: null,
+          last_login_at: null,
+          last_login_ip: null,
+          created_at: "",
+          settings: null,
+        }}
+        uploading={uploading}
+        avatarEmoji={avatarEmoji}
+        onUpload={triggerUpload}
+      />
 
       {/* ── TAB BAR ── */}
       <div className="pf-tabbar">
