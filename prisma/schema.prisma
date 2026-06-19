@@ -585,8 +585,8 @@ model WhatsAppTemplate {
   qualityRating     String?
   rejectionReason   String?
   status            UserStatus
-  headerMediaUrl    String?
   headerMode        String?
+  headerMediaUrl    String?
   whatsappAccount   WhatsAppAccount @relation(fields: [whatsappAccountId], references: [id], onDelete: Cascade)
 
   @@unique([whatsappAccountId, name])
@@ -609,11 +609,11 @@ model Company {
   id                 Int                  @id @default(autoincrement())
   name               String
   domain             String?              @unique
-  adminEmail         String               @unique
   status             CompanyStatus        @default(ACTIVE)
   logo               String?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
+  adminEmail         String               @unique
   users              User[]
   UserSubscription   UserSubscription[]
   subscription_plans subscription_plans[]

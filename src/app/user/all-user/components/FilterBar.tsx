@@ -13,7 +13,7 @@ interface FilterBarProps {
   loading: boolean;
 }
 
-const STATUS_FILTERS = ["ALL", "ACTIVE", "INACTIVE", "PENDING"];
+const STATUS_FILTERS = ["ALL", "ACTIVE", "INACTIVE", "suspended"];
 const ROLE_FILTERS   = ["ALL", "Admin", "User"];
 
 export function FilterBar({

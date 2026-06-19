@@ -1,18 +1,35 @@
 import { User, STATUS_DOT, roleColor, planColor } from "../types";
 import { Badge } from "./Badge";
 
+
 interface UserCardProps {
   user: User;
   isSelected: boolean;
+  checked: boolean;
+  onCheck: () => void;
   onClick: () => void;
 }
 
-export function UserCard({ user, isSelected, onClick }: UserCardProps) {
+export function UserCard({
+  user,
+  isSelected,
+  checked,
+  onCheck,
+  onClick,
+}: UserCardProps) {
   return (
-    <div
-      onClick={onClick}
-      className={`au-card ${isSelected ? "au-card--selected" : ""}`}
-    >
+   <div
+  onClick={onClick}
+  className={`au-card ${isSelected ? "au-card--selected" : ""}`}
+>
+  <div className="au-card__checkbox">
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={onCheck}
+      onClick={(e) => e.stopPropagation()}
+    />
+  </div>
       <div className="au-card__top">
         <div className="au-card__identity">
           <div className="au-avatar-wrap">

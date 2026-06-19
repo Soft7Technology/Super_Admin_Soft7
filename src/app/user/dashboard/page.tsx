@@ -13,13 +13,9 @@ import AuditLogs from "../../../components/AuditLogs";
 const DASHBOARD_API =
   "/v1/admin/companies/dashboard";
   const USERS_API =
-  "/v1/admin/companies/user?role=admin";
+  "/v1/admin/companies/user";
   const COMPANIES_API =
-  "/v1/admin/companies";
-const BRAND = "#10b981";
-const BRAND_HOVER = "#059669";
-const BRAND_SOFT = "rgba(16, 22, 185, 0.16)";
-const BRAND_GLOW = "rgba(16,185,129,0.32)";
+  "/v1/admin/companies?status=active";
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -81,6 +77,14 @@ interface DashboardUser {
 }
 interface DashboardLog {
   id: string; msg: string; actor: string; time: string; sev: string;
+}
+
+function recordsFromResponse(json: any): any[] {
+  if (Array.isArray(json)) return json;
+  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.data?.data)) return json.data.data;
+  if (Array.isArray(json?.users)) return json.users;
+  return [];
 }
 
 function useWindowWidth() {
@@ -173,17 +177,17 @@ function InlineStatCards({
                 {meta.label}
               </span>
         <div style={{
-  width: "42px",
-  height: "42px",
-  borderRadius: "12px",
-  background: `${meta.accent}18`,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "20px",
-}}>
-  {meta.icon}
-</div>
+        width: "42px",
+        height: "42px",
+        borderRadius: "12px",
+        background: `${meta.accent}18`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "20px",
+      }}>
+        {meta.icon}
+      </div>
             </div>
             <div style={{
               fontSize: "30px", fontWeight: 800,
@@ -241,7 +245,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const width = useWindowWidth();
   const isMobile     = width <= 768;
-  const isHalfScreen = width <= 1100;
+  const isHalfScreen = width <= 768;
 
   const [stats, setStats]           = useState<StatCard[]>(DEFAULT_STATS);
   const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
@@ -312,13 +316,22 @@ setCompanies(
   }))
 );
 
-       const { data: usersResponse } = await axiosInstance.get(USERS_API, {
+       const { data: usersResponse } = await axiosInstance.get(`${USERS_API}?role=user&page=1&limit=4`, {
   headers: getExternalHeaders(),
   withCredentials: false,
 });
 
-const usersData =
-  usersResponse?.data?.data || [];
+const { data: adminUsersResponse } = await axiosInstance
+  .get(`${USERS_API}?role=admin`, {
+    headers: getExternalHeaders(),
+    withCredentials: false,
+  })
+  .catch(() => ({ data: null }));
+
+const usersData = [
+  ...recordsFromResponse(usersResponse),
+  ...recordsFromResponse(adminUsersResponse),
+];
 setUsers(
   usersData.slice(0, 4).map((user: any, index: number) => ({
     id: user.id || index.toString(),
@@ -432,11 +445,6 @@ setUsers(
           </p>
         </div>
 
-        <DashboardButton
-          label="Add Company"
-          onClick={() => router.push("/user/dashboard/create")}
-          isDark={isDark}
-        />
       </div>
 
       {/* Stats */}
@@ -526,40 +534,3 @@ setUsers(
   );
 }
 
-/* ─── Dashboard Button ────────────────────────────────────── */
-function DashboardButton({
-  label,
-  onClick,
-  isDark,
-}: {
-  label: string;
-  onClick?: () => void;
-  isDark: boolean;
-}) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: "8px",
-        padding: "11px 22px",
-        borderRadius: "10px",
-        fontSize: "0.85rem", fontWeight: 700,
-        cursor: "pointer",
-        border: `1px solid ${BRAND}`,
-        background: hovered ? BRAND_HOVER : BRAND,
-        color: "#fff",
-       boxShadow: hovered
-        ? "0 8px 24px rgba(16,185,129,0.38)"
-        : "0 4px 14px rgba(16,185,129,0.24)",
-        transition: "all 0.15s ease",
-        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-        whiteSpace: "nowrap",
-      }}
-    >
-      + {label}
-    </button>
-  );
-}

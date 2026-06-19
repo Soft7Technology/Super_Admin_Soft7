@@ -1,7 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
+
+function useWindowWidth() {
+  const [width, setWidth] = useState<number>(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  return width;
+}
 
 const DATA = [
   { month: "Jan", value: 38, color: "#10b981" },
@@ -54,6 +67,12 @@ export default function PlatformGrowthChart() {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
   const [hovered, setHovered] = useState<number | null>(null);
+  const width = useWindowWidth();
+  const isSmall  = width <= 1000;
+  const isMedium = width <= 1300;
+  const legendFont = isSmall ? "0.72rem" : isMedium ? "0.8rem" : "0.9rem";
+  const legendGap  = isSmall ? "8px" : isMedium ? "10px" : "12px";
+  const legendMb   = isSmall ? "10px" : isMedium ? "12px" : "16px";
 
   const gridTicks = [25, 50, 75, 100];
 
@@ -63,9 +82,9 @@ export default function PlatformGrowthChart() {
       <div
         style={{
           display: "flex",
-          gap: "12px",
+          gap: legendGap,
           flexWrap: "wrap",
-          marginBottom: "16px",
+          marginBottom: legendMb,
         }}
       >
         {DATA.map((d) => (
@@ -84,7 +103,7 @@ export default function PlatformGrowthChart() {
             />
             <span
               style={{
-                fontSize: "0.9rem",
+                fontSize: legendFont,
                 color: isDark ? t.textMuted : "#111827",
                 fontWeight: 800,
               }}
