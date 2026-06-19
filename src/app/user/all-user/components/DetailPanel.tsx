@@ -273,7 +273,7 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
       )}
 
       {passwordOpen && (
-        <ResetPasswordModal onClose={() => setPasswordOpen(false)} />
+        <ResetPasswordModal user={user} onClose={() => setPasswordOpen(false)} />
       )}
     </>
   );
