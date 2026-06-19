@@ -884,3 +884,18 @@ html[data-theme="dark"], body[data-theme="dark"] {
   text-overflow: ellipsis;
   max-width: 0; /* forces ellipsis inside fixed table-layout */
 }
+.au-confirm-toast {
+  text-align: center;
+}
+
+.au-toast-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.Toastify__toast-container--top-center {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
