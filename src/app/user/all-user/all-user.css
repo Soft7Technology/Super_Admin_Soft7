@@ -776,11 +776,13 @@ html[data-theme="dark"], body[data-theme="dark"] {
   width: 520px;
   max-width: 95vw;
   max-height: 85vh;
-
   overflow-y: auto;
 
-  background: #0f1120;
+  background: var(--modal-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 20px;
+  box-shadow: var(--shadow-modal);
 }
 /* ─── ACTION GROUP (table Actions column) ────────────────── */
 .au-action-group {
