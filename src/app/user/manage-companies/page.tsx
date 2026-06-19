@@ -5,9 +5,20 @@ import "./manage-companies.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Swal from "sweetalert2";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const COMPANIES_API = "/v1/admin/companies?status=active";
+
+
+const COMPANIES_API =
+  "/v1/admin/companies?status=active";
+const ACTIVE_COMPANIES_API =
+  "/v1/admin/companies?status=active";
+
+const SUSPENDED_COMPANIES_API =
+  "/v1/admin/companies?status=suspend";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 // Raw shape returned by the API
@@ -71,9 +82,15 @@ function avatarColor(id: string) {
 
 function normaliseStatus(raw: string): Status {
   const map: Record<string, Status> = {
-    active: "ACTIVE", inactive: "INACTIVE",
-    suspended: "SUSPENDED", trial: "TRIAL",
+    active: "ACTIVE",
+    inactive: "INACTIVE",
+
+    suspend: "SUSPENDED",
+    suspended: "SUSPENDED",
+
+    trial: "TRIAL",
   };
+
   return map[raw?.toLowerCase()] ?? "ACTIVE";
 }
 
@@ -257,11 +274,13 @@ if (!company) {
   setSaving(true);
 
   try {
-    const isEdit = !!company;
+ const isEdit = !!company;
 
-    const url = isEdit
-      ? `${COMPANIES_API}/${company.id}`
-      : COMPANIES_API;
+const url = isEdit
+  ? `/v1/admin/companies/${company.id}`
+  : "/v1/admin/companies";
+
+console.log("API URL =>", url);
 
     // Always use FormData so the image file can be included
     const formData = new FormData();
@@ -758,13 +777,12 @@ function AddCreditModal({
     created_by: adminEmail,
   }
 );
-      alert("Credit Added Successfully");
-
+    toast.success("Credit Added Successfully");
       onSuccess();
       onClose();
     } catch (error) {
       console.error(error);
-      alert("Failed to add credit");
+   toast.error("Failed to add credit");
     } finally {
       setLoading(false);
     }
@@ -871,46 +889,81 @@ const handleSelectCompany = (companyId: string) => {
 const handleBulkDelete = async () => {
   if (selectedCompanies.length === 0) return;
 
-  const confirmed = window.confirm(
-    `Delete ${selectedCompanies.length} selected companies?`
-  );
+  const result = await Swal.fire({
+    title: "Delete Selected Companies?",
+    text: "This action cannot be undone",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Delete"
+  });
 
-  if (!confirmed) return;
+  if (!result.isConfirmed) {
+    return;
+  }
 
   try {
     await Promise.all(
       selectedCompanies.map((id) =>
-        axiosInstance.delete(`${COMPANIES_API}/${id}`)
+      axiosInstance.delete(`/v1/admin/companies/${id}`)
       )
     );
 
-    setSelectedCompanies([]);
-    setSelectAll(false);
+   setSelectedCompanies([]);
+setSelectAll(false);
 
-    fetchCompanies();
+toast.success(
+  `${selectedCompanies.length} companies deleted successfully`
+);
+
+fetchCompanies();
   } catch (error) {
     console.error(error);
-    alert("Failed to delete selected companies");
+   toast.error("Failed to delete selected companies");
   }
 };
-  const fetchCompanies = async () => {
-    setLoading(true);
-    setFetchError(null);
-    try {
-      const { data: json } = await axiosInstance.get(COMPANIES_API);
+ const fetchCompanies = async () => {
+  setLoading(true);
+  setFetchError(null);
 
-      // Response shape: { success, message, data: [...], meta }
-      const raw: RawCompany[] = Array.isArray(json?.data) ? json.data : [];
-      setCompanies(raw.map(enrichCompany));
-    } catch (e) {
-      setFetchError(e instanceof Error ? e.message : "Failed to load companies");
-      setCompanies([]);
-    } finally {
-      setLoading(false);
+  try {
+    let endpoint = COMPANIES_API;
+
+    if (filter === "ACTIVE") {
+      endpoint = ACTIVE_COMPANIES_API;
     }
-  };
 
-  useEffect(() => { fetchCompanies(); }, []);
+    if (filter === "SUSPENDED") {
+      endpoint = SUSPENDED_COMPANIES_API;
+    }
+
+    const { data: json } =
+      await axiosInstance.get(endpoint);
+      console.log("GET COMPANY RESPONSE =>", json);
+
+    const raw: RawCompany[] =
+      Array.isArray(json?.data)
+        ? json.data
+        : [];
+
+    setCompanies(raw.map(enrichCompany));
+  } catch (e) {
+    setFetchError(
+      e instanceof Error
+        ? e.message
+        : "Failed to load companies"
+    );
+
+    setCompanies([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchCompanies();
+}, [filter]);
 
   const FILTERS: ("ALL" | Status)[] = ["ALL", "ACTIVE", "TRIAL", "SUSPENDED", "INACTIVE"];
   const query = search.trim().toLowerCase();
@@ -925,43 +978,113 @@ const handleBulkDelete = async () => {
   const openAdd  = ()            => { setEditTarget(null); setShowModal(true); };
   const openEdit = (c: Company)  => { setEditTarget(c);    setShowModal(true); };
   const openView = (c: Company)  => setViewTarget(c);
+const handleDelete = async (companyId: string) => {
+  const result = await Swal.fire({
+  title: "Delete Company?",
+  text: "This action cannot be undone",
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor: "#ef4444",
+  cancelButtonColor: "#6b7280",
+  confirmButtonText: "Delete",
+});
 
-  const handleDelete = async (companyId: string) => {
-    if (!confirm("Are you sure you want to delete this company? This action cannot be undone.")) {
-      return;
-    }
-    try {
-      const { data } = await axiosInstance.delete(`${COMPANIES_API}/${companyId}`);
-      if (data.success) {
-        await fetchCompanies();
-      } else {
-        alert(data.message || "Failed to delete company");
-      }
-    } catch (e: any) {
-      console.error(e);
-      alert(e.response?.data?.message || e.message || "Something went wrong while deleting company");
-    }
-  };
+if (!result.isConfirmed) {
+  return;
+}
+  try {
+    const endpoint = `/v1/admin/companies/${companyId}`;
 
-  const handleStatusChange = async (companyId: string, newStatus: "ACTIVE" | "SUSPENDED") => {
-    const actionText = newStatus === "SUSPENDED" ? "suspend" : "restore";
-    if (!confirm(`Are you sure you want to ${actionText} this company?`)) {
-      return;
+    console.log("DELETE URL =>", endpoint);
+
+    const { data } = await axiosInstance.delete(endpoint);
+
+    console.log("DELETE RESPONSE =>", data);
+
+    if (data?.success) {
+    toast.success("Company deleted successfully");
+
+      await fetchCompanies();
+    } else {
+    toast.error(
+  data?.message ||
+  "Failed to delete company"
+);
     }
-    try {
-      const { data } = await axiosInstance.put(`${COMPANIES_API}/${companyId}`, {
-        status: newStatus.toLowerCase(),
-      });
-      if (data.success) {
-        await fetchCompanies();
-      } else {
-        alert(data.message || `Failed to ${actionText} company`);
-      }
-    } catch (e: any) {
-      console.error(e);
-      alert(e.response?.data?.message || e.message || `Something went wrong while trying to ${actionText} company`);
+  } catch (error: any) {
+    console.error("DELETE ERROR =>", error);
+toast.error(
+  error?.response?.data?.message ||
+  error?.message ||
+  "Failed to delete company"
+);
+  }
+};
+const handleStatusChange = async (
+  companyId: string,
+  newStatus: "ACTIVE" | "SUSPENDED"
+) => {
+  const actionText =
+    newStatus === "SUSPENDED"
+      ? "suspend"
+      : "activate";
+
+  const result = await Swal.fire({
+  title:
+    newStatus === "SUSPENDED"
+      ? "Suspend Company?"
+      : "Activate Company?",
+  text:
+    newStatus === "SUSPENDED"
+      ? "Company access will be blocked."
+      : "Company access will be restored.",
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor:
+    newStatus === "SUSPENDED"
+      ? "#ef4444"
+      : "#10b981",
+  confirmButtonText:
+    newStatus === "SUSPENDED"
+      ? "Suspend"
+      : "Activate",
+});
+
+if (!result.isConfirmed) {
+  return;
+}
+
+  try {
+    const endpoint =
+      newStatus === "SUSPENDED"
+        ? `/v1/admin/companies/${companyId}/suspend`
+        : `/v1/admin/companies/${companyId}/active`;
+
+    const { data } = await axiosInstance.put(endpoint);
+if (data.success) {
+  toast.success(
+    newStatus === "SUSPENDED"
+      ? "Company suspended successfully"
+      : "Company activated successfully"
+  );
+
+  await fetchCompanies();
+} else {
+      toast.error(
+  data.message ||
+  `Failed to ${actionText} company`
+);
     }
-  };
+  } catch (error: any) {
+    console.error(error);
+
+    toast.error(
+  error?.response?.data?.message ||
+  error.message ||
+  `Failed to ${actionText} company`
+);
+  }
+};
 
   return (
     <div className="mc-root">
@@ -1103,7 +1226,7 @@ const handleBulkDelete = async () => {
           <td>{company.phone}</td>
 
         <td className="mc-credit-cell">
-  ${Number(company.creditBalance || 0).toFixed(2)}
+  ₹{Number(company.creditBalance || 0).toFixed(2)}
 </td>
           <td>
             <Badge status={company.status} />
@@ -1186,6 +1309,15 @@ const handleBulkDelete = async () => {
           }}
         />
       )}
+      <ToastContainer
+  position="top-right"
+  autoClose={3000}
+  hideProgressBar={false}
+  newestOnTop
+  closeOnClick
+  pauseOnHover
+  theme="dark"
+/>
     </div>
   );
 }

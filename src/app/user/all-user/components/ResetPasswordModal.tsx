@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { toast } from "react-toastify";
 
 interface ResetPasswordModalProps {
   onClose: () => void;
@@ -15,10 +16,10 @@ export function ResetPasswordModal({ onClose }: ResetPasswordModalProps) {
   const [loading,         setLoading]         = useState(false);
 
   const handlePasswordChange = async () => {
-    if (!currentPassword || !newPassword) {
-      alert("All fields are required");
-      return;
-    }
+  if (!currentPassword || !newPassword) {
+  toast.error("All fields are required");
+  return;
+}
 
     try {
       setLoading(true);
@@ -27,16 +28,20 @@ export function ResetPasswordModal({ onClose }: ResetPasswordModalProps) {
         new_password:     newPassword,
       });
 
-      if (data.success) {
-        alert("Password changed successfully");
-        onClose();
-      } else {
-        alert(data.message || "Password change failed");
+     if (data.success) {
+  toast.success("Password changed successfully");
+  onClose();
+} else {
+       toast.error(data.message || "Password change failed");
       }
-    } catch (error) {
-      console.error("Password Error:", error);
-      alert("Something went wrong");
-    } finally {
+    } catch (error: any) {
+  console.error("Password Error:", error);
+
+  toast.error(
+    error?.response?.data?.message ||
+    "Something went wrong"
+  );
+} finally {
       setLoading(false);
     }
   };
