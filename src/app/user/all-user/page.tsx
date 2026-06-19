@@ -379,7 +379,7 @@ const handleSuspendToggle = async (user: User) => {
 
       {/* Reset password modal */}
       {passwordUser && (
-        <ResetPasswordModal onClose={() => setPasswordUser(null)} />
+        <ResetPasswordModal user={passwordUser} onClose={() => setPasswordUser(null)} />
       )}
       <ToastContainer
   position="top-right"
