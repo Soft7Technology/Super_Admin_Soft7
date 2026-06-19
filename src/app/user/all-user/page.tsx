@@ -91,8 +91,7 @@ const handleSuspendToggle = async (user: User) => {
       );
       // Optimistically update the UI immediately
       updateUserStatus(user.id, isSuspended ? "ACTIVE" : "SUSPENDED");
-      // Then refresh from server to confirm
-      refresh();
+      
     } else {
       toast.error(data.message || "Operation failed");
     }

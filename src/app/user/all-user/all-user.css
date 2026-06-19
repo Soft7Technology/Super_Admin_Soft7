@@ -758,18 +758,8 @@ html[data-theme="dark"], body[data-theme="dark"] {
   white-space: nowrap;
 }
 .au-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.7);
-  backdrop-filter: blur(6px);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  z-index: 9999;
+  background: var(--overlay-bg);
 }
-
 .au-modal--detail {
   width: 520px;
   max-width: 95vw;
@@ -777,8 +767,23 @@ html[data-theme="dark"], body[data-theme="dark"] {
 
   overflow-y: auto;
 
-  background: #0f1120;
+  background: var(--modal-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 20px;
+
+  transition: all 0.3s ease;
+}
+[data-theme="light"] .au-modal--detail,
+.light .au-modal--detail {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+[data-theme="dark"] .au-modal--detail,
+.dark .au-modal--detail {
+  background: #0f1120 !important;
+  color: #e2e8f0 !important;
 }
 /* ─── ACTION GROUP (table Actions column) ────────────────── */
 .au-action-group {
