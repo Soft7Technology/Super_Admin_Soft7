@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 
+
 export const metadata: Metadata = { title: "Super Admin | Soft7" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

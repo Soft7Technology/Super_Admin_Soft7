@@ -1,8 +1,8 @@
 # ---------- PACKAGE GROUPS (Synced with package.json) ----------
 
-PACKAGES = @prisma/client @radix-ui/react-select @tanstack/react-query axios bcryptjs cookie-parser cors dotenv express gsap ioredis jose jsonwebtoken libphonenumber-js lucide-react morgan multer next nodemailer react react-dom react-hot-toast redis twilio uuid
+PACKAGES = @prisma/client @radix-ui/react-select @tanstack/react-query axios bcryptjs cookie-parser cors dotenv express gsap ioredis jose jsonwebtoken libphonenumber-js lucide-react morgan multer next nodemailer react react-dom react-hot-toast redis twilio uuid react-phone-input-2 file-saver
 
-DEV_PACKAGES = @types/node @types/nodemailer @types/react @types/react-dom autoprefixer nodemon postcss prisma tailwindcss typescript
+DEV_PACKAGES = @types/node @types/nodemailer @types/react @types/react-dom @types/file-saver autoprefixer nodemon postcss prisma tailwindcss typescript
 
 # ---------- INSTALL ----------
 install:
