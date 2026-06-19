@@ -7,7 +7,7 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const COMPANIES_API = "/v1/admin/companies";
+const COMPANIES_API = "/v1/admin/companies?status=active";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 // Raw shape returned by the API
