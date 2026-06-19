@@ -56,66 +56,23 @@ export default function AllUsers() {
       setSelectedUsers(filteredUsers.map((u) => u.id));
     }
   };
-const confirmBulkDelete = (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    const toastId = toast(
-      <div>
-        <p>Delete {selectedUsers.length} selected users?</p>
 
-        <div className="au-toast-actions">
-          <button
-            className="au-btn au-btn--danger"
-            onClick={() => {
-              toast.dismiss(toastId);
-              resolve(true);
-            }}
-          >
-            Delete
-          </button>
+  const handleDeleteSelected = async () => {
+    if (!selectedUsers.length) return;
+    const confirmDelete = window.confirm(`Delete ${selectedUsers.length} users?`);
+    if (!confirmDelete) return;
+    try {
+      await axiosInstance.delete("/v1/admin/users/bulk-delete", {
+        data: { user_ids: selectedUsers },
+      });
+  toast.success(`${selectedUsers.length} users deleted successfully`);
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+   toast.error("Failed to delete users");
+    }
+  };
 
-          <button
-            className="au-btn"
-            onClick={() => {
-              toast.dismiss(toastId);
-              resolve(false);
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>,
-      {
-        position: "top-center",
-        autoClose: false,
-        closeOnClick: false,
-        closeButton: false,
-        className: "au-confirm-toast",
-      }
-    );
-  });
-};
-const handleDeleteSelected = async () => {
-  if (!selectedUsers.length) return;
-
-  const confirmed = await confirmBulkDelete();
-  if (!confirmed) return;
-
-  try {
-    await axiosInstance.delete("/v1/admin/users/bulk-delete", {
-      data: { user_ids: selectedUsers },
-    });
-
-    toast.success(
-      `${selectedUsers.length} users deleted successfully`
-    );
-
-    setSelectedUsers([]);
-    refresh();
-  } catch (error) {
-    console.error(error);
-    toast.error("Failed to delete selected users");
-  }
-};
 const handleSuspendToggle = async (user: User) => {
   const isSuspended = user.status === "SUSPENDED";
 
