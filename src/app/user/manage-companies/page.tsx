@@ -65,7 +65,6 @@ interface Company {
   end: string;
   creditBalance: string;
   createdAt: string;
-  apiKey: string | null;
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -126,7 +125,6 @@ function enrichCompany(raw: RawCompany): Company {
     createdAt:     raw.created_at
       ? new Date(raw.created_at).toLocaleDateString()
       : "—",
-    apiKey: raw.api_key,
   };
 }
 
@@ -622,17 +620,7 @@ function CompanyDetailModal({
           ))}
         </div>
 
-        {company.apiKey && (
-          <div className="mc-quickstat">
-            <div className="mc-quickstat__lbl">API KEY</div>
-            <div
-              className="mc-quickstat__row"
-              style={{ fontSize: 11, wordBreak: "break-all", color: "var(--mc-muted)", padding: "8px 0" }}
-            >
-              {company.apiKey.slice(0, 32)}…
-            </div>
-          </div>
-        )}
+
 
         <div className="mc-detail__actions">
           {company.status !== "SUSPENDED"
