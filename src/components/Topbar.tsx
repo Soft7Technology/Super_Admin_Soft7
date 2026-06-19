@@ -24,29 +24,10 @@ export default function Topbar({
   const [winWidth, setWinWidth] = useState(1024);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
 const router = useRouter();
 const pathname = usePathname();
-
-const handleLogout = async () => {
-  try {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-    });
-
-    localStorage.clear();
-    sessionStorage.clear();
-
-    router.replace("/auth");
-  } catch (error) {
-    console.error(error);
-
-    localStorage.clear();
-    sessionStorage.clear();
-
-    router.replace("/auth");
-  }
-};
 
 useEffect(() => {
   const handleResize = () => {
@@ -69,8 +50,8 @@ useEffect(() => {
 useEffect(() => {
   const handleClickOutside = (event: MouseEvent) => {
     if (
-      dropdownRef.current &&
-      !dropdownRef.current.contains(event.target as Node)
+      profileMenuRef.current &&
+      !profileMenuRef.current.contains(event.target as Node)
     ) {
       setDd(false);
     }
@@ -289,9 +270,10 @@ useEffect(() => {
         >
           {isDark ? "☀️" : "🌙"}
         </button>
-<div style={{ position: "relative" }}>
-  <div
-    onClick={() => setNotificationOpen(!notificationOpen)}
+
+        <div ref={dropdownRef} style={{ position: "relative" }}>
+          <div
+            onClick={() => setNotificationOpen(!notificationOpen)}
             style={{
               width: "36px",
               height: "36px",
@@ -316,10 +298,7 @@ useEffect(() => {
           }}
         />
 
-       <div
-  ref={dropdownRef}
-  style={{ position: "relative" }}
->
+        <div style={{ position: "relative" }} ref={profileMenuRef}>
           <div
             onClick={() => setDd((p) => !p)}
             style={{
@@ -416,21 +395,25 @@ useEffect(() => {
               ].map((item, i, arr) => (
                 <div
                   key={item.label}
-               onMouseDown={async () => {
-                 if (item.label === "Logout") {
-  console.log("Logout clicked");
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    setDd(false);
 
-  localStorage.clear();
-  sessionStorage.clear();
-
-  window.location.href = "/auth";
-
-  return;
-}else if (item.route) {
+                    if (item.label === "Logout") {
+                      try {
+                        await fetch("/api/auth/logout", { method: "POST" });
+                      } catch (_) {
+                        // ignore — we clear everything regardless
+                      }
+                      // Clear local storage token
+                      localStorage.removeItem("console_access_token");
+                      // Clear client-side cookie
+                      document.cookie = "accessToken=; path=/; max-age=0; SameSite=Lax";
+                      document.cookie = "refreshToken=; path=/; max-age=0; SameSite=Lax";
+                      router.replace("/auth");
+                    } else if (item.route) {
                       router.push(item.route);
                     }
-
-                    setDd(false);
                   }}
                   style={{
                     padding: "10px 16px",
