@@ -288,12 +288,7 @@ formData.append("email", email);
 if (phone) {
   formData.append("phone", phone);
 }
-
-
-
-    if (isEdit) {
-      formData.append("status", status.toLowerCase());
-    } else {
+ else {
       formData.append(
   "user",
   JSON.stringify({
@@ -312,7 +307,33 @@ if (phone) {
 
       console.log("REQUEST BODY =>", Object.fromEntries(formData.entries()));
 
-      const { data } = await axiosInstance.put(url, formData);
+let data;
+
+if (isEdit) {
+  const response = await axiosInstance.put(url, formData);
+
+  data = response.data;
+
+  // Handle Active/Suspend API
+  if (
+    company?.status !== status &&
+    (status === "ACTIVE" || status === "SUSPENDED")
+  ) {
+    const statusEndpoint =
+      status === "ACTIVE"
+        ? `/v1/admin/companies/${company.id}/active`
+        : `/v1/admin/companies/${company.id}/suspend`;
+
+    await axiosInstance.put(statusEndpoint);
+  }
+} else {
+  const response = await axiosInstance.post(
+    "/v1/admin/companies",
+    formData
+  );
+
+  data = response.data;
+}
 
     console.log("COMPANY RESPONSE =>", data);
 
@@ -336,6 +357,11 @@ if (phone) {
   return;
 }// Refresh data
 await onSuccess();
+toast.success(
+  company
+    ? "Company updated successfully"
+    : "Company created successfully"
+);
 
 // Reset form
 setName("");
