@@ -579,6 +579,7 @@ html[data-theme="dark"], body[data-theme="dark"] {
   gap: 6px;
   font-size: 13px;
   font-weight: 500;
+  margin-top: 8px;
 }
 .au-btn--bulk-delete {
   width: auto !important;
@@ -598,21 +599,13 @@ html[data-theme="dark"], body[data-theme="dark"] {
 }
 .au-selection-toolbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start; /* moves everything to left */
   align-items: center;
   gap: 12px;
 
-  margin-top: -48px;
-  margin-bottom: 18px;
-
-  padding-right: 10px;
-}
-
-.au-btn--bulk-delete {
-  width: auto !important;
-  min-width: 170px;
-  height: 34px;
-  padding: 0 14px;
+  margin-top: 12px;   /* remove negative margin */
+  margin-bottom: 12px;
+  padding-left: 4px;
 }
 
 .au-select-all {
@@ -620,7 +613,16 @@ html[data-theme="dark"], body[data-theme="dark"] {
   align-items: center;
   gap: 6px;
   font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
+  margin: 0;
+}
+
+.au-btn--bulk-delete {
+  width: auto !important;
+  min-width: 170px;
+  height: 34px;
+  padding: 0 14px;
 }
 /* =========================
    TABLE
