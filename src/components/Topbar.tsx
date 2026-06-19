@@ -28,6 +28,26 @@ export default function Topbar({
 const router = useRouter();
 const pathname = usePathname();
 
+const handleLogout = async () => {
+  try {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+    });
+
+    localStorage.clear();
+    sessionStorage.clear();
+
+    router.replace("/auth");
+  } catch (error) {
+    console.error(error);
+
+    localStorage.clear();
+    sessionStorage.clear();
+
+    router.replace("/auth");
+  }
+};
+
 useEffect(() => {
   const handleResize = () => {
     setIsMobile(window.innerWidth < 640);
@@ -269,10 +289,9 @@ useEffect(() => {
         >
           {isDark ? "☀️" : "🌙"}
         </button>
-
-        <div ref={dropdownRef} style={{ position: "relative" }}>
-          <div
-            onClick={() => setNotificationOpen(!notificationOpen)}
+<div style={{ position: "relative" }}>
+  <div
+    onClick={() => setNotificationOpen(!notificationOpen)}
             style={{
               width: "36px",
               height: "36px",
@@ -297,7 +316,10 @@ useEffect(() => {
           }}
         />
 
-        <div style={{ position: "relative" }}>
+       <div
+  ref={dropdownRef}
+  style={{ position: "relative" }}
+>
           <div
             onClick={() => setDd((p) => !p)}
             style={{
@@ -394,16 +416,17 @@ useEffect(() => {
               ].map((item, i, arr) => (
                 <div
                   key={item.label}
-                  onClick={async () => {
-                    if (item.label === "Logout") {
-                      const response = await fetch("/api/auth/logout", {
-                        method: "POST",
-                      });
+               onMouseDown={async () => {
+                 if (item.label === "Logout") {
+  console.log("Logout clicked");
 
-                      if (response.ok) {
-                        router.push("/auth");
-                      }
-                    } else if (item.route) {
+  localStorage.clear();
+  sessionStorage.clear();
+
+  window.location.href = "/auth";
+
+  return;
+}else if (item.route) {
                       router.push(item.route);
                     }
 

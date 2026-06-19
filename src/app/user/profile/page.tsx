@@ -137,8 +137,8 @@ function HeroCard({
               { icon: "📱", val: profile?.phone ? `+91 ${profile.phone}` : "—" },
               ...(lastLogin ? [{ icon: "🕐", val: `Last login: ${lastLogin}` }] : []),
               { icon: "🌐", val: profile?.status === "active" ? "Active" : profile?.status ?? "—" },
-            ].map(({ icon, val }) => (
-              <span key={val} className="pf-hero__meta-item">
+           ].map(({ icon, val }, index) => (
+  <span key={`${icon}-${index}`} className="pf-hero__meta-item">
                 <span className="pf-hero__meta-icon">{icon}</span>{val}
               </span>
             ))}
