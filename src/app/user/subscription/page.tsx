@@ -3,69 +3,78 @@
 import { useState, useEffect } from "react";
 import "./subscription.css";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-const EXTERNAL_API = "/v1/admin/subscription/plan?active=true";
 
-const getExternalHeaders = () => {
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const EXTERNAL_API =
+ "/v1/admin/subscription/plan?active=true";
+ const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
       ? localStorage.getItem("console_access_token")
       : null;
-  if (token && token.startsWith('"') && token.endsWith('"')) {
+
+  if (
+    token &&
+    token.startsWith('"') &&
+    token.endsWith('"')
+  ) {
     token = token.slice(1, -1);
   }
+
   return {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+    ...(token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {}),
   };
 };
 
-const updateSubscriptionPlan = async (id: string, payload: any) => {
-  return axiosInstance.put(`/v1/admin/subscription/plan/${id}`, payload, {
-    headers: getExternalHeaders(),
-    withCredentials: false,
-  });
+const updateSubscriptionPlan = async (
+  id: string,
+  payload: any
+) => {
+  return axiosInstance.put(
+    `/v1/admin/subscription/plan/${id}`,
+    payload,
+    {
+      headers: getExternalHeaders(),
+      withCredentials: false,
+    }
+  );
 };
 
-const createSubscriptionPlan = async (payload: any) => {
-  return axiosInstance.post("/v1/admin/subscription/plan", payload, {
-    headers: getExternalHeaders(),
-    withCredentials: false,
-  });
+const createSubscriptionPlan = async (
+  payload: any
+) => {
+  return axiosInstance.post(
+    "/v1/admin/subscription/plan",
+    payload,
+    {
+      headers: getExternalHeaders(),
+      withCredentials: false,
+    }
+  );
 };
+
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-type SubStatus = "ACTIVE" | "TRIAL" | "EXPIRED" | "SUSPENDED" | "CANCELLED";
-type PlanName  = "Starter" | "Basic" | "Pro" | "Enterprise";
-type TxnStatus = "SUCCESS" | "FAILED" | "REFUNDED";
-type TxnType   = "New" | "Renewal" | "Upgrade" | "Failed" | "Trial" | "Refund";
-type BillingCycle = "Monthly" | "Yearly";
+type SubStatus =
+  | "ACTIVE"
+  | "TRIAL"
+  | "EXPIRED"
+  | "SUSPENDED"
+  | "CANCELLED";
+type PlanName  = "Starter"|"Basic"|"Pro"|"Enterprise";
+type TxnStatus = "SUCCESS"|"FAILED"|"REFUNDED";
+type TxnType   = "New"|"Renewal"|"Upgrade"|"Failed"|"Trial"|"Refund";
 
-// ── Represents one plan from the API ──
-interface ApiPlan {
-  id: string;
-  plan_name: string;
-  company_id: string;
-  user_id: string;
-  price: string;
-  description: string | null;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string;
-  billing_cycle: string | null;
-  features: Record<string, { limit_type?: string; limit_value: number | string | null }>;
-  discount_percentage?: number;
-yearly_price?: number;
-}
-
-// ── Internal display row ──
 interface SubRow {
   id: string;
-  planName: string;
+  company: string;
   logo: string;
   col: string;
   plan: PlanName;
@@ -73,123 +82,45 @@ interface SubRow {
   start: string;
   end: string;
   amt: number;
-  billingCycle: string;
-  description: string;
-  usersLimit: string;
-  waLimit: string;
-  msgsLimit: string;
-  otherFeatures: string[];
-  rawData: ApiPlan;
-  discountPercentage?: number;
-yearlyPrice?: number;
+  users: number;
+  seats: number;
+
+  // API original data
+  rawData?: any;
 }
+interface PlanRow   { id:number; name:PlanName; price:number; yearPrice:number; icon:string; col:string; users:string; wa:string; msgs:string; popular?:boolean; extra:string[]; }
+interface Transaction { id:number; company:string; logo:string; col:string; plan:PlanName; amount:number; date:string; type:TxnType; status:TxnStatus; }
+interface CustomPlan  { id:number; name:string; price:number; yearPrice:number; icon:string; col:string; users:string; wa:string; msgs:string; popular:boolean; extra:string[]; }
 
-interface CustomPlan {
-  id: number;
-  name: string;
-  price: number;
-  yearPrice: number;
-  icon: string;
-  col: string;
-  users: string;
-  wa: string;
-  msgs: string;
-  popular: boolean;
-  extra: string[];
-  billingCycle: BillingCycle;
-}
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+const INIT_SUBS: SubRow[] = [
+  { id:"1", company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
+];
 
-interface Transaction {
-  id: number;
-  company: string;
-  logo: string;
-  col: string;
-  plan: PlanName;
-  amount: number;
-  date: string;
-  type: TxnType;
-  status: TxnStatus;
-}
+const INIT_PLANS: PlanRow[] = [
+  { id:1, name:"Starter",    price:499,  yearPrice:399,  icon:"🌱", col:"#00CBA4", users:"5",  wa:"1", msgs:"1K",  extra:["Email Support","Basic Reports","1 Chatbot"] },
+  { id:2, name:"Basic",      price:999,  yearPrice:799,  icon:"🚀", col:"#FDCB6E", users:"15", wa:"2", msgs:"5K",  extra:["Priority Support","Advanced Reports","5 Chatbots","Campaigns"] },
+  { id:3, name:"Pro",        price:2499, yearPrice:1999, icon:"⚡", col:"#6C5CE7", users:"50", wa:"5", msgs:"25K", popular:true, extra:["24/7 Support","AI Assistant","Unlimited Chatbots","Flows","Custom Branding"] },
+  { id:4, name:"Enterprise", price:7999, yearPrice:6399, icon:"🏆", col:"#A29BFE", users:"∞", wa:"∞", msgs:"∞",  extra:["Dedicated Manager","SLA 99.9%","Custom Integration","White Label","SSO"] },
+];
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const HISTORY: Transaction[] = [];
 
-const formatLimit = (val: number | string | null | undefined): string => {
-  if (val === null || val === undefined) return "∞";
-  if (val === "unlimited") return "∞";
-  if (typeof val === "number") {
-    if (val < 0) return "∞";
-    if (val === 999999) return "∞";
-    if (val >= 1000) return `${val / 1000}K`;
-    return String(val);
-  }
-  return String(val);
+const TYPE_COLOR: Record<TxnType, string> = {
+  New:"#00CBA4", Renewal:"#A29BFE", Upgrade:"#FDCB6E",
+  Failed:"#FF6B6B", Trial:"#74B9FF", Refund:"#FD79A8",
+};
+const ICON_OPTIONS  = ["🌱","🚀","⚡","🏆","💎","🔥","🌟","🎯","🛡️","🧩"];
+const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#74B9FF","#FD79A8","#00B894","#E17055","#0984e3"];
+
+// ─── PLAN COLOR MAP ───────────────────────────────────────────────────────────
+const PLAN_COLORS: Record<string, string> = {
+  starter:    "#00CBA4",
+  basic:      "#FDCB6E",
+  pro:        "#6C5CE7",
+  enterprise: "#A29BFE",
 };
 
-const extractLimits = (features: ApiPlan["features"]) => {
-  const users = formatLimit(features?.users?.limit_value);
-  const wa    = formatLimit(features?.whatsapp_accounts?.limit_value);
-  const msgs  = formatLimit(features?.messages_per_month?.limit_value);
-
-  const coreKeys = new Set(["users", "whatsapp_accounts", "messages_per_month"]);
-  const others = Object.entries(features || {})
-    .filter(([k]) => !coreKeys.has(k))
-    .map(([k, v]) => {
-      const label = k.replace(/_/g, " ");
-      const lv    = formatLimit(v?.limit_value);
-      return `${label}: ${lv}`;
-    });
-
-  return { users, wa, msgs, others };
-};
-
-// ── FIXED: resolvePlanType now uses price-based fallback ──
-const resolvePlanType = (name: string, price?: number): { plan: PlanName; col: string } => {
-  const lower = name.toLowerCase();
-
-  // Name-based matching first
-  if (lower.includes("enterprise"))                          return { plan: "Enterprise", col: "#A29BFE" };
-  if (lower.includes("pro"))                                 return { plan: "Pro",        col: "#6C5CE7" };
-  if (lower.includes("basic"))                               return { plan: "Basic",      col: "#FDCB6E" };
-  if (lower.includes("starter") || lower.includes("free"))   return { plan: "Starter",    col: "#00CBA4" };
-  if (lower.includes("premium") || lower.includes("unlimited")) return { plan: "Enterprise", col: "#A29BFE" };
-
-  // Price-based fallback for unrecognised names
-  const p = price ?? 0;
-  if (p === 0)   return { plan: "Starter",    col: "#00CBA4" };
-  if (p < 500)   return { plan: "Starter",    col: "#00CBA4" };
-  if (p < 1500)  return { plan: "Basic",      col: "#FDCB6E" };
-  if (p < 4000)  return { plan: "Pro",        col: "#6C5CE7" };
-  return           { plan: "Enterprise",  col: "#A29BFE" };
-};
-
-const mapApiPlan = (plan: ApiPlan): SubRow => {
-  // Pass price to resolvePlanType for fallback
-  const { plan: planType, col } = resolvePlanType(plan.plan_name, Number(plan.price || 0));
-  const { users, wa, msgs, others } = extractLimits(plan.features || {});
-
-  return {
-    id:           plan.id,
-    planName:     plan.plan_name,
-    logo:         plan.plan_name.charAt(0).toUpperCase(),
-    col,
-    plan:         planType,
-    status:       plan.active ? "ACTIVE" : "EXPIRED",
-    start:        new Date(plan.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-    end:          new Date(plan.updated_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-    amt:          Number(plan.price || 0),
-    billingCycle: plan.billing_cycle || "—",
-    description:  plan.description || "",
-    usersLimit:   users,
-    waLimit:      wa,
-    msgsLimit:    msgs,
-    otherFeatures: others,
-    rawData:      plan,
-    discountPercentage: plan.discount_percentage || 0,
-yearlyPrice: plan.yearly_price || 0,
-  };
-};
-
-// ─── EXCEL EXPORT ─────────────────────────────────────────────────────────────
 const escapeExcelCell = (value: unknown) =>
   String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -197,79 +128,120 @@ const escapeExcelCell = (value: unknown) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-
-const downloadExcel = (rows: SubRow[]) => {
-  const data = rows.map((r) => ({
-    "Plan Name": r.planName,
-    "Plan Type": r.plan,
-    Status: r.status,
-    Price: r.amt,
-    "Billing Cycle": r.billingCycle,
-    Users: r.usersLimit,
-    "WA Accounts": r.waLimit,
-    Messages: r.msgsLimit,
-    Description: r.description,
-    Created: r.start,
-    Updated: r.end,
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(data);
-
-  worksheet["!cols"] = [
-    { wch: 25 },
-    { wch: 15 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 15 },
-    { wch: 12 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 40 },
-    { wch: 15 },
-    { wch: 15 },
-  ];
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Plans");
-
-  const excelBuffer = XLSX.write(workbook, {
-    bookType: "xlsx",
-    type: "array",
-  });
-
-  const file = new Blob([excelBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-
-  saveAs(file, "subscription-plans.xlsx");
+const serialiseExportValue = (value: unknown) => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
 };
 
-// ─── ICON / COLOR OPTIONS ─────────────────────────────────────────────────────
-const ICON_OPTIONS  = ["🌱","🚀","⚡","🏆","💎","🔥","🌟","🎯","🛡️","🧩"];
-const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#74B9FF","#FD79A8","#00B894","#E17055","#0984e3"];
-const TYPE_COLOR: Record<TxnType, string> = { New:"#00CBA4", Renewal:"#A29BFE", Upgrade:"#FDCB6E", Failed:"#FF6B6B", Trial:"#74B9FF", Refund:"#FD79A8" };
+const downloadExcel = (rows: SubRow[]) => {
+  if (rows.length === 0) {
+    alert("No subscription data available to export.");
+    return;
+  }
 
-// Plan type selector options for Create Plan modal
-const PLAN_TYPE_OPTIONS: { label: PlanName; col: string; icon: string }[] = [
-  { label: "Starter",    col: "#00CBA4", icon: "🌱" },
-  { label: "Basic",      col: "#FDCB6E", icon: "⚡" },
-  { label: "Pro",        col: "#6C5CE7", icon: "🚀" },
-  { label: "Enterprise", col: "#A29BFE", icon: "🏆" },
-];
+  const columns = [
+    "Plan ID",
+    "Plan Name",
+    "Mapped Plan Type",
+    "Status",
+    "Price",
+    "Feature Count",
+    "Total Limits",
+    "Created Date",
+    "Updated Date",
+    "API Active",
+    "Billing Cycle",
+    "Popular",
+    "Description",
+    "Features",
+    "Raw API Data",
+  ];
+
+  const tableRows = rows.map((row) => {
+    const raw = row.rawData ?? {};
+
+    return [
+      row.id,
+      raw.plan_name ?? row.company,
+      row.plan,
+      row.status,
+      row.amt,
+      row.users,
+      row.seats,
+      row.start,
+      row.end,
+      raw.active ?? "",
+      raw.billing_cycle ?? "",
+      raw.popular ?? "",
+      raw.description ?? "",
+      serialiseExportValue(raw.features),
+      serialiseExportValue(raw),
+    ];
+  });
+
+  const worksheet = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <table>
+      <thead>
+        <tr>${columns.map((column) => `<th>${escapeExcelCell(column)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        ${tableRows
+          .map(
+            (row) =>
+              `<tr>${row
+                .map((cell) => `<td>${escapeExcelCell(cell)}</td>`)
+                .join("")}</tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+  </body>
+</html>`;
+
+  const blob = new Blob([worksheet], {
+    type: "application/vnd.ms-excel;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  link.href = url;
+  link.download = `subscription-plans-${stamp}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 function Badge({ status }: { status: SubStatus }) {
-  const labels: Record<SubStatus, string> = { ACTIVE:"Active", TRIAL:"Trial", EXPIRED:"Expired", SUSPENDED:"Suspended", CANCELLED:"Cancelled" };
+  const labels: Record<SubStatus, string> = {
+    ACTIVE: "Active",
+    TRIAL: "Trial",
+    EXPIRED: "Expired",
+    SUSPENDED: "Suspended",
+    CANCELLED: "Cancelled",
+  };
+
   return (
     <span className={`sb-badge sb-badge--${status}`}>
-      <span className="sb-badge__dot" />{labels[status]}
+      <span className="sb-badge__dot" />
+      {labels[status]}
     </span>
   );
 }
 
-function KPI({ label, value, delta, icon, color, up=true }: { label:string; value:string; delta?:string; icon:string; color:string; up?:boolean }) {
+function PlanChip({ plan }: { plan: PlanName }) {
+  return <span className={`sb-plan-chip sb-plan-chip--${plan}`}>{plan}</span>;
+}
+
+function KPI({ label,value,delta,icon,color,up=true }:{ label:string; value:string; delta?:string; icon:string; color:string; up?:boolean }) {
   return (
     <div className="sb-kpi">
       <div className="sb-kpi__orb" style={{ background:`${color}10` }} />
@@ -283,7 +255,7 @@ function KPI({ label, value, delta, icon, color, up=true }: { label:string; valu
   );
 }
 
-function Inp({ label, value, onChange, placeholder, type="text", error, prefix }: {
+function Inp({ label,value,onChange,placeholder,type="text",error,prefix }:{
   label:string; value:string; onChange:(v:string)=>void;
   placeholder?:string; type?:string; error?:string; prefix?:string;
 }) {
@@ -300,46 +272,42 @@ function Inp({ label, value, onChange, placeholder, type="text", error, prefix }
   );
 }
 
-function Tog({ on, setOn }: { on:boolean; setOn:(v:boolean)=>void }) {
+function Tog({ on, setOn }:{ on:boolean; setOn:(v:boolean)=>void }) {
   return (
-    <button type="button" className={`sb-toggle ${on?"sb-toggle--on":""}`} onClick={()=>setOn(!on)} aria-pressed={on}>
+    <button
+      type="button"
+      className={`sb-toggle ${on?"sb-toggle--on":""}`}
+      onClick={()=>setOn(!on)}
+      aria-pressed={on}
+      aria-label={on ? "Enabled" : "Disabled"}
+    >
       <div className="sb-toggle__knob" />
     </button>
   );
 }
 
 // ─── CREATE PLAN MODAL ────────────────────────────────────────────────────────
-function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:CustomPlan)=>void }) {
-  const [step,         setStep]         = useState<1|2|3>(1);
-  const [name,         setName]         = useState("");
-  const [price,        setPrice]        = useState("");
-  const [yearPct,      setYearPct]      = useState("0");
-  const [users,        setUsers]        = useState("");
-  const [wa,           setWa]           = useState("");
-  const [msgs,         setMsgs]         = useState("");
-  const [icon,         setIcon]         = useState("🌱");
-  const [col,          setCol]          = useState("#6C5CE7");
-  const [popular,      setPopular]      = useState(false);
-  const [feats,        setFeats]        = useState(["","",""]);
-  const [errors,       setErrors]       = useState<Record<string,string>>({});
-  const [aiOn,         setAiOn]         = useState(false);
-  const [brandOn,      setBrandOn]      = useState(false);
-  const [apiOn,        setApiOn]        = useState(false);
-  const [suppOn,       setSuppOn]       = useState(false);
-  const [done,         setDone]         = useState(false);
-  // NEW: Billing cycle & plan type states
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("Monthly");
-  const [planType,     setPlanType]     = useState<PlanName>("Starter");
+function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:CustomPlan)=>void }) {
+  const [step,    setStep]    = useState<1|2|3>(1);
+  const [name,    setName]    = useState("");
+  const [price,   setPrice]   = useState("");
+  const [yearPct, setYearPct] = useState("20");
+  const [users,   setUsers]   = useState("");
+  const [wa,      setWa]      = useState("");
+  const [msgs,    setMsgs]    = useState("");
+  const [icon,    setIcon]    = useState("🌱");
+  const [col,     setCol]     = useState("#6C5CE7");
+  const [popular, setPopular] = useState(false);
+  const [feats,   setFeats]   = useState(["","",""]);
+  const [errors,  setErrors]  = useState<Record<string,string>>({});
+  const [aiOn,    setAiOn]    = useState(false);
+  const [brandOn, setBrandOn] = useState(false);
+  const [apiOn,   setApiOn]   = useState(false);
+  const [suppOn,  setSuppOn]  = useState(false);
+  const [done,    setDone]    = useState(false);
 
   const mp = parseInt(price)||0;
   const ap = Math.round(mp*(1-(parseInt(yearPct||"0")/100)));
-
-  // Sync icon/col when planType changes
-  const handlePlanTypeChange = (pt: PlanName) => {
-    setPlanType(pt);
-    const found = PLAN_TYPE_OPTIONS.find(o => o.label === pt);
-    if (found) { setCol(found.col); setIcon(found.icon); }
-  };
 
   const validate = () => {
     const e: Record<string,string> = {};
@@ -352,27 +320,9 @@ function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:Cust
 
   const handleSave = () => {
     if(!validate()) return;
-    onSave({
-      id: Date.now(),
-      name: name.trim(),
-      price: mp,
-      yearPrice: ap,
-      icon,
-      col,
-      users,
-      wa,
-      msgs,
-      popular,
-      billingCycle,
-      extra: [
-        ...feats.filter(f=>f.trim()),
-        ...(aiOn    ? ["AI Assistant"]      : []),
-        ...(brandOn ? ["Custom Branding"]   : []),
-        ...(apiOn   ? ["API Access"]        : []),
-        ...(suppOn  ? ["Priority Support"]  : []),
-      ],
-    });
-    setDone(true); setTimeout(onClose, 1400);
+    onSave({ id:Date.now(), name:name.trim(), price:mp, yearPrice:ap, icon, col, users, wa, msgs, popular,
+      extra:[...feats.filter(f=>f.trim()), ...(aiOn?["AI Assistant"]:[]), ...(brandOn?["Custom Branding"]:[]), ...(apiOn?["API Access"]:[]), ...(suppOn?["Priority Support"]:[])] });
+    setDone(true); setTimeout(onClose,1400);
   };
 
   const STEPS = ["Basic Info","Limits","Features"];
@@ -383,7 +333,7 @@ function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:Cust
         <div className="sb-success-icon">✓</div>
         <div className="sb-success-title">Plan Created!</div>
         <div className="sb-success-desc">
-          <span style={{ color:col, fontWeight:700 }}>{icon} {name}</span> is now live.
+          <span style={{ color:col, fontWeight:700 }}>{icon} {name}</span> is now live in your plan list.
         </div>
       </div>
     </div>
@@ -417,82 +367,33 @@ function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:Cust
           {step===1 && (
             <div style={{ display:"flex", flexDirection:"column", gap:15 }}>
               <Inp label="PLAN NAME" value={name} onChange={setName} placeholder="e.g. Growth, Teams, Scale…" error={errors.name} />
-
-              {/* ── NEW: Plan Type Selector ── */}
-              <div>
-                <div className="sb-field__label" style={{ marginBottom:8 }}>PLAN TYPE</div>
-                <div style={{ display:"flex", gap:8 }}>
-                  {PLAN_TYPE_OPTIONS.map(opt => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => handlePlanTypeChange(opt.label)}
-                      style={{
-                        flex: 1,
-                        padding: "8px 4px",
-                        borderRadius: 10,
-                        border: `2px solid ${planType === opt.label ? opt.col : "var(--sb-border, #e0e0e0)"}`,
-                        background: planType === opt.label ? `${opt.col}18` : "transparent",
-                        color: planType === opt.label ? opt.col : "var(--sb-muted)",
-                        fontWeight: 700,
-                        fontSize: 12,
-                        cursor: "pointer",
-                        transition: "all 0.15s",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                    >
-                      <span style={{ fontSize: 18 }}>{opt.icon}</span>
-                      <span>{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="sb-form-grid-2">
                 <Inp label="MONTHLY PRICE (₹)" value={price} onChange={setPrice} placeholder="2499" type="number" prefix="₹" error={errors.price} />
-                <Inp label="YEARLY DISCOUNT (%)" value={yearPct} onChange={setYearPct} placeholder="0" type="number" />
+                <Inp label="YEARLY DISCOUNT (%)" value={yearPct} onChange={setYearPct} placeholder="20" type="number" />
               </div>
-
-              {mp > 0 && billingCycle === "Yearly" && (
+              {mp>0 && (
                 <div className="sb-price-preview">
                   <span className="sb-price-preview__label">Annual billing price / mo</span>
-                  <span className="sb-price-preview__val">
-                    ₹{ap.toLocaleString()}
-                    {parseInt(yearPct) > 0 && (
-                      <span className="sb-price-preview__note"> ({yearPct}% off)</span>
-                    )}
-                  </span>
+                  <span className="sb-price-preview__val">₹{ap.toLocaleString()} <span className="sb-price-preview__note">({yearPct}% off)</span></span>
                 </div>
               )}
-
-              {/* ── Billing Cycle Selector (Monthly / Yearly only) ── */}
               <div>
-                <div className="sb-field__label" style={{ marginBottom:8 }}>BILLING CYCLE</div>
-                <div className="sb-billing-group" style={{ display:"flex", gap:8 }}>
-                  {(["Monthly", "Yearly"] as BillingCycle[]).map(cycle => (
-                    <button
-                      key={cycle}
-                      type="button"
-                      onClick={() => setBillingCycle(cycle)}
-                      className={`sb-billing-btn ${billingCycle === cycle ? "sb-billing-btn--active" : ""}`}
-                      style={{ flex: 1 }}
-                    >
-                      {cycle === "Yearly" ? (
-                        <>
-                          <span>Yearly </span>
-                          {parseInt(yearPct) > 0 && (
-                            <span className="sb-billing-save">−{yearPct}%</span>
-                          )}
-                        </>
-                      ) : cycle}
-                    </button>
+                <div className="sb-field__label" style={{ marginBottom:8 }}>PLAN ICON</div>
+                <div className="sb-icon-grid">
+                  {ICON_OPTIONS.map(ic=>(
+                    <button key={ic} onClick={()=>setIcon(ic)} className={`sb-icon-btn ${icon===ic?"sb-icon-btn--active":""}`}>{ic}</button>
                   ))}
                 </div>
               </div>
-
+              <div>
+                <div className="sb-field__label" style={{ marginBottom:8 }}>ACCENT COLOR</div>
+                <div className="sb-color-grid">
+                  {COLOR_OPTIONS.map(c=>(
+                    <button key={c} onClick={()=>setCol(c)} className={`sb-color-swatch ${col===c?"sb-color-swatch--active":""}`}
+                      style={{ background:c, outlineColor:c, outlineStyle:col===c?"solid":"none", outlineWidth:col===c?2:0, outlineOffset:2 }} />
+                  ))}
+                </div>
+              </div>
               <div className="sb-toggle-row">
                 <div>
                   <div className="sb-toggle-row__title">Mark as Popular ★</div>
@@ -513,14 +414,6 @@ function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:Cust
                       <div className="sb-live-preview__price">
                         <span className="sb-live-preview__amt">₹{mp.toLocaleString()}</span>
                         <span className="sb-live-preview__per">/mo</span>
-                        {billingCycle && (
-                          <span style={{ marginLeft:6, fontSize:10, padding:"1px 7px", borderRadius:10, background:`${col}18`, color:col, fontWeight:700 }}>
-                            {billingCycle}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize:11, color:"var(--sb-muted)", marginTop:2 }}>
-                        Type: <span style={{ color:col, fontWeight:700 }}>{planType}</span>
                       </div>
                     </div>
                   </div>
@@ -595,16 +488,10 @@ function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:Cust
                   <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
                     <div className="sb-live-preview__icon" style={{ background:`${col}22` }}>{icon}</div>
                     <div>
-                      <div style={{ fontSize:14, fontWeight:800, color:"var(--sb-title)" }}>
-                        {name||"Plan Name"}
-                        <span style={{ marginLeft:6, fontSize:10, padding:"1px 7px", borderRadius:10, background:`${col}18`, color:col, fontWeight:700 }}>{planType}</span>
-                      </div>
+                      <div style={{ fontSize:14, fontWeight:800, color:"var(--sb-title)" }}>{name||"Plan Name"}</div>
                       <div className="sb-live-preview__price">
                         <span className="sb-live-preview__amt">₹{mp.toLocaleString()}</span>
                         <span className="sb-live-preview__per">/mo</span>
-                        <span style={{ marginLeft:6, fontSize:10, padding:"1px 7px", borderRadius:10, background:"rgba(0,203,164,0.12)", color:"var(--sb-success)", fontWeight:700 }}>
-                          {billingCycle}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -614,7 +501,9 @@ function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:Cust
                     ))}
                   </div>
                   {feats.filter(f=>f.trim()).map(f=>(
-                    <div key={f} className="sb-final-preview__feat"><span style={{ color:col }}>✓</span>{f}</div>
+                    <div key={f} className="sb-final-preview__feat">
+                      <span style={{ color:col }}>✓</span>{f}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -638,53 +527,60 @@ function CreatePlanModal({ onClose, onSave }: { onClose:()=>void; onSave:(p:Cust
 }
 
 // ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
-function Overview({ subs, loading, activeCount, onUpdatePlan }: {
+function Overview({
+  subs,
+  loading,
+  activeCount,
+  onUpdatePlan,
+}: {
   subs: SubRow[];
   loading: boolean;
   activeCount: number;
   onUpdatePlan: (plan: SubRow) => void;
 }) {
   const [sel, setSel] = useState<SubRow|null>(null);
-  const active       = subs.filter(s => s.status === "ACTIVE");
-  const monthlyPlans = active.filter(s => s.rawData?.billing_cycle === "Monthly");
-  const mrr          = monthlyPlans.reduce((sum, s) => sum + s.amt, 0);
-  const exp          = subs.filter(s => s.status !== "ACTIVE");
+ const active = subs.filter(
+  s => s.status === "ACTIVE"
+);
+
+const monthlyPlans = active.filter(
+  s =>
+    s.rawData?.billing_cycle === "Monthly"
+);
+
+const mrr = monthlyPlans.reduce(
+  (sum, s) => sum + s.amt,
+  0
+);
+  const exp    = subs.filter(s=>s.status!=="ACTIVE");
 
   return (
     <div className="sb-overview">
       <div>
         <div className="sb-sub-table">
           <div className="sb-sub-table__head">
-            <span className="sb-sub-table__head-title">All Plans</span>
+            <span className="sb-sub-table__head-title">All Subscriptions</span>
             <span className="sb-sub-table__head-count">{active.length} active</span>
           </div>
           {loading && (
             <div style={{ padding:"24px", textAlign:"center", color:"var(--sb-muted)", fontSize:13 }}>
-              Loading plans…
+              Loading subscriptions…
             </div>
           )}
           {!loading && subs.length === 0 && (
             <div style={{ padding:"24px", textAlign:"center", color:"var(--sb-muted)", fontSize:13 }}>
-              No plans found.
+              No subscriptions found.
             </div>
           )}
-          {!loading && subs.map(s => (
-            <div key={s.id}
-              className={`sb-sub-row ${sel?.id===s.id?"sb-sub-row--active":""}`}
-              onClick={()=>setSel(sel?.id===s.id?null:s)}
-            >
+          {!loading && subs.map(s=>(
+            <div key={s.id} className={`sb-sub-row ${sel?.id===s.id?"sb-sub-row--active":""}`}
+              onClick={()=>setSel(sel?.id===s.id?null:s)}>
               <div className="sb-sub-row__logo" style={{ background:s.col }}>{s.logo}</div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div className="sb-sub-row__name">{s.planName}</div>
-                <div className="sb-sub-row__meta">
-                  {s.billingCycle !== "—" ? `${s.billingCycle} · ` : ""}
-                  👥 {s.usersLimit} users · 💬 {s.waLimit} WA · 📨 {s.msgsLimit} msgs
-                </div>
+                <div className="sb-sub-row__name">{s.company}</div>
+                <div className="sb-sub-row__meta">Renews on {s.end} · {s.users}/{s.seats} seats</div>
               </div>
-              <span className={`sb-plan-chip sb-plan-chip--${s.plan}`}
-                style={{ marginRight:6, fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700, background:`var(--sb-plan-${s.plan.toLowerCase()})18` }}>
-                {s.plan}
-              </span>
+              <span className={`sb-plan-chip sb-plan-chip--${s.plan}`} style={{ marginRight:6, fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700, background:`var(--sb-plan-${s.plan.toLowerCase()})18` }}>{s.plan}</span>
               <Badge status={s.status} />
               <div className="sb-sub-row__amount">{s.amt>0?`₹${s.amt.toLocaleString()}`:"Free"}</div>
             </div>
@@ -697,22 +593,18 @@ function Overview({ subs, loading, activeCount, onUpdatePlan }: {
               <div style={{ display:"flex", gap:12, alignItems:"center" }}>
                 <div className="sb-detail__logo" style={{ background:sel.col, width:44, height:44 }}>{sel.logo}</div>
                 <div>
-                  <div className="sb-detail__name">{sel.planName}</div>
-                  <div className="sb-detail__dates">Created {sel.start} · Updated {sel.end}</div>
-                  {sel.description && <div style={{ fontSize:11, color:"var(--sb-muted)", marginTop:2 }}>{sel.description}</div>}
+                  <div className="sb-detail__name">{sel.company}</div>
+                  <div className="sb-detail__dates">{sel.start} → {sel.end}</div>
                 </div>
               </div>
               <button className="sb-btn-close-det" onClick={()=>setSel(null)}>×</button>
             </div>
             <div className="sb-detail__grid">
               {([
-                ["Plan Type",     sel.plan,                                       `var(--sb-plan-${sel.plan.toLowerCase()})`],
-                ["Price",         sel.amt>0?`₹${sel.amt.toLocaleString()}`:"Free","var(--sb-success)"],
-                ["Billing Cycle", sel.billingCycle,                               "var(--sb-accent2)"],
-                ["Status",        sel.status[0]+sel.status.slice(1).toLowerCase(),"var(--sb-success)"],
-                ["Users",         sel.usersLimit,                                 "var(--sb-accent2)"],
-                ["WA Accounts",   sel.waLimit,                                    "#FDCB6E"],
-                ["Msgs/Month",    sel.msgsLimit,                                  "#00CBA4"],
+                ["Plan",  sel.plan,                                              `var(--sb-plan-${sel.plan.toLowerCase()})`],
+                ["Amount",sel.amt>0?`₹${sel.amt.toLocaleString()}`:"Free",      "var(--sb-success)"],
+                ["Seats", `${sel.users}/${sel.seats}`,                           "var(--sb-accent2)"],
+                ["Status",sel.status[0]+sel.status.slice(1).toLowerCase(),       `var(--sb-status-${sel.status.toLowerCase()}-col)`],
               ] as [string,string,string][]).map(([l,v,c])=>(
                 <div key={l} className="sb-detail__cell">
                   <div className="sb-detail__cell-key">{l.toUpperCase()}</div>
@@ -720,22 +612,15 @@ function Overview({ subs, loading, activeCount, onUpdatePlan }: {
                 </div>
               ))}
             </div>
-            {sel.otherFeatures.length > 0 && (
-              <div style={{ marginTop:12, padding:"10px 14px", background:"var(--sb-row-hover)", borderRadius:8 }}>
-                <div style={{ fontSize:11, color:"var(--sb-muted)", marginBottom:6, fontWeight:700 }}>OTHER FEATURES</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                  {sel.otherFeatures.map(f=>(
-                    <span key={f} style={{ fontSize:11, padding:"2px 8px", borderRadius:12, background:`${sel.col}18`, color:sel.col, fontWeight:600 }}>
-                      ✓ {f}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
             <div className="sb-detail__actions">
-              <button className="sb-btn sb-btn--primary sb-btn--small" onClick={() => onUpdatePlan(sel)}>✏️ Update Plan</button>
+             <button
+  className="sb-btn sb-btn--primary sb-btn--small"
+ onClick={() => onUpdatePlan(sel)}
+>
+  ✏️ Update Plan
+</button>
               <button className="sb-btn sb-btn--ghost sb-btn--small">⏸ Pause</button>
-              <button className="sb-btn sb-btn--danger sb-btn--small">⛔ Disable</button>
+              <button className="sb-btn sb-btn--danger sb-btn--small">⛔ Cancel</button>
             </div>
           </div>
         )}
@@ -747,10 +632,17 @@ function Overview({ subs, loading, activeCount, onUpdatePlan }: {
           <div className="sb-mrr-card__value">₹{mrr.toLocaleString()}</div>
           <div className="sb-mrr-card__delta">↑ +12% vs last month</div>
           <div className="sb-mrr-card__grid">
-            {([
-              ["ARR",  `₹${(mrr*12).toLocaleString()}`,  "var(--sb-accent2)"],
-              ["ARPU", `₹${monthlyPlans.length>0 ? Math.round(mrr/monthlyPlans.length).toLocaleString() : 0}`, "var(--sb-warn)"],
-            ] as [string,string,string][]).map(([l,v,c])=>(
+            {([["ARR",`₹${(mrr*12).toLocaleString()}`,"var(--sb-accent2)"],[
+  "ARPU",
+  `₹${
+    monthlyPlans.length > 0
+      ? Math.round(
+          mrr / monthlyPlans.length
+        ).toLocaleString()
+      : 0
+  }`,
+  "var(--sb-warn)"
+]] as [string,string,string][]).map(([l,v,c])=>(
               <div key={l} className="sb-mrr-card__cell">
                 <div className="sb-mrr-card__cell-key">{l}</div>
                 <div className="sb-mrr-card__cell-val" style={{ color:c }}>{v}</div>
@@ -760,46 +652,108 @@ function Overview({ subs, loading, activeCount, onUpdatePlan }: {
         </div>
 
         <div className="sb-dist-card">
-          <div className="sb-dist-card__title">Plan Distribution</div>
-          {subs.length === 0 ? (
-            <div style={{ padding:"20px", textAlign:"center", color:"#888" }}>No Plans Found</div>
-          ) : (
-            subs.map(s => {
-              const pct = Math.min((s.amt / Math.max(...subs.map(x=>x.amt), 1)) * 100, 100);
-              return (
-                <div key={s.id} className="sb-dist-row">
-                  <div className="sb-dist-row__top">
-                    <span className="sb-dist-row__name" style={{ fontWeight:600, maxWidth:"140px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                      {s.planName}
-                    </span>
-                    <div style={{ display:"flex", gap:"8px" }}>
-                      <span className="sb-dist-row__count">{s.billingCycle !== "—" ? s.billingCycle : "One-time"}</span>
-                      <span className="sb-dist-row__rev" style={{ color:s.col }}>
-                        {s.amt>0?`₹${s.amt.toLocaleString()}`:"Free"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="sb-dist-bar-bg">
-                    <div className="sb-dist-bar-fill" style={{ width:`${pct}%`, background:s.col }} />
-                  </div>
-                </div>
-              );
-            })
-          )}
+  <div className="sb-dist-card__title">
+    Plan Distribution
+  </div>
+
+  {subs.length === 0 ? (
+    <div
+      style={{
+        padding: "20px",
+        textAlign: "center",
+        color: "#888",
+      }}
+    >
+      No Plans Found
+    </div>
+  ) : (
+    Object.values(
+      subs.reduce((acc: any, sub) => {
+        const key = sub.company;
+
+        if (!acc[key]) {
+          acc[key] = {
+            name: sub.company,
+            count: 0,
+            revenue: 0,
+            color: sub.col,
+          };
+        }
+
+        acc[key].count += 1;
+        acc[key].revenue += sub.amt;
+
+        return acc;
+      }, {})
+    ).map((item: any) => (
+      <div
+        key={item.name}
+        className="sb-dist-row"
+      >
+        <div className="sb-dist-row__top">
+<span
+  className="sb-dist-row__name"
+  style={{
+    fontWeight: 600,
+    maxWidth: "140px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  }}
+>
+  {item.name}
+</span>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+            }}
+          >
+            <span className="sb-dist-row__count">
+              {item.count} co.
+            </span>
+
+            <span
+              className="sb-dist-row__rev"
+              style={{
+                color: item.color,
+              }}
+            >
+              ₹{item.revenue.toLocaleString()}
+            </span>
+          </div>
         </div>
+
+        <div className="sb-dist-bar-bg">
+          <div
+            className="sb-dist-bar-fill"
+            style={{
+              width: `${Math.min(
+                item.count * 20,
+                100
+              )}%`,
+              background: item.color,
+            }}
+          />
+        </div>
+      </div>
+    ))
+  )}
+</div>
 
         {exp.length>0 && (
           <div className="sb-exp-card">
             <div className="sb-exp-card__head">
               <span>⚠️</span>
-              <span className="sb-exp-card__title">Inactive Plans</span>
+              <span className="sb-exp-card__title">Expiring Soon</span>
             </div>
             {exp.map(s=>(
               <div key={s.id} className="sb-exp-row">
                 <div className="sb-exp-row__logo" style={{ background:s.col }}>{s.logo}</div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div className="sb-exp-row__name">{s.planName}</div>
-                  <div className="sb-exp-row__end">₹{s.amt.toLocaleString()}</div>
+                  <div className="sb-exp-row__name">{s.company}</div>
+                  <div className="sb-exp-row__end">Ends {s.end}</div>
                 </div>
                 <Badge status={s.status} />
               </div>
@@ -816,141 +770,51 @@ function Plans({
   onOpenModal,
   customPlans,
   onRemoveCustom,
-  onDeletePlan,
   subs
-}: {
-  onOpenModal: ()=>void;
-  customPlans: CustomPlan[];
-  onRemoveCustom: (id:number)=>void;
-  onDeletePlan: (id:string)=>void;
-  subs: SubRow[];
+}:{
+  onOpenModal:()=>void;
+  customPlans:CustomPlan[];
+  onRemoveCustom:(id:number)=>void;
+  subs:SubRow[];
 }) {
   const [billing, setBilling] = useState<"MONTHLY"|"YEARLY">("MONTHLY");
-const filteredPlans = subs.filter((plan) => {
-  if (billing === "MONTHLY") {
-    return plan.billingCycle === "Monthly";
-  }
+  const [editId,  setEditId]  = useState<number|null>(null);
+  const apiPlans = subs.map((s) => ({
+  id: s.id,
+  name: s.company,
+  price: s.amt,
+  yearPrice: Math.round(s.amt * 0.8),
+  icon: s.logo,
+  col: s.col,
+  users: String(s.users),
+  wa: "-",
+  msgs: String(s.seats),
+  popular: false,
+  extra: [],
+}));
 
-  if (billing === "YEARLY") {
-    return plan.billingCycle === "Yearly";
-  }
-
-  return true;
-});
-  const renderApiCard = (s: SubRow) => {
-  let displayPrice = s.amt;
-
-if (billing === "YEARLY") {
-  if (s.yearlyPrice && s.yearlyPrice > 0) {
-    displayPrice = s.yearlyPrice;
-  } else if (
-    s.discountPercentage &&
-    s.discountPercentage > 0
-  ) {
-    displayPrice = Math.round(
-      s.amt -
-      (s.amt * s.discountPercentage) / 100
-    );
-  }
-}
-
-    return (
-      <div key={s.id} className="sb-plan-card">
-        <div className="sb-plan-card__body">
-          <div className="sb-plan-card__top">
-            <div className="sb-plan-card__icon" style={{ background:`${s.col}20`, fontSize:18, width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:10 }}>
-              {s.logo}
-            </div>
-            <span className="sb-plan-card__badge" style={{ background:`${s.col}18`, color:s.col }}>
-              {s.billingCycle !== "—" ? s.billingCycle : "One-time"}
-            </span>
-          </div>
-
-          <div className="sb-plan-card__name">{s.planName}</div>
-
-          <div className="sb-plan-card__price">
-            <span className="sb-plan-card__amt">₹{displayPrice.toLocaleString()}</span>
-            <span className="sb-plan-card__per">/mo</span>
-          </div>
-         {billing === "YEARLY" &&
- s.discountPercentage &&
- s.discountPercentage > 0 && (
-  <div className="sb-plan-card__save">
-    Save {s.discountPercentage}% yearly
-  </div>
-)}
-          {s.description && (
-            <div style={{ fontSize:11, color:"var(--sb-muted)", margin:"4px 0 8px", lineHeight:1.4 }}>{s.description}</div>
-          )}
-
-          <div className="sb-plan-card__div" />
-
-          <div className="sb-plan-card__limits">
-            <div className="sb-plan-card__lim">
-              <div className="sb-plan-card__lim-val">👥 {s.usersLimit}</div>
-              <div className="sb-plan-card__lim-key">users</div>
-            </div>
-            <div className="sb-plan-card__lim">
-              <div className="sb-plan-card__lim-val">💬 {s.waLimit}</div>
-              <div className="sb-plan-card__lim-key">WA</div>
-            </div>
-            <div className="sb-plan-card__lim">
-              <div className="sb-plan-card__lim-val">📨 {s.msgsLimit}</div>
-              <div className="sb-plan-card__lim-key">msgs</div>
-            </div>
-          </div>
-
-          {s.otherFeatures.slice(0,3).map(f => (
-            <div key={f} className="sb-plan-card__feat">
-              <span style={{ color:s.col }}>✓</span> {f}
-            </div>
-          ))}
-          {s.otherFeatures.length > 3 && (
-            <div className="sb-plan-card__more">+{s.otherFeatures.length - 3} more</div>
-          )}
-
-        <div className="sb-plan-card__actions">
-  <button
-    className="sb-btn sb-btn--ghost sb-btn--small"
-    style={{ flex:1 }}
-  >
-    ✏️ Edit
-  </button>
-
-  <button
-    className="sb-btn sb-btn--danger sb-btn--small"
-    style={{ flex:1 }}
-   onClick={() => onDeletePlan(s.id)}
-
-  >
-    🗑 Delete
-  </button>
-</div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderCustomCard = (p: CustomPlan) => {
-    const price = billing === "YEARLY" ? p.yearPrice : p.price;
+  const renderCard = (p: PlanRow|CustomPlan, isCustom=false) => {
+    const price    = billing==="YEARLY" ? p.yearPrice : p.price;
+    const isEdit   = editId===p.id;
+    const subCount = 1;
     return (
       <div key={p.id} className={`sb-plan-card ${p.popular?"sb-plan-card--popular":""}`}>
         {p.popular && <div className="sb-plan-card__popular-banner">★ MOST POPULAR</div>}
         <div className="sb-plan-card__body">
           <div className="sb-plan-card__top">
             <div className="sb-plan-card__icon" style={{ background:`${p.col}20` }}>{p.icon}</div>
-            <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-              <span className="sb-plan-card__badge" style={{ background:"rgba(0,203,164,0.12)", color:"var(--sb-success)" }}>✦ New</span>
-              <span className="sb-plan-card__badge" style={{ background:`${p.col}18`, color:p.col }}>
-                {p.billingCycle}
-              </span>
-            </div>
+            <span className="sb-plan-card__badge" style={{ background:isCustom?"rgba(0,203,164,0.12)":`${p.col}18`, color:isCustom?"var(--sb-success)":p.col }}>
+              {isCustom?"✦ New":`${subCount} cos`}
+            </span>
           </div>
           <div className="sb-plan-card__name">{p.name}</div>
           <div className="sb-plan-card__price">
             <span className="sb-plan-card__amt">₹{price.toLocaleString()}</span>
             <span className="sb-plan-card__per">/mo</span>
           </div>
+          {billing==="YEARLY"&&!isCustom&&(
+            <div className="sb-plan-card__save">Save ₹{(((p as PlanRow).price-p.yearPrice)*12).toLocaleString()}/yr</div>
+          )}
           <div className="sb-plan-card__div" />
           <div className="sb-plan-card__limits">
             {([["👥",p.users,"users"],["💬",p.wa,"WA"],["📨",p.msgs,"msgs"]] as [string,string,string][]).map(([ic,v,l])=>(
@@ -961,12 +825,24 @@ if (billing === "YEARLY") {
             ))}
           </div>
           {p.extra.slice(0,3).map(f=>(
-            <div key={f} className="sb-plan-card__feat"><span style={{ color:p.col }}>✓</span>{f}</div>
+            <div key={f} className="sb-plan-card__feat">
+              <span style={{ color:p.col }}>✓</span>{f}
+            </div>
           ))}
-          {p.extra.length>3 && <div className="sb-plan-card__more">+{p.extra.length-3} more</div>}
+          {p.extra.length>3&&<div className="sb-plan-card__more">+{p.extra.length-3} more</div>}
           <div className="sb-plan-card__actions">
-            <button className="sb-btn sb-btn--ghost sb-btn--small" style={{ flex:1 }}>✏️ Edit</button>
-            <button className="sb-btn sb-btn--danger sb-btn--small" style={{ flex:1 }} onClick={()=>onRemoveCustom(p.id)}>Remove</button>
+            {isCustom ? (
+              <>
+                <button className="sb-btn sb-btn--ghost sb-btn--small" style={{ flex:1 }}>✏️ Edit</button>
+                <button className="sb-btn sb-btn--danger sb-btn--small" style={{ flex:1 }} onClick={()=>onRemoveCustom(p.id)}>Remove</button>
+              </>
+            ) : (
+              <>
+                <button onClick={()=>setEditId(isEdit?null:p.id)} style={{ flex:1 }}
+                  className={`sb-btn sb-btn--small ${isEdit?"sb-btn--primary":"sb-btn--ghost"}`}>{isEdit?"✓ Done":"✏️ Edit"}</button>
+                <button className="sb-btn sb-btn--danger sb-btn--small" style={{ flex:1 }}>Disable</button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -984,20 +860,17 @@ if (billing === "YEARLY") {
             </button>
           ))}
         </div>
-        <span className="sb-billing-toggle__count">
-  {filteredPlans.length} plans active
+       <span className="sb-billing-toggle__count">
+  {apiPlans.length}
+  plans active
 </span>
       </div>
-<div className="sb-plans-grid">
-  {filteredPlans.map(s => renderApiCard(s))}
+     <div className="sb-plans-grid">
+  {apiPlans.map((p:any)=>
+    renderCard(p,false)
+  )}
 </div>
-
-      {customPlans.length > 0 && (
-        <div className="sb-plans-grid--custom">
-          {customPlans.map(p => renderCustomCard(p))}
-        </div>
-      )}
-
+      {customPlans.length>0 && <div className="sb-plans-grid--custom">{customPlans.map(p=>renderCard(p,true))}</div>}
       <div className="sb-cta-dashed" onClick={onOpenModal}>
         <div className="sb-cta-dashed__icon">➕</div>
         <div className="sb-cta-dashed__title">Create New Plan</div>
@@ -1008,55 +881,84 @@ if (billing === "YEARLY") {
 }
 
 // ─── HISTORY TAB ──────────────────────────────────────────────────────────────
-function History({ subs }: { subs: SubRow[] }) {
+function History({
+  subs
+}:{
+  subs: SubRow[];
+}) {
   const [tf, setTf] = useState("ALL");
+const historyRows: Transaction[] = subs.map((s, index) => ({
+  id: index + 1,
+  company: s.company,
+  logo: s.logo,
+  col: s.col,
+  plan: s.plan,
+  amount: s.amt,
+  date: s.start,
+  type: "Renewal" as TxnType,
+  status: "SUCCESS" as TxnStatus,
+}));
+const filtered =
+  tf==="ALL"
+    ? historyRows
+    : historyRows.filter(
+        h=>h.type===tf
+      );
 
-  const historyRows: Transaction[] = subs.map((s, index) => ({
-    id:      index + 1,
-    company: s.planName,
-    logo:    s.logo,
-    col:     s.col,
-    plan:    s.plan,
-    amount:  s.amt,
-    date:    s.start,
-    type:    "New" as TxnType,
-    status:  "SUCCESS" as TxnStatus,
-  }));
-
-  const filtered = tf==="ALL" ? historyRows : historyRows.filter(h=>h.type===tf);
-  const rev      = historyRows.reduce((a,h)=>a+h.amount, 0);
-
+const rev =
+  historyRows.reduce(
+    (a,h)=>a+h.amount,
+    0
+  );
   return (
     <div className="sb-history">
       <div className="sb-hist-kpi-grid">
         {([
-          ["Total Revenue",  `₹${rev.toLocaleString()}`, "var(--sb-success)", "💰"],
-          ["Transactions",   String(historyRows.length), "var(--sb-accent2)", "📄"],
-          ["Failed",         "0",                        "#FF6B6B",           "❌"],
-          ["Refunded",       "0",                        "#FDCB6E",           "↩️"],
-        ] as [string,string,string,string][]).map(([l,v,c,ic])=>(
+  [
+    "Total Revenue",
+    `₹${rev.toLocaleString()}`,
+    "var(--sb-success)",
+    "💰",
+  ],
+  [
+    "Transactions",
+    String(historyRows.length),
+    "var(--sb-accent2)",
+    "📄",
+  ],
+  [
+    "Failed",
+    "0",
+    "#FF6B6B",
+    "❌",
+  ],
+  [
+    "Refunded",
+    "0",
+    "#FDCB6E",
+    "↩️",
+  ],
+] as [string, string, string, string][]).map(([l, v, c, ic]) => (
           <div key={l} className="sb-hist-kpi">
             <div className="sb-hist-kpi__top">
               <span className="sb-hist-kpi__lbl">{l}</span>
               <span className="sb-hist-kpi__icon">{ic}</span>
             </div>
-            <div className="sb-hist-kpi__val" style={{ color:c }}>{v}</div>
+            <div className="sb-hist-kpi__val" style={{ color: c }}>
+              {v}
+            </div>
           </div>
         ))}
       </div>
       <div className="sb-hist-filters">
         <span className="sb-hist-label">Filter:</span>
-       <button
-  onClick={() => setTf("ALL")}
-  className={`sb-hist-pill ${tf === "ALL" ? "sb-hist-pill--active" : ""}`}
->
-  ALL
-</button>
-        
+        {["ALL","New","Renewal","Upgrade","Failed","Trial","Refund"].map(t=>(
+          <button key={t} onClick={()=>setTf(t)} className={`sb-hist-pill ${tf===t?"sb-hist-pill--active":""}`}>{t}</button>
+        ))}
       </div>
       <div className="sb-hist-table">
         <div className="sb-hist-table__head">
-          {["Plan","Type","Amount","Date","Billing","Status"].map(h=>(
+          {["Company","Plan","Amount","Date","Type","Status"].map(h=>(
             <div key={h} className="sb-hist-table__hcell">{h.toUpperCase()}</div>
           ))}
         </div>
@@ -1066,10 +968,18 @@ function History({ subs }: { subs: SubRow[] }) {
               <div className="sb-hist-row__logo" style={{ background:h.col }}>{h.logo}</div>
               <div className="sb-hist-row__name">{h.company}</div>
             </div>
-            <span className="sb-type-chip" style={{ background:`${TYPE_COLOR[h.type]}18`, color:TYPE_COLOR[h.type] }}>{h.type}</span>
+            <span className={`sb-plan-chip sb-plan-chip--${h.plan}`} style={{ fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700 }}>{h.plan}</span>
             <div className="sb-hist-row__amt">{h.amount>0?`₹${h.amount.toLocaleString()}`:"Free"}</div>
             <div className="sb-hist-row__date">{h.date}</div>
-            <span className={`sb-plan-chip sb-plan-chip--${h.plan}`} style={{ fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700 }}>{h.plan}</span>
+           <span
+  className="sb-type-chip"
+  style={{
+    background: `${TYPE_COLOR[h.type as TxnType]}18`,
+    color: TYPE_COLOR[h.type as TxnType],
+  }}
+>
+  {h.type}
+</span>
             <span className={`sb-txn-chip sb-txn-chip--${h.status}`}>
               <span className="sb-txn-chip__dot" />{h.status[0]+h.status.slice(1).toLowerCase()}
             </span>
@@ -1089,144 +999,275 @@ function History({ subs }: { subs: SubRow[] }) {
 
 // ─── PAGE ROOT ────────────────────────────────────────────────────────────────
 export default function Subscription() {
+  const handleUpdatePlan = async (plan: SubRow) => {
+  try {
+    const payload = {
+      plan_name: plan.company,
+      price: plan.amt,
+      active: true,
+      billing_cycle: "Monthly",
+      features: plan.rawData?.features || {},
+      description: plan.rawData?.description || "",
+    };
+
+    console.log("UPDATE PAYLOAD:", payload);
+
+    await updateSubscriptionPlan(plan.id, payload);
+
+    alert("Plan updated successfully");
+
+    // Refresh API
+    window.location.reload();
+  } catch (error) {
+    console.error("UPDATE ERROR:", error);
+
+    alert("Failed to update plan");
+  }
+};
   const [tab,         setTab]         = useState<"overview"|"plans"|"history">("overview");
   const [showModal,   setShowModal]   = useState(false);
   const [customPlans, setCustomPlans] = useState<CustomPlan[]>([]);
+
   const [subs,        setSubs]        = useState<SubRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
-const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
+
   const openModal  = () => { setTab("plans"); setShowModal(true); };
-
-  const handleUpdatePlan = async (plan: SubRow) => {
-    try {
-      const payload = {
-        plan_name:     plan.planName,
-        price:         plan.amt,
-        active:        true,
-        billing_cycle: plan.rawData.billing_cycle || "Monthly",
-        features:      plan.rawData.features || {},
-        description:   plan.rawData.description || "",
-      };
-      await updateSubscriptionPlan(plan.id, payload);
-      alert("Plan updated successfully");
-      window.location.reload();
-    } catch (error) {
-      console.error("UPDATE ERROR:", error);
-      alert("Failed to update plan");
-    }
-  };
-const handleDeletePlan = async () => {
-  if (!deletePlanId) return;
-
+  const savePlan = async (p: CustomPlan) => {
   try {
-    await axiosInstance.delete(
-      `/v1/admin/subscription/plan/${deletePlanId}`,
-      {
-        headers: getExternalHeaders(),
-        withCredentials: false,
-      }
+    const payload = {
+      plan_name: p.name,
+
+      price: p.price,
+
+      yearly_price: p.yearPrice,
+
+      active: true,
+
+      popular: p.popular,
+
+      features: {
+        users: {
+          limit_value:
+            p.users === "∞"
+              ? 999999
+              : Number(p.users),
+        },
+
+        whatsapp_accounts: {
+          limit_value:
+            p.wa === "∞"
+              ? 999999
+              : Number(p.wa),
+        },
+
+        messages_per_month: {
+          limit_value:
+            p.msgs === "∞"
+              ? 999999
+              : Number(
+                  p.msgs.replace("K", "000")
+                ),
+        },
+      },
+
+      extras: p.extra,
+
+      icon: p.icon,
+
+      color: p.col,
+    };
+
+    console.log(
+      "CREATE PLAN PAYLOAD:",
+      payload
     );
 
-    setSubs((prev) =>
-      prev.filter((plan) => plan.id !== deletePlanId)
+    const response =
+      await createSubscriptionPlan(payload);
+
+    console.log(
+      "CREATE PLAN RESPONSE:",
+      response.data
     );
 
-    toast.success("Plan deleted successfully");
+    alert("Plan created successfully");
 
-    setDeletePlanId(null);
+    // Add locally
+    setCustomPlans((prev) => [...prev, p]);
+
+    // Refresh data
+    window.location.reload();
   } catch (error) {
-    console.error("DELETE ERROR:", error);
+    console.error(
+      "CREATE PLAN ERROR:",
+      error
+    );
 
-    toast.error("Failed to delete plan");
+    alert("Failed to create plan");
   }
 };
-  const savePlan = async (p: CustomPlan) => {
-    try {
-      const payload = {
-        plan_name:     p.name,
-        price:         p.price,
-        yearly_price:  p.yearPrice,
-        active:        true,
-        popular:       p.popular,
-        billing_cycle: p.billingCycle,          // ← now sent to API
-        features: {
-          users:               { limit_value: p.users === "∞" ? 999999 : Number(p.users) },
-          whatsapp_accounts:   { limit_value: p.wa    === "∞" ? 999999 : Number(p.wa)    },
-          messages_per_month:  { limit_value: p.msgs  === "∞" ? 999999 : Number(p.msgs.replace("K","000")) },
-        },
-        extras: p.extra,
-        icon:   p.icon,
-        color:  p.col,
-      };
-      await createSubscriptionPlan(payload);
-      setCustomPlans(prev => [...prev, p]);
-      window.location.reload();
-    } catch (error) {
-      console.error("CREATE PLAN ERROR:", error);
-      alert("Failed to create plan");
-    }
-  };
-
   const removePlan = (id: number) => setCustomPlans(prev=>prev.filter(p=>p.id!==id));
 
   useEffect(() => {
-    let alive = true;
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
-          headers: getExternalHeaders(),
-          withCredentials: false,
-        });
+  let alive = true;
 
-        if (!alive) return;
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
 
-        const raw: ApiPlan[] =
-          Array.isArray(apiResponse?.data?.data)
-            ? apiResponse.data.data
-            : Array.isArray(apiResponse?.data)
-              ? apiResponse.data
-              : [];
+    try {
+      const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
+        headers: getExternalHeaders(),
+        withCredentials: false,
+      });
 
-        const mapped = raw.map(mapApiPlan);
+      console.log("FULL API RESPONSE:", apiResponse);
 
-        if (!alive) return;
-        setSubs(mapped);
-        setActiveCount(mapped.filter(s => s.status === "ACTIVE").length);
-      } catch (err) {
-        console.error("API ERROR:", err);
-        if (!alive) return;
-        setError("Failed to load subscription plans");
-      } finally {
-        if (alive) setLoading(false);
+      if (!alive) return;
+
+      // Correct array path
+      const raw =
+        apiResponse?.data?.data && Array.isArray(apiResponse.data.data)
+          ? apiResponse.data.data
+          : [];
+
+      console.log("RAW DATA:", raw);
+
+      const mapped: SubRow[] = raw.map((plan: any, index: number) => {
+  const name = plan.plan_name || "Plan";
+
+  let planType: PlanName = "Starter";
+
+const lowerName = name.toLowerCase();
+
+if (lowerName.includes("basic")) {
+  planType = "Basic";
+}
+else if (lowerName.includes("pro")) {
+  planType = "Pro";
+}
+else if (lowerName.includes("enterprise")) {
+  planType = "Enterprise";
+}
+else {
+  planType = "Starter";
+}
+
+  const features = plan.features || {};
+
+  // Total features
+  const featureKeys = Object.keys(features);
+
+  // Calculate total limits
+  let totalLimits = 0;
+
+  featureKeys.forEach((key) => {
+    const value = features[key]?.limit_value;
+
+    if (typeof value === "number") {
+      totalLimits += value;
+    }
+  });
+
+  // Proper plan color
+  const planColor =
+    planType === "Basic"
+      ? "#FDCB6E"
+      : planType === "Pro"
+      ? "#6C5CE7"
+      : planType === "Enterprise"
+      ? "#A29BFE"
+      : "#00CBA4";
+
+  return {
+  id: String(plan.id),
+
+    // Show plan name in UI
+    company: name,
+
+    // First letter logo
+    logo: name.charAt(0).toUpperCase(),
+
+    col: planColor,
+
+    plan: planType,
+
+    status: plan.active ? "ACTIVE" : "EXPIRED",
+
+    // Created date
+    start: new Date(plan.created_at).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
       }
-    };
-    fetchData();
-    return () => { alive = false; };
-  }, []);
+    ),
 
-  const mrr = subs
-    .filter(s => s.status === "ACTIVE" && s.rawData?.billing_cycle === "Monthly")
-    .reduce((a, s) => a + s.amt, 0);
+    // Updated date
+    end: new Date(plan.updated_at).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    ),
 
+    // Price
+    amt: Number(plan.price || 0),
+
+    // Total feature count
+    users: featureKeys.length,
+
+    seats: totalLimits,
+
+rawData: plan,
+  };
+});
+      console.log("MAPPED DATA:", mapped);
+
+      if (!alive) return;
+
+      setSubs(mapped);
+
+      setActiveCount(
+        mapped.filter((s) => s.status === "ACTIVE").length
+      );
+    } catch (err) {
+      console.error("API ERROR:", err);
+
+      if (!alive) return;
+
+      setError("Failed to load subscription plans");
+    } finally {
+      if (alive) {
+        setLoading(false);
+      }
+    }
+  };
+
+  fetchData();
+
+  return () => {
+    alive = false;
+  };
+}, []);
   return (
-  <>
-    <ToastContainer
-      position="top-right"
-      autoClose={3000}
-      theme="dark"
-    />
     <div className="sb-root">
       <div className="sb-header">
         <div>
           <h1 className="sb-header__title">Subscription</h1>
-          <p className="sb-header__sub">Plans, billing, and subscription management.</p>
+          <p className="sb-header__sub">Plans, billing, and company subscription management.</p>
         </div>
         <div className="sb-header__btns">
-          <button className="sb-btn sb-btn--export" onClick={() => downloadExcel(subs)} disabled={loading || subs.length === 0}>
+          <button
+            className="sb-btn sb-btn--export"
+            onClick={() => downloadExcel(subs)}
+            disabled={loading || subs.length === 0}
+          >
             ⬇ Export
           </button>
           <button className="sb-btn sb-btn--primary" onClick={openModal}>+ Create Plan</button>
@@ -1234,10 +1275,22 @@ const handleDeletePlan = async () => {
       </div>
 
       <div className="sb-kpi-grid">
-        <KPI label="Active Plans"      value={loading?"…":String(activeCount)}   delta="Live data"     icon="💳" color="#6C5CE7" />
-        <KPI label="Monthly Revenue"   value={loading?"…":`₹${mrr.toLocaleString()}`} delta="vs last month" icon="📈" color="#00CBA4" up />
-        <KPI label="On Trial"          value={loading?"…":String(subs.filter(s=>s.status==="TRIAL").length)} delta="expiring soon" icon="⏳" color="#FDCB6E" />
-        <KPI label="Inactive Plans"    value={loading?"…":String(subs.filter(s=>s.status==="EXPIRED"||s.status==="CANCELLED").length)} delta="vs last month" icon="📉" color="#FF6B6B" up={false} />
+        <KPI
+          label="Active Subscriptions"
+          value={loading ? "…" : String(activeCount)}
+          delta="Live data"
+          icon="💳"
+          color="#6C5CE7"
+        />
+        <KPI label="Monthly Revenue"  value={loading ? "…" : `₹${subs
+.filter(
+  s =>
+    s.status === "ACTIVE" &&
+    s.rawData?.billing_cycle === "Monthly"
+)
+.reduce((a,s)=>a+s.amt,0).toLocaleString()}`} delta="vs last month" icon="📈" color="#00CBA4" up />
+        <KPI label="On Trial"         value={loading ? "…" : String(subs.filter(s=>s.status==="TRIAL").length)}     delta="expiring soon" icon="⏳" color="#FDCB6E" />
+        <KPI label="Churned (30d)"    value={loading ? "…" : String(subs.filter(s=>s.status==="CANCELLED"||s.status==="EXPIRED").length)} delta="vs last month" icon="📉" color="#FF6B6B" up={false} />
       </div>
 
       {error && (
@@ -1247,69 +1300,32 @@ const handleDeletePlan = async () => {
       )}
 
       <div className="sb-tabs">
-        {([["overview","📊 Overview"],["plans","💳 Plans"],["history","🕐 History"]] as [string,string][]).map(([k,l])=>(
+        {([ ["overview","📊 Overview"],["plans","💳 Plans"],["history","🕐 History"] ] as [string,string][]).map(([k,l])=>(
           <button key={k} onClick={()=>setTab(k as typeof tab)} className={`sb-tab ${tab===k?"sb-tab--active":""}`}>{l}</button>
         ))}
       </div>
 
-      {tab==="overview" && <Overview subs={subs} loading={loading} activeCount={activeCount} onUpdatePlan={handleUpdatePlan} />}
-      {tab==="plans"    && <Plans
-  onOpenModal={()=>setShowModal(true)}
-  customPlans={customPlans}
-  onRemoveCustom={removePlan}
-  onDeletePlan={(id) => setDeletePlanId(id)}
+      {tab==="overview" && <Overview
   subs={subs}
+  loading={loading}
+  activeCount={activeCount}
+  onUpdatePlan={handleUpdatePlan}
 />}
-      {tab==="history"  && <History subs={subs} />}
+     {tab==="plans" &&
+  <Plans
+    onOpenModal={()=>setShowModal(true)}
+    customPlans={customPlans}
+    onRemoveCustom={removePlan}
+    subs={subs}
+  />
+}
+    {tab==="history" &&
+  <History
+    subs={subs}
+  />
+}
 
       {showModal && <CreatePlanModal onClose={()=>setShowModal(false)} onSave={savePlan} />}
-        {deletePlanId && (
-  <div className="sb-modal-overlay">
-    <div className="sb-modal">
-      <div
-        style={{
-          fontSize: "20px",
-          fontWeight: 700,
-          marginBottom: "12px",
-        }}
-      >
-        Delete Plan
-      </div>
-
-      <p
-        style={{
-          color: "#666",
-          marginBottom: "20px",
-        }}
-      >
-        Are you sure you want to delete this plan?
-      </p>
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: "10px",
-        }}
-      >
-        <button
-          className="sb-btn sb-btn--ghost"
-          onClick={() => setDeletePlanId(null)}
-        >
-          Cancel
-        </button>
-
-        <button
-          className="sb-btn sb-btn--danger"
-          onClick={handleDeletePlan}
-        >
-          Delete
-        </button>
-      </div>
     </div>
-  </div>
-)}
-   </div>
-  </>
-);
+  );
 }
