@@ -10,6 +10,7 @@ interface UseUsersReturn {
   loading: boolean;
   error: string | null;
   refresh: () => void;
+  updateUserStatus: (userId: string, status: string) => void;
 }
 
 const EMPTY_STATS: UserStats = {
@@ -84,6 +85,17 @@ export function useUsers(): UseUsersReturn {
 
   const refresh = () => setTick((t) => t + 1);
 
+  // Optimistically update a single user's status in local state
+  const updateUserStatus = (userId: string, status: string) => {
+    setUsers((prev) => {
+      const updated = prev.map((u) =>
+        u.id === userId ? { ...u, status } : u
+      );
+      setStats(buildStats(updated));
+      return updated;
+    });
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -144,5 +156,5 @@ export function useUsers(): UseUsersReturn {
     };
   }, [tick]);
 
-  return { users, stats, loading, error, refresh };
+  return { users, stats, loading, error, refresh, updateUserStatus };
 }

@@ -2,46 +2,44 @@
 
 import { useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { toast } from "react-toastify";
+import { User } from "../types";
 
 interface ResetPasswordModalProps {
+  user: User;
   onClose: () => void;
 }
 
-export function ResetPasswordModal({ onClose }: ResetPasswordModalProps) {
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword,     setNewPassword]     = useState("");
-  const [showCurrent,     setShowCurrent]     = useState(false);
-  const [showNew,         setShowNew]         = useState(false);
-  const [loading,         setLoading]         = useState(false);
+export function ResetPasswordModal({ user, onClose }: ResetPasswordModalProps) {
+  const [newPassword,    setNewPassword]    = useState("");
+  const [showNew,        setShowNew]        = useState(false);
+  const [loading,        setLoading]        = useState(false);
 
   const handlePasswordChange = async () => {
-  if (!currentPassword || !newPassword) {
-  toast.error("All fields are required");
-  return;
-}
+    if (!newPassword) {
+      alert("Password is required");
+      return;
+    }
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters long");
+      return;
+    }
 
     try {
       setLoading(true);
-      const { data } = await axiosInstance.post("/v1/auth/change-password", {
-        current_password: currentPassword,
-        new_password:     newPassword,
+      const { data } = await axiosInstance.put(`/v1/admin/users/${user.id}/reset-password`, {
+        password: newPassword,
       });
 
-     if (data.success) {
-  toast.success("Password changed successfully");
-  onClose();
-} else {
-       toast.error(data.message || "Password change failed");
+      if (data.success !== false) {
+        alert(`Password for ${user.name} reset successfully`);
+        onClose();
+      } else {
+        alert(data.message || "Password reset failed");
       }
     } catch (error: any) {
-  console.error("Password Error:", error);
-
-  toast.error(
-    error?.response?.data?.message ||
-    "Something went wrong"
-  );
-} finally {
+      console.error("Password Reset Error:", error);
+      alert(error?.response?.data?.message || "Something went wrong");
+    } finally {
       setLoading(false);
     }
   };
@@ -52,32 +50,12 @@ export function ResetPasswordModal({ onClose }: ResetPasswordModalProps) {
         <div className="au-modal__header">
           <div>
             <div className="au-modal__title">Reset Password</div>
-            <div className="au-modal__sub">Update user password</div>
+            <div className="au-modal__sub">Update password for {user.name}</div>
           </div>
           <button className="au-modal__close" onClick={onClose}>×</button>
         </div>
 
         <div className="au-modal__body">
-          {/* CURRENT PASSWORD */}
-          <div className="au-field">
-            <div className="au-field__label">CURRENT PASSWORD</div>
-            <div className="au-password-wrap">
-              <input
-                type={showCurrent ? "text" : "password"}
-                className="au-input"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                className="au-password-toggle"
-                onClick={() => setShowCurrent(!showCurrent)}
-              >
-                👁
-              </button>
-            </div>
-          </div>
-
           {/* NEW PASSWORD */}
           <div className="au-field">
             <div className="au-field__label">NEW PASSWORD</div>
@@ -85,6 +63,7 @@ export function ResetPasswordModal({ onClose }: ResetPasswordModalProps) {
               <input
                 type={showNew ? "text" : "password"}
                 className="au-input"
+                placeholder="Enter new password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -105,7 +84,7 @@ export function ResetPasswordModal({ onClose }: ResetPasswordModalProps) {
             onClick={handlePasswordChange}
             disabled={loading}
           >
-            {loading ? "Changing..." : "Change Password"}
+            {loading ? "Resetting..." : "Reset Password"}
           </button>
           <button className="au-btn au-btn--ghost" onClick={onClose}>
             Cancel
