@@ -770,12 +770,16 @@ function Plans({
   onOpenModal,
   customPlans,
   onRemoveCustom,
-  subs
+  subs,
+  onEditPlan,
+  onDisablePlan,
 }:{
   onOpenModal:()=>void;
   customPlans:CustomPlan[];
   onRemoveCustom:(id:number)=>void;
   subs:SubRow[];
+  onEditPlan:(plan:any)=>void;
+  onDisablePlan:(plan:any)=>void;
 }) {
   const [billing, setBilling] = useState<"MONTHLY"|"YEARLY">("MONTHLY");
   const [editId,  setEditId]  = useState<number|null>(null);
@@ -838,9 +842,10 @@ function Plans({
               </>
             ) : (
               <>
-                <button onClick={()=>setEditId(isEdit?null:p.id)} style={{ flex:1 }}
-                  className={`sb-btn sb-btn--small ${isEdit?"sb-btn--primary":"sb-btn--ghost"}`}>{isEdit?"✓ Done":"✏️ Edit"}</button>
-                <button className="sb-btn sb-btn--danger sb-btn--small" style={{ flex:1 }}>Disable</button>
+                <button onClick={()=>onEditPlan(p)} style={{ flex:1 }}
+                  className="sb-btn sb-btn--small sb-btn--ghost">✏️ Edit</button>
+                <button className="sb-btn sb-btn--danger sb-btn--small" style={{ flex:1 }}
+                  onClick={()=>onDisablePlan(p)}>Disable</button>
               </>
             )}
           </div>
@@ -997,43 +1002,139 @@ const rev =
   );
 }
 
+// ─── EDIT PLAN MODAL ──────────────────────────────────────────────────────────
+function EditPlanModal({ plan, onClose, onSave }: { plan: any; onClose: () => void; onSave: (id: string, payload: any) => void }) {
+  const raw = plan.rawData || {};
+  const [name,     setName]     = useState<string>(raw.plan_name || plan.name || "");
+  const [price,    setPrice]    = useState<string>(String(plan.price || ""));
+  const [billing,  setBilling]  = useState<string>(raw.billing_cycle || "Monthly");
+  const [active,   setActive]   = useState<boolean>(raw.active ?? true);
+  const [desc,     setDesc]     = useState<string>(raw.description || "");
+  const [saving,   setSaving]   = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim() || !price) { alert("Plan name and price are required."); return; }
+    setSaving(true);
+    try {
+      await onSave(String(plan.id), {
+        plan_name: name.trim(),
+        price: Number(price),
+        billing_cycle: billing,
+        active,
+        description: desc,
+        features: raw.features || {},
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="sb-modal-overlay" onClick={onClose}>
+      <div className="sb-modal" onClick={e => e.stopPropagation()}>
+        <div className="sb-modal__header">
+          <div className="sb-modal__top">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="sb-modal__icon">✏️</div>
+              <div>
+                <div className="sb-modal__title">Edit Plan</div>
+                <div className="sb-modal__step">Update plan details</div>
+              </div>
+            </div>
+            <button className="sb-modal__close" onClick={onClose}>×</button>
+          </div>
+        </div>
+        <div className="sb-modal__body">
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <Inp label="PLAN NAME" value={name} onChange={setName} placeholder="Plan name" />
+            <div className="sb-form-grid-2">
+              <Inp label="PRICE (₹)" value={price} onChange={setPrice} placeholder="2499" type="number" prefix="₹" />
+              <div className="sb-field">
+                <div className="sb-field__label">BILLING CYCLE</div>
+                <select value={billing} onChange={e => setBilling(e.target.value)}
+                  className="sb-input" style={{ cursor: "pointer" }}>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Yearly">Yearly</option>
+                </select>
+              </div>
+            </div>
+            <Inp label="DESCRIPTION" value={desc} onChange={setDesc} placeholder="Optional description" />
+            <div className="sb-toggle-row">
+              <div>
+                <div className="sb-toggle-row__title">Active</div>
+                <div className="sb-toggle-row__desc">Make this plan available to users.</div>
+              </div>
+              <Tog on={active} setOn={setActive} />
+            </div>
+          </div>
+        </div>
+        <div className="sb-modal__footer">
+          <button className="sb-btn sb-btn--ghost" onClick={onClose}>Cancel</button>
+          <button className="sb-btn sb-btn--primary" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : "✓ Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PAGE ROOT ────────────────────────────────────────────────────────────────
 export default function Subscription() {
-  const handleUpdatePlan = async (plan: SubRow) => {
-  try {
-    const payload = {
-      plan_name: plan.company,
-      price: plan.amt,
-      active: true,
-      billing_cycle: "Monthly",
-      features: plan.rawData?.features || {},
-      description: plan.rawData?.description || "",
-    };
-
-    console.log("UPDATE PAYLOAD:", payload);
-
-    await updateSubscriptionPlan(plan.id, payload);
-
-    alert("Plan updated successfully");
-
-    // Refresh API
-    window.location.reload();
-  } catch (error) {
-    console.error("UPDATE ERROR:", error);
-
-    alert("Failed to update plan");
-  }
-};
   const [tab,         setTab]         = useState<"overview"|"plans"|"history">("overview");
   const [showModal,   setShowModal]   = useState(false);
   const [customPlans, setCustomPlans] = useState<CustomPlan[]>([]);
+  const [editPlan,    setEditPlan]    = useState<any|null>(null);
 
   const [subs,        setSubs]        = useState<SubRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
 
-  const openModal  = () => { setTab("plans"); setShowModal(true); };
+  const openModal = () => { setTab("plans"); setShowModal(true); };
+
+  const handleUpdatePlan = async (plan: SubRow) => {
+    try {
+      const payload = {
+        plan_name: plan.company,
+        price: plan.amt,
+        active: true,
+        billing_cycle: "Monthly",
+        features: plan.rawData?.features || {},
+        description: plan.rawData?.description || "",
+      };
+      console.log("UPDATE PAYLOAD:", payload);
+      await updateSubscriptionPlan(plan.id, payload);
+      alert("Plan updated successfully");
+      window.location.reload();
+    } catch (error) {
+      console.error("UPDATE ERROR:", error);
+      alert("Failed to update plan");
+    }
+  };
+
+  const handleEditPlan = (plan: any) => {
+    setEditPlan(plan);
+  };
+
+  const handleDisablePlan = async (plan: any) => {
+    if (!confirm(`Disable plan "${plan.name}"? It will no longer be visible to users.`)) return;
+    try {
+      await updateSubscriptionPlan(String(plan.id), {
+        plan_name: plan.rawData?.plan_name || plan.name,
+        price: plan.price,
+        active: false,
+        billing_cycle: plan.rawData?.billing_cycle || "Monthly",
+        features: plan.rawData?.features || {},
+        description: plan.rawData?.description || "",
+      });
+      alert("Plan disabled successfully");
+      window.location.reload();
+    } catch (error) {
+      console.error("DISABLE ERROR:", error);
+      alert("Failed to disable plan");
+    }
+  };
   const savePlan = async (p: CustomPlan) => {
   try {
     const payload = {
@@ -1317,6 +1418,8 @@ rawData: plan,
     customPlans={customPlans}
     onRemoveCustom={removePlan}
     subs={subs}
+    onEditPlan={handleEditPlan}
+    onDisablePlan={handleDisablePlan}
   />
 }
     {tab==="history" &&
@@ -1326,6 +1429,17 @@ rawData: plan,
 }
 
       {showModal && <CreatePlanModal onClose={()=>setShowModal(false)} onSave={savePlan} />}
+      {editPlan && <EditPlanModal plan={editPlan} onClose={()=>setEditPlan(null)} onSave={async (id, payload) => {
+        try {
+          await updateSubscriptionPlan(id, payload);
+          alert("Plan updated successfully");
+          setEditPlan(null);
+          window.location.reload();
+        } catch (err) {
+          console.error("EDIT ERROR:", err);
+          alert("Failed to update plan");
+        }
+      }} />}
     </div>
   );
 }
