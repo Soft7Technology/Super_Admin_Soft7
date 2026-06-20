@@ -22,6 +22,7 @@ export default function Topbar({
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [winWidth, setWinWidth] = useState(1024);
+  const [creditBalance, setCreditBalance] = useState("0.00");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -37,6 +38,10 @@ useEffect(() => {
 
   handleResize();
   window.addEventListener("resize", handleResize);
+
+  if (typeof window !== "undefined") {
+    setCreditBalance(localStorage.getItem("credit_balance") || "0.00");
+  }
 
   return () => {
     window.removeEventListener("resize", handleResize);
@@ -254,6 +259,38 @@ useEffect(() => {
           gap: "8px",
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "0 12px",
+            height: "40px",
+            borderRadius: "10px",
+            background: t.iconBox,
+            border: `1px solid ${t.border}`,
+            color: t.text,
+            fontWeight: 600,
+            fontSize: "0.9rem"
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+          </svg>
+          <span>₹{creditBalance}</span>
+        </div>
+
         <button
           onClick={toggleTheme}
           style={{
