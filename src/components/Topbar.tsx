@@ -24,6 +24,7 @@ export default function Topbar({
   const [winWidth, setWinWidth] = useState(1024);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
 const router = useRouter();
 const pathname = usePathname();
@@ -49,8 +50,8 @@ useEffect(() => {
 useEffect(() => {
   const handleClickOutside = (event: MouseEvent) => {
     if (
-      dropdownRef.current &&
-      !dropdownRef.current.contains(event.target as Node)
+      profileMenuRef.current &&
+      !profileMenuRef.current.contains(event.target as Node)
     ) {
       setDd(false);
     }
@@ -297,7 +298,7 @@ useEffect(() => {
           }}
         />
 
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative" }} ref={profileMenuRef}>
           <div
             onClick={() => setDd((p) => !p)}
             style={{
@@ -394,20 +395,25 @@ useEffect(() => {
               ].map((item, i, arr) => (
                 <div
                   key={item.label}
-                  onClick={async () => {
-                    if (item.label === "Logout") {
-                      const response = await fetch("/api/auth/logout", {
-                        method: "POST",
-                      });
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    setDd(false);
 
-                      if (response.ok) {
-                        router.push("/auth");
+                    if (item.label === "Logout") {
+                      try {
+                        await fetch("/api/auth/logout", { method: "POST" });
+                      } catch (_) {
+                        // ignore — we clear everything regardless
                       }
+                      // Clear local storage token
+                      localStorage.removeItem("console_access_token");
+                      // Clear client-side cookie
+                      document.cookie = "accessToken=; path=/; max-age=0; SameSite=Lax";
+                      document.cookie = "refreshToken=; path=/; max-age=0; SameSite=Lax";
+                      router.replace("/auth");
                     } else if (item.route) {
                       router.push(item.route);
                     }
-
-                    setDd(false);
                   }}
                   style={{
                     padding: "10px 16px",
