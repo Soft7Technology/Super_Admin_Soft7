@@ -82,6 +82,16 @@ export default function AuthPage() {
   // ── Login errors ──
   const [loginErrors, setLoginErrors] = useState<Record<string, string>>({});
 
+  // Pre-populate error if middleware redirected here with ?error=access_denied
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("error") === "access_denied") {
+        setLoginErrors({ general: "Access denied. Only Super Admins are allowed." });
+      }
+    }
+  }, []);
+
   // ── Register errors ──
   const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({});
 
@@ -166,6 +176,23 @@ export default function AuthPage() {
         setLoginErrors({ general: data?.message || "Login succeeded but no token was returned" });
         return;
       }
+
+      // ── Role check: only Super Admins may access this panel ──────────────
+      try {
+        const base64 = token.split(".")[1];
+        const payload = JSON.parse(atob(base64.replace(/-/g, "+").replace(/_/g, "/")));
+        const role = String(payload?.role ?? "").toLowerCase().trim();
+        const allowed = ["super admin", "superadmin", "super_admin", "admin"];
+        if (!allowed.includes(role)) {
+          setLoginErrors({ general: "Access denied. Only Super Admins are allowed." });
+          return;
+        }
+      } catch {
+        // If we can't decode the token, block access to be safe
+        setLoginErrors({ general: "Invalid token. Please try again." });
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────────
 
       localStorage.setItem("console_access_token", token);
       document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
