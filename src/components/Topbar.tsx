@@ -393,7 +393,7 @@ useEffect(() => {
                 { icon: "🚪", label: "Logout", red: true },
               ].map((item, i, arr) => (
                 <div
-                  key={item.label} 
+                  key={item.label}
                   onClick={async () => {
                     if (item.label === "Logout") {
                       const response = await fetch("/api/auth/logout", {
