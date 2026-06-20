@@ -1038,8 +1038,6 @@ function AddCreditModal({
   const [description, setDescription] = useState("Top-up credits");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-const currentBalance = Number(company.creditBalance || 0);
-const newBalance = currentBalance + Number(amount || 0);
   const handleAddCredit = async () => {
     setErr(null);
 
@@ -1077,11 +1075,10 @@ const newBalance = currentBalance + Number(amount || 0);
         setErr(data?.message || "Failed to add credit.");
         return;
       }
-toast.success("Credit added successfully");
 
-await onSuccess(); 
-
-onClose();
+      toast.success("Credit added successfully");
+      onSuccess();
+      onClose();
     } catch (error: any) {
       console.error(error);
       setErr(
@@ -1131,23 +1128,34 @@ onClose();
           </div>
 
           <div className="mc-field">
-  <div className="mc-field__label">AMOUNT TO ADD *</div>
-  <input
-  className="mc-input no-spinner"
-  type="number"
-  min="1"
-  step="1"
-  placeholder="Enter amount"
-  value={amount}
-  onChange={(e) => {
-    setAmount(e.target.value);
-    setErr(null);
-  }}
-/>
-</div>
+            <div className="mc-field__label">AMOUNT TO ADD *</div>
+            <input
+              className="mc-input"
+              type="number"
+              min="1"
+              step="0.01"
+              placeholder="Enter amount"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setErr(null);
+              }}
+            />
+          </div>
 
+          <div className="mc-field">
+            <div className="mc-field__label">DESCRIPTION</div>
+            <input
+              className="mc-input"
+              type="text"
+              placeholder="e.g. Top-up credits"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
 
-         
+          <div className="mc-modal__divider" />
+
           <div className="mc-modal__actions">
             <button
               type="button"
