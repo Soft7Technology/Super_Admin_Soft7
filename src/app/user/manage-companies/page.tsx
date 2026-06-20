@@ -960,16 +960,57 @@ fetchCompanies();
       endpoint = SUSPENDED_COMPANIES_API;
     }
 
-    const { data: json } =
-      await axiosInstance.get(endpoint);
-      console.log("GET COMPANY RESPONSE =>", json);
+    // Fetch companies and admin users in parallel
+    const [companiesRes, adminUsersRes] = await Promise.all([
+      axiosInstance.get(endpoint),
+      axiosInstance.get("/v1/admin/companies/user?role=admin").catch(() => ({ data: null })),
+    ]);
 
-    const raw: RawCompany[] =
-      Array.isArray(json?.data)
-        ? json.data
-        : [];
+    console.log("GET COMPANY RESPONSE =>", companiesRes.data);
+    console.log("GET ADMIN USERS RESPONSE =>", adminUsersRes.data);
 
-    setCompanies(raw.map(enrichCompany));
+    const raw: RawCompany[] = Array.isArray(companiesRes.data?.data)
+      ? companiesRes.data.data
+      : [];
+
+    const companyList = raw.map(enrichCompany);
+    const existingIds = new Set(companyList.map((c) => c.id));
+
+    // Map admin users who don't already have a company record
+    const adminRaw: any[] = Array.isArray(adminUsersRes.data?.data?.data)
+      ? adminUsersRes.data.data.data
+      : Array.isArray(adminUsersRes.data?.data)
+      ? adminUsersRes.data.data
+      : [];
+
+    const adminCompanies: Company[] = adminRaw
+      .filter((u: any) => {
+        // Skip if their company_id already exists in companyList
+        const compId = u.company_id ? String(u.company_id) : null;
+        return !compId || !existingIds.has(compId);
+      })
+      .map((u: any): Company => ({
+        id: `user-${String(u.id)}`,
+        name: u.name || "Unnamed",
+        email: u.email || u.adminEmail || "—",
+        phone: u.phone || "—",
+        domain: u.email?.split("@")[1] || "—",
+        logo: (u.name || "??").slice(0, 2).toUpperCase(),
+        logoUrl: u.logo || null,
+        col: avatarColor(String(u.id)),
+        status: normaliseStatus(u.status || "active"),
+        plan: "Starter",
+        users: 0,
+        mrr: 0,
+        end: "N/A",
+        creditBalance: u.credit_balance ?? "0.00",
+        createdAt: u.created_at
+          ? new Date(u.created_at).toLocaleDateString()
+          : "—",
+        apiKey: null,
+      }));
+
+    setCompanies([...companyList, ...adminCompanies]);
   } catch (e) {
     setFetchError(
       e instanceof Error
