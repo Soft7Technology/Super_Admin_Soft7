@@ -197,6 +197,10 @@ export default function AuthPage() {
       localStorage.setItem("console_access_token", token);
       document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
 
+      const rawCreditBalance = data?.data?.data?.credit_balance ?? data?.data?.company?.credit_balance;
+      const creditBalance = rawCreditBalance === null || rawCreditBalance === undefined ? "0" : rawCreditBalance;
+      localStorage.setItem("credit_balance", String(creditBalance));
+
       if (data?.success !== false) {
         router.replace("/user/dashboard");
         queryClient.invalidateQueries({ queryKey: ["user-role"] });
