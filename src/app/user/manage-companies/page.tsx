@@ -424,6 +424,12 @@ function CompanyModal({
       formData.append("name", name);
       formData.append("email", email);
       if (phone) formData.append("phone", phone);
+      // Credit balance is sent directly here on both Create and Edit.
+      // NOTE: this is the single source of truth for the company's balance
+      // when editing — we intentionally do NOT also call /v1/admin/credits/add
+      // afterwards for the diff, since that previously double-applied the
+      // change (PUT set it to the new value, then credits/add added the
+      // diff again on top), causing the wrong amount to show in the table.
       formData.append("credit_balance", String(creditBalance || 0));
 
       // Backend requires a nested `user` JSON object for onboarding
@@ -465,17 +471,17 @@ function CompanyModal({
           await axiosInstance.put(statusEndpoint);
         }
       } else {
-       const response = await axiosInstance.post(
-  url,
-  formData,
-  {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  }
-);
+        const response = await axiosInstance.post(
+          url,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
 
-console.log("CREATE RESPONSE", response.data);
+        console.log("CREATE RESPONSE", response.data);
         data = response.data;
       }
 
@@ -492,37 +498,12 @@ console.log("CREATE RESPONSE", response.data);
         return;
       }
 
-      // ── Credit top-up (only when balance increased) ──────────────────────
-      const newBalance = Number(creditBalance || 0);
-      const oldBalance = Number(company?.creditBalance || 0);
-      const creditDiff = newBalance - oldBalance;
-
-      if (creditDiff > 0) {
-        const companyId = isEdit
-          ? company.id
-          : data?.data?.id ?? data?.id;
-        const companyName = isEdit ? company.name : name;
-
-        if (companyId) {
-          try {
-            await axiosInstance.post("/v1/admin/credits/add", {
-              company_id: companyId,
-              company_name: companyName,
-              amount: creditDiff,
-              description: isEdit
-                ? "Credit balance updated via Edit Company"
-                : "Initial credit balance",
-              created_by:
-                localStorage.getItem("email") || "admin@company.com",
-            });
-          } catch (creditErr) {
-            console.error("CREDIT UPDATE ERROR =>", creditErr);
-            toast.error("Company saved, but failed to update credit balance");
-          }
-        }
-      }
-
       // ── Done ─────────────────────────────────────────────────────────────
+      // Credit balance is already saved via the `credit_balance` field in the
+      // request above — no separate /v1/admin/credits/add call is made here
+      // anymore. That endpoint is reserved for the dedicated "Add Credit"
+      // modal, which is the only place a credit top-up ledger entry should
+      // be created.
       await onSuccess();
       toast.success(
         company ? "Company updated successfully" : "Company created successfully"
@@ -732,7 +713,10 @@ console.log("CREATE RESPONSE", response.data);
                 style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}
               >
                 Current balance: ₹{Number(company.creditBalance || 0).toFixed(2)}.
-                Increasing this value will top up the company's credit.
+                Saving will set the balance to exactly the value entered above
+                (this directly overwrites the balance — it does not add to it).
+                To top up credit instead, use the{" "}
+                <strong>Add Credit</strong> action from the table.
               </div>
             )}
           </div>
