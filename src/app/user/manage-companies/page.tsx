@@ -412,8 +412,13 @@ function CompanyModal({
 
     try {
       const isEdit = !!company;
+      // user-rows (admin users without a company record) use the users endpoint for edits
+      const isUserRow = isEdit && company!.id.startsWith("user-");
+      const realId = isEdit ? company!.id.replace(/^user-/, "") : "";
       const url = isEdit
-        ? `/v1/admin/companies/${company.id}`
+        ? isUserRow
+          ? `/v1/admin/users/${realId}`
+          : `/v1/admin/companies/${realId}`
         : "/v1/admin/companies";
 
       console.log("API URL =>", url);
@@ -1212,9 +1217,14 @@ export default function ManageCompanies() {
 
     try {
       await Promise.all(
-        selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/admin/companies/${id}`)
-        )
+        selectedCompanies.map((id) => {
+          const isUserRow = id.startsWith("user-");
+          const realId = isUserRow ? id.replace(/^user-/, "") : id;
+          const endpoint = isUserRow
+            ? `/v1/admin/users/${realId}`
+            : `/v1/admin/companies/${realId}`;
+          return axiosInstance.delete(endpoint);
+        })
       );
 
       setSelectedCompanies([]);
@@ -1350,7 +1360,7 @@ export default function ManageCompanies() {
 
   const handleDelete = async (companyId: string) => {
     const result = await Swal.fire({
-      title: "Delete Company?",
+      title: "Delete?",
       text: "This action cannot be undone",
       icon: "warning",
       showCancelButton: true,
@@ -1362,24 +1372,30 @@ export default function ManageCompanies() {
     if (!result.isConfirmed) return;
 
     try {
-      const endpoint = `/v1/admin/companies/${companyId}`;
+      // Rows prefixed with "user-" are admin users, not company records
+      const isUserRow = companyId.startsWith("user-");
+      const realId = isUserRow ? companyId.replace(/^user-/, "") : companyId;
+      const endpoint = isUserRow
+        ? `/v1/admin/users/${realId}`
+        : `/v1/admin/companies/${realId}`;
+
       console.log("DELETE URL =>", endpoint);
 
       const { data } = await axiosInstance.delete(endpoint);
       console.log("DELETE RESPONSE =>", data);
 
       if (data?.success) {
-        toast.success("Company deleted successfully");
+        toast.success("Deleted successfully");
         await fetchCompanies();
       } else {
-        toast.error(data?.message || "Failed to delete company");
+        toast.error(data?.message || "Failed to delete");
       }
     } catch (error: any) {
       console.error("DELETE ERROR =>", error);
       toast.error(
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to delete company"
+        "Failed to delete"
       );
     }
   };
@@ -1405,10 +1421,17 @@ export default function ManageCompanies() {
     if (!result.isConfirmed) return;
 
     try {
-      const endpoint =
-        newStatus === "ACTIVE"
-          ? `/v1/admin/companies/${companyId}/active`
-          : `/v1/admin/companies/${companyId}/suspend`;
+      // user-rows use user suspend/activate endpoints
+      const isUserRow = companyId.startsWith("user-");
+      const realId = isUserRow ? companyId.replace(/^user-/, "") : companyId;
+
+      const endpoint = isUserRow
+        ? newStatus === "ACTIVE"
+          ? `/v1/admin/users/${realId}/active-user`
+          : `/v1/admin/users/${realId}/suspend-user`
+        : newStatus === "ACTIVE"
+          ? `/v1/admin/companies/${realId}/active`
+          : `/v1/admin/companies/${realId}/suspend`;
 
       console.log("STATUS API =>", endpoint);
       const { data } = await axiosInstance.put(endpoint);
