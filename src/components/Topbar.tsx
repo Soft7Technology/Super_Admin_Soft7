@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
-import NotificationModal from "./NotificationModal";;
+import NotificationModal from "./NotificationModal";
+import { axiosInstance } from "@/lib/axiosInstance";
+
 export default function Topbar({
   title = "Dashboard",
   adminName = "Admin",
@@ -22,7 +24,7 @@ export default function Topbar({
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [winWidth, setWinWidth] = useState(1024);
-  const [creditBalance, setCreditBalance] = useState("0.00");
+  const [creditBalance, setCreditBalance] = useState("0");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -40,7 +42,18 @@ useEffect(() => {
   window.addEventListener("resize", handleResize);
 
   if (typeof window !== "undefined") {
-    setCreditBalance(localStorage.getItem("credit_balance") || "0.00");
+    const localBalance = localStorage.getItem("credit_balance");
+    setCreditBalance(localBalance && localBalance !== "null" ? localBalance : "0");
+    
+    // Fetch from API to ensure it's up to date
+    axiosInstance.get("/v1/admin/users/")
+      .then((res) => {
+        const balance = res.data?.data?.credit_balance;
+        const finalBalance = balance === null || balance === undefined ? "0" : String(balance);
+        setCreditBalance(finalBalance);
+        localStorage.setItem("credit_balance", finalBalance);
+      })
+      .catch((err) => console.error("Failed to fetch user balance", err));
   }
 
   return () => {
