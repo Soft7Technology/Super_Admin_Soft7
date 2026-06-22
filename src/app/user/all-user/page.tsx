@@ -221,7 +221,9 @@ const handleSuspendToggle = async (user: User) => {
                 <th style={{ width: "120px" }}>PLAN</th>
                 <th style={{ width: "120px" }}>STATUS</th>
                 <th style={{ width: "120px" }}>JOINED</th>
-                <th style={{ width: "220px" }}>ACTIONS</th>
+               <th style={{ width: "260px", minWidth: "260px" }}>
+  ACTIONS
+</th>
               </tr>
             </thead>
 
