@@ -41,23 +41,31 @@ useEffect(() => {
   handleResize();
   window.addEventListener("resize", handleResize);
 
-  if (typeof window !== "undefined") {
-    const localBalance = localStorage.getItem("credit_balance");
-    setCreditBalance(localBalance && localBalance !== "null" ? localBalance : "0");
-    
-    // Fetch from API to ensure it's up to date
-    axiosInstance.get("/v1/admin/users/")
-      .then((res) => {
-        const balance = res.data?.data?.credit_balance;
-        const finalBalance = balance === null || balance === undefined ? "0" : String(balance);
-        setCreditBalance(finalBalance);
-        localStorage.setItem("credit_balance", finalBalance);
-      })
-      .catch((err) => console.error("Failed to fetch user balance", err));
-  }
+  const fetchBalance = () => {
+    if (typeof window !== "undefined") {
+      const localBalance = localStorage.getItem("credit_balance");
+      setCreditBalance(localBalance && localBalance !== "null" ? localBalance : "0");
+      
+      // Fetch from API to ensure it's up to date
+      axiosInstance.get("/v1/admin/users/")
+        .then((res) => {
+          const balance = res.data?.data?.credit_balance;
+          const finalBalance = balance === null || balance === undefined ? "0" : String(balance);
+          setCreditBalance(finalBalance);
+          localStorage.setItem("credit_balance", finalBalance);
+        })
+        .catch((err) => console.error("Failed to fetch user balance", err));
+    }
+  };
+
+  fetchBalance();
+
+  // Poll every 30 seconds to pick up commission credits from admin plan assignments
+  const pollInterval = setInterval(fetchBalance, 30000);
 
   return () => {
     window.removeEventListener("resize", handleResize);
+    clearInterval(pollInterval);
   };
 }, []);
 
