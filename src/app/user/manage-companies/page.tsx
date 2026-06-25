@@ -412,13 +412,8 @@ function CompanyModal({
 
     try {
       const isEdit = !!company;
-      // user-rows (admin users without a company record) use the users endpoint for edits
-      const isUserRow = isEdit && company!.id.startsWith("user-");
-      const realId = isEdit ? company!.id.replace(/^user-/, "") : "";
       const url = isEdit
-        ? isUserRow
-          ? `/v1/admin/users/${realId}`
-          : `/v1/admin/companies/${realId}`
+        ? `/v1/admin/companies/${company.id}`
         : "/v1/admin/companies";
 
       console.log("API URL =>", url);
@@ -429,12 +424,6 @@ function CompanyModal({
       formData.append("name", name);
       formData.append("email", email);
       if (phone) formData.append("phone", phone);
-      // Credit balance is sent directly here on both Create and Edit.
-      // NOTE: this is the single source of truth for the company's balance
-      // when editing — we intentionally do NOT also call /v1/admin/credits/add
-      // afterwards for the diff, since that previously double-applied the
-      // change (PUT set it to the new value, then credits/add added the
-      // diff again on top), causing the wrong amount to show in the table.
       formData.append("credit_balance", String(creditBalance || 0));
 
       // Backend requires a nested `user` JSON object for onboarding
@@ -476,17 +465,17 @@ function CompanyModal({
           await axiosInstance.put(statusEndpoint);
         }
       } else {
-        const response = await axiosInstance.post(
-          url,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+       const response = await axiosInstance.post(
+  url,
+  formData,
+  {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  }
+);
 
-        console.log("CREATE RESPONSE", response.data);
+console.log("CREATE RESPONSE", response.data);
         data = response.data;
       }
 
@@ -503,12 +492,37 @@ function CompanyModal({
         return;
       }
 
+      // ── Credit top-up (only when balance increased) ──────────────────────
+      const newBalance = Number(creditBalance || 0);
+      const oldBalance = Number(company?.creditBalance || 0);
+      const creditDiff = newBalance - oldBalance;
+
+      if (creditDiff > 0) {
+        const companyId = isEdit
+          ? company.id
+          : data?.data?.id ?? data?.id;
+        const companyName = isEdit ? company.name : name;
+
+        if (companyId) {
+          try {
+            await axiosInstance.post("/v1/admin/credits/add", {
+              company_id: companyId,
+              company_name: companyName,
+              amount: creditDiff,
+              description: isEdit
+                ? "Credit balance updated via Edit Company"
+                : "Initial credit balance",
+              created_by:
+                localStorage.getItem("email") || "admin@company.com",
+            });
+          } catch (creditErr) {
+            console.error("CREDIT UPDATE ERROR =>", creditErr);
+            toast.error("Company saved, but failed to update credit balance");
+          }
+        }
+      }
+
       // ── Done ─────────────────────────────────────────────────────────────
-      // Credit balance is already saved via the `credit_balance` field in the
-      // request above — no separate /v1/admin/credits/add call is made here
-      // anymore. That endpoint is reserved for the dedicated "Add Credit"
-      // modal, which is the only place a credit top-up ledger entry should
-      // be created.
       await onSuccess();
       toast.success(
         company ? "Company updated successfully" : "Company created successfully"
@@ -718,10 +732,7 @@ function CompanyModal({
                 style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}
               >
                 Current balance: ₹{Number(company.creditBalance || 0).toFixed(2)}.
-                Saving will set the balance to exactly the value entered above
-                (this directly overwrites the balance — it does not add to it).
-                To top up credit instead, use the{" "}
-                <strong>Add Credit</strong> action from the table.
+                Increasing this value will top up the company's credit.
               </div>
             )}
           </div>
@@ -1027,6 +1038,7 @@ function AddCreditModal({
   const [description, setDescription] = useState("Top-up credits");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
   const handleAddCredit = async () => {
     setErr(null);
 
@@ -1217,14 +1229,9 @@ export default function ManageCompanies() {
 
     try {
       await Promise.all(
-        selectedCompanies.map((id) => {
-          const isUserRow = id.startsWith("user-");
-          const realId = isUserRow ? id.replace(/^user-/, "") : id;
-          const endpoint = isUserRow
-            ? `/v1/admin/users/${realId}`
-            : `/v1/admin/companies/${realId}`;
-          return axiosInstance.delete(endpoint);
-        })
+        selectedCompanies.map((id) =>
+          axiosInstance.delete(`/v1/admin/companies/${id}`)
+        )
       );
 
       setSelectedCompanies([]);
@@ -1360,7 +1367,7 @@ export default function ManageCompanies() {
 
   const handleDelete = async (companyId: string) => {
     const result = await Swal.fire({
-      title: "Delete?",
+      title: "Delete Company?",
       text: "This action cannot be undone",
       icon: "warning",
       showCancelButton: true,
@@ -1372,30 +1379,24 @@ export default function ManageCompanies() {
     if (!result.isConfirmed) return;
 
     try {
-      // Rows prefixed with "user-" are admin users, not company records
-      const isUserRow = companyId.startsWith("user-");
-      const realId = isUserRow ? companyId.replace(/^user-/, "") : companyId;
-      const endpoint = isUserRow
-        ? `/v1/admin/users/${realId}`
-        : `/v1/admin/companies/${realId}`;
-
+      const endpoint = `/v1/admin/companies/${companyId}`;
       console.log("DELETE URL =>", endpoint);
 
       const { data } = await axiosInstance.delete(endpoint);
       console.log("DELETE RESPONSE =>", data);
 
       if (data?.success) {
-        toast.success("Deleted successfully");
+        toast.success("Company deleted successfully");
         await fetchCompanies();
       } else {
-        toast.error(data?.message || "Failed to delete");
+        toast.error(data?.message || "Failed to delete company");
       }
     } catch (error: any) {
       console.error("DELETE ERROR =>", error);
       toast.error(
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to delete"
+        "Failed to delete company"
       );
     }
   };
@@ -1421,17 +1422,10 @@ export default function ManageCompanies() {
     if (!result.isConfirmed) return;
 
     try {
-      // user-rows use user suspend/activate endpoints
-      const isUserRow = companyId.startsWith("user-");
-      const realId = isUserRow ? companyId.replace(/^user-/, "") : companyId;
-
-      const endpoint = isUserRow
-        ? newStatus === "ACTIVE"
-          ? `/v1/admin/users/${realId}/active-user`
-          : `/v1/admin/users/${realId}/suspend-user`
-        : newStatus === "ACTIVE"
-          ? `/v1/admin/companies/${realId}/active`
-          : `/v1/admin/companies/${realId}/suspend`;
+      const endpoint =
+        newStatus === "ACTIVE"
+          ? `/v1/admin/companies/${companyId}/active`
+          : `/v1/admin/companies/${companyId}/suspend`;
 
       console.log("STATUS API =>", endpoint);
       const { data } = await axiosInstance.put(endpoint);
