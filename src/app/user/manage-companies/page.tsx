@@ -169,12 +169,6 @@ function StatusDropdown({
     >
       <option value="ACTIVE">● Active</option>
       <option value="SUSPENDED">● Suspended</option>
-      <option value="INACTIVE" disabled={company.status !== "INACTIVE"}>
-        ● Inactive
-      </option>
-      <option value="TRIAL" disabled={company.status !== "TRIAL"}>
-        ● Trial
-      </option>
     </select>
   );
 }
@@ -1281,11 +1275,8 @@ export default function ManageCompanies() {
   const FILTERS: ("ALL" | Status)[] = [
     "ALL",
     "ACTIVE",
-    "TRIAL",
     "SUSPENDED",
-    "INACTIVE",
   ];
-  
   const query = search.trim().toLowerCase();
 
   const filtered = companies.filter((c) => {
