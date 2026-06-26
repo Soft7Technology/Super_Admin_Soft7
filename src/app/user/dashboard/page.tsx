@@ -1,4 +1,4 @@
-﻿﻿﻿﻿"use client";
+﻿﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
@@ -321,17 +321,7 @@ setCompanies(
   withCredentials: false,
 });
 
-const { data: adminUsersResponse } = await axiosInstance
-  .get(`${USERS_API}?role=admin`, {
-    headers: getExternalHeaders(),
-    withCredentials: false,
-  })
-  .catch(() => ({ data: null }));
-
-const usersData = [
-  ...recordsFromResponse(usersResponse),
-  ...recordsFromResponse(adminUsersResponse),
-];
+const usersData = recordsFromResponse(usersResponse);
 setUsers(
   usersData.slice(0, 4).map((user: any, index: number) => ({
     id: user.id || index.toString(),
