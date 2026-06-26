@@ -57,7 +57,6 @@ interface Company {
   end: string;
   creditBalance: string;
   createdAt: string;
-  apiKey: string | null;
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -103,7 +102,6 @@ function enrichCompany(raw: RawCompany): Company {
     createdAt: raw.created_at
       ? new Date(raw.created_at).toLocaleDateString()
       : "—",
-    apiKey: raw.api_key,
   };
 }
 
@@ -990,7 +988,6 @@ function CompanyCard({
             onDelete(company.id);
           }}
         >
-          🗑️ Delete
         </button>
         {company.status !== "SUSPENDED" ? (
           <button
