@@ -574,7 +574,16 @@ useEffect(() => {
       messages: [],
     }));
 
-    setTickets(normalised);
+   setTickets(prev => {
+  return normalised.map(ticket => {
+    const existing = prev.find(p => p.id === ticket.id);
+
+    return {
+      ...ticket,
+      messages: existing?.messages || [],
+    };
+  });
+});
   } catch (error) {
     console.error("Failed to load tickets", error);
   } finally {
@@ -585,11 +594,13 @@ useEffect(() => {
   loadTickets();
 
   const interval = setInterval(() => {
-    loadTickets();
+    if (!selectedId) {
+      loadTickets();
+    }
   }, 5000);
 
   return () => clearInterval(interval);
-}, []);
+}, [selectedId]);
   // Deselect if ticket disappears
   useEffect(() => {
     if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {
