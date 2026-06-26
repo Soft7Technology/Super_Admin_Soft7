@@ -38,7 +38,7 @@ export default function AllUsers() {
   const [suspendingId,   setSuspendingId]   = useState<string | null>(null);
   const [deletingId,     setDeletingId]     = useState<string | null>(null);
 
-  const { users, stats, loading, error, refresh } = useUsers();
+  const { users, stats, loading, error, refresh, updateUserStatus } = useUsers();
   const query = search.trim().toLowerCase();
 
   const handleSelectUser = (userId: string) => {
@@ -86,14 +86,12 @@ const handleSuspendToggle = async (user: User) => {
     const { data } = await axiosInstance.put(endpoint);
 
     if (data.success !== false) {
-      user.status = isSuspended ? "ACTIVE" : "SUSPENDED";
-
       toast.success(
-        `User ${
-          isSuspended ? "restored" : "suspended"
-        } successfully`
+        `User ${isSuspended ? "restored" : "suspended"} successfully`
       );
-
+      // Optimistically update the UI immediately
+      updateUserStatus(user.id, isSuspended ? "ACTIVE" : "SUSPENDED");
+      // Then refresh from server to confirm
       refresh();
     } else {
       toast.error(data.message || "Operation failed");
@@ -223,7 +221,9 @@ const handleSuspendToggle = async (user: User) => {
                 <th style={{ width: "120px" }}>PLAN</th>
                 <th style={{ width: "120px" }}>STATUS</th>
                 <th style={{ width: "120px" }}>JOINED</th>
-                <th style={{ width: "220px" }}>ACTIONS</th>
+               <th style={{ width: "260px", minWidth: "260px" }}>
+  ACTIONS
+</th>
               </tr>
             </thead>
 
@@ -379,7 +379,7 @@ const handleSuspendToggle = async (user: User) => {
 
       {/* Reset password modal */}
       {passwordUser && (
-        <ResetPasswordModal onClose={() => setPasswordUser(null)} />
+        <ResetPasswordModal user={passwordUser} onClose={() => setPasswordUser(null)} />
       )}
       <ToastContainer
   position="top-right"

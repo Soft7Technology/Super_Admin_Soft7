@@ -37,8 +37,6 @@ const FILTERS: { label: string; value: FilterType }[] = [
 const LIMIT = 50;
 const TRANSACTIONS_API = "/v1/admin/credits/transactions";
 
-/* ── Helper: fetch + merge credit & debit (the API requires an
-   explicit `type` and has no combined "all" mode) ───────────── */
 async function fetchAllTransactions(limit: number): Promise<Transaction[]> {
   const [creditRes, debitRes] = await Promise.all([
     axiosInstance.get(TRANSACTIONS_API, { params: { limit, type: "credit" } }),
@@ -109,7 +107,6 @@ export default function TransactionsPage() {
   useEffect(() => {
     fetchTransactions(filter);
   }, [filter, fetchTransactions]);
-
 
 
   /* ── Formatters ──────────────────────────────────────────── */

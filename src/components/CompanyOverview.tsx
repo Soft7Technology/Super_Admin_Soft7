@@ -20,9 +20,7 @@ const ST: Record<string, { bg: string; color: string; dot: string }> = {
 };
 
 function useWindowWidth() {
-  const [width, setWidth] = useState<number>(() =>
-    typeof window !== "undefined" ? window.innerWidth : 1024
-  );
+  const [width, setWidth] = useState<number>(1024);
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     handleResize();
@@ -72,46 +70,10 @@ export default function CompanyOverview({
   return (
     <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius: isSmall ? "12px" : "16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s" }}>
       <div style={{ padding: headerPad, borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span
-  style={{
-    fontWeight: 800,
-    fontSize: titleSize,
-    color: t.text,
-  }}
->
-  {title}
-</span>
-        {showViewAll && (
-               <button
-                type="button"
-                onClick={onViewAll}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  padding: 0,
-                  fontSize: viewAllSize,
-                  color: t.accent,
-                  cursor: "pointer",
-                  fontWeight: 800,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                View All
-
-            <svg
-              width={isSmall ? "12" : "14"}
-              height={isSmall ? "12" : "14"}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        )}
+        <span style={{ fontWeight:800, fontSize: titleSize, color:t.text }}>Company Overview</span>
+       <span onClick={onViewAll} style={{ fontSize: viewAllSize, color:t.accent, cursor:"pointer", fontWeight:800, display:"flex", alignItems:"center", gap:"6px" }}>
+  View All <svg width={isSmall ? "12" : "14"} height={isSmall ? "12" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
       </div>
       {loading ? (
         <div style={{ padding:"30px", textAlign:"center", color:t.textFaint, fontSize: bodyFont }}>Loading...</div>
