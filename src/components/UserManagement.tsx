@@ -56,11 +56,7 @@ export default function UserManagement({
   title = "User Management",
   showViewAll = true,
   onUserClick,
-<<<<<<< HEAD
-  onViewAll,
-=======
   onViewAll,  
->>>>>>> edf53c1a1e94ad62abc40ba963abb200cfc3398c
 }: {
   users?: DbUser[];
   loading?: boolean;
@@ -94,42 +90,9 @@ export default function UserManagement({
     <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius: isSmall ? "12px" : "16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s" }}>
       <div style={{ padding: headerPad, borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <span style={{ fontWeight:800, fontSize: titleSize, color:t.text }}>User Management</span>
-<<<<<<< HEAD
-       {showViewAll && (
-  <button
-    type="button"
-    onClick={onViewAll}
-    style={{
-      border: "none",
-      background: "transparent",
-      padding: 0,
-      fontSize: viewAllSize,
-      color: t.accent,
-      cursor: "pointer",
-      fontWeight: 800,
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-    }}
-  >
-    View All
-    <svg
-      width={isSmall ? "12" : "14"}
-      height={isSmall ? "12" : "14"}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  </button>
-)}
-=======
        <span onClick={onViewAll} style={{ fontSize: viewAllSize, color:t.accent, cursor:"pointer", fontWeight:800, display:"flex", alignItems:"center", gap:"6px" }}>
   View All <svg width={isSmall ? "12" : "14"} height={isSmall ? "12" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </span>
->>>>>>> edf53c1a1e94ad62abc40ba963abb200cfc3398c
       </div>
       {loading ? (
         <div style={{ padding:"30px", textAlign:"center", color:t.textFaint, fontSize: bodyFont }}>Loading...</div>

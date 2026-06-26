@@ -6,10 +6,7 @@ import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
 import NotificationModal from "./NotificationModal";
 import { axiosInstance } from "@/lib/axiosInstance";
-<<<<<<< HEAD
-=======
 
->>>>>>> edf53c1a1e94ad62abc40ba963abb200cfc3398c
 export default function Topbar({
   title = "Dashboard",
   adminName = "Admin",
@@ -35,10 +32,7 @@ export default function Topbar({
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-<<<<<<< HEAD
-=======
   const profileMenuRef = useRef<HTMLDivElement>(null);
->>>>>>> edf53c1a1e94ad62abc40ba963abb200cfc3398c
   const cleanupRef = useRef<HTMLDivElement>(null);
 
 const router = useRouter();
@@ -410,7 +404,6 @@ useEffect(() => {
           )}
         </div>
 
-<<<<<<< HEAD
 <button
   onClick={() => router.push("/user/transactions")}
   title="View wallet transactions"
@@ -439,33 +432,6 @@ useEffect(() => {
   <Wallet size={18} color="#3b82f6" />
   <span>₹{creditBalance}</span>
 </button>
-=======
-        <button
-          onClick={() => router.push("/user/transactions")}
-          title="View transactions"
-          style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "10px",
-            background: t.iconBox,
-            border: `1px solid ${t.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            color: t.text,
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "none";
-          }}
-        >
-          <Wallet size={18} />
-        </button>
->>>>>>> edf53c1a1e94ad62abc40ba963abb200cfc3398c
 
         <button
           onClick={toggleTheme}
