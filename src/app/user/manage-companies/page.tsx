@@ -465,17 +465,17 @@ function CompanyModal({
           await axiosInstance.put(statusEndpoint);
         }
       } else {
-       const response = await axiosInstance.post(
-  url,
-  formData,
-  {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  }
-);
+        const response = await axiosInstance.post(
+          url,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
 
-console.log("CREATE RESPONSE", response.data);
+        console.log("CREATE RESPONSE", response.data);
         data = response.data;
       }
 
@@ -1255,58 +1255,15 @@ export default function ManageCompanies() {
       if (filter === "ACTIVE") endpoint = ACTIVE_COMPANIES_API;
       if (filter === "SUSPENDED") endpoint = SUSPENDED_COMPANIES_API;
 
-      const [companiesRes, adminUsersRes] = await Promise.all([
-        axiosInstance.get(endpoint),
-        axiosInstance
-          .get("/v1/admin/companies/user?role=admin")
-          .catch(() => ({ data: null })),
-      ]);
+      const companiesRes = await axiosInstance.get(endpoint);
 
       console.log("GET COMPANY RESPONSE =>", companiesRes.data);
-      console.log("GET ADMIN USERS RESPONSE =>", adminUsersRes.data);
 
       const raw: RawCompany[] = Array.isArray(companiesRes.data?.data)
         ? companiesRes.data.data
         : [];
 
-      const companyList = raw.map(enrichCompany);
-      const existingIds = new Set(companyList.map((c) => c.id));
-
-      const adminRaw: any[] = Array.isArray(adminUsersRes.data?.data?.data)
-        ? adminUsersRes.data.data.data
-        : Array.isArray(adminUsersRes.data?.data)
-        ? adminUsersRes.data.data
-        : [];
-
-      const adminCompanies: Company[] = adminRaw
-        .filter((u: any) => {
-          const compId = u.company_id ? String(u.company_id) : null;
-          return !compId || !existingIds.has(compId);
-        })
-        .map(
-          (u: any): Company => ({
-            id: `user-${String(u.id)}`,
-            name: u.name || "Unnamed",
-            email: u.email || u.adminEmail || "—",
-            phone: u.phone || "—",
-            domain: u.email?.split("@")[1] || "—",
-            logo: (u.name || "??").slice(0, 2).toUpperCase(),
-            logoUrl: u.logo || null,
-            col: avatarColor(String(u.id)),
-            status: normaliseStatus(u.status || "active"),
-            plan: "Starter",
-            users: 0,
-            mrr: 0,
-            end: "N/A",
-            creditBalance: u.credit_balance ?? "0.00",
-            createdAt: u.created_at
-              ? new Date(u.created_at).toLocaleDateString()
-              : "—",
-            apiKey: null,
-          })
-        );
-
-      setCompanies([...companyList, ...adminCompanies]);
+      setCompanies(raw.map(enrichCompany));
     } catch (e) {
       setFetchError(
         e instanceof Error ? e.message : "Failed to load companies"
