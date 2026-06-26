@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { Wallet } from "lucide-react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
 import NotificationModal from "./NotificationModal";;
@@ -22,6 +23,11 @@ export default function Topbar({
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [winWidth, setWinWidth] = useState(1024);
+
+  const [cleanupOpen, setCleanupOpen] = useState(false);
+  const [confirmRange, setConfirmRange] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -253,6 +259,141 @@ useEffect(() => {
           gap: "8px",
         }}
       >
+        {/* Data Cleanup Dropdown */}
+        <div ref={cleanupRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setCleanupOpen(!cleanupOpen)}
+            title="Clean up historical data"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "40px",
+              height: "40px",
+              borderRadius: "10px",
+              background: t.iconBox,
+              border: `1px solid ${t.border}`,
+              cursor: "pointer",
+              color: "#ef4444",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.05)";
+              e.currentTarget.style.background = isDark ? "rgba(239, 68, 68, 0.15)" : "rgba(239, 68, 68, 0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "none";
+              e.currentTarget.style.background = t.iconBox;
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+          </button>
+
+          {cleanupOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                right: 0,
+                background: t.surface,
+                border: `1px solid ${t.border}`,
+                borderRadius: "12px",
+                minWidth: "200px",
+                overflow: "hidden",
+                zIndex: 200,
+                boxShadow: `0 12px 40px ${t.shadow}`,
+              }}
+            >
+              <div
+                style={{
+                  padding: "10px 16px 6px 16px",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  color: t.textFaint,
+                  borderBottom: `1px solid ${t.border}`,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Cleanup Data
+              </div>
+              {[
+                { label: "Day wise (24h)", value: "day" },
+                { label: "Weekly (7d)", value: "week" },
+                { label: "Monthly (30d)", value: "month" },
+                { label: "3 Months (90d)", value: "3months" },
+                { label: "6 Months (180d)", value: "6months" },
+                { label: "Yearly (365d)", value: "year" },
+              ].map((item) => (
+                <div
+                  key={item.value}
+                  onClick={() => {
+                    setConfirmRange(item.value);
+                    setCleanupOpen(false);
+                  }}
+                  style={{
+                    padding: "10px 16px",
+                    fontSize: "0.85rem",
+                    color: t.textSub,
+                    cursor: "pointer",
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)";
+                    e.currentTarget.style.color = t.text;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = t.textSub;
+                  }}
+                >
+                  🗑️ {item.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={() => router.push("/user/transactions")}
+          title="View transactions"
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "10px",
+            background: t.iconBox,
+            border: `1px solid ${t.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            color: t.text,
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "none";
+          }}
+        >
+          <Wallet size={18} />
+        </button>
+
         <button
           onClick={toggleTheme}
           style={{
