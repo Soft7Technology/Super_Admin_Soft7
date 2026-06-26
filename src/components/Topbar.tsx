@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { Wallet } from "lucide-react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
 import NotificationModal from "./NotificationModal";
@@ -24,7 +25,6 @@ export default function Topbar({
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [winWidth, setWinWidth] = useState(1024);
-  const [creditBalance, setCreditBalance] = useState("0");
 
   const [cleanupOpen, setCleanupOpen] = useState(false);
   const [confirmRange, setConfirmRange] = useState<string | null>(null);
@@ -47,31 +47,8 @@ useEffect(() => {
   handleResize();
   window.addEventListener("resize", handleResize);
 
-  const fetchBalance = () => {
-    if (typeof window !== "undefined") {
-      const localBalance = localStorage.getItem("credit_balance");
-      setCreditBalance(localBalance && localBalance !== "null" ? localBalance : "0");
-      
-      // Fetch from API to ensure it's up to date
-      axiosInstance.get("/v1/admin/users/")
-        .then((res) => {
-          const balance = res.data?.data?.credit_balance;
-          const finalBalance = balance === null || balance === undefined ? "0" : String(balance);
-          setCreditBalance(finalBalance);
-          localStorage.setItem("credit_balance", finalBalance);
-        })
-        .catch((err) => console.error("Failed to fetch user balance", err));
-    }
-  };
-
-  fetchBalance();
-
-  // Poll every 30 seconds to pick up commission credits from admin plan assignments
-  const pollInterval = setInterval(fetchBalance, 30000);
-
   return () => {
     window.removeEventListener("resize", handleResize);
-    clearInterval(pollInterval);
   };
 }, []);
 
@@ -401,37 +378,31 @@ useEffect(() => {
           )}
         </div>
 
-        <div
+        <button
+          onClick={() => router.push("/user/transactions")}
+          title="View transactions"
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "0 12px",
+            width: "40px",
             height: "40px",
             borderRadius: "10px",
             background: t.iconBox,
             border: `1px solid ${t.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
             color: t.text,
-            fontWeight: 600,
-            fontSize: "0.9rem"
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "none";
           }}
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-          </svg>
-          <span>₹{creditBalance}</span>
-        </div>
+          <Wallet size={18} />
+        </button>
 
         <button
           onClick={toggleTheme}
