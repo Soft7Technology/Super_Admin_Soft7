@@ -1285,6 +1285,7 @@ export default function ManageCompanies() {
     "SUSPENDED",
     "INACTIVE",
   ];
+  
   const query = search.trim().toLowerCase();
 
   const filtered = companies.filter((c) => {
