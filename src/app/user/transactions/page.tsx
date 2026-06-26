@@ -37,7 +37,8 @@ const FILTERS: { label: string; value: FilterType }[] = [
 const LIMIT = 50;
 const TRANSACTIONS_API = "/v1/admin/credits/transactions";
 
-
+/* ── Helper: fetch + merge credit & debit (the API requires an
+   explicit `type` and has no combined "all" mode) ───────────── */
 async function fetchAllTransactions(limit: number): Promise<Transaction[]> {
   const [creditRes, debitRes] = await Promise.all([
     axiosInstance.get(TRANSACTIONS_API, { params: { limit, type: "credit" } }),
@@ -78,8 +79,6 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const [summaryTx, setSummaryTx] = useState<Transaction[]>([]);
-  const [summaryLoading, setSummaryLoading] = useState(true);
 
   /* ── Table fetch (driven by filter) ───────────────────────── */
   const fetchTransactions = useCallback(async (currentFilter: FilterType) => {
@@ -104,25 +103,14 @@ export default function TransactionsPage() {
     }
   }, []);
 
-  /* ── Summary fetch (always unfiltered, runs once) ─────────── */
-  const fetchSummary = useCallback(async () => {
-    setSummaryLoading(true);
-    try {
-      const raw = await fetchAllTransactions(LIMIT);
-      setSummaryTx(raw);
-    } catch {
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, []);
+
+
 
   useEffect(() => {
     fetchTransactions(filter);
   }, [filter, fetchTransactions]);
 
-  useEffect(() => {
-    fetchSummary();
-  }, [fetchSummary]);
+
 
   /* ── Formatters ──────────────────────────────────────────── */
   const formatCurrency = (val: string | number) =>
@@ -142,21 +130,6 @@ export default function TransactionsPage() {
   const formatReferenceType = (ref: string | null) =>
     ref ? ref.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
 
-  /* ── Summary totals — derived ONLY from summaryTx, never from
-     the filtered table data ────────────────────────────────── */
-  const totalCredit = summaryTx
-    .filter((t) => t.type === "credit")
-    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  const totalDebit = summaryTx
-    .filter((t) => t.type === "debit")
-    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  const currentBalance = summaryTx.length
-    ? Number(
-        summaryTx.reduce((latest, t) =>
-          new Date(t.created_at) > new Date(latest.created_at) ? t : latest
-        ).balance_after
-      ) || 0
-    : 0;
 
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
@@ -167,68 +140,10 @@ export default function TransactionsPage() {
       <div className={styles["tx-page__header"]}>
         <h1 className={styles["tx-page__title"]}>Transaction History</h1>
         <p className={styles["tx-page__subtitle"]}>
-           Track all credit and debit activity in one place
+          Track all credit and debit activity in one place 
         </p>
       </div>
 
-      {/* Summary cards — always reflect the full unfiltered dataset */}
-      <div className={styles["tx-summary"]}>
-        <div className={styles["tx-summary__card"]}>
-          <div className={styles["tx-summary__icon"]}>
-            <Wallet size={16} />
-          </div>
-          <div>
-            <div className={styles["tx-summary__label"]}>Current balance</div>
-            <div className={styles["tx-summary__value"]}>
-              {summaryLoading ? (
-                <span className={`${styles.skeleton} ${styles["skeleton--sm"]}`} />
-              ) : (
-                `₹${formatCurrency(currentBalance)}`
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className={styles["tx-summary__card"]}>
-          <div
-            className={`${styles["tx-summary__icon"]} ${styles["tx-summary__icon--credit"]}`}
-          >
-            <TrendingUp size={16} />
-          </div>
-          <div>
-            <div className={styles["tx-summary__label"]}>Total credited</div>
-            <div
-              className={`${styles["tx-summary__value"]} ${styles["tx-summary__value--credit"]}`}
-            >
-              {summaryLoading ? (
-                <span className={`${styles.skeleton} ${styles["skeleton--sm"]}`} />
-              ) : (
-                `+₹${formatCurrency(totalCredit)}`
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className={styles["tx-summary__card"]}>
-          <div
-            className={`${styles["tx-summary__icon"]} ${styles["tx-summary__icon--debit"]}`}
-          >
-            <TrendingDown size={16} />
-          </div>
-          <div>
-            <div className={styles["tx-summary__label"]}>Total debited</div>
-            <div
-              className={`${styles["tx-summary__value"]} ${styles["tx-summary__value--debit"]}`}
-            >
-              {summaryLoading ? (
-                <span className={`${styles.skeleton} ${styles["skeleton--sm"]}`} />
-              ) : (
-                `−₹${formatCurrency(totalDebit)}`
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Toolbar */}
       <div className={styles["tx-toolbar"]}>
@@ -278,7 +193,7 @@ export default function TransactionsPage() {
               <th>Reference</th>
               <th>Amount</th>
               <th>Description</th>
-              <th>Balance after</th>
+              
             </tr>
           </thead>
           <tbody>
@@ -291,14 +206,13 @@ export default function TransactionsPage() {
                   <td><span className={`${styles.skeleton} ${styles["skeleton--sm"]}`} /></td>
                   <td><span className={`${styles.skeleton} ${styles["skeleton--sm"]}`} /></td>
                   <td><span className={`${styles.skeleton} ${styles["skeleton--lg"]}`} /></td>
-                  <td><span className={`${styles.skeleton} ${styles["skeleton--sm"]}`} /></td>
                 </tr>
               ))}
 
             {/* Error */}
             {!loading && error && (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={5}>
                   <div className={styles["tx-empty"]}>
                     <div className={styles["tx-empty__text"]}>
                       Could not load transactions
@@ -318,7 +232,7 @@ export default function TransactionsPage() {
             {/* Empty */}
             {!loading && !error && safeTransactions.length === 0 && (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={5}>
                   <div className={styles["tx-empty"]}>
                     <div className={styles["tx-empty__text"]}>
                       No {filter !== "all" ? filter : ""} transactions found
@@ -365,9 +279,6 @@ export default function TransactionsPage() {
                     </td>
                     <td className={styles["td-desc"]} title={tx.description}>
                       {tx.description}
-                    </td>
-                    <td className={styles["td-balance"]}>
-                      ₹{formatCurrency(tx.balance_after)}
                     </td>
                   </tr>
                 );
