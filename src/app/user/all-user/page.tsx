@@ -20,7 +20,7 @@ import { ResetPasswordModal } from "./components/ResetPasswordModal";
 import { Eye, Pencil, KeyRound, ShieldOff, ShieldCheck, Trash2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Swal from "sweetalert2";
+
 
 export default function AllUsers() {
   const [search, setSearch] = useState("");
