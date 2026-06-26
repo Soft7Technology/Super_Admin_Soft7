@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Wallet } from "lucide-react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
-import NotificationModal from "./NotificationModal";;
+import NotificationModal from "./NotificationModal";
+import { axiosInstance } from "@/lib/axiosInstance";
 export default function Topbar({
   title = "Dashboard",
   adminName = "Admin",
@@ -16,7 +17,7 @@ export default function Topbar({
 }) {
   const { isDark, toggleTheme } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
-
+  const [creditBalance, setCreditBalance] = useState("0");
   const [sf, setSf] = useState(false);
   const [dd, setDd] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -30,6 +31,7 @@ export default function Topbar({
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const cleanupRef = useRef<HTMLDivElement>(null);
 
 const router = useRouter();
 const pathname = usePathname();
@@ -40,11 +42,37 @@ useEffect(() => {
     setWinWidth(window.innerWidth);
   };
 
+  const fetchBalance = () => {
+    if (typeof window === "undefined") return;
+
+    const localBalance = localStorage.getItem("credit_balance");
+    setCreditBalance(localBalance && localBalance !== "null" ? localBalance : "0");
+
+    axiosInstance
+      .get("/v1/admin/users/")
+      .then((res) => {
+        const balance = res.data?.data?.credit_balance;
+        const finalBalance =
+          balance === null || balance === undefined ? "0" : String(balance);
+
+        setCreditBalance(finalBalance);
+        localStorage.setItem("credit_balance", finalBalance);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch wallet balance", err);
+      });
+  };
+
   handleResize();
+  fetchBalance();
+
   window.addEventListener("resize", handleResize);
+
+  const pollInterval = setInterval(fetchBalance, 30000);
 
   return () => {
     window.removeEventListener("resize", handleResize);
+    clearInterval(pollInterval);
   };
 }, []);
 
@@ -368,31 +396,34 @@ useEffect(() => {
           )}
         </div>
 
-        <button
-          onClick={() => router.push("/user/transactions")}
-          title="View transactions"
-          style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "10px",
-            background: t.iconBox,
-            border: `1px solid ${t.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            color: t.text,
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "none";
-          }}
-        >
-          <Wallet size={18} />
-        </button>
+<button
+  onClick={() => router.push("/user/transactions")}
+  title="View wallet transactions"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "0 12px",
+    height: "40px",
+    borderRadius: "10px",
+    background: t.iconBox,
+    border: `1px solid ${t.border}`,
+    color: t.text,
+    fontWeight: 600,
+    fontSize: "0.9rem",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = "scale(1.03)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = "none";
+  }}
+>
+  <Wallet size={18} color="#3b82f6" />
+  <span>₹{creditBalance}</span>
+</button>
 
         <button
           onClick={toggleTheme}
