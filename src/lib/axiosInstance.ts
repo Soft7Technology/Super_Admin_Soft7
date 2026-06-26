@@ -4,7 +4,6 @@ import axios from "axios";
 
 export const axiosInstance = axios.create({
   baseURL: "https://hostapi.soft7.in",
-  // baseURL: "http://localhost:5000",
   withCredentials: false,
   headers: {
     "Content-Type": "application/json",

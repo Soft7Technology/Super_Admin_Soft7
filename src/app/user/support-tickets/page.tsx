@@ -491,57 +491,53 @@ useEffect(() => {
   };
 }, [selected]);
   // ─ Fetch all tickets ─
-  useEffect(() => {
-    let active = true;
-    const loadTickets = async () => {
-      setLoading(true);
-      setApiError(null);
-      try {
-        const { data } = await axiosInstance.get("/v1/admin/support/tickets/forward");
-        if (!active) return;
+ const loadTickets = async () => {
+  try {
+    const { data } = await axiosInstance.get(
+      "/v1/admin/support/tickets/forward"
+    );
 
-        const ticketsData = data?.data ?? data?.tickets ?? [];
-        const normalised: Ticket[] = (Array.isArray(ticketsData) ? ticketsData : []).map(
-          (t: any) => ({
-            id:          String(t.id),
-            subject:     t.message || "Support Ticket",
-            company:     "Soft7 User",
-            companyLogo: "S",
-            companyCol:  "#10b981",
-            user:        t.name || "Unknown User",
-            userEmail:   t.email || "",
-            status:      (t.status || "OPEN").toUpperCase() as TicketStatus,
-            priority:    "MEDIUM" as TicketPriority,
-            category:    "Support",
-            created:     new Date(t.created_at).toLocaleDateString(),
-            updated:     new Date(t.updated_at).toLocaleDateString(),
-            unread:      0,
-            messages: [
-              {
-                id:      "1",
-                sender:  "USER" as MessageSender,
-                name:    t.name || "User",
-                avatar:  (t.name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
-                content: t.message || "",
-                time:    new Date(t.created_at).toLocaleTimeString(),
-                read:    true,
-              },
-            ],
-          })
-        );
-        setTickets(normalised);
-      } catch {
-        if (!active) return;
-        setApiError("Unable to load support tickets. Please try again.");
-        setTickets([]);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    void loadTickets();
-    return () => { active = false; };
-  }, []);
+    const ticketsData = data?.data ?? data?.tickets ?? [];
 
+    const sortedTickets = (Array.isArray(ticketsData) ? ticketsData : []).sort(
+      (a: any, b: any) =>
+        new Date(b.updated_at).getTime() -
+        new Date(a.updated_at).getTime()
+    );
+
+    const normalised: Ticket[] = sortedTickets.map((t: any) => ({
+      id: String(t.id),
+      subject: t.message || "Support Ticket",
+      company: "Soft7 User",
+      companyLogo: "S",
+      companyCol: "#10b981",
+      user: t.name || "Unknown User",
+      userEmail: t.email || "",
+      status: (t.status || "OPEN").toUpperCase() as TicketStatus,
+      priority: "MEDIUM",
+      category: "Support",
+      created: new Date(t.created_at).toLocaleDateString(),
+      updated: new Date(t.updated_at).toLocaleDateString(),
+      unread: 0,
+      messages: [],
+    }));
+
+    setTickets(normalised);
+  } catch (error) {
+    console.error("Failed to load tickets", error);
+  } finally {
+    setLoading(false);
+  }
+};
+useEffect(() => {
+  loadTickets();
+
+  const interval = setInterval(() => {
+    loadTickets();
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, []);
   // Deselect if ticket disappears
   useEffect(() => {
     if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {

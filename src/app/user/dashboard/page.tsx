@@ -482,7 +482,12 @@ setUsers(
 />
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
-          <UserManagement users={users} loading={loading} error={error}  onViewAll={() => router.push("/user/all-user")}/>
+        <UserManagement
+  users={users}
+  loading={loading}
+  error={error}
+  onViewAll={() => router.push("/user/all-user")}
+/>
         </Section>
       </div>
 

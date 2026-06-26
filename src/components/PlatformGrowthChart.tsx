@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 
 function useWindowWidth() {
-  const [width, setWidth] = useState<number>(() =>
-    typeof window !== "undefined" ? window.innerWidth : 1024
-  );
+  const [width, setWidth] = useState<number>(1024);
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     handleResize();

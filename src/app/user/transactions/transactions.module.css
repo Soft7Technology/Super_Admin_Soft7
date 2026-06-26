@@ -16,7 +16,6 @@
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
 
-
   --st-accent:  #10b972;
   --st-accent2: #34d383;
 
@@ -106,7 +105,6 @@
   margin-top: var(--sp-1);
   font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
-
 
 
 /* ── Toolbar ───────────────────────────────────────────────── */
@@ -339,7 +337,6 @@
   overflow-wrap: break-word;
   white-space: normal;
 }
-
 
 @media (max-width: 640px) {
   .tx-page { max-width: 100%;
