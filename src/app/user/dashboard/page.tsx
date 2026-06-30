@@ -85,6 +85,12 @@ interface DashboardLog {
   id: string; msg: string; actor: string; time: string; sev: string;
 }
 
+// Normalizes a variety of API response shapes into a flat array of records.
+// Handles:
+//   - bare arrays:                [ ... ]
+//   - { data: [ ... ] }
+//   - { data: { data: [ ... ] } }  <-- e.g. paginated /companies responses
+//   - { users: [ ... ] }
 function recordsFromResponse(json: any): any[] {
   if (Array.isArray(json)) return json;
   if (Array.isArray(json?.data)) return json.data;
@@ -272,6 +278,11 @@ export default function DashboardPage() {
         ]);
 
         // ── Companies ─────────────────────────────────────────
+        // API shape: { success, message, data: { data: [...], pagination } }
+        // axiosInstance unwraps one level (`apiResponse.data`), so
+        // `companiesResponse` here is `{ data: [...], pagination }`.
+        // Use recordsFromResponse to safely drill into `.data.data`
+        // instead of assuming `.data` is already the array.
         const { data: companiesResponse } = await axiosInstance.get(
           COMPANIES_API,
           {
@@ -281,7 +292,7 @@ export default function DashboardPage() {
         );
         if (!mounted) return;
 
-        const companiesData = companiesResponse?.data || [];
+        const companiesData = recordsFromResponse(companiesResponse);
 
         setCompanies(
           companiesData.slice(0, 4).map((company: any, index: number) => ({

@@ -82,6 +82,35 @@ useEffect(() => {
   setSearch("");
 }, [pathname]);
 
+// Frontend-only search — no API call. Filters this local array by
+// name, email, or phone as the user types.
+const searchDirectory = [
+  { title: "aakanksha acer", subtitle: "aakanksha_acer@gmail.com · +915749383939", route: "/user/all-user" },
+  { title: "aakanksha mam", subtitle: "aakankshapatil366@gmail.com · 9890756103", route: "/user/all-user" },
+  { title: "ayush", subtitle: "ayush_acer@gmail.com · +91958493839", route: "/user/all-user" },
+  { title: "fdsh", subtitle: "stgs@gmail.com · +914646232115", route: "/user/all-user" },
+  { title: "tech", subtitle: "techUser@gmail.com · +919372972927", route: "/user/all-user" },
+  { title: "Dashboard", subtitle: "Page", route: "/user/dashboard" },
+  { title: "Manage Companies", subtitle: "Page", route: "/user/manage-companies" },
+  { title: "All User", subtitle: "Page", route: "/user/all-user" },
+  { title: "Audit Logs", subtitle: "Page", route: "/user/audit-logs" },
+  { title: "System", subtitle: "Page", route: "/user/system" },
+  { title: "Profile", subtitle: "Page", route: "/user/profile" },
+  { title: "Support Tickets", subtitle: "Page", route: "/user/support-tickets" },
+  { title: "Transactions", subtitle: "Page", route: "/user/transactions" },
+];
+
+const searchResults =
+  search.trim() === ""
+    ? []
+    : searchDirectory.filter((item) => {
+        const q = search.toLowerCase();
+        return (
+          item.title.toLowerCase().includes(q) ||
+          item.subtitle.toLowerCase().includes(q)
+        );
+      });
+
 useEffect(() => {
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -106,21 +135,13 @@ useEffect(() => {
 }, []);
   const isCompact = winWidth <= 1300;
   const isNarrow  = winWidth <= 800;
-  
-  const pages = [
-    { name: "Dashboard", route: "/user/dashboard" },
-    { name: "Manage Companies", route: "/user/manage-companies" },
-    { name: "All User", route: "/user/all-user" },
-    { name: "Subscription", route: "/user/subscription" },
-    { name: "Audit Logs", route: "/user/audit-logs" },
-    { name: "Settings", route: "/user/system" },
-    { name: "Profile", route: "/user/profile" },
-    { name: "Support Tickets", route: "/user/support-tickets" },
-  ];
+  // Collapse to a two-row layout (logo/profile row + full-width search row)
+  // on smaller screens so the right-side icon cluster never overflows the
+  // fixed header height and overlaps the page content below it.
+  const isStacked = winWidth <= 700;
 
-  const filteredPages = pages.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // searchResults is now computed directly above from searchDirectory —
+  // no state/API needed for it.
 
   const getTitle = () => {
     if (pathname.includes("dashboard")) return "Dashboard";
@@ -140,12 +161,18 @@ useEffect(() => {
   return (
     <header
       style={{
-        height: "78px",
+        // was a fixed 78px height — on narrow screens the row of icons
+        // wouldn't fit and overflowed on top of the page content below.
+        // minHeight + flexWrap lets the header grow instead of overlapping.
+        minHeight: "78px",
+        height: isStacked ? "auto" : "78px",
         background: t.surface,
         borderBottom: `1px solid ${t.border}`,
         display: "flex",
+        flexWrap: isStacked ? "wrap" : "nowrap",
         alignItems: "center",
-        padding: "0 24px",
+        rowGap: "10px",
+        padding: isStacked ? "12px 16px" : "0 24px",
         gap: "16px",
         position: "sticky",
         top: 0,
@@ -176,7 +203,7 @@ useEffect(() => {
           gap: "10px",
           minWidth: "fit-content",
           flexShrink: 0,
-          marginLeft: "-24px",
+          marginLeft: isStacked ? 0 : "-24px",
         }}
       >
         <div
@@ -189,7 +216,14 @@ useEffect(() => {
         />
       </div>
 
-      <div style={{ position: "relative", flex: 1, maxWidth: "420px" }}>
+      <div
+        style={{
+          position: "relative",
+          flex: isStacked ? "1 1 100%" : 1,
+          maxWidth: isStacked ? "100%" : "420px",
+          order: isStacked ? 3 : 0,
+        }}
+      >
         <div
           style={{
             background: t.inputBg,
@@ -217,13 +251,15 @@ useEffect(() => {
           <input
             type="text"
             value={search}
-            placeholder="Search pages..."
+            placeholder="Search users, companies, email, phone..."
             onFocus={() => setSf(true)}
             onBlur={() => setTimeout(() => setSf(false), 150)}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && filteredPages.length > 0) {
-                router.push(filteredPages[0].route);
+              if (e.key === "Enter" && searchResults.length > 0) {
+                router.push(searchResults[0].route);
+                setSearch("");
+                setSf(false);
               }
             }}
             style={{
@@ -237,7 +273,7 @@ useEffect(() => {
           />
         </div>
 
-        {sf && search && (
+        {sf && search.trim() !== "" && (
           <div
             style={{
               position: "absolute",
@@ -250,13 +286,14 @@ useEffect(() => {
               borderRadius: "10px",
               boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
               zIndex: 999,
-              overflow: "auto",
+              maxHeight: "400px",
+              overflowY: "auto",
             }}
           >
-            {filteredPages.length > 0 ? (
-              filteredPages.map((item) => (
+            {searchResults.length > 0 ? (
+              searchResults.map((item, index) => (
                 <div
-                  key={item.name}
+               key={index}
                   onMouseDown={() => {
                     router.push(item.route);
                     setSearch("");
@@ -266,10 +303,27 @@ useEffect(() => {
                     padding: isMobile ? "8px 10px" : "10px 14px",
                     cursor: "pointer",
                     borderBottom: `1px solid ${t.border}`,
-                    fontSize: isMobile ? "0.75rem" : "0.875rem",
                   }}
                 >
-                  🔍 {item.name}
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: isMobile ? "0.75rem" : "0.875rem",
+                      color: t.text,
+                    }}
+                  >
+                    {item.title}
+                  </div>
+                  {item.subtitle && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: t.textMuted,
+                      }}
+                    >
+                      {item.subtitle}
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -280,19 +334,24 @@ useEffect(() => {
                   fontSize: isMobile ? "0.75rem" : "0.875rem",
                 }}
               >
-                No results found
+                No matches for "{search}". Try a name, email, or phone number.
               </div>
             )}
           </div>
         )}
       </div>
 
+      {/* Right-side controls: wraps to a row of its own below the search bar
+          on stacked layouts instead of overlapping page content. */}
       <div
         style={{
-          marginLeft: "auto",
+          marginLeft: isStacked ? 0 : "auto",
           display: "flex",
           alignItems: "center",
+          flexWrap: "wrap",
           gap: "8px",
+          order: isStacked ? 2 : 0,
+          flex: isStacked ? "0 0 auto" : undefined,
         }}
       >
         {/* Data Cleanup Dropdown */}
@@ -421,6 +480,7 @@ useEffect(() => {
     fontSize: "0.9rem",
     cursor: "pointer",
     transition: "all 0.2s ease",
+    whiteSpace: "nowrap",
   }}
   onMouseEnter={(e) => {
     e.currentTarget.style.transform = "scale(1.03)";
@@ -445,6 +505,7 @@ useEffect(() => {
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
+            flexShrink: 0,
           }}
         >
           {isDark ? "☀️" : "🌙"}
@@ -508,6 +569,7 @@ useEffect(() => {
                 fontWeight: 800,
                 fontSize: isCompact ? "0.68rem" : "0.78rem",
                 color: "#fff",
+                flexShrink: 0,
               }}
             >
               {adminName
@@ -525,6 +587,7 @@ useEffect(() => {
                     color: t.text,
                     lineHeight: 1.2,
                     transition: "color 0.3s",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {adminName}
@@ -534,6 +597,7 @@ useEffect(() => {
                     fontSize: isCompact ? "0.58rem" : "0.65rem",
                     color: t.accent,
                     fontWeight: 600,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   Administrator

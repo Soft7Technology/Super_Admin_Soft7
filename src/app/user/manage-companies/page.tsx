@@ -8,6 +8,7 @@ import "react-phone-input-2/lib/style.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Swal from "sweetalert2";
+import { Eye, EyeOff } from "lucide-react";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
@@ -327,6 +328,7 @@ function CompanyModal({
     company?.phone === "—" ? "" : company?.phone || ""
   );
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>(company?.status || "ACTIVE");
   const [creditBalance, setCreditBalance] = useState(
     company?.creditBalance ?? "0"
@@ -687,22 +689,52 @@ function CompanyModal({
             </label>
           </div>
 
-          {/* Password — Create only */}
-          {!company && (
-            <div className="mc-field">
-              <div className="mc-field__label">PASSWORD *</div>
-              <input
-                className="mc-input"
-                type="password"
-                placeholder="Min 8 characters"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setErr(null);
-                }}
-              />
-            </div>
-          )}
+         {/* Password — Create only */}
+{!company && (
+  <div className="mc-field">
+    <div className="mc-field__label">PASSWORD *</div>
+
+    <div
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      <input
+        className="mc-input"
+        type={showPassword ? "text" : "password"}
+        placeholder="Min 8 characters"
+        value={password}
+        onChange={(e) => {
+          setPassword(e.target.value);
+          setErr(null);
+        }}
+        style={{
+          paddingRight: "45px",
+        }}
+      />
+
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        style={{
+          position: "absolute",
+          right: "12px",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          color: "#9ca3af",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+      </button>
+    </div>
+  </div>
+)}
 
           {/* Credit Balance — both Create and Edit */}
           <div className="mc-field">
@@ -743,7 +775,7 @@ function CompanyModal({
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
                 <option value="SUSPENDED">Suspended</option>
-                <option value="TRIAL">Trial</option>
+               
               </select>
               <div
                 style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}
@@ -1253,8 +1285,14 @@ export default function ManageCompanies() {
 
       console.log("GET COMPANY RESPONSE =>", companiesRes.data);
 
-      const raw: RawCompany[] = Array.isArray(companiesRes.data?.data)
-        ? companiesRes.data.data
+      // API shape: { success, message, data: { data: Company[], pagination: {...} } }
+      // Some endpoints may also return { success, data: Company[] } directly,
+      // so we handle both shapes defensively here.
+      const payload = companiesRes.data?.data;
+      const raw: RawCompany[] = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload)
+        ? payload
         : [];
 
       setCompanies(raw.map(enrichCompany));

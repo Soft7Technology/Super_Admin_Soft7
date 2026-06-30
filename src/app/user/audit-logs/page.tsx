@@ -11,44 +11,50 @@ type TypeFilter   = "USER" | "AUTH" | "MESSAGE" | "SUBSCRIBE" | "CAMPAIGN" | "WA
 type TimeFrame    = "today" | "7days" | "30days" | "90days" | "1year";
 
 interface LogEntry {
-  id:        number | string;
-  action:    string;
-  actor:     string;
-  actorRole: string;
-  resource:  string;
-  detail:    string;
-  ip:        string;
-  time:      string;
-  date:      string;
-  severity:  SeverityType;
-  company:   string;
-  changes:   Record<string, string>;
+  id:         number | string;
+  action:     string;
+  userId:     string;   // was "actor" (a name) — now the raw user_id from the API
+  entityType: string;   // was used to fill the IP column slot — now its own TYPE column
+  resource:   string;
+  detail:     string;
+  ip:         string;
+  time:       string;
+  date:       string;
+  severity:   SeverityType;
+  company:    string;
+  changes:    Record<string, string>;
 }
 
 interface RawLog {
-  id:           number | string;
-  action?:      string;
-  event?:       string;
-  user?:        string;
-  actor?:       string;
-  actor_name?:  string;
-  role?:        string;
-  actor_role?:  string;
-  resource?:    string;
-  type?:        string;
-  description?: string;
-  detail?:      string;
-  message?:     string;
-  ip?:          string;
-  ip_address?:  string;
-  created_at?:  string;
-  timestamp?:   string;
-  severity?:    string;
-  level?:       string;
-  company?:     string;
-  company_name?:string;
-  metadata?:    Record<string, string>;
-  changes?:     Record<string, string>;
+  id:            number | string;
+  action?:       string;
+  event?:        string;
+  user_id?:      string;
+  user?:         string;
+  actor?:        string;
+  actor_name?:   string;
+  role?:         string;
+  actor_role?:   string;
+  resource?:     string;
+  type?:         string;
+  entity_type?:  string;
+  entity_id?:    string;
+  description?:  string;
+  detail?:       string;
+  message?:      string;
+  ip?:           string;
+  ip_address?:   string;
+  created_at?:   string;
+  timestamp?:    string;
+  severity?:     string;
+  level?:        string;
+  status?:       string;
+  company?:      string;
+  company_name?: string;
+  metadata?:     Record<string, string>;
+  changes?:      Record<string, string>;
+  new_data?:     Record<string, string>;
+  old_data?:     Record<string, string>;
 }
 
 // ─── LOOKUP MAPS (unchanged — same data, used for labels) ─────────────────────
@@ -132,21 +138,31 @@ function timeAgo(raw?: string): string {
   }
 }
 
+// Shortens a UUID-style id for compact display, e.g. "aad2955d…0c5b3"
+function shortenId(id?: string): string {
+  if (!id) return "—";
+  if (id.length <= 14) return id;
+  return `${id.slice(0, 8)}…${id.slice(-4)}`;
+}
+
 function enrichLog(raw: RawLog): LogEntry {
+  // The API uses "status" (SUCCESS/FAILED) for severity, and "action" for
+  // the action type. Fall back to old field names too in case the shape
+  // changes again.
   const action = (raw.action || raw.event || "").toUpperCase();
   return {
-    id:        raw.id,
+    id:         raw.id,
     action,
-    actor:     raw.actor_name || raw.actor || raw.user || "Unknown",
-    actorRole: raw.actor_role || raw.role || "User",
-    resource:  raw.resource || raw.type || "—",
-    detail:    raw.description || raw.detail || raw.message || "—",
-    ip:        raw.ip || raw.ip_address || "—",
-    time:      timeAgo(raw.created_at || raw.timestamp),
-    date:      formatDate(raw.created_at || raw.timestamp),
-    severity:  normaliseSeverity(raw.severity || raw.level),
-    company:   raw.company_name || raw.company || "—",
-    changes:   raw.metadata || raw.changes || {},
+    userId:     raw.user_id || raw.actor || raw.user || "—",
+    entityType: raw.entity_type || raw.type || raw.resource || "—",
+    resource:   raw.resource || raw.type || raw.entity_type || "—",
+    detail:     raw.description || raw.detail || raw.message || "—",
+    ip:         raw.ip || raw.ip_address || "—",
+    time:       timeAgo(raw.created_at || raw.timestamp),
+    date:       formatDate(raw.created_at || raw.timestamp),
+    severity:   normaliseSeverity(raw.severity || raw.level || raw.status),
+    company:    raw.company_name || raw.company || "—",
+    changes:    raw.metadata || raw.changes || raw.new_data || {},
   };
 }
 
@@ -169,14 +185,15 @@ function ActivityIcon({ bucket }: { bucket: "info" | "success" | "warning" | "er
   );
 }
 
-// ─── CSV EXPORT (unchanged) ────────────────────────────────────────────────────
+// ─── CSV EXPORT (updated to match the new columns: User ID + Type instead of
+// Actor/Actor Role, IP still included since it's still useful in the export) ──
 function exportToCSV(logs: LogEntry[]) {
   const allChangeKeys = Array.from(new Set(logs.flatMap(l => Object.keys(l.changes))));
-  const allHeaders    = ["ID","Date","Action","Severity","Actor","Actor Role","Company","Resource","Detail","IP Address","Time",...allChangeKeys];
+  const allHeaders    = ["ID","Date","Action","Severity","User ID","Type","Company","Detail","IP Address","Time",...allChangeKeys];
   const escape = (val: string) => `"${String(val ?? "").replace(/"/g, '""')}"`;
   const rows = logs.map(l => [
-    l.id, l.date, l.action, l.severity, l.actor, l.actorRole,
-    l.company, l.resource, l.detail, l.ip, l.time,
+    l.id, l.date, l.action, l.severity, l.userId, l.entityType,
+    l.company, l.detail, l.ip, l.time,
     ...allChangeKeys.map(k => l.changes[k] ?? ""),
   ].map(v => escape(String(v))).join(","));
   const csv  = [allHeaders.map(h => escape(h)).join(","), ...rows].join("\n");
@@ -207,9 +224,32 @@ export default function AuditLogs() {
   const [fetchError,  setFetchError]  = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems,  setTotalItems]  = useState(0);
+
+  // ── Toast notifications (replaces window.confirm / window.alert entirely) ──
+  // type "confirm" renders action buttons inside the toast itself.
+  type Toast = {
+    id: number;
+    kind: "info" | "success" | "error" | "confirm";
+    message: string;
+    onConfirm?: () => void;
+  };
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const pushToast = (kind: Toast["kind"], message: string, onConfirm?: () => void) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, kind, message, onConfirm }]);
+    if (kind !== "confirm") {
+      setTimeout(() => dismissToast(id), 3000);
+    }
+    return id;
+  };
+  const dismissToast = (id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
   const LIMIT = 10;
 
-  // ── Fetch logs (unchanged) ──────────────────────────────────────────────────
+  // ── Fetch logs (unchanged, plus storing the raw response) ──────────────────
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
@@ -237,7 +277,11 @@ export default function AuditLogs() {
         ? res.data.logs
         : [];
 
-      const total = res.data?.data?.total ?? res.data?.total ?? raw.length;
+      const total =
+        res.data?.data?.pagination?.total ??
+        res.data?.data?.total ??
+        res.data?.total ??
+        raw.length;
 
       setLogs(raw.map(enrichLog));
       setTotalItems(total);
@@ -259,13 +303,13 @@ export default function AuditLogs() {
     setCurrentPage(1);
   }, [typeFilter, actionFilter, timeFrame, search]);
 
-  // ── Client-side search filter (unchanged) ──────────────────────────────────
+  // ── Client-side search filter — now also matches on user_id ────────────────
   const filtered = logs.filter(l =>
     !search.trim() ||
-    l.actor.toLowerCase().includes(search.toLowerCase())   ||
-    l.detail.toLowerCase().includes(search.toLowerCase())  ||
-    l.resource.toLowerCase().includes(search.toLowerCase())||
-    l.company.toLowerCase().includes(search.toLowerCase()) ||
+    l.userId.toLowerCase().includes(search.toLowerCase())     ||
+    l.detail.toLowerCase().includes(search.toLowerCase())     ||
+    l.entityType.toLowerCase().includes(search.toLowerCase()) ||
+    l.company.toLowerCase().includes(search.toLowerCase())    ||
     l.action.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -282,25 +326,28 @@ export default function AuditLogs() {
     }, 400);
   };
 
-  // ── Clear logs ───────────────────────────────────────────────────────────────
-  // NOTE: no "clear logs" endpoint existed in the original code. Wire this to
-  // your real route — placeholder below assumes a DELETE on the same resource.
-  const handleClearLogs = async () => {
-    const confirmed = window.confirm(
-      "This will permanently delete all audit log entries. This action cannot be undone. Continue?"
+  // ── Clear logs — confirmation now happens via a toast with buttons,
+  // not window.confirm. ──────────────────────────────────────────────────────
+  const handleClearLogs = () => {
+    pushToast(
+      "confirm",
+      "This will permanently delete all audit log entries. This action cannot be undone.",
+      async () => {
+        setClearing(true);
+        try {
+          await axiosInstance.delete("/v1/admin/activity");
+          await fetchLogs();
+          pushToast("success", "All audit logs were cleared.");
+        } catch (e) {
+          console.error("CLEAR LOGS ERROR =>", e);
+          const msg = e instanceof Error ? e.message : "Failed to clear logs";
+          setFetchError(msg);
+          pushToast("error", msg);
+        } finally {
+          setClearing(false);
+        }
+      }
     );
-    if (!confirmed) return;
-
-    setClearing(true);
-    try {
-      await axiosInstance.delete("/v1/admin/activity");
-      await fetchLogs();
-    } catch (e) {
-      console.error("CLEAR LOGS ERROR =>", e);
-      setFetchError(e instanceof Error ? e.message : "Failed to clear logs");
-    } finally {
-      setClearing(false);
-    }
   };
 
   // ── Stat counts (by severity bucket, matches reference cards) ──────────────
@@ -382,7 +429,7 @@ export default function AuditLogs() {
             className="al-search-input"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search activities, users, emails…"
+            placeholder="Search activities, user id, emails…"
             autoComplete="off"
           />
         </div>
@@ -431,13 +478,19 @@ export default function AuditLogs() {
         </div>
       </div>
 
-      {/* TABLE */}
+      {/* TABLE — columns are now: ACTIVITY · USER ID · TYPE · ACTION · TIME
+          (USER replaced with USER ID, IP ADDRESS replaced with TYPE, and a
+          new ACTION column was added). NOTE: if al-table__head / al-log-row
+          use CSS grid-template-columns with a fixed column count in
+          audit-logs.css, update that rule to 6 columns (icon + 5 listed
+          above) to match. */}
       <div className="al-table">
         <div className="al-table__head">
           <div className="al-table__head-cell" />
           <div className="al-table__head-cell">ACTIVITY</div>
-          <div className="al-table__head-cell">USER</div>
-          <div className="al-table__head-cell">IP ADDRESS</div>
+          <div className="al-table__head-cell">USER ID</div>
+          <div className="al-table__head-cell">TYPE</div>
+          <div className="al-table__head-cell">ACTION</div>
           <div className="al-table__head-cell">TIME</div>
         </div>
 
@@ -477,11 +530,14 @@ export default function AuditLogs() {
                   </div>
 
                   <div className="al-log-row__user-col">
-                    <div className="al-log-row__user">{log.actor}</div>
-                    <div className="al-log-row__type">{log.resource}</div>
+                    <div className="al-log-row__user" title={log.userId}>
+                      {shortenId(log.userId)}
+                    </div>
                   </div>
 
-                  <div className="al-log-row__ip">{log.ip}</div>
+                  <div className="al-log-row__ip">{log.entityType}</div>
+
+                  <div className="al-log-row__ip">{log.action || "—"}</div>
 
                   <div className="al-log-row__time-col">
                     <div className="al-log-row__time-rel">{log.time}</div>
@@ -517,6 +573,37 @@ export default function AuditLogs() {
           </div>
         </div>
       )}
+
+      {/* TOASTS — replaces window.confirm/alert. "confirm" toasts show
+          Confirm/Cancel buttons inline; others auto-dismiss after 3s. */}
+      <div className="al-toast-stack">
+        {toasts.map(t => (
+          <div key={t.id} className={`al-toast al-toast--${t.kind}`}>
+            <span className="al-toast__msg">{t.message}</span>
+            {t.kind === "confirm" ? (
+              <div className="al-toast__actions">
+                <button
+                  className="al-toast__btn al-toast__btn--confirm"
+                  onClick={() => {
+                    t.onConfirm?.();
+                    dismissToast(t.id);
+                  }}
+                >
+                  Confirm
+                </button>
+                <button
+                  className="al-toast__btn al-toast__btn--cancel"
+                  onClick={() => dismissToast(t.id)}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button className="al-toast__close" onClick={() => dismissToast(t.id)}>✕</button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
