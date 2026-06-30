@@ -71,8 +71,10 @@ function buildStats(users: User[]): UserStats {
   return {
     totalUsers: users.length,
     activeUsers: users.filter((u) => u.status === "ACTIVE").length,
-    adminUsers: users.filter((u) => u.role === "Admin").length,
-    premiumUsers: users.filter((u) => ["Pro", "Enterprise"].includes(u.plan)).length,
+    adminUsers: 0, // No admins on this page
+    premiumUsers: users.filter((u) =>
+      ["Pro", "Enterprise"].includes(u.plan)
+    ).length,
   };
 }
 
@@ -117,21 +119,19 @@ export function useUsers(): UseUsersReturn {
             .then((r) => r.data)
         );
 
-        const adminRequest = axiosInstance
-          .get(`${EXTERNAL_USERS_API}?role=admin`)
-          .then((r) => r.data)
-          .catch(() => null);
+       const restPages = await Promise.all(pageRequests);
 
-        const [adminJson, ...restPages] = await Promise.all([adminRequest, ...pageRequests]);
+const allRecords = [
+  ...recordsFromResponse(firstJson),
+  ...restPages.flatMap(recordsFromResponse),
+];
 
-        const allRecords = [
-          ...recordsFromResponse(firstJson),
-          ...restPages.flatMap(recordsFromResponse),
-          ...recordsFromResponse(adminJson),
-        ];
+// Extra safety: only keep users
+const onlyUsers = allRecords.filter(
+  (u) => String(u.role || "").toLowerCase() === "user"
+);
 
-        const mappedUsers = allRecords.map(mapExternalUser);
-
+const mappedUsers = onlyUsers.map(mapExternalUser);
         if (!cancelled) {
           setUsers(mappedUsers);
           setStats(buildStats(mappedUsers));
