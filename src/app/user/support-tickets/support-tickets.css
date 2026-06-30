@@ -461,6 +461,7 @@
 }
 
 .st-group {
+  width: 100%;
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
@@ -472,7 +473,7 @@
 .st-pill {
   border-radius: 20px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 14px;
   padding: 5px 12px;
   border: 1px solid var(--st-border);
   background: transparent;

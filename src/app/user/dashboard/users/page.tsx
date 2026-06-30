@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import UserManagement from "../../../../components/UserManagement";
 import { useTheme, tokens } from "../../../../context/ThemeContext";
+import { axiosInstance } from "@/lib/axiosInstance";
+
+const USERS_API = "/v1/admin/companies/user";
 
 interface ApiUser {
   id: number | string;
   name: string;
   role: string;
   status: string;
-  av: string;
 }
 
 interface UserRow {
@@ -22,11 +24,6 @@ interface UserRow {
   col: string;
 }
 
-interface UsersResponse {
-  users?: ApiUser[];
-  error?: string | null;
-}
-
 const USER_COLORS = [
   "linear-gradient(135deg,#3b5bdb,#6741d9)",
   "linear-gradient(135deg,#0ca678,#2f9e44)",
@@ -34,6 +31,38 @@ const USER_COLORS = [
   "linear-gradient(135deg,#6741d9,#862e9c)",
   "linear-gradient(135deg,#e03131,#c92a2a)",
 ];
+
+// Same header pattern used across the dashboard for external API calls.
+const getExternalHeaders = () => {
+  let token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("console_access_token")
+      : null;
+
+  if (token && token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+
+  return {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+// Same response-unwrapping helper used on the dashboard page, so both
+// pages parse the external API's response shape identically.
+function recordsFromResponse(json: any): any[] {
+  if (Array.isArray(json)) return json;
+  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.data?.data)) return json.data.data;
+  if (Array.isArray(json?.users)) return json.users;
+  return [];
+}
+
+function isAxiosErrorLike(err: unknown): err is { isAxiosError: true; response?: { data?: { message?: string } }; message?: string } {
+  return typeof err === "object" && err !== null && (err as any).isAxiosError === true;
+}
 
 function toInitials(name: string) {
   const cleaned = name.trim();
@@ -75,31 +104,44 @@ export default function DashboardUsersPage() {
       setError(null);
 
       try {
-        const res = await fetch("/api/admin/users?limit=all");
-        const data = (await res.json()) as UsersResponse;
+        const { data: usersResponse } = await axiosInstance.get(
+          `${USERS_API}?limit=all`,
+          {
+            headers: getExternalHeaders(),
+            withCredentials: false,
+          }
+        );
 
         if (cancelled) {
           return;
         }
 
-        if (!res.ok) {
-          throw new Error(data.error ?? `Server error ${res.status}`);
-        }
+        const records = recordsFromResponse(usersResponse) as ApiUser[];
 
-        const mappedUsers = (data.users ?? []).map((user, index) => ({
+        const mappedUsers: UserRow[] = records.map((user, index) => ({
           id: String(user.id),
           un: toUsername(user.name),
-          role: user.role,
-          status: user.status,
+          role: user.role
+            ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
+            : "User",
+          status: user.status
+            ? user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase()
+            : "Active",
           av: toInitials(user.name),
-          col: user.av || USER_COLORS[index % USER_COLORS.length],
+          col: USER_COLORS[index % USER_COLORS.length],
         }));
 
         setUsers(mappedUsers);
-        setError(data.error ?? null);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to fetch users.");
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        if (isAxiosErrorLike(err)) {
+          setError(err.response?.data?.message || err.message || "Failed to fetch users.");
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to fetch users.");
         }
       } finally {
         if (!cancelled) {

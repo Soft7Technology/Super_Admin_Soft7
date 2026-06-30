@@ -1,9 +1,8 @@
-﻿﻿﻿"use client";
+﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
-import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
 import CompanyOverview from "../../../components/CompanyOverview";
 import UserManagement from "../../../components/UserManagement";
@@ -16,6 +15,7 @@ const DASHBOARD_API =
   "/v1/admin/companies/user";
   const COMPANIES_API =
   "/v1/admin/companies?status=active";
+
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -32,6 +32,12 @@ const getExternalHeaders = () => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
+
+// Type guard so we don't need to import the raw `axios` package just for
+// isAxiosError — keeps axiosInstance as the single integration pattern.
+function isAxiosErrorLike(err: unknown): err is { isAxiosError: true; response?: { data?: { message?: string } }; message?: string } {
+  return typeof err === "object" && err !== null && (err as any).isAxiosError === true;
+}
 
 const DEFAULT_STATS: StatCard[] = [
   {
@@ -88,27 +94,15 @@ function recordsFromResponse(json: any): any[] {
 }
 
 function useWindowWidth() {
- const [width, setWidth] = useState<number>(1024);
+  const [width, setWidth] = useState<number>(1024);
 
-useEffect(() => {
-  setWidth(window.innerWidth);
-
-  const handleResize = () => {
-    setWidth(window.innerWidth);
-  };
-
-  window.addEventListener("resize", handleResize);
-
-  return () => {
-    window.removeEventListener("resize", handleResize);
-  };
-}, []);
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
   return width;
 }
 
@@ -176,18 +170,18 @@ function InlineStatCards({
               }}>
                 {meta.label}
               </span>
-        <div style={{
-        width: "42px",
-        height: "42px",
-        borderRadius: "12px",
-        background: `${meta.accent}18`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "20px",
-      }}>
-        {meta.icon}
-      </div>
+              <div style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "12px",
+                background: `${meta.accent}18`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "20px",
+              }}>
+                {meta.icon}
+              </div>
             </div>
             <div style={{
               fontSize: "30px", fontWeight: 800,
@@ -256,10 +250,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let mounted = true;
+
     const loadDashboard = async () => {
       try {
         setLoading(true);
         setError(null);
+
+        // ── Dashboard stats ──────────────────────────────────
         const { data: apiResponse } = await axiosInstance.get(DASHBOARD_API, {
           headers: getExternalHeaders(),
           withCredentials: false,
@@ -273,88 +270,107 @@ export default function DashboardPage() {
           { label: "Chatbots",  value: Number(data.chatbot_count ?? 0).toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
           { label: "Messages",  value: Number(data.total_messages ?? 0).toLocaleString(),  icon: "💬", change: "—", changeType: "up", accent: "orange" },
         ]);
-const { data: companiesResponse } = await axiosInstance.get(
-  COMPANIES_API,
-  {
+
+        // ── Companies ─────────────────────────────────────────
+        const { data: companiesResponse } = await axiosInstance.get(
+          COMPANIES_API,
+          {
+            headers: getExternalHeaders(),
+            withCredentials: false,
+          }
+        );
+        if (!mounted) return;
+
+        const companiesData = companiesResponse?.data || [];
+
+        setCompanies(
+          companiesData.slice(0, 4).map((company: any, index: number) => ({
+            id: company.id || index.toString(),
+
+            name: company.name || "Unknown Company",
+
+            ini: (company.name || "C")
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2),
+
+            col: [
+              "#10b981",
+              "#34d399",
+              "#059669",
+              "#0d9488",
+            ][index % 4],
+
+            status:
+              company.status
+                ? company.status.charAt(0).toUpperCase() +
+                  company.status.slice(1)
+                : "Active",
+
+            plan: "Basic",
+
+            users: 0,
+          }))
+        );
+
+        // ── Users (regular + admin) ──────────────────────────
+        const { data: usersResponse } = await axiosInstance.get(
+          `${USERS_API}?role=user&page=1&limit=4`,
+          {
+            headers: getExternalHeaders(),
+            withCredentials: false,
+          }
+        );
+        if (!mounted) return;
+
+const { data: adminUsersResponse } = await axiosInstance
+  .get(`${USERS_API}?role=admin`, {
     headers: getExternalHeaders(),
     withCredentials: false,
-  }
-);
+  })
+  .catch(() => ({ data: null }));
 
-const companiesData =
-  companiesResponse?.data || [];
-
-setCompanies(
-  companiesData.slice(0, 4).map((company: any, index: number) => ({
-    id: company.id || index.toString(),
-
-    name: company.name || "Unknown Company",
-
-    ini: (company.name || "C")
-      .split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2),
-
-    col: [
-      "#10b981",
-      "#34d399",
-      "#059669",
-      "#0d9488",
-    ][index % 4],
-
-    status:
-      company.status
-        ? company.status.charAt(0).toUpperCase() +
-          company.status.slice(1)
-        : "Active",
-
-    plan: "Basic",
-
-    users: 0,
-  }))
-);
-
-       const { data: usersResponse } = await axiosInstance.get(`${USERS_API}?role=user&page=1&limit=4`, {
-  headers: getExternalHeaders(),
-  withCredentials: false,
-});
-
-const usersData = recordsFromResponse(usersResponse);
+const usersData = [
+  ...recordsFromResponse(usersResponse),
+  ...recordsFromResponse(adminUsersResponse),
+];
 setUsers(
   usersData.slice(0, 4).map((user: any, index: number) => ({
     id: user.id || index.toString(),
 
-    un: user.name || "Unknown User",
+            un: user.name || "Unknown User",
 
-    role:
-      user.role
-        ? user.role.charAt(0).toUpperCase() +
-          user.role.slice(1).toLowerCase()
-        : "User",
+            role:
+              user.role
+                ? user.role.charAt(0).toUpperCase() +
+                  user.role.slice(1).toLowerCase()
+                : "User",
 
-    status:
-      user.status
-        ? user.status.charAt(0).toUpperCase() +
-          user.status.slice(1).toLowerCase()
-        : "Active",
+            status:
+              user.status
+                ? user.status.charAt(0).toUpperCase() +
+                  user.status.slice(1).toLowerCase()
+                : "Active",
 
-    av: (user.name || "U")
-      .split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2),
+            av: (user.name || "U")
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2),
 
-    col: [
-      "#10b981",
-      "#34d399",
-      "#059669",
-      "#0d9488",
-    ][index % 4],
-  }))
-);
+            col: [
+              "#10b981",
+              "#34d399",
+              "#059669",
+              "#0d9488",
+            ][index % 4],
+          }))
+        );
+
+        // ── Logs (static placeholder data) ───────────────────
         setLogs([
           { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
           { id:"2", msg:"Company subscription upgraded to Enterprise", actor:"Michael Chen",      time:"18 mins ago", sev:"success" },
@@ -364,7 +380,7 @@ setUsers(
         ]);
       } catch (err) {
         if (!mounted) return;
-        if (axios.isAxiosError(err)) {
+        if (isAxiosErrorLike(err)) {
           setError(err.response?.data?.message || err.message || "Failed to load dashboard.");
         } else if (err instanceof Error) {
           setError(err.message);
@@ -375,6 +391,7 @@ setUsers(
         if (mounted) setLoading(false);
       }
     };
+
     loadDashboard();
     return () => { mounted = false; };
   }, []);
@@ -464,12 +481,12 @@ setUsers(
         }}
       >
         <Section isDark={isDark} isMobile={isMobile}>
-       <CompanyOverview
-  companies={companies}
-  loading={loading}
-  error={error}
-  onViewAll={() => router.push("/user/manage-companies")}
-/>
+          <CompanyOverview
+            companies={companies}
+            loading={loading}
+            error={error}
+            onViewAll={() => router.push("/user/manage-companies")}
+          />
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
         <UserManagement
@@ -489,38 +506,37 @@ setUsers(
           gap: "20px",
         }}
       >
-        
-       <Section isDark={isDark} isMobile={isMobile}>
-  <div
-    style={{
-      marginBottom: "18px",
-    }}
-  >
-    <h2
-      style={{
-        margin: 0,
-        fontSize: "0.85rem",
-        fontWeight: 700,
-        color: t.text,
-        letterSpacing: "-0.02em",
-      }}
-    >
-      Platform Growth
-    </h2>
+        <Section isDark={isDark} isMobile={isMobile}>
+          <div
+            style={{
+              marginBottom: "18px",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                color: t.text,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Platform Growth
+            </h2>
 
-    <p
-      style={{
-        margin: "4px 0 0",
-        fontSize: "0.75rem",
-        color: isDark ? t.textMuted : "#64748b",
-      }}
-    >
-      Monthly platform activity and engagement overview
-    </p>
-  </div>
+            <p
+              style={{
+                margin: "4px 0 0",
+                fontSize: "0.75rem",
+                color: isDark ? t.textMuted : "#64748b",
+              }}
+            >
+              Monthly platform activity and engagement overview
+            </p>
+          </div>
 
-  <PlatformGrowthChart />
-</Section>
+          <PlatformGrowthChart />
+        </Section>
         <Section isDark={isDark} isMobile={isMobile}>
           <AuditLogs logs={logs} loading={loading} error={error} />
         </Section>
@@ -528,4 +544,3 @@ setUsers(
     </div>
   );
 }
-
