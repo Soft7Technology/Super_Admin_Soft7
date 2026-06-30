@@ -38,7 +38,8 @@ export default function AllUsers() {
   const [suspendingId,   setSuspendingId]   = useState<string | null>(null);
   const [deletingId,     setDeletingId]     = useState<string | null>(null);
 
-  const { users, stats, loading, error, refresh, updateUserStatus } = useUsers();
+  // status filter is now applied server-side via the API
+  const { users, stats, loading, error, refresh, updateUserStatus } = useUsers(status);
   const query = search.trim().toLowerCase();
 
   const handleSelectUser = (userId: string) => {
@@ -132,15 +133,16 @@ const handleSuspendToggle = async (user: User) => {
     setDeletingId(null);
   }
 };
+  // NOTE: status filtering is now done server-side (see useUsers(status)).
+  // Only search / role / sort remain client-side.
   const filteredUsers = [...users]
     .filter((user) => {
       const emailDomain = user.email.includes("@") ? user.email.split("@").pop() ?? "" : "";
       const searchable = [user.name, user.email, emailDomain, user.company, user.companyDomain]
         .join(" ").toLowerCase();
       const matchesSearch = !query || searchable.includes(query);
-      const matchesStatus = status === "ALL" || user.status === status;
-      const matchesRole   = role   === "ALL" || user.role.toLowerCase() === role.toLowerCase();
-      return matchesSearch && matchesStatus && matchesRole;
+      const matchesRole   = role === "ALL" || user.role.toLowerCase() === role.toLowerCase();
+      return matchesSearch && matchesRole;
     })
     .sort((a, b) =>
       sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
@@ -151,6 +153,12 @@ const handleSuspendToggle = async (user: User) => {
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
+
+  // Reset to page 1 whenever the active filters change the result set
+  const handleStatusChange = (value: string) => {
+    setStatus(value);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="au-root">
@@ -170,35 +178,38 @@ const handleSuspendToggle = async (user: User) => {
         <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon="⭐" color="#f59e0b" />
       </div>
 
-      {/* Filters */}
+      {/* Filters, with Select All / bulk-delete pinned to the right of the same row */}
       <FilterBar
         search={search}       onSearchChange={setSearch}
-        status={status}       onStatusChange={setStatus}
+        status={status}       onStatusChange={handleStatusChange}
         role={role}           onRoleChange={setRole}
         sort={sort}           onSortChange={setSort}
         count={filteredUsers.length}
         loading={loading}
-      />
-
-      {/* Selection toolbar */}
-      <div className="au-selection-toolbar">
-        {selectedUsers.length > 0 && (
-          <button
-            className="au-btn au-btn--danger au-btn--bulk-delete"
-            onClick={handleDeleteSelected}
+        rightSlot={
+          <div
+            className="au-selection-toolbar"
+            style={{ display: "flex", alignItems: "center", gap: "12px", margin: 0, padding: 0 }}
           >
-            Delete Selected ({selectedUsers.length})
-          </button>
-        )}
-        <label className="au-select-all">
-          <input
-            type="checkbox"
-            checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
-            onChange={handleSelectAll}
-          />
-          Select All
-        </label>
-      </div>
+            {selectedUsers.length > 0 && (
+              <button
+                className="au-btn au-btn--danger au-btn--bulk-delete"
+                onClick={handleDeleteSelected}
+              >
+                Delete Selected ({selectedUsers.length})
+              </button>
+            )}
+            <label className="au-select-all" style={{ margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
+                onChange={handleSelectAll}
+              />
+              Select All
+            </label>
+          </div>
+        }
+      />
 
       {/* Grid */}
       <div className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"}`}>

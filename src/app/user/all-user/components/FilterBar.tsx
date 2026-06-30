@@ -11,9 +11,12 @@ interface FilterBarProps {
   onSortChange: (value: string) => void;
   count: number;
   loading: boolean;
+  /** Optional extra content rendered at the end of the filter bar row
+   *  (e.g. the "Select All" / bulk-delete toolbar). */
+  rightSlot?: React.ReactNode;
 }
 
-const STATUS_FILTERS = ["ALL", "ACTIVE", "suspended"];
+const STATUS_FILTERS = ["ALL", "ACTIVE", "INACTIVE", "SUSPENDED"];
 const ROLE_FILTERS   = ["ALL", "Admin", "User"];
 
 export function FilterBar({
@@ -22,6 +25,7 @@ export function FilterBar({
   role,   onRoleChange,
   sort,   onSortChange,
   count,  loading,
+  rightSlot,
 }: FilterBarProps) {
   return (
     <div className="au-filter-bar">
@@ -75,6 +79,14 @@ export function FilterBar({
       <span className="au-filter-count">
         {loading ? "…" : `${count} users`}
       </span>
+
+      {/* Select All / bulk-delete toolbar — pushed to the far right of the
+          same row, right after the users count */}
+      {rightSlot && (
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
+          {rightSlot}
+        </div>
+      )}
     </div>
   );
 }
