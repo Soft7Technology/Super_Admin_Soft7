@@ -15,6 +15,8 @@ import { Eye, EyeOff } from "lucide-react";
 const COMPANIES_API = "/v1/admin/companies?status=active";
 const ACTIVE_COMPANIES_API = "/v1/admin/companies?status=active";
 const SUSPENDED_COMPANIES_API = "/v1/admin/companies?status=suspend";
+const INACTIVE_COMPANIES_API =
+  "/v1/admin/companies?page=1&limit=10&status=inactive";
 const ITEMS_PER_PAGE = 50;
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -1280,6 +1282,7 @@ export default function ManageCompanies() {
       let endpoint = COMPANIES_API;
       if (filter === "ACTIVE") endpoint = ACTIVE_COMPANIES_API;
       if (filter === "SUSPENDED") endpoint = SUSPENDED_COMPANIES_API;
+      if (filter === "INACTIVE") endpoint = INACTIVE_COMPANIES_API;
 
       const companiesRes = await axiosInstance.get(endpoint);
 
@@ -1314,6 +1317,7 @@ export default function ManageCompanies() {
     "ALL",
     "ACTIVE",
     "SUSPENDED",
+    "INACTIVE",
   ];
   const query = search.trim().toLowerCase();
 
