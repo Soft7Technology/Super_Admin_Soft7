@@ -35,7 +35,8 @@ const NAV_ITEMS: NavItem[] = [
   { icon: Settings, label: "System", route: "/user/system" },
   { icon: UserCircle, label: "Profile", route: "/user/profile" },
   { icon: TicketPercent, label: "Support Tickets", route: "/user/support-tickets" },
-  { icon: Receipt, label: "Transactions", route: "/user/transactions" }
+  { icon: Receipt, label: "Transactions", route: "/user/transactions" },
+  { icon: CreditCard, label: "Manage Transaction", route: "/user/manage-transaction" },
 ];
 
 function isRouteActive(pathname: string | null, route: string) {
