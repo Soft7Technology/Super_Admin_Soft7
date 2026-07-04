@@ -8,7 +8,7 @@ import "react-phone-input-2/lib/style.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Swal from "sweetalert2";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
@@ -63,13 +63,20 @@ interface Company {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
-  "#6C5CE7", "#0d9462", "#f59e0b", "#3b82f6",
-  "#ec4899", "#14b871", "#8b5cf6", "#ef4444",
+  "#6C5CE7",
+  "#0d9462",
+  "#f59e0b",
+  "#3b82f6",
+  "#ec4899",
+  "#14b871",
+  "#8b5cf6",
+  "#ef4444",
 ];
 
 function avatarColor(id: string) {
   let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < id.length; i++)
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
@@ -118,6 +125,30 @@ function Badge({ status }: { status: Status }) {
   );
 }
 
+// ─── ERROR BANNER ─────────────────────────────────────────────────────────────
+function ErrorBanner({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="mc-error-banner" role="alert">
+      <AlertCircle size={18} className="mc-error-banner__icon" />
+      <span className="mc-error-banner__text">{message}</span>
+      <button
+        type="button"
+        className="mc-error-banner__close"
+        onClick={onDismiss}
+        aria-label="Dismiss error"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 const STATUS_COLORS: Record<Status, string> = {
   ACTIVE: "#10b981",
   SUSPENDED: "#ef4444",
@@ -141,7 +172,7 @@ function StatusDropdown({
       onStatusChange(company.id, newStatus);
     } else {
       toast.info(
-        "Switching directly to Inactive/Trial isn't supported here — use Edit Company."
+        "Switching directly to Inactive/Trial isn't supported here — use Edit Company.",
       );
     }
     e.target.value = company.status;
@@ -271,7 +302,7 @@ function Pagination({
             >
               {p}
             </button>
-          )
+          ),
         )}
 
         <button
@@ -325,16 +356,17 @@ function CompanyModal({
   const [name, setName] = useState(company?.name || "");
   const [email, setEmail] = useState(company?.email || "");
   const [phone, setPhone] = useState(
-    company?.phone === "—" ? "" : company?.phone || ""
+    company?.phone === "—" ? "" : company?.phone || "",
   );
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>(company?.status || "ACTIVE");
   const [creditBalance, setCreditBalance] = useState(
-    company?.creditBalance ?? "0"
+    company?.creditBalance ?? "0",
   );
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoInvalid, setLogoInvalid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -348,6 +380,7 @@ function CompanyModal({
     setCreditBalance(company?.creditBalance ?? "0");
     setLogoFile(null);
     setLogoPreview(null);
+    setLogoInvalid(false);
     setErr(null);
   }, [company]);
 
@@ -356,20 +389,68 @@ function CompanyModal({
     if (!file) return;
 
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    const minDimension = 100;
+
+    const resetLogo = () => {
+      setLogoInvalid(true);
+      setLogoFile(null);
+      setLogoPreview(null);
+      e.target.value = "";
+    };
+
     if (!allowedTypes.includes(file.type)) {
-      setErr("Only PNG, JPG and WEBP files are allowed.");
+      toast.error("Only PNG, JPG, JPEG and WEBP logo files are allowed.");
+      setErr("Only PNG, JPG, JPEG and WEBP logo files are allowed.");
+      resetLogo();
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setErr("Image size must be less than 2MB.");
+    if (file.size > maxSize) {
+      toast.error("Logo size must be less than 2MB.");
+      setErr("Logo size must be less than 2MB.");
+      resetLogo();
       return;
     }
 
-    setLogoFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setLogoPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const { width, height } = img;
+      URL.revokeObjectURL(objectUrl);
+
+      if (width !== height) {
+        toast.error("Only square logos are allowed. Example: 512 x 512 px.");
+        setErr("Only square logos are allowed. Example: 512 x 512 px.");
+        resetLogo();
+        return;
+      }
+
+      if (width < minDimension || height < minDimension) {
+        toast.error("Logo is too small. Please upload at least 100 x 100 px.");
+        setErr("Logo is too small. Please upload at least 100 x 100 px.");
+        resetLogo();
+        return;
+      }
+
+      setLogoInvalid(false);
+      setErr(null);
+      setLogoFile(file);
+
+      const reader = new FileReader();
+      reader.onloadend = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      toast.error("Invalid image file. Please upload a valid logo.");
+      setErr("Invalid image file. Please upload a valid logo.");
+      resetLogo();
+    };
+
+    img.src = objectUrl;
   };
 
   const handleSubmit = async () => {
@@ -386,10 +467,17 @@ function CompanyModal({
 
     if (!phone.trim()) return setErr("Phone number is required.");
 
+    if (logoInvalid)
+      return setErr("Please choose a valid logo image before continuing.");
+
+    if (!company && !logoFile) {
+      toast.error("Company logo is required.");
+      return setErr("Company logo is required.");
+    }
+
     if (creditBalance !== "" && Number(creditBalance) < 0)
       return setErr("Credit balance cannot be negative.");
 
-    // Password only required on Create
     if (!company) {
       if (!password.trim()) return setErr("Password is required.");
 
@@ -400,7 +488,7 @@ function CompanyModal({
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(password))
         return setErr(
-          "Password must contain uppercase, lowercase, number and special character."
+          "Password must contain uppercase, lowercase, number and special character.",
         );
     }
 
@@ -422,7 +510,6 @@ function CompanyModal({
       if (phone) formData.append("phone", phone);
       formData.append("credit_balance", String(creditBalance || 0));
 
-      // Backend requires a nested `user` JSON object for onboarding
       if (!isEdit) {
         formData.append(
           "user",
@@ -431,7 +518,7 @@ function CompanyModal({
             email: email.trim(),
             phone: phone || undefined,
             password,
-          })
+          }),
         );
       }
 
@@ -461,15 +548,11 @@ function CompanyModal({
           await axiosInstance.put(statusEndpoint);
         }
       } else {
-        const response = await axiosInstance.post(
-          url,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        const response = await axiosInstance.post(url, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
         console.log("CREATE RESPONSE", response.data);
         data = response.data;
@@ -483,7 +566,7 @@ function CompanyModal({
           return;
         }
         setErr(
-          data?.error?.message || data?.message || "Company request failed"
+          data?.error?.message || data?.message || "Company request failed",
         );
         return;
       }
@@ -494,9 +577,7 @@ function CompanyModal({
       const creditDiff = newBalance - oldBalance;
 
       if (creditDiff > 0) {
-        const companyId = isEdit
-          ? company.id
-          : data?.data?.id ?? data?.id;
+        const companyId = isEdit ? company.id : data?.data?.id ?? data?.id;
         const companyName = isEdit ? company.name : name;
 
         if (companyId) {
@@ -508,8 +589,7 @@ function CompanyModal({
               description: isEdit
                 ? "Credit balance updated via Edit Company"
                 : "Initial credit balance",
-              created_by:
-                localStorage.getItem("email") || "admin@company.com",
+              created_by: localStorage.getItem("email") || "admin@company.com",
             });
           } catch (creditErr) {
             console.error("CREDIT UPDATE ERROR =>", creditErr);
@@ -521,7 +601,9 @@ function CompanyModal({
       // ── Done ─────────────────────────────────────────────────────────────
       await onSuccess();
       toast.success(
-        company ? "Company updated successfully" : "Company created successfully"
+        company
+          ? "Company updated successfully"
+          : "Company created successfully",
       );
 
       setName("");
@@ -531,13 +613,12 @@ function CompanyModal({
       setCreditBalance("0");
       setLogoFile(null);
       setLogoPreview(null);
+      setLogoInvalid(false);
       setErr(null);
     } catch (e: any) {
       console.error(e);
       setErr(
-        e?.response?.data?.message ||
-        e?.message ||
-        "Something went wrong"
+        e?.response?.data?.message || e?.message || "Something went wrong",
       );
     } finally {
       setSaving(false);
@@ -553,7 +634,9 @@ function CompanyModal({
               {company ? "Edit Company" : "Add New Company"}
             </div>
             <div className="mc-modal__sub">
-              {company ? `Editing ${company.name}` : "Fill in the details below."}
+              {company
+                ? `Editing ${company.name}`
+                : "Fill in the details below."}
             </div>
           </div>
           <button className="mc-modal__close" onClick={onClose}>
@@ -562,7 +645,7 @@ function CompanyModal({
         </div>
 
         <div className="mc-modal__body">
-          {err && <div className="mc-error-banner">⚠️ {err}</div>}
+          {err && <ErrorBanner message={err} onDismiss={() => setErr(null)} />}
 
           <div className="mc-field">
             <div className="mc-field__label">COMPANY NAME *</div>
@@ -624,7 +707,7 @@ function CompanyModal({
           </div>
 
           <div className="mc-field">
-            <div className="mc-field__label">COMPANY LOGO</div>
+            <div className="mc-field__label">COMPANY LOGO * </div>
             <label
               style={{
                 display: "flex",
@@ -639,12 +722,14 @@ function CompanyModal({
                   height: 52,
                   borderRadius: "50%",
                   overflow: "hidden",
-                  border: "2px dashed var(--mc-border, #333)",
+                  border: logoInvalid
+                    ? "2px dashed #ef4444"
+                    : "2px dashed var(--mc-border, #333)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                  background: "var(--mc-surface, #1a1a2e)",
+                  background: "#fff",
                   fontSize: 20,
                 }}
               >
@@ -652,7 +737,11 @@ function CompanyModal({
                   <img
                     src={logoPreview}
                     alt="Logo preview"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
                   />
                 ) : (
                   "🏢"
@@ -689,52 +778,52 @@ function CompanyModal({
             </label>
           </div>
 
-         {/* Password — Create only */}
-{!company && (
-  <div className="mc-field">
-    <div className="mc-field__label">PASSWORD *</div>
+          {/* Password — Create only */}
+          {!company && (
+            <div className="mc-field">
+              <div className="mc-field__label">PASSWORD *</div>
 
-    <div
-      style={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      <input
-        className="mc-input"
-        type={showPassword ? "text" : "password"}
-        placeholder="Min 8 characters"
-        value={password}
-        onChange={(e) => {
-          setPassword(e.target.value);
-          setErr(null);
-        }}
-        style={{
-          paddingRight: "45px",
-        }}
-      />
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <input
+                  className="mc-input"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min 8 characters"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErr(null);
+                  }}
+                  style={{
+                    paddingRight: "45px",
+                  }}
+                />
 
-      <button
-        type="button"
-        onClick={() => setShowPassword(!showPassword)}
-        style={{
-          position: "absolute",
-          right: "12px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          color: "#9ca3af",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-      </button>
-    </div>
-  </div>
-)}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#9ca3af",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Credit Balance — both Create and Edit */}
           <div className="mc-field">
@@ -757,8 +846,9 @@ function CompanyModal({
               <div
                 style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}
               >
-                Current balance: ₹{Number(company.creditBalance || 0).toFixed(2)}.
-                Increasing this value will top up the company's credit.
+                Current balance: ₹
+                {Number(company.creditBalance || 0).toFixed(2)}. Increasing this
+                value will top up the company's credit.
               </div>
             )}
           </div>
@@ -775,7 +865,6 @@ function CompanyModal({
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
                 <option value="SUSPENDED">Suspended</option>
-               
               </select>
               <div
                 style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}
@@ -793,7 +882,7 @@ function CompanyModal({
               type="button"
               className="mc-btn mc-btn--primary"
               onClick={handleSubmit}
-              disabled={saving}
+              disabled={saving || logoInvalid}
             >
               {saving ? "Saving…" : company ? "Save Changes" : "Create Company"}
             </button>
@@ -1084,8 +1173,7 @@ function AddCreditModal({
     try {
       setLoading(true);
 
-      const adminEmail =
-        localStorage.getItem("email") || "admin@company.com";
+      const adminEmail = localStorage.getItem("email") || "admin@company.com";
 
       const response = await axiosInstance.post("/v1/admin/credits/add", {
         company_id: company.id,
@@ -1110,8 +1198,8 @@ function AddCreditModal({
       console.error(error);
       setErr(
         error?.response?.data?.message ||
-        error?.message ||
-        "Failed to add credit"
+          error?.message ||
+          "Failed to add credit",
       );
     } finally {
       setLoading(false);
@@ -1124,9 +1212,7 @@ function AddCreditModal({
         <div className="mc-modal__header">
           <div>
             <div className="mc-modal__title">Add Credit</div>
-            <div className="mc-modal__sub">
-              Top up {company.name}'s balance
-            </div>
+            <div className="mc-modal__sub">Top up {company.name}'s balance</div>
           </div>
           <button className="mc-modal__close" onClick={onClose}>
             ×
@@ -1134,15 +1220,11 @@ function AddCreditModal({
         </div>
 
         <div className="mc-modal__body">
-          {err && <div className="mc-error-banner">⚠️ {err}</div>}
+          {err && <ErrorBanner message={err} onDismiss={() => setErr(null)} />}
 
           <div className="mc-field">
             <div className="mc-field__label">COMPANY</div>
-            <input
-              className="mc-input"
-              value={company.name}
-              disabled
-            />
+            <input className="mc-input" value={company.name} disabled />
           </div>
 
           <div className="mc-field">
@@ -1234,7 +1316,7 @@ export default function ManageCompanies() {
     setSelectedCompanies((prev) =>
       prev.includes(companyId)
         ? prev.filter((id) => id !== companyId)
-        : [...prev, companyId]
+        : [...prev, companyId],
     );
   };
 
@@ -1256,14 +1338,14 @@ export default function ManageCompanies() {
     try {
       await Promise.all(
         selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/admin/companies/${id}`)
-        )
+          axiosInstance.delete(`/v1/admin/companies/${id}`),
+        ),
       );
 
       setSelectedCompanies([]);
       setSelectAll(false);
       toast.success(
-        `${selectedCompanies.length} companies deleted successfully`
+        `${selectedCompanies.length} companies deleted successfully`,
       );
       fetchCompanies();
     } catch (error) {
@@ -1298,7 +1380,7 @@ export default function ManageCompanies() {
       setCompanies(raw.map(enrichCompany));
     } catch (e) {
       setFetchError(
-        e instanceof Error ? e.message : "Failed to load companies"
+        e instanceof Error ? e.message : "Failed to load companies",
       );
       setCompanies([]);
     } finally {
@@ -1310,11 +1392,7 @@ export default function ManageCompanies() {
     fetchCompanies();
   }, [filter]);
 
-  const FILTERS: ("ALL" | Status)[] = [
-    "ALL",
-    "ACTIVE",
-    "SUSPENDED",
-  ];
+  const FILTERS: ("ALL" | Status)[] = ["ALL", "ACTIVE", "SUSPENDED"];
   const query = search.trim().toLowerCase();
 
   const filtered = companies.filter((c) => {
@@ -1339,7 +1417,7 @@ export default function ManageCompanies() {
   const pageStart = (safePage - 1) * ITEMS_PER_PAGE;
   const paginatedCompanies = filtered.slice(
     pageStart,
-    pageStart + ITEMS_PER_PAGE
+    pageStart + ITEMS_PER_PAGE,
   );
 
   const openAdd = () => {
@@ -1382,15 +1460,15 @@ export default function ManageCompanies() {
       console.error("DELETE ERROR =>", error);
       toast.error(
         error?.response?.data?.message ||
-        error?.message ||
-        "Failed to delete company"
+          error?.message ||
+          "Failed to delete company",
       );
     }
   };
 
   const handleStatusChange = async (
     companyId: string,
-    newStatus: "ACTIVE" | "SUSPENDED"
+    newStatus: "ACTIVE" | "SUSPENDED",
   ) => {
     const isSuspending = newStatus === "SUSPENDED";
 
@@ -1422,7 +1500,7 @@ export default function ManageCompanies() {
         toast.success(
           newStatus === "SUSPENDED"
             ? "Company suspended successfully"
-            : "Company activated successfully"
+            : "Company activated successfully",
         );
         await fetchCompanies();
       } else {
@@ -1432,8 +1510,8 @@ export default function ManageCompanies() {
       console.error("STATUS ERROR =>", error);
       toast.error(
         error?.response?.data?.message ||
-        error?.message ||
-        "Failed to update company status"
+          error?.message ||
+          "Failed to update company status",
       );
     }
   };
@@ -1470,7 +1548,7 @@ export default function ManageCompanies() {
         <KPI
           label="Suspended"
           value={String(
-            companies.filter((c) => c.status === "SUSPENDED").length
+            companies.filter((c) => c.status === "SUSPENDED").length,
           )}
           icon="⛔"
           color="#FF6B6B"
