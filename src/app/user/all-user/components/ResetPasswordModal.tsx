@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { User } from "../types";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface ResetPasswordModalProps {
   user: User;
@@ -16,11 +18,11 @@ export function ResetPasswordModal({ user, onClose }: ResetPasswordModalProps) {
 
   const handlePasswordChange = async () => {
     if (!newPassword) {
-      alert("Password is required");
+      toast.error("Password is required");
       return;
     }
     if (newPassword.length < 6) {
-      alert("Password must be at least 6 characters long");
+      toast.error("Password must be at least 6 characters long");
       return;
     }
 
@@ -31,14 +33,14 @@ export function ResetPasswordModal({ user, onClose }: ResetPasswordModalProps) {
       });
 
       if (data.success !== false) {
-        alert(`Password for ${user.name} reset successfully`);
+        toast.success(`Password for ${user.name} reset successfully`);
         onClose();
       } else {
-        alert(data.message || "Password reset failed");
+        toast.error(data.message || "Password reset failed");
       }
     } catch (error: any) {
       console.error("Password Reset Error:", error);
-      alert(error?.response?.data?.message || "Something went wrong");
+      toast.error(error?.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
