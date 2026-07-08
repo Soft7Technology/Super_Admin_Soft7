@@ -176,21 +176,32 @@
   background: var(--al-surf); border: 1px solid var(--al-border);
   border-radius: 12px; overflow: hidden; box-shadow: var(--al-shadow);
 }
+
+/* Columns: icon | activity | user id | type | action | time
+   (was 5 columns — bumped to 6 to match the row markup, and the icon
+   column is no longer included in the header row's text columns so
+   headers line up under the right data cells). */
 .al-table__head {
   display: grid;
-  grid-template-columns: 36px 1.6fr 1fr 1fr 90px;
+  grid-template-columns: 36px 1.8fr 1fr 0.8fr 0.8fr 110px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--al-border);
+  align-items: center;
 }
-.al-table__head-cell { font-size: 11px; font-weight: 700; color: var(--al-muted); letter-spacing: 0.04em; }
+.al-table__head-cell {
+  font-size: 11px; font-weight: 700; color: var(--al-muted);
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+.al-table__head-cell:last-child { text-align: right; }
 
 .al-log-row { border-bottom: 1px solid var(--al-border); }
 .al-log-row:last-child { border-bottom: none; }
 
 .al-log-row__main {
   display: grid;
-  grid-template-columns: 36px 1.6fr 1fr 1fr 90px;
+  grid-template-columns: 36px 1.8fr 1fr 0.8fr 0.8fr 110px;
   padding: 14px 20px; align-items: center;
+  gap: 12px;
   transition: background 0.12s;
 }
 .al-log-row__main:hover { background: var(--al-row-hover-bg); }
@@ -198,6 +209,7 @@
 .al-log-row__icon {
   width: 26px; height: 26px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 .al-log-row__icon--info    { background: var(--al-info-bg);    color: var(--al-info-color); }
 .al-log-row__icon--success { background: var(--al-success-bg); color: var(--al-success-color); }
@@ -218,16 +230,21 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+.al-log-row__user-col { min-width: 0; }
 .al-log-row__user {
   font-size: 12px; color: var(--al-text); font-family: 'SF Mono', 'Consolas', monospace;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .al-log-row__type { font-size: 10px; color: var(--al-muted); letter-spacing: 0.04em; text-transform: uppercase; }
 
-.al-log-row__ip { font-size: 12px; color: var(--al-muted); font-family: 'SF Mono', 'Consolas', monospace; }
+.al-log-row__ip {
+  font-size: 12px; color: var(--al-muted);
+  letter-spacing: 0.03em; text-transform: uppercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 .al-log-row__time-col { text-align: right; }
-.al-log-row__time-rel  { font-size: 12px; color: var(--al-text); margin-bottom: 2px; }
+.al-log-row__time-rel  { font-size: 12px; color: var(--al-text); margin-bottom: 2px; white-space: nowrap; }
 .al-log-row__time-abs  { font-size: 10px; color: var(--al-muted); }
 
 .al-empty       { padding: 60px 20px; text-align: center; }
@@ -252,9 +269,49 @@
 }
 .al-pagination__btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* ─── TOASTS (replaces window.confirm / window.alert) ───────────────── */
+.al-toast-stack {
+  position: fixed; top: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 9999; max-width: 360px;
+}
+.al-toast {
+  background: var(--al-surf); border: 1px solid var(--al-border);
+  border-radius: 10px; padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(16,24,40,0.12);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--al-text);
+  animation: al-slideIn 0.18s ease-out;
+}
+.al-toast--success { border-left: 3px solid var(--al-success-color); }
+.al-toast--error   { border-left: 3px solid var(--al-error-color); }
+.al-toast--info     { border-left: 3px solid var(--al-info-color); }
+.al-toast--confirm { border-left: 3px solid var(--al-warning-color); flex-direction: column; align-items: stretch; gap: 10px; }
+
+.al-toast__msg { flex: 1; line-height: 1.4; }
+.al-toast__close {
+  background: none; border: none; cursor: pointer;
+  color: var(--al-muted); font-size: 12px; flex-shrink: 0;
+}
+.al-toast__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.al-toast__btn {
+  padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid transparent;
+}
+.al-toast__btn--confirm { background: var(--al-error-color); color: #fff; }
+.al-toast__btn--cancel  { background: var(--al-surf2); color: var(--al-text); border-color: var(--al-border); }
+
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .al-stat-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 900px) {
+  .al-table__head,
+  .al-log-row__main {
+    grid-template-columns: 36px 1.6fr 1fr 0.7fr 90px;
+  }
+  .al-log-row__ip:last-of-type { display: none; } /* hide ACTION column on tablet, TYPE stays */
+  .al-table__head-cell:nth-child(5) { display: none; }
 }
 @media (max-width: 800px) {
   .al-root         { padding: 16px; }
@@ -272,5 +329,6 @@
   .al-log-row__icon       { grid-row: 1 / 3; }
   .al-log-row__activity   { grid-column: 2; }
   .al-log-row__user-col   { grid-column: 2; }
+  .al-log-row__ip         { grid-column: 2; display: block !important; }
   .al-log-row__time-col   { grid-column: 2; text-align: left; display: flex; gap: 8px; }
 }

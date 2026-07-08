@@ -78,7 +78,26 @@ function buildStats(users: User[]): UserStats {
   };
 }
 
-export function useUsers(): UseUsersReturn {
+/**
+ * Maps the UI status filter value (ALL / ACTIVE / INACTIVE / SUSPENDED)
+ * to the `status` query param expected by the API:
+ *   all | active | inactive | suspend
+ */
+function toApiStatus(status: string): string {
+  switch (String(status).toUpperCase()) {
+    case "ACTIVE":
+      return "active";
+    case "INACTIVE":
+      return "inactive";
+    case "SUSPENDED":
+    case "SUSPEND":
+      return "suspend";
+    default:
+      return "all";
+  }
+}
+
+export function useUsers(status: string = "ALL"): UseUsersReturn {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
@@ -100,6 +119,7 @@ export function useUsers(): UseUsersReturn {
 
   useEffect(() => {
     let cancelled = false;
+    const apiStatus = toApiStatus(status);
 
     async function loadUsers() {
       setLoading(true);
@@ -107,7 +127,7 @@ export function useUsers(): UseUsersReturn {
 
       try {
         const { data: firstJson } = await axiosInstance.get(
-          `${EXTERNAL_USERS_API}?role=user&page=1&limit=10`
+          `${EXTERNAL_USERS_API}?role=user&page=1&limit=10&status=${apiStatus}`
         );
 
         const pagination = paginationFromResponse(firstJson);
@@ -115,23 +135,23 @@ export function useUsers(): UseUsersReturn {
 
         const pageRequests = Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) =>
           axiosInstance
-            .get(`${EXTERNAL_USERS_API}?role=user&page=${i + 2}&limit=10`)
+            .get(`${EXTERNAL_USERS_API}?role=user&page=${i + 2}&limit=10&status=${apiStatus}`)
             .then((r) => r.data)
         );
 
-       const restPages = await Promise.all(pageRequests);
+        const restPages = await Promise.all(pageRequests);
 
-const allRecords = [
-  ...recordsFromResponse(firstJson),
-  ...restPages.flatMap(recordsFromResponse),
-];
+        const allRecords = [
+          ...recordsFromResponse(firstJson),
+          ...restPages.flatMap(recordsFromResponse),
+        ];
 
-// Extra safety: only keep users
-const onlyUsers = allRecords.filter(
-  (u) => String(u.role || "").toLowerCase() === "user"
-);
+        // Extra safety: only keep users
+        const onlyUsers = allRecords.filter(
+          (u) => String(u.role || "").toLowerCase() === "user"
+        );
 
-const mappedUsers = onlyUsers.map(mapExternalUser);
+        const mappedUsers = onlyUsers.map(mapExternalUser);
         if (!cancelled) {
           setUsers(mappedUsers);
           setStats(buildStats(mappedUsers));
@@ -154,7 +174,7 @@ const mappedUsers = onlyUsers.map(mapExternalUser);
     return () => {
       cancelled = true;
     };
-  }, [tick]);
+  }, [tick, status]);
 
   return { users, stats, loading, error, refresh, updateUserStatus };
 }
