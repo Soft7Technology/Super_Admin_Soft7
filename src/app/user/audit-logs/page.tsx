@@ -7,7 +7,16 @@ import { axiosInstance } from "@/lib/axiosInstance";
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type ActionType   = "LOGIN" | "SEND" | "UPDATE" | "ACTIVATE" | "CREATE" | "SUSPEND" | "SUBSCRIBE";
 type SeverityType = "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
-type TypeFilter   = "USER" | "AUTH" | "MESSAGE" | "SUBSCRIBE" | "CAMPAIGN" | "WALLET" | "CONTACT" | "CHATBOT";
+type TypeFilter =
+  | "USER"
+  | "AUTH"
+  | "MESSAGE"
+  | "SUBSCRIBE"
+  | "CAMPAIGN"
+  | "WALLET"
+  | "CONTACT"
+  | "CHATBOT"
+  | "WABA";
 type TimeFrame    = "today" | "7days" | "30days" | "90days" | "1year";
 
 interface LogEntry {
@@ -80,6 +89,7 @@ const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: "WALLET",    label: "Wallet"    },
   { value: "CONTACT",   label: "Contact"   },
   { value: "CHATBOT",   label: "Chatbot"   },
+  { value: "WABA",      label: "WABA"      }
 ];
 
 const ACTION_OPTIONS: { value: ActionType; label: string }[] = [
