@@ -6,7 +6,7 @@ import { StatCard } from "../../../types";
 import { axiosInstance } from "@/lib/axiosInstance";
 import CompanyOverview from "../../../components/CompanyOverview";
 import UserManagement from "../../../components/UserManagement";
-import PlatformGrowthChart from "../../../components/PlatformGrowthChart";
+import PlatformGrowthChart, { GrowthPoint } from "../../../components/PlatformGrowthChart";
 import AuditLogs from "../../../components/AuditLogs";
 
 const DASHBOARD_API =
@@ -15,6 +15,9 @@ const DASHBOARD_API =
   "/v1/admin/companies/user";
   const COMPANIES_API =
   "/v1/admin/companies?status=active";
+
+const ACTIVITY_API =
+  "/v1/admin/activity?role=user&page=1&limit=10&time_frame=7days";
 
 const getExternalHeaders = () => {
   let token =
@@ -97,6 +100,41 @@ function recordsFromResponse(json: any): any[] {
   if (Array.isArray(json?.data?.data)) return json.data.data;
   if (Array.isArray(json?.users)) return json.users;
   return [];
+}
+
+// Builds "Platform Growth" points directly from the companies list, since
+// there's no dedicated growth endpoint — only /v1/admin/companies is
+// available. Buckets companies by the month of `created_at` and counts how
+// many were created in each of the last `monthsBack` months, ending with
+// the current month. The x-axis labels are the real trailing months (e.g.
+// if today is July 2026, labels run Feb → Jul 2026), so the range always
+// reflects the actual date range in the data rather than a fixed period.
+function growthPointsFromCompanies(
+  companies: any[],
+  monthsBack: number = 6
+): GrowthPoint[] {
+  const now = new Date();
+  // Build the trailing month buckets, oldest first.
+  const buckets: { key: string; label: string; value: number }[] = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    buckets.push({ key, label: d.toLocaleDateString("en-US", { month: "short" }), value: 0 });
+  }
+
+  const bucketByKey = new Map(buckets.map((b) => [b.key, b]));
+
+  for (const company of companies) {
+    const rawDate = company.created_at || company.createdAt;
+    if (!rawDate) continue;
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const bucket = bucketByKey.get(key);
+    if (bucket) bucket.value += 1;
+  }
+
+  return buckets.map(({ label, value }) => ({ label, value }));
 }
 
 function useWindowWidth() {
@@ -251,6 +289,7 @@ export default function DashboardPage() {
   const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
   const [users, setUsers]           = useState<DashboardUser[]>([]);
   const [logs, setLogs]             = useState<DashboardLog[]>([]);
+  const [growth, setGrowth]         = useState<GrowthPoint[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
 
@@ -293,6 +332,11 @@ export default function DashboardPage() {
         if (!mounted) return;
 
         const companiesData = recordsFromResponse(companiesResponse);
+
+        // Platform Growth uses the full companies list (not the 4-item
+        // slice below used for the overview table) so the monthly counts
+        // are accurate.
+        setGrowth(growthPointsFromCompanies(companiesData, 6));
 
         setCompanies(
           companiesData.slice(0, 4).map((company: any, index: number) => ({
@@ -383,14 +427,54 @@ export default function DashboardPage() {
           }))
         );
 
-        // ── Logs (static placeholder data) ───────────────────
-        setLogs([
-          { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
-          { id:"2", msg:"Company subscription upgraded to Enterprise", actor:"Michael Chen",      time:"18 mins ago", sev:"success" },
-          { id:"3", msg:"User access permissions updated",             actor:"Emily Davis",       time:"1 hour ago",  sev:"warning" },
-          { id:"4", msg:"Monthly analytics report generated",         actor:"System",            time:"3 hours ago", sev:"info"    },
-          { id:"5", msg:"API usage threshold reached",                actor:"Monitoring Service",time:"5 hours ago", sev:"warning" },
-        ]);
+        // ── Activity Logs API ─────────────────────────────────
+        const { data: activityResponse } = await axiosInstance.get(
+          ACTIVITY_API,
+          {
+            headers: getExternalHeaders(),
+            withCredentials: false,
+          }
+        );
+
+        if (!mounted) return;
+
+        const activityData = recordsFromResponse(activityResponse);
+
+        setLogs(
+          activityData.slice(0, 5).map((activity: any, index: number) => ({
+            id:
+              activity.id ||
+              activity._id ||
+              index.toString(),
+
+            msg:
+              activity.message ||
+              activity.msg ||
+              activity.description ||
+              activity.action ||
+              "Activity performed",
+
+            actor:
+              activity.actor ||
+              activity.user_name ||
+              activity.user?.name ||
+              activity.created_by?.name ||
+              activity.name ||
+              "System",
+
+            time:
+              activity.time ||
+              activity.created_at ||
+              activity.createdAt ||
+              "Recently",
+
+            sev:
+              activity.severity ||
+              activity.sev ||
+              activity.type ||
+              "info",
+          }))
+        );
       } catch (err) {
         if (!mounted) return;
         if (isAxiosErrorLike(err)) {
@@ -548,7 +632,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <PlatformGrowthChart />
+          <PlatformGrowthChart data={growth} loading={loading} error={error} />
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
           <AuditLogs logs={logs} loading={loading} error={error} />
