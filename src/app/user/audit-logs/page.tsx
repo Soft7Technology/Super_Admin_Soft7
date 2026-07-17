@@ -1,111 +1,143 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./audit-logs.css";
 import { axiosInstance } from "@/lib/axiosInstance";
-
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-type ActionType   = "LOGIN" | "SEND" | "UPDATE" | "ACTIVATE" | "CREATE" | "SUSPEND" | "SUBSCRIBE";
+type ActionType =
+  | "LOGIN"
+  | "SEND"
+  | "UPDATE"
+  | "ACTIVATE"
+  | "CREATE"
+  | "SUSPEND"
+  | "SUBSCRIBE";
 type SeverityType = "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
-type TypeFilter   = "USER" | "AUTH" | "MESSAGE" | "SUBSCRIBE" | "CAMPAIGN" | "WALLET" | "CONTACT" | "CHATBOT";
-type TimeFrame    = "today" | "7days" | "30days" | "90days" | "1year";
+type TypeFilter =
+  | "USER"
+  | "AUTH"
+  | "MESSAGE"
+  | "SUBSCRIBE"
+  | "CAMPAIGN"
+  | "WALLET"
+  | "CONTACT"
+  | "CHATBOT"
+  | "WABA";
+type TimeFrame = "today" | "7days" | "30days" | "90days" | "1year";
 
 interface LogEntry {
-  id:         number | string;
-  action:     string;
-  userId:     string;   // was "actor" (a name) — now the raw user_id from the API
-  entityType: string;   // was used to fill the IP column slot — now its own TYPE column
-  resource:   string;
-  detail:     string;
-  ip:         string;
-  time:       string;
-  date:       string;
-  severity:   SeverityType;
-  company:    string;
-  changes:    Record<string, string>;
+  id: number | string;
+  action: string;
+  userId: string; 
+  entityType: string;
+  resource: string;
+  detail: string;
+  ip: string;
+  time: string;
+  date: string;
+  severity: SeverityType;
+  company: string;
+  changes: Record<string, string>;
 }
 
 interface RawLog {
-  id:            number | string;
-  action?:       string;
-  event?:        string;
-  user_id?:      string;
-  user?:         string;
-  actor?:        string;
-  actor_name?:   string;
-  role?:         string;
-  actor_role?:   string;
-  resource?:     string;
-  type?:         string;
-  entity_type?:  string;
-  entity_id?:    string;
-  description?:  string;
-  detail?:       string;
-  message?:      string;
-  ip?:           string;
-  ip_address?:   string;
-  created_at?:   string;
-  timestamp?:    string;
-  severity?:     string;
-  level?:        string;
-  status?:       string;
-  company?:      string;
+  id: number | string;
+  action?: string;
+  event?: string;
+  user_id?: string;
+  user?: string;
+  actor?: string;
+  actor_name?: string;
+  role?: string;
+  actor_role?: string;
+  resource?: string;
+  type?: string;
+  entity_type?: string;
+  entity_id?: string;
+  description?: string;
+  detail?: string;
+  message?: string;
+  ip?: string;
+  ip_address?: string;
+  created_at?: string;
+  timestamp?: string;
+  severity?: string;
+  level?: string;
+  status?: string;
+  company?: string;
   company_name?: string;
-  metadata?:     Record<string, string>;
-  changes?:      Record<string, string>;
-  new_data?:     Record<string, string>;
-  old_data?:     Record<string, string>;
+  metadata?: Record<string, string>;
+  changes?: Record<string, string>;
+  new_data?: Record<string, string>;
+  old_data?: Record<string, string>;
+}
+
+interface UserOption {
+  id: string;
+  name: string;
+  email: string;
 }
 
 // ─── LOOKUP MAPS (unchanged — same data, used for labels) ─────────────────────
 const ACTION_META: Record<string, { icon: string; label: string }> = {
-  CREATE:    { icon: "✚", label: "Create"    },
-  UPDATE:    { icon: "✎", label: "Update"    },
-  DELETE:    { icon: "✕", label: "Delete"    },
-  LOGIN:     { icon: "→", label: "Login"     },
-  SEND:      { icon: "↗", label: "Send"      },
-  ACTIVATE:  { icon: "✔", label: "Activate"  },
-  SUSPEND:   { icon: "⊘", label: "Suspend"   },
+  CREATE: { icon: "✚", label: "Create" },
+  UPDATE: { icon: "✎", label: "Update" },
+  DELETE: { icon: "✕", label: "Delete" },
+  LOGIN: { icon: "→", label: "Login" },
+  SEND: { icon: "↗", label: "Send" },
+  ACTIVATE: { icon: "✔", label: "Activate" },
+  SUSPEND: { icon: "⊘", label: "Suspend" },
   SUBSCRIBE: { icon: "★", label: "Subscribe" },
-  EXPORT:    { icon: "↑", label: "Export"    },
-  CREDIT:    { icon: "₹", label: "Credit"    },
+  EXPORT: { icon: "↑", label: "Export" },
+  CREDIT: { icon: "₹", label: "Credit" },
 };
 
+interface UserOption {
+  id: string;
+  name: string;
+  email: string;
+}
+
 const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
-  { value: "USER",      label: "User"      },
-  { value: "AUTH",      label: "Auth"      },
-  { value: "MESSAGE",   label: "Message"   },
+  { value: "USER", label: "User" },
+  { value: "AUTH", label: "Auth" },
+  { value: "MESSAGE", label: "Message" },
   { value: "SUBSCRIBE", label: "Subscribe" },
-  { value: "CAMPAIGN",  label: "Campaign"  },
-  { value: "WALLET",    label: "Wallet"    },
-  { value: "CONTACT",   label: "Contact"   },
-  { value: "CHATBOT",   label: "Chatbot"   },
+  { value: "CAMPAIGN", label: "Campaign" },
+  { value: "WALLET", label: "Wallet" },
+  { value: "CONTACT", label: "Contact" },
+  { value: "CHATBOT", label: "Chatbot" },
+  { value: "WABA", label: "WABA" },
 ];
 
 const ACTION_OPTIONS: { value: ActionType; label: string }[] = [
-  { value: "LOGIN",     label: "Login"     },
-  { value: "SEND",      label: "Send"      },
-  { value: "UPDATE",    label: "Update"    },
-  { value: "ACTIVATE",  label: "Activate"  },
-  { value: "CREATE",    label: "Create"    },
-  { value: "SUSPEND",   label: "Suspend"   },
+  { value: "LOGIN", label: "Login" },
+  { value: "SEND", label: "Send" },
+  { value: "UPDATE", label: "Update" },
+  { value: "ACTIVATE", label: "Activate" },
+  { value: "CREATE", label: "Create" },
+  { value: "SUSPEND", label: "Suspend" },
   { value: "SUBSCRIBE", label: "Subscribe" },
 ];
 
 const TIME_FRAME_OPTIONS: { value: TimeFrame; label: string }[] = [
-  { value: "today",  label: "Today"        },
-  { value: "7days",  label: "Last 7 Days"  },
+  { value: "today", label: "Today" },
+  { value: "7days", label: "Last 7 Days" },
   { value: "30days", label: "Last 30 Days" },
   { value: "90days", label: "Last 90 Days" },
-  { value: "1year",  label: "Last 1 Year"  },
+  { value: "1year", label: "Last 1 Year" },
 ];
 
 // ─── HELPERS (unchanged) ───────────────────────────────────────────────────────
 function normaliseSeverity(raw?: string): SeverityType {
   const map: Record<string, SeverityType> = {
-    info: "INFO", warning: "WARNING", warn: "WARNING",
-    critical: "CRITICAL", error: "CRITICAL",
-    success: "SUCCESS", ok: "SUCCESS",
+    info: "INFO",
+    warning: "WARNING",
+    warn: "WARNING",
+    critical: "CRITICAL",
+    error: "CRITICAL",
+    success: "SUCCESS",
+    ok: "SUCCESS",
   };
   return map[raw?.toLowerCase() ?? ""] ?? "INFO";
 }
@@ -114,8 +146,11 @@ function formatDate(raw?: string): string {
   if (!raw) return "—";
   try {
     return new Date(raw).toLocaleString("en-IN", {
-      day: "2-digit", month: "short", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch {
     return raw;
@@ -126,11 +161,11 @@ function timeAgo(raw?: string): string {
   if (!raw) return "—";
   try {
     const diff = Date.now() - new Date(raw).getTime();
-    const mins  = Math.floor(diff / 60000);
+    const mins = Math.floor(diff / 60000);
     const hours = Math.floor(mins / 60);
-    const days  = Math.floor(hours / 24);
-    if (mins  < 1)  return "just now";
-    if (mins  < 60) return `${mins} min${mins > 1 ? "s" : ""} ago`;
+    const days = Math.floor(hours / 24);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins} min${mins > 1 ? "s" : ""} ago`;
     if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
     return `${days} day${days > 1 ? "s" : ""} ago`;
   } catch {
@@ -138,7 +173,7 @@ function timeAgo(raw?: string): string {
   }
 }
 
-// Shortens a UUID-style id for compact display, e.g. "aad2955d…0c5b3"
+// Shortens a UUID-style id for compact display,
 function shortenId(id?: string): string {
   if (!id) return "—";
   if (id.length <= 14) return id;
@@ -151,35 +186,47 @@ function enrichLog(raw: RawLog): LogEntry {
   // changes again.
   const action = (raw.action || raw.event || "").toUpperCase();
   return {
-    id:         raw.id,
+    id: raw.id,
     action,
-    userId:     raw.user_id || raw.actor || raw.user || "—",
+    userId: raw.user_id || raw.actor || raw.user || "—",
     entityType: raw.entity_type || raw.type || raw.resource || "—",
-    resource:   raw.resource || raw.type || raw.entity_type || "—",
-    detail:     raw.description || raw.detail || raw.message || "—",
-    ip:         raw.ip || raw.ip_address || "—",
-    time:       timeAgo(raw.created_at || raw.timestamp),
-    date:       formatDate(raw.created_at || raw.timestamp),
-    severity:   normaliseSeverity(raw.severity || raw.level || raw.status),
-    company:    raw.company_name || raw.company || "—",
-    changes:    raw.metadata || raw.changes || raw.new_data || {},
+    resource: raw.resource || raw.type || raw.entity_type || "—",
+    detail: raw.description || raw.detail || raw.message || "—",
+    ip: raw.ip || raw.ip_address || "—",
+    time: timeAgo(raw.created_at || raw.timestamp),
+    date: formatDate(raw.created_at || raw.timestamp),
+    severity: normaliseSeverity(raw.severity || raw.level || raw.status),
+    company: raw.company_name || raw.company || "—",
+    changes: raw.metadata || raw.changes || raw.new_data || {},
   };
 }
 
 // severity -> the 4 visual buckets used by the stat cards / row icons
-function severityBucket(s: SeverityType): "info" | "success" | "warning" | "error" {
+function severityBucket(
+  s: SeverityType,
+): "info" | "success" | "warning" | "error" {
   if (s === "CRITICAL") return "error";
-  if (s === "WARNING")  return "warning";
-  if (s === "SUCCESS")  return "success";
+  if (s === "WARNING") return "warning";
+  if (s === "SUCCESS") return "success";
   return "info";
 }
 
 // ─── ACTIVITY ICON (small wave/pulse glyph, colored by severity) ──────────────
-function ActivityIcon({ bucket }: { bucket: "info" | "success" | "warning" | "error" }) {
+function ActivityIcon({
+  bucket,
+}: {
+  bucket: "info" | "success" | "warning" | "error";
+}) {
   return (
     <div className={`al-log-row__icon al-log-row__icon--${bucket}`}>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M3 12h4l2 7 4-14 2 7h6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M3 12h4l2 7 4-14 2 7h6"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </div>
   );
@@ -188,17 +235,43 @@ function ActivityIcon({ bucket }: { bucket: "info" | "success" | "warning" | "er
 // ─── CSV EXPORT (updated to match the new columns: User ID + Type instead of
 // Actor/Actor Role, IP still included since it's still useful in the export) ──
 function exportToCSV(logs: LogEntry[]) {
-  const allChangeKeys = Array.from(new Set(logs.flatMap(l => Object.keys(l.changes))));
-  const allHeaders    = ["ID","Date","Action","Severity","User ID","Type","Company","Detail","IP Address","Time",...allChangeKeys];
+  const allChangeKeys = Array.from(
+    new Set(logs.flatMap((l) => Object.keys(l.changes))),
+  );
+  const allHeaders = [
+    "ID",
+    "Date",
+    "Action",
+    "Severity",
+    "User ID",
+    "Type",
+    "Company",
+    "Detail",
+    "IP Address",
+    "Time",
+    ...allChangeKeys,
+  ];
   const escape = (val: string) => `"${String(val ?? "").replace(/"/g, '""')}"`;
-  const rows = logs.map(l => [
-    l.id, l.date, l.action, l.severity, l.userId, l.entityType,
-    l.company, l.detail, l.ip, l.time,
-    ...allChangeKeys.map(k => l.changes[k] ?? ""),
-  ].map(v => escape(String(v))).join(","));
-  const csv  = [allHeaders.map(h => escape(h)).join(","), ...rows].join("\n");
+  const rows = logs.map((l) =>
+    [
+      l.id,
+      l.date,
+      l.action,
+      l.severity,
+      l.userId,
+      l.entityType,
+      l.company,
+      l.detail,
+      l.ip,
+      l.time,
+      ...allChangeKeys.map((k) => l.changes[k] ?? ""),
+    ]
+      .map((v) => escape(String(v)))
+      .join(","),
+  );
+  const csv = [allHeaders.map((h) => escape(h)).join(","), ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url  = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -210,23 +283,31 @@ function exportToCSV(logs: LogEntry[]) {
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function AuditLogs() {
-  const [search,      setSearch]      = useState("");
-  const [typeFilter,  setTypeFilter]  = useState<TypeFilter | "ALL">("ALL");
-  const [actionFilter,setActionFilter]= useState<ActionType | "ALL">("ALL");
-  const [timeFrame,   setTimeFrame]   = useState<TimeFrame>("7days");
-  const [exporting,   setExporting]   = useState(false);
-  const [exportDone,  setExportDone]  = useState(false);
-  const [clearing,    setClearing]    = useState(false);
+
+  const [typeFilter, setTypeFilter] = useState<TypeFilter | "ALL">("ALL");
+  const [actionFilter, setActionFilter] = useState<ActionType | "ALL">("ALL");
+  const [timeFrame, setTimeFrame] = useState<TimeFrame>("7days");
+  const [exporting, setExporting] = useState(false);
+  const [exportDone, setExportDone] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   // API state (unchanged)
-  const [logs,        setLogs]        = useState<LogEntry[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [fetchError,  setFetchError]  = useState<string | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalItems,  setTotalItems]  = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
 
-  // ── Toast notifications (replaces window.confirm / window.alert entirely) ──
-  // type "confirm" renders action buttons inside the toast itself.
+
+const [search, setSearch] = useState("");
+const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
+const [userSuggestions, setUserSuggestions] = useState<UserOption[]>([]);
+const [suggestLoading, setSuggestLoading] = useState(false);
+const [showSuggestions, setShowSuggestions] = useState(false);
+const searchWrapRef = useRef<HTMLDivElement>(null);
+
+const selectedUserId = selectedUser?.id ?? "";
+
   type Toast = {
     id: number;
     kind: "info" | "success" | "error" | "confirm";
@@ -235,39 +316,42 @@ export default function AuditLogs() {
   };
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const pushToast = (kind: Toast["kind"], message: string, onConfirm?: () => void) => {
+  const pushToast = (
+    kind: Toast["kind"],
+    message: string,
+    onConfirm?: () => void,
+  ) => {
     const id = Date.now();
-    setToasts(prev => [...prev, { id, kind, message, onConfirm }]);
+    setToasts((prev) => [...prev, { id, kind, message, onConfirm }]);
     if (kind !== "confirm") {
       setTimeout(() => dismissToast(id), 3000);
     }
     return id;
   };
   const dismissToast = (id: number) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   const LIMIT = 10;
 
-  // ── Fetch logs (unchanged, plus storing the raw response) ──────────────────
+  // ── Fetch activity logs ───────────────────────────────────────────────────
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
 
     try {
       const params = new URLSearchParams();
-      params.append("role",       "user");
-      params.append("page",       String(currentPage));
-      params.append("limit",      String(LIMIT));
+      params.append("role", "user");
+      params.append("page", String(currentPage));
+      params.append("limit", String(LIMIT));
       params.append("time_frame", timeFrame);
-      if (typeFilter   !== "ALL") params.append("type",   typeFilter);
+
+      if (typeFilter !== "ALL") params.append("type", typeFilter);
       if (actionFilter !== "ALL") params.append("action", actionFilter);
+      if (selectedUserId) params.append("user_id", selectedUserId);
 
       const endpoint = `/v1/admin/activity?${params.toString()}`;
-      console.log("AUDIT LOGS API =>", endpoint);
-
       const res = await axiosInstance.get(endpoint);
-      console.log("AUDIT LOGS RESPONSE =>", res.data);
 
       const raw: RawLog[] = Array.isArray(res.data?.data?.data)
         ? res.data.data.data
@@ -284,15 +368,18 @@ export default function AuditLogs() {
         raw.length;
 
       setLogs(raw.map(enrichLog));
-      setTotalItems(total);
-    } catch (e) {
-      console.error("AUDIT LOGS ERROR =>", e);
-      setFetchError(e instanceof Error ? e.message : "Failed to load audit logs");
+      setTotalItems(Number(total) || 0);
+    } catch (error) {
+      console.error("AUDIT LOGS ERROR =>", error);
+      setFetchError(
+        error instanceof Error ? error.message : "Failed to load audit logs",
+      );
       setLogs([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, timeFrame, typeFilter, actionFilter]);
+  }, [currentPage, timeFrame, typeFilter, actionFilter, selectedUserId]);
 
   useEffect(() => {
     fetchLogs();
@@ -301,16 +388,17 @@ export default function AuditLogs() {
   // Reset to page 1 when filters change (unchanged)
   useEffect(() => {
     setCurrentPage(1);
-  }, [typeFilter, actionFilter, timeFrame, search]);
+  }, [typeFilter, actionFilter, timeFrame, search, selectedUserId]);
 
   // ── Client-side search filter — now also matches on user_id ────────────────
-  const filtered = logs.filter(l =>
-    !search.trim() ||
-    l.userId.toLowerCase().includes(search.toLowerCase())     ||
-    l.detail.toLowerCase().includes(search.toLowerCase())     ||
-    l.entityType.toLowerCase().includes(search.toLowerCase()) ||
-    l.company.toLowerCase().includes(search.toLowerCase())    ||
-    l.action.toLowerCase().includes(search.toLowerCase())
+  const filtered = logs.filter(
+    (l) =>
+      !search.trim() ||
+      l.userId.toLowerCase().includes(search.toLowerCase()) ||
+      l.detail.toLowerCase().includes(search.toLowerCase()) ||
+      l.entityType.toLowerCase().includes(search.toLowerCase()) ||
+      l.company.toLowerCase().includes(search.toLowerCase()) ||
+      l.action.toLowerCase().includes(search.toLowerCase()),
   );
 
   const totalPages = Math.max(1, Math.ceil(totalItems / LIMIT));
@@ -346,33 +434,90 @@ export default function AuditLogs() {
         } finally {
           setClearing(false);
         }
-      }
+      },
     );
   };
 
   // ── Stat counts (by severity bucket, matches reference cards) ──────────────
-  const infoCount    = logs.filter(l => severityBucket(l.severity) === "info").length;
-  const successCount = logs.filter(l => severityBucket(l.severity) === "success").length;
-  const warningCount = logs.filter(l => severityBucket(l.severity) === "warning").length;
-  const errorCount   = logs.filter(l => severityBucket(l.severity) === "error").length;
+  const infoCount = logs.filter(
+    (l) => severityBucket(l.severity) === "info",
+  ).length;
+  const successCount = logs.filter(
+    (l) => severityBucket(l.severity) === "success",
+  ).length;
+  const warningCount = logs.filter(
+    (l) => severityBucket(l.severity) === "warning",
+  ).length;
+  const errorCount = logs.filter(
+    (l) => severityBucket(l.severity) === "error",
+  ).length;
+
+useEffect(() => {
+  if (selectedUser || search.trim().length < 2) {
+    setUserSuggestions([]);
+    return;
+  }
+  const handle = setTimeout(async () => {
+    setSuggestLoading(true);
+    try {
+      const res = await axiosInstance.get("/v1/admin/companies/user", {
+        params: { search, limit: 8 },
+      });
+      const raw = Array.isArray(res.data?.data?.data)
+        ? res.data.data.data
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+      setUserSuggestions(
+        raw.map((u: any) => ({ id: u.id, name: u.name, email: u.email })),
+      );
+      setShowSuggestions(true);
+    } catch (e) {
+      console.error("USER SEARCH ERROR =>", e);
+      setUserSuggestions([]);
+    } finally {
+      setSuggestLoading(false);
+    }
+  }, 350);
+  return () => clearTimeout(handle);
+}, [search, selectedUser]);
+
+// Close suggestion dropdown on outside click
+useEffect(() => {
+  const handleClick = (e: MouseEvent) => {
+    if (
+      searchWrapRef.current &&
+      !searchWrapRef.current.contains(e.target as Node)
+    ) {
+      setShowSuggestions(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClick);
+  return () => document.removeEventListener("mousedown", handleClick);
+}, []);
 
   return (
     <div className="al-root">
-
       {/* HEADER */}
       <div className="al-header">
         <div>
           <h1 className="al-header__title">Activity Logs</h1>
-          <p className="al-header__sub">Monitor all system activities and user actions</p>
+          <p className="al-header__sub">
+            Monitor all system activities and user actions
+          </p>
         </div>
         <div className="al-header__right">
           <button
             onClick={handleExportCSV}
             disabled={exporting || filtered.length === 0}
-            className={`al-btn-export ${exportDone ? "al-btn-export--done" : ""}`}
+            className={`al-btn-export ${
+              exportDone ? "al-btn-export--done" : ""
+            }`}
           >
             {exporting ? (
-              <><span className="al-btn-spinner" /> Exporting…</>
+              <>
+                <span className="al-btn-spinner" /> Exporting…
+              </>
             ) : exportDone ? (
               <>✓ Downloaded</>
             ) : (
@@ -384,7 +529,13 @@ export default function AuditLogs() {
             disabled={clearing || logs.length === 0}
             className="al-btn-clear"
           >
-            {clearing ? <><span className="al-btn-spinner" /> Clearing…</> : <>🗑 Clear Logs</>}
+            {clearing ? (
+              <>
+                <span className="al-btn-spinner" /> Clearing…
+              </>
+            ) : (
+              <>🗑 Clear Logs</>
+            )}
           </button>
         </div>
       </div>
@@ -423,27 +574,104 @@ export default function AuditLogs() {
 
       {/* FILTER BAR */}
       <div className="al-filter-bar">
-        <div className="al-search-wrap">
+        <div
+          className="al-search-wrap"
+          ref={searchWrapRef}
+          style={{ position: "relative" }}
+        >
           <span className="al-search-icon">🔍</span>
           <input
             className="al-search-input"
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search activities, user id, emails…"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              if (selectedUser) setSelectedUser(null); // typing again exits "locked" mode
+            }}
+            onFocus={() =>
+              userSuggestions.length > 0 && setShowSuggestions(true)
+            }
+            placeholder="Search activities, or type an email to filter by user…"
             autoComplete="off"
           />
-        </div>
+          {selectedUser && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedUser(null);
+                setSearch("");
+              }}
+              style={{ background: "none", border: "none", cursor: "pointer" }}
+              aria-label="Clear user filter"
+              title={`Filtering by ${selectedUser.email}`}
+            >
+              ✕
+            </button>
+          )}
 
+          {showSuggestions && !selectedUser && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                zIndex: 30,
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                marginTop: 4,
+                maxHeight: 240,
+                overflowY: "auto",
+                boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+              }}
+            >
+              {suggestLoading ? (
+                <div style={{ padding: 10, fontSize: 13, color: "#6b7280" }}>
+                  Searching users…
+                </div>
+              ) : userSuggestions.length === 0 ? (
+                <div style={{ padding: 10, fontSize: 13, color: "#6b7280" }}>
+                  No matching users
+                </div>
+              ) : (
+                userSuggestions.map((u) => (
+                  <div
+                    key={u.id}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setSelectedUser(u);
+                      setSearch(u.email);
+                      setUserSuggestions([]);
+                      setShowSuggestions(false);
+                    }}
+                    style={{
+                      padding: "8px 10px",
+                      cursor: "pointer",
+                      fontSize: 13,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600 }}>{u.name}</div>
+                    <div style={{ color: "#6b7280" }}>{u.email}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         <div className="al-dropdowns-group">
           <div className="al-dropdown-inner">
             <select
               className="al-dropdown"
               value={typeFilter}
-              onChange={e => setTypeFilter(e.target.value as TypeFilter | "ALL")}
+              onChange={(e) =>
+                setTypeFilter(e.target.value as TypeFilter | "ALL")
+              }
             >
               <option value="ALL">All Types</option>
-              {TYPE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+              {TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </select>
             <span className="al-dropdown-arrow">▾</span>
@@ -453,11 +681,15 @@ export default function AuditLogs() {
             <select
               className="al-dropdown"
               value={actionFilter}
-              onChange={e => setActionFilter(e.target.value as ActionType | "ALL")}
+              onChange={(e) =>
+                setActionFilter(e.target.value as ActionType | "ALL")
+              }
             >
               <option value="ALL">All Actions</option>
-              {ACTION_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+              {ACTION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </select>
             <span className="al-dropdown-arrow">▾</span>
@@ -467,10 +699,12 @@ export default function AuditLogs() {
             <select
               className="al-dropdown"
               value={timeFrame}
-              onChange={e => setTimeFrame(e.target.value as TimeFrame)}
+              onChange={(e) => setTimeFrame(e.target.value as TimeFrame)}
             >
-              {TIME_FRAME_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+              {TIME_FRAME_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </select>
             <span className="al-dropdown-arrow">▾</span>
@@ -504,17 +738,24 @@ export default function AuditLogs() {
             <div className="al-empty__icon">⚠️</div>
             <div className="al-empty__title">Failed to load logs</div>
             <div className="al-empty__desc">{fetchError}</div>
-            <button onClick={fetchLogs} className="al-empty__retry">Retry</button>
+            <button onClick={fetchLogs} className="al-empty__retry">
+              Retry
+            </button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="al-empty">
             <div className="al-empty__icon">🔍</div>
             <div className="al-empty__title">No activity found</div>
-            <div className="al-empty__desc">Try adjusting your search or filters.</div>
+            <div className="al-empty__desc">
+              Try adjusting your search or filters.
+            </div>
           </div>
         ) : (
-          filtered.map(log => {
-            const m      = ACTION_META[log.action] ?? { icon: "•", label: log.action };
+          filtered.map((log) => {
+            const m = ACTION_META[log.action] ?? {
+              icon: "•",
+              label: log.action,
+            };
             const bucket = severityBucket(log.severity);
 
             return (
@@ -523,7 +764,9 @@ export default function AuditLogs() {
                   <ActivityIcon bucket={bucket} />
 
                   <div className="al-log-row__activity">
-                    <div className={`al-log-row__name al-log-row__name--${bucket}`}>
+                    <div
+                      className={`al-log-row__name al-log-row__name--${bucket}`}
+                    >
                       {m.label.toUpperCase()}
                     </div>
                     <div className="al-log-row__detail">{log.detail}</div>
@@ -553,19 +796,20 @@ export default function AuditLogs() {
       {!loading && !fetchError && totalPages > 1 && (
         <div className="al-pagination">
           <div className="al-pagination__info">
-            Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> · {totalItems} total events
+            Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>{" "}
+            · {totalItems} total events
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             <button
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => p - 1)}
+              onClick={() => setCurrentPage((p) => p - 1)}
               className="al-pagination__btn"
             >
               ‹ Prev
             </button>
             <button
               disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => p + 1)}
+              onClick={() => setCurrentPage((p) => p + 1)}
               className="al-pagination__btn"
             >
               Next ›
@@ -577,7 +821,7 @@ export default function AuditLogs() {
       {/* TOASTS — replaces window.confirm/alert. "confirm" toasts show
           Confirm/Cancel buttons inline; others auto-dismiss after 3s. */}
       <div className="al-toast-stack">
-        {toasts.map(t => (
+        {toasts.map((t) => (
           <div key={t.id} className={`al-toast al-toast--${t.kind}`}>
             <span className="al-toast__msg">{t.message}</span>
             {t.kind === "confirm" ? (
@@ -599,7 +843,12 @@ export default function AuditLogs() {
                 </button>
               </div>
             ) : (
-              <button className="al-toast__close" onClick={() => dismissToast(t.id)}>✕</button>
+              <button
+                className="al-toast__close"
+                onClick={() => dismissToast(t.id)}
+              >
+                ✕
+              </button>
             )}
           </div>
         ))}
