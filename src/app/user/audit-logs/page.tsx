@@ -5,7 +5,7 @@ import "./audit-logs.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type ActionType =
-  | "LOGIN"
+  | "LOGIN" 
   | "SEND"
   | "UPDATE"
   | "ACTIVATE"
@@ -92,11 +92,6 @@ const ACTION_META: Record<string, { icon: string; label: string }> = {
   CREDIT: { icon: "₹", label: "Credit" },
 };
 
-interface UserOption {
-  id: string;
-  name: string;
-  email: string;
-}
 
 const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: "USER", label: "User" },
@@ -291,7 +286,6 @@ export default function AuditLogs() {
   const [exportDone, setExportDone] = useState(false);
   const [clearing, setClearing] = useState(false);
 
-  // API state (unchanged)
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -300,13 +294,13 @@ export default function AuditLogs() {
 
 
 const [search, setSearch] = useState("");
-const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
 const [userSuggestions, setUserSuggestions] = useState<UserOption[]>([]);
 const [suggestLoading, setSuggestLoading] = useState(false);
 const [showSuggestions, setShowSuggestions] = useState(false);
 const searchWrapRef = useRef<HTMLDivElement>(null);
-
-const selectedUserId = selectedUser?.id ?? "";
+const [users,setUsers] = useState<UserOption[]>([]);
+const [selectedUserId, setSelectedUserId] = useState("");
+const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
 
   type Toast = {
     id: number;
@@ -391,15 +385,18 @@ const selectedUserId = selectedUser?.id ?? "";
   }, [typeFilter, actionFilter, timeFrame, search, selectedUserId]);
 
   // ── Client-side search filter — now also matches on user_id ────────────────
-  const filtered = logs.filter(
-    (l) =>
-      !search.trim() ||
-      l.userId.toLowerCase().includes(search.toLowerCase()) ||
-      l.detail.toLowerCase().includes(search.toLowerCase()) ||
-      l.entityType.toLowerCase().includes(search.toLowerCase()) ||
-      l.company.toLowerCase().includes(search.toLowerCase()) ||
-      l.action.toLowerCase().includes(search.toLowerCase()),
-  );
+ const filtered = logs.filter((l) => {
+   if (selectedUserId) return true; // already filtered server-side by user_id — don't re-filter by email text
+   if (!search.trim()) return true;
+   const q = search.toLowerCase();
+   return (
+     l.userId.toLowerCase().includes(q) ||
+     l.detail.toLowerCase().includes(q) ||
+     l.entityType.toLowerCase().includes(q) ||
+     l.company.toLowerCase().includes(q) ||
+     l.action.toLowerCase().includes(q)
+   );
+ });
 
   const totalPages = Math.max(1, Math.ceil(totalItems / LIMIT));
 
@@ -451,7 +448,34 @@ const selectedUserId = selectedUser?.id ?? "";
   const errorCount = logs.filter(
     (l) => severityBucket(l.severity) === "error",
   ).length;
+useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      const res = await axiosInstance.get("/v1/admin/companies/user", {
+        params: {
+          role: "user",
+          page: 1,
+          limit: 10,
+          status: "all",
+        },
+      });
 
+      const raw = res.data?.data?.data || [];
+
+      setUsers(
+        raw.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+        })),
+      );
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    }
+  };
+
+  fetchUsers();
+}, []);
 useEffect(() => {
   if (selectedUser || search.trim().length < 2) {
     setUserSuggestions([]);
@@ -585,7 +609,10 @@ useEffect(() => {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              if (selectedUser) setSelectedUser(null); // typing again exits "locked" mode
+              if (selectedUser) {
+                setSelectedUser(null); 
+                setSelectedUserId("");
+              }
             }}
             onFocus={() =>
               userSuggestions.length > 0 && setShowSuggestions(true)
@@ -598,6 +625,7 @@ useEffect(() => {
               type="button"
               onClick={() => {
                 setSelectedUser(null);
+                setSelectedUserId("");
                 setSearch("");
               }}
               style={{ background: "none", border: "none", cursor: "pointer" }}
@@ -640,6 +668,7 @@ useEffect(() => {
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       setSelectedUser(u);
+                      setSelectedUserId(u.id);
                       setSearch(u.email);
                       setUserSuggestions([]);
                       setShowSuggestions(false);
@@ -657,6 +686,34 @@ useEffect(() => {
               )}
             </div>
           )}
+        </div>
+        <div className="al-dropdown-inner">
+          <select
+            className="al-dropdown"
+            value={selectedUserId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setSelectedUserId(id);
+              if(id===""){
+                setSelectedUser(null);
+                setSearch("");
+              }else{
+                const u= users.find((usr) => usr.id === id)|| null;
+                setSelectedUser(u);
+                setSearch(u?.email || "");
+              }
+            }}
+          >
+            <option value="">All Users</option>
+
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name} ({user.email})
+              </option>
+            ))}
+          </select>
+
+          <span className="al-dropdown-arrow">▾</span>
         </div>
         <div className="al-dropdowns-group">
           <div className="al-dropdown-inner">
