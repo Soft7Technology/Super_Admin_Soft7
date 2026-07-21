@@ -81,7 +81,13 @@ function buildStats(users: User[]): UserStats {
 /**
  * Maps the UI status filter value (ALL / ACTIVE / INACTIVE / SUSPENDED)
  * to the `status` query param expected by the API:
- *   all | active | inactive | suspend
+ *   all | active | inactive | suspended
+ *
+ * NOTE: this previously returned "suspend" (missing "ed") for the
+ * SUSPENDED case, which the backend didn't recognise, so the Suspended
+ * filter always came back with zero results ("No users match your
+ * filters") even though suspended users clearly exist (see the "All"
+ * view / Badge / STATUS_DOT, which all use "SUSPENDED"). Fixed below.
  */
 function toApiStatus(status: string): string {
   switch (String(status).toUpperCase()) {
@@ -91,7 +97,7 @@ function toApiStatus(status: string): string {
       return "inactive";
     case "SUSPENDED":
     case "SUSPEND":
-      return "suspend";
+      return "suspended";
     default:
       return "all";
   }
