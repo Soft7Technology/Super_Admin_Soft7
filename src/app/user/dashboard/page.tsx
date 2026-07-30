@@ -380,22 +380,20 @@ export default function DashboardPage() {
         );
         if (!mounted) return;
 
-        const { data: adminUsersResponse } = await axiosInstance
-          .get(`${USERS_API}?role=admin`, {
-            headers: getExternalHeaders(),
-            withCredentials: false,
-          })
-          .catch(() => ({ data: null }));
-        if (!mounted) return;
+const { data: adminUsersResponse } = await axiosInstance
+  .get(`${USERS_API}?role=admin`, {
+    headers: getExternalHeaders(),
+    withCredentials: false,
+  })
+  .catch(() => ({ data: null }));
 
-        const usersData = [
-          ...recordsFromResponse(usersResponse),
-          ...recordsFromResponse(adminUsersResponse),
-        ];
-
-        setUsers(
-          usersData.slice(0, 4).map((user: any, index: number) => ({
-            id: user.id || index.toString(),
+const usersData = [
+  ...recordsFromResponse(usersResponse),
+  ...recordsFromResponse(adminUsersResponse),
+];
+setUsers(
+  usersData.slice(0, 4).map((user: any, index: number) => ({
+    id: user.id || index.toString(),
 
             un: user.name || "Unknown User",
 

@@ -97,6 +97,7 @@ const searchDirectory = [
   { title: "System", subtitle: "Page", route: "/user/system" },
   { title: "Profile", subtitle: "Page", route: "/user/profile" },
   { title: "Support Tickets", subtitle: "Page", route: "/user/support-tickets" },
+  { title: "Permissions", subtitle: "Page", route: "/user/permissions" },
   { title: "Transactions", subtitle: "Page", route: "/user/transactions" },
 ];
 
@@ -152,6 +153,7 @@ useEffect(() => {
     if (pathname.includes("all-user")) return "All User";
     if (pathname.includes("audit-logs")) return "Audit Logs";
     if (pathname.includes("support-tickets")) return "Support Tickets";
+    if (pathname.includes("permissions")) return "Permissions";
 
     return "Dashboard";
   };
