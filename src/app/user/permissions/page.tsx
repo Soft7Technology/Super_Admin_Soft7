@@ -33,9 +33,9 @@ interface DomainRequest {
 }
 
 interface ApiEnvelope<T> {
-  success?: boolean;
-  message?: string;
-  data?: T;
+    success?: boolean;
+    message?: string;
+    data?: T | T[];
 }
 
 type ConfirmAction = "approve" | "reject";
@@ -48,7 +48,7 @@ interface ConfirmState {
 const DOMAINS_API_BASE =
   process.env.NEXT_PUBLIC_DOMAINS_API_BASE ?? "/v1/admin";
 const REFRESH_INTERVAL_MS = 30000;
-const COMPANY_DOMAIN = "soft7.in";
+
 
 /* ============================================================
    API SERVICE LAYER
@@ -83,28 +83,35 @@ function getDomainApiError(error: unknown): string {
 }
 
 const domainService = {
-  async getDomain(companyDomain: string): Promise<DomainRequest[]> {
-    const response = await axiosInstance.get<ApiEnvelope<DomainRequest>>(
-      `${DOMAINS_API_BASE}/companies/${encodeURIComponent(
-        companyDomain,
-      )}/domain`,
-    );
+  async getDomain(): Promise<DomainRequest[]> {
+  const response = await axiosInstance.get<ApiEnvelope<DomainRequest>>(
+    `${DOMAINS_API_BASE}/companies/company-domain`
+);
 
-    return response.data.data ? [response.data.data] : [];
+const data = response.data.data;
+
+if (!data) {
+    return [];
+}
+
+if (Array.isArray(data)) {
+    return data;
+}
+
+return [data];
   },
 
-  async approveDomain(domainName: string): Promise<{ message: string }> {
-    const response = await axiosInstance.post<ApiEnvelope<unknown>>(
-      `${DOMAINS_API_BASE}/companies/${encodeURIComponent(
-        domainName,
-      )}/domain/active`,
-    );
+  async approveDomain(requestId: string): Promise<{ message: string }> {
+  const response = await axiosInstance.post<ApiEnvelope<unknown>>(
+    `${DOMAINS_API_BASE}/companies/${requestId}/domain/active`
+  );
 
-    return {
-      message:
-        response.data?.message ?? `${domainName} was approved successfully.`,
-    };
-  },
+  return {
+    message:
+      response.data?.message ??
+      "Domain approved successfully.",
+  };
+}
 };
 
 /* ============================================================
@@ -147,17 +154,23 @@ function DomainBadge({ status }: { status?: string | null }) {
     </span>
   );
 }
+function domainInitials(domain?: string | null) {
+  const value = domain ?? "";
 
-function domainInitials(domain: string) {
-  const parts = domain.replace(/^www\./, "").split(".")[0] ?? domain;
-  return parts.slice(0, 2).toUpperCase();
+  const parts = value.replace(/^www\./, "").split(".")[0] ?? "";
+
+  return parts.slice(0, 2).toUpperCase() || "--";
 }
 
-function domainAvatarColor(domain: string) {
+function domainAvatarColor(domain?: string | null) {
+  const value = domain ?? "";
+
   let hash = 0;
-  for (let i = 0; i < domain.length; i++) {
-    hash = domain.charCodeAt(i) + ((hash << 5) - hash);
+
+  for (let i = 0; i < value.length; i++) {
+    hash = value.charCodeAt(i) + ((hash << 5) - hash);
   }
+
   const colors = [
     "#10b981",
     "#6366f1",
@@ -166,6 +179,7 @@ function domainAvatarColor(domain: string) {
     "#ec4899",
     "#8b5cf6",
   ];
+
   return colors[Math.abs(hash) % colors.length];
 }
 
@@ -186,7 +200,7 @@ export default function PermissionsPage() {
     if (!silent) setLoading(true);
     setError("");
     try {
-      const data = await domainService.getDomain(COMPANY_DOMAIN);
+     const data = await domainService.getDomain();
       setRequests(data);
     } catch (loadError) {
       setError(getDomainApiError(loadError));
@@ -223,10 +237,11 @@ export default function PermissionsPage() {
     if (!confirmState) return;
     const { request, action } = confirmState;
     const domain = request.domain_name;
+    const requestId = request.id;
     setProcessingDomain(domain);
     setRowErrors((current) => ({ ...current, [domain]: "" }));
     try {
-     const result = await domainService.approveDomain(domain);
+    const result = await domainService.approveDomain(requestId);
       toast.success(result.message);
       setConfirmState(null);
 
@@ -351,10 +366,10 @@ export default function PermissionsPage() {
                         <div
                           className="au-avatar au-avatar--table"
                           style={{
-                            background: domainAvatarColor(item.domain_name),
+                            background: domainAvatarColor(item.domain_name ?? ""),
                           }}
                         >
-                          {domainInitials(item.domain_name)}
+                         {domainInitials(item.domain_name ?? "")}
                         </div>
                         <span className="au-user-name">{item.domain_name}</span>
                       </div>
