@@ -22,7 +22,7 @@ export default function AuditLogs() {
   return (
     <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:"14px", overflow:"hidden", transition:"background 0.3s,border-color 0.3s" }}>
       <div style={{ padding:"18px 20px 14px", borderBottom:`1px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontWeight:700, fontSize:"0.95rem", color:t.text }}>Activity Logs</span>
+        <span style={{ fontWeight:700, fontSize:"0.95rem", color:t.text }}>Audit Logs</span>
         <span style={{ fontSize:"0.8rem", color:t.accent, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:"4px" }}>
           View All <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </span>

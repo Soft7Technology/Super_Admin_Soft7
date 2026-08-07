@@ -770,11 +770,7 @@ useEffect(() => {
       </div>
 
       {/* TABLE — columns are now: ACTIVITY · USER ID · TYPE · ACTION · TIME
-          (USER replaced with USER ID, IP ADDRESS replaced with TYPE, and a
-          new ACTION column was added). NOTE: if al-table__head / al-log-row
-          use CSS grid-template-columns with a fixed column count in
-          audit-logs.css, update that rule to 6 columns (icon + 5 listed
-          above) to match. */}
+        to match. */}
       <div className="al-table">
         <div className="al-table__head">
           <div className="al-table__head-cell" />
