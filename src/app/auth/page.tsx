@@ -128,6 +128,7 @@ export default function AuthPage() {
       identifier: string;
       password: string;
     }) => {
+      try {
         const hostname = typeof window !== "undefined" ? window.location.hostname : "";
         const { data } = await axiosInstance.post(
           `${AUTH_BASE}/login`,
