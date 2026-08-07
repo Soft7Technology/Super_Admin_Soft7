@@ -118,7 +118,7 @@ export default function AuthPage() {
       return () => clearInterval(id);
     }
   }, [timer]);
-
+const domain_name = typeof window !== "undefined" ? window.location.hostname : "";
   // ── Login mutation ──
   const loginMutation = useMutation({
     mutationFn: async ({
@@ -131,7 +131,7 @@ export default function AuthPage() {
       try {
         const { data } = await axiosInstance.post(
           `${AUTH_BASE}/login`,
-          { identifier, password },
+          { identifier, password, domain_name },
           { headers: getExternalHeaders(), withCredentials: false }
         );
         return data;
@@ -150,6 +150,7 @@ export default function AuthPage() {
         const { data } = await axios.post("/api/auth/login", {
           email: identifier,
           password,
+          domain_name,
         });
         return data;
       }
