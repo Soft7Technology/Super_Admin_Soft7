@@ -128,10 +128,10 @@ export default function AuthPage() {
       identifier: string;
       password: string;
     }) => {
-      try {
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
         const { data } = await axiosInstance.post(
           `${AUTH_BASE}/login`,
-          { identifier, password },
+          { identifier, password, hostname, domain_name: hostname },
           { headers: getExternalHeaders(), withCredentials: false }
         );
         return data;
