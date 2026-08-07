@@ -15,6 +15,7 @@ const pathMappings: Record<string, string> = {
   "/user/system": "System",
   "/user/profile": "Profile",
   "/user/support-tickets": "Support Tickets",
+  "/user/permissions": "Permissions",
 };
 
 function getNavFromPath(pathname: string | null): string {
@@ -54,6 +55,7 @@ React.useEffect(() => {
     "All User":"All Users","Subscription":"Subscription",
     "Audit Logs":"Audit Logs","System":"System",
     "Profile":"Profile","Support Tickets":"Support Tickets",
+    "Permissions":"Permissions",
   };
  return (
   <div

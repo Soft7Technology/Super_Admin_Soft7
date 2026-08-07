@@ -148,15 +148,35 @@ const handleSuspendToggle = async (user: User) => {
       sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
     );
 
-  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage));
+  // Clamp so a stale page number (e.g. left over from a larger result set)
+  // never points past the last page of the *current* filtered results.
+  const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    (safeCurrentPage - 1) * rowsPerPage,
+    safeCurrentPage * rowsPerPage
   );
 
-  // Reset to page 1 whenever the active filters change the result set
+  // Reset to page 1 whenever the active filters change the result set.
+  // This applies to every filter/search input, not just status, since any
+  // of them can shrink the result set and strand currentPage past the end.
   const handleStatusChange = (value: string) => {
     setStatus(value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleRoleChange = (value: string) => {
+    setRole(value);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSort(value);
     setCurrentPage(1);
   };
 
@@ -180,10 +200,10 @@ const handleSuspendToggle = async (user: User) => {
 
       {/* Filters, with Select All / bulk-delete pinned to the right of the same row */}
       <FilterBar
-        search={search}       onSearchChange={setSearch}
+        search={search}       onSearchChange={handleSearchChange}
         status={status}       onStatusChange={handleStatusChange}
-        role={role}           onRoleChange={setRole}
-        sort={sort}           onSortChange={setSort}
+        role={role}           onRoleChange={handleRoleChange}
+        sort={sort}           onSortChange={handleSortChange}
         count={filteredUsers.length}
         loading={loading}
         rightSlot={
@@ -238,7 +258,8 @@ const handleSuspendToggle = async (user: User) => {
             </thead>
 
             <tbody>
-              {paginatedUsers.map((user) => (
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user) => (
                 <tr key={user.id}>
                   <td>
                     <input
@@ -347,17 +368,24 @@ const handleSuspendToggle = async (user: User) => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "32px 0", color: "#6b7280" }}>
+                    {loading ? "Loading users..." : "No users match your filters"}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
           {/* Pagination */}
           <div className="au-pagination">
-            <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+            <button disabled={safeCurrentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
               Previous
             </button>
-            <span>Page {currentPage} of {totalPages}</span>
-            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+            <span>Page {safeCurrentPage} of {totalPages}</span>
+            <button disabled={safeCurrentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
               Next
             </button>
           </div>
