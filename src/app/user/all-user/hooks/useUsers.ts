@@ -4,9 +4,25 @@ import { User, UserStats, timeAgo } from "../types";
 
 const EXTERNAL_USERS_API = "/v1/admin/companies/user";
 
+export interface PaginationInfo {
+  total: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+interface UseUsersParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  role?: string;
+  search?: string;
+}
+
 interface UseUsersReturn {
   users: User[];
   stats: UserStats;
+  pagination: PaginationInfo;
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -20,6 +36,13 @@ const EMPTY_STATS: UserStats = {
   premiumUsers: 0,
 };
 
+const DEFAULT_PAGINATION: PaginationInfo = {
+  total: 0,
+  totalPages: 1,
+  page: 1,
+  limit: 10,
+};
+
 function recordsFromResponse(json: any): any[] {
   if (Array.isArray(json)) return json;
   if (Array.isArray(json?.data)) return json.data;
@@ -28,8 +51,14 @@ function recordsFromResponse(json: any): any[] {
   return [];
 }
 
-function paginationFromResponse(json: any) {
-  return json?.data?.pagination ?? json?.pagination ?? {};
+function paginationFromResponse(json: any): Partial<PaginationInfo> {
+  const p = json?.data?.pagination ?? json?.pagination ?? {};
+  return {
+    total: Number(p.total ?? p.totalUsers ?? p.count ?? 0),
+    totalPages: Number(p.totalPages ?? p.total_pages ?? 1),
+    page: Number(p.page ?? 1),
+    limit: Number(p.limit ?? 10),
+  };
 }
 
 function normalisePlan(planName: string): string {
@@ -67,11 +96,19 @@ function mapExternalUser(u: any): User {
   };
 }
 
-function buildStats(users: User[]): UserStats {
+function buildStats(users: User[], totalUsers?: number, rawStats?: any): UserStats {
+  if (rawStats && typeof rawStats.totalUsers === "number") {
+    return {
+      totalUsers: rawStats.totalUsers,
+      activeUsers: rawStats.activeUsers ?? 0,
+      adminUsers: rawStats.adminUsers ?? 0,
+      premiumUsers: rawStats.premiumUsers ?? 0,
+    };
+  }
   return {
-    totalUsers: users.length,
+    totalUsers: totalUsers ?? users.length,
     activeUsers: users.filter((u) => u.status === "ACTIVE").length,
-    adminUsers: 0, // No admins on this page
+    adminUsers: users.filter((u) => u.role.toLowerCase() === "admin").length,
     premiumUsers: users.filter((u) =>
       ["Pro", "Enterprise"].includes(u.plan)
     ).length,
@@ -82,12 +119,6 @@ function buildStats(users: User[]): UserStats {
  * Maps the UI status filter value (ALL / ACTIVE / INACTIVE / SUSPENDED)
  * to the `status` query param expected by the API:
  *   all | active | inactive | suspended
- *
- * NOTE: this previously returned "suspend" (missing "ed") for the
- * SUSPENDED case, which the backend didn't recognise, so the Suspended
- * filter always came back with zero results ("No users match your
- * filters") even though suspended users clearly exist (see the "All"
- * view / Badge / STATUS_DOT, which all use "SUSPENDED"). Fixed below.
  */
 function toApiStatus(status: string): string {
   switch (String(status).toUpperCase()) {
@@ -103,9 +134,36 @@ function toApiStatus(status: string): string {
   }
 }
 
-export function useUsers(status: string = "ALL"): UseUsersReturn {
+/**
+ * Maps the UI role filter value (ALL / ADMIN / USER)
+ * to the `role` query param expected by the API:
+ *   all | admin | user
+ */
+function toApiRole(role: string): string {
+  switch (String(role).toUpperCase()) {
+    case "ADMIN":
+      return "admin";
+    case "USER":
+      return "user";
+    default:
+      return "all";
+  }
+}
+
+export function useUsers({
+  page = 1,
+  limit = 10,
+  status = "ALL",
+  role = "ALL",
+  search = "",
+}: UseUsersParams = {}): UseUsersReturn {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    ...DEFAULT_PAGINATION,
+    page,
+    limit,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -113,12 +171,12 @@ export function useUsers(status: string = "ALL"): UseUsersReturn {
   const refresh = () => setTick((t) => t + 1);
 
   // Optimistically update a single user's status in local state
-  const updateUserStatus = (userId: string, status: string) => {
+  const updateUserStatus = (userId: string, statusVal: string) => {
     setUsers((prev) => {
       const updated = prev.map((u) =>
-        u.id === userId ? { ...u, status } : u
+        u.id === userId ? { ...u, status: statusVal } : u
       );
-      setStats(buildStats(updated));
+      setStats((prevStats) => buildStats(updated, prevStats.totalUsers));
       return updated;
     });
   };
@@ -126,46 +184,56 @@ export function useUsers(status: string = "ALL"): UseUsersReturn {
   useEffect(() => {
     let cancelled = false;
     const apiStatus = toApiStatus(status);
+    const apiRole = toApiRole(role);
 
     async function loadUsers() {
       setLoading(true);
       setError(null);
 
       try {
-        const { data: firstJson } = await axiosInstance.get(
-          `${EXTERNAL_USERS_API}?role=user&page=1&limit=10&status=${apiStatus}`
-        );
+        const params: Record<string, any> = {
+          role: apiRole,
+          page,
+          limit,
+          status: apiStatus,
+        };
+        const trimmedSearch = search.trim();
+        if (trimmedSearch) {
+          params.search = trimmedSearch;
+        }
 
-        const pagination = paginationFromResponse(firstJson);
-        const totalPages = Number(pagination.totalPages || pagination.total_pages || 1);
+        const { data: resJson } = await axiosInstance.get(EXTERNAL_USERS_API, {
+          params,
+        });
 
-        const pageRequests = Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) =>
-          axiosInstance
-            .get(`${EXTERNAL_USERS_API}?role=user&page=${i + 2}&limit=10&status=${apiStatus}`)
-            .then((r) => r.data)
-        );
+        const p = paginationFromResponse(resJson);
+        const records = recordsFromResponse(resJson);
+        const mappedUsers = records.map(mapExternalUser);
 
-        const restPages = await Promise.all(pageRequests);
-
-        const allRecords = [
-          ...recordsFromResponse(firstJson),
-          ...restPages.flatMap(recordsFromResponse),
-        ];
-
-        // Extra safety: only keep users
-        const onlyUsers = allRecords.filter(
-          (u) => String(u.role || "").toLowerCase() === "user"
-        );
-
-        const mappedUsers = onlyUsers.map(mapExternalUser);
         if (!cancelled) {
           setUsers(mappedUsers);
-          setStats(buildStats(mappedUsers));
+          const totalCount = p.total ?? mappedUsers.length;
+          const totalPagesCount = Math.max(1, p.totalPages ?? Math.ceil(totalCount / limit));
+
+          setPagination({
+            total: totalCount,
+            totalPages: totalPagesCount,
+            page: p.page ?? page,
+            limit: p.limit ?? limit,
+          });
+
+          setStats(buildStats(mappedUsers, totalCount, resJson?.data?.stats ?? resJson?.stats));
         }
       } catch (e) {
         if (!cancelled) {
           setUsers([]);
           setStats(EMPTY_STATS);
+          setPagination({
+            total: 0,
+            totalPages: 1,
+            page,
+            limit,
+          });
           setError(e instanceof Error ? e.message : "Failed to fetch users.");
         }
       } finally {
@@ -180,7 +248,7 @@ export function useUsers(status: string = "ALL"): UseUsersReturn {
     return () => {
       cancelled = true;
     };
-  }, [tick, status]);
+  }, [tick, page, limit, status, role, search]);
 
-  return { users, stats, loading, error, refresh, updateUserStatus };
+  return { users, stats, pagination, loading, error, refresh, updateUserStatus };
 }
