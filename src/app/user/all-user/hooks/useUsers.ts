@@ -40,7 +40,7 @@ const DEFAULT_PAGINATION: PaginationInfo = {
   total: 0,
   totalPages: 1,
   page: 1,
-  limit: 10,
+  limit: 20,
 };
 
 function recordsFromResponse(json: any): any[] {
@@ -150,20 +150,10 @@ function toApiRole(role: string): string {
   }
 }
 
-export function useUsers({
-  page = 1,
-  limit = 10,
-  status = "ALL",
-  role = "ALL",
-  search = "",
-}: UseUsersParams = {}): UseUsersReturn {
+export function useUsers(): UseUsersReturn {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    ...DEFAULT_PAGINATION,
-    page,
-    limit,
-  });
+  const [pagination, setPagination] = useState<PaginationInfo>(DEFAULT_PAGINATION);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -183,27 +173,14 @@ export function useUsers({
 
   useEffect(() => {
     let cancelled = false;
-    const apiStatus = toApiStatus(status);
-    const apiRole = toApiRole(role);
 
     async function loadUsers() {
       setLoading(true);
       setError(null);
 
       try {
-        const params: Record<string, any> = {
-          role: apiRole,
-          page,
-          limit,
-          status: apiStatus,
-        };
-        const trimmedSearch = search.trim();
-        if (trimmedSearch) {
-          params.search = trimmedSearch;
-        }
-
         const { data: resJson } = await axiosInstance.get(EXTERNAL_USERS_API, {
-          params,
+          params: { limit: 1000 },
         });
 
         const p = paginationFromResponse(resJson);
@@ -213,27 +190,19 @@ export function useUsers({
         if (!cancelled) {
           setUsers(mappedUsers);
           const totalCount = p.total ?? mappedUsers.length;
-          const totalPagesCount = Math.max(1, p.totalPages ?? Math.ceil(totalCount / limit));
-
           setPagination({
             total: totalCount,
-            totalPages: totalPagesCount,
-            page: p.page ?? page,
-            limit: p.limit ?? limit,
+            totalPages: Math.max(1, p.totalPages ?? Math.ceil(totalCount / 20)),
+            page: 1,
+            limit: 20,
           });
-
           setStats(buildStats(mappedUsers, totalCount, resJson?.data?.stats ?? resJson?.stats));
         }
       } catch (e) {
         if (!cancelled) {
           setUsers([]);
           setStats(EMPTY_STATS);
-          setPagination({
-            total: 0,
-            totalPages: 1,
-            page,
-            limit,
-          });
+          setPagination(DEFAULT_PAGINATION);
           setError(e instanceof Error ? e.message : "Failed to fetch users.");
         }
       } finally {
@@ -248,7 +217,7 @@ export function useUsers({
     return () => {
       cancelled = true;
     };
-  }, [tick, page, limit, status, role, search]);
+  }, [tick]);
 
   return { users, stats, pagination, loading, error, refresh, updateUserStatus };
 }
