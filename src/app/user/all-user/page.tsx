@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
@@ -38,9 +38,14 @@ export default function AllUsers() {
   const [suspendingId,   setSuspendingId]   = useState<string | null>(null);
   const [deletingId,     setDeletingId]     = useState<string | null>(null);
 
-  // status filter is now applied server-side via the API
-  const { users, stats, loading, error, refresh, updateUserStatus } = useUsers(status);
-  const query = search.trim().toLowerCase();
+  // status, role, page & search are applied server-side via the API
+  const { users, stats, pagination, loading, error, refresh, updateUserStatus } = useUsers({
+    page: currentPage,
+    limit: rowsPerPage,
+    status,
+    role,
+    search,
+  });
 
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
@@ -51,10 +56,10 @@ export default function AllUsers() {
   };
 
   const handleSelectAll = () => {
-    if (selectedUsers.length === filteredUsers.length) {
+    if (selectedUsers.length === paginatedUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(filteredUsers.map((u) => u.id));
+      setSelectedUsers(paginatedUsers.map((u) => u.id));
     }
   };
 
@@ -133,33 +138,15 @@ const handleSuspendToggle = async (user: User) => {
     setDeletingId(null);
   }
 };
-  // NOTE: status filtering is now done server-side (see useUsers(status)).
-  // Only search / role / sort remain client-side.
-  const filteredUsers = [...users]
-    .filter((user) => {
-      const emailDomain = user.email.includes("@") ? user.email.split("@").pop() ?? "" : "";
-      const searchable = [user.name, user.email, emailDomain, user.company, user.companyDomain]
-        .join(" ").toLowerCase();
-      const matchesSearch = !query || searchable.includes(query);
-      const matchesRole   = role === "ALL" || user.role.toLowerCase() === role.toLowerCase();
-      return matchesSearch && matchesRole;
-    })
-    .sort((a, b) =>
-      sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
-    );
-
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage));
-  // Clamp so a stale page number (e.g. left over from a larger result set)
-  // never points past the last page of the *current* filtered results.
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedUsers = filteredUsers.slice(
-    (safeCurrentPage - 1) * rowsPerPage,
-    safeCurrentPage * rowsPerPage
+  // Status, Role, Search and Page are handled server-side via the API.
+  const paginatedUsers = [...users].sort((a, b) =>
+    sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
   );
 
-  // Reset to page 1 whenever the active filters change the result set.
-  // This applies to every filter/search input, not just status, since any
-  // of them can shrink the result set and strand currentPage past the end.
+  const totalPages = Math.max(1, pagination.totalPages || Math.ceil((pagination.total || 0) / rowsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  // Reset to page 1 whenever filters change
   const handleStatusChange = (value: string) => {
     setStatus(value);
     setCurrentPage(1);
@@ -204,7 +191,7 @@ const handleSuspendToggle = async (user: User) => {
         status={status}       onStatusChange={handleStatusChange}
         role={role}           onRoleChange={handleRoleChange}
         sort={sort}           onSortChange={handleSortChange}
-        count={filteredUsers.length}
+        count={pagination.total}
         loading={loading}
         rightSlot={
           <div
@@ -222,7 +209,7 @@ const handleSuspendToggle = async (user: User) => {
             <label className="au-select-all" style={{ margin: 0 }}>
               <input
                 type="checkbox"
-                checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
+                checked={paginatedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
                 onChange={handleSelectAll}
               />
               Select All
@@ -240,7 +227,7 @@ const handleSuspendToggle = async (user: User) => {
                 <th style={{ width: "50px" }}>
                   <input
                     type="checkbox"
-                    checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
+                    checked={paginatedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
                     onChange={handleSelectAll}
                   />
                 </th>
@@ -381,11 +368,11 @@ const handleSuspendToggle = async (user: User) => {
 
           {/* Pagination */}
           <div className="au-pagination">
-            <button disabled={safeCurrentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+            <button disabled={safeCurrentPage <= 1 || loading} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
               Previous
             </button>
             <span>Page {safeCurrentPage} of {totalPages}</span>
-            <button disabled={safeCurrentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+            <button disabled={safeCurrentPage >= totalPages || loading} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
               Next
             </button>
           </div>
