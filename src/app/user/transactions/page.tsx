@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
-import { format } from "date-fns";
 import { axiosInstance } from "@/lib/axiosInstance";
 import styles from "./transactions.module.css";
 
@@ -233,7 +232,17 @@ useEffect(() => {
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "MMM dd, yyyy HH:mm");
+      const d = new Date(dateString);
+      return isNaN(d.getTime())
+        ? dateString
+        : d.toLocaleString("en-US", {
+            month: "short",
+            day: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
     } catch {
       return dateString;
     }
