@@ -12,12 +12,12 @@ import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
-const COMPANIES_API = "/v1/admin/companies?status=active";
-const ACTIVE_COMPANIES_API = "/v1/admin/companies?status=active";
-const SUSPENDED_COMPANIES_API = "/v1/admin/companies?status=suspend";
+const COMPANIES_API = "/v1/admin/companies?page=1&limit=20&status=active";
+const ACTIVE_COMPANIES_API = "/v1/admin/companies?page=1&limit=20&status=active";
+const SUSPENDED_COMPANIES_API = "/v1/admin/companies?page=1&limit=20&status=suspend";
 const INACTIVE_COMPANIES_API =
-  "/v1/admin/companies?page=1&limit=10&status=inactive";
-const ITEMS_PER_PAGE = 50;
+  "/v1/admin/companies?page=1&limit=20&status=inactive";
+const ITEMS_PER_PAGE = 20;
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface RawCompany {
