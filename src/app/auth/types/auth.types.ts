@@ -10,6 +10,8 @@ export const AUTH_BASE = "/v1/auth";
 export interface LoginPayload {
   identifier: string;
   password: string;
+  hostname?: string;
+  domain_name?: string;
 }
 
 export interface RegisterPayload {
