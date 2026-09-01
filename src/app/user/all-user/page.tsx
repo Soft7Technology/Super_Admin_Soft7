@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
 import {
@@ -30,7 +30,7 @@ export default function AllUsers() {
   const [detail, setDetail] = useState<User | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const rowsPerPage = 20;
 
   // Inline action states
   const [editUser,       setEditUser]       = useState<User | null>(null);
@@ -38,14 +38,57 @@ export default function AllUsers() {
   const [suspendingId,   setSuspendingId]   = useState<string | null>(null);
   const [deletingId,     setDeletingId]     = useState<string | null>(null);
 
-  // status, role, page & search are applied server-side via the API
-  const { users, stats, pagination, loading, error, refresh, updateUserStatus } = useUsers({
-    page: currentPage,
-    limit: rowsPerPage,
-    status,
-    role,
-    search,
-  });
+  const { users, stats, loading, error, refresh, updateUserStatus } = useUsers();
+
+  // Filter users by status, role, and search query
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      // Status filter
+      if (status !== "ALL" && u.status.toUpperCase() !== status.toUpperCase()) {
+        return false;
+      }
+      // Role filter
+      if (role !== "ALL" && u.role.toLowerCase() !== role.toLowerCase()) {
+        return false;
+      }
+      // Search filter
+      if (q) {
+        const searchable = [
+          u.name,
+          u.email,
+          u.phone,
+          u.company,
+          u.companyDomain,
+          u.plan,
+          u.role,
+          u.status,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        if (!searchable.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [users, status, role, search]);
+
+  // Sort filtered users
+  const sortedUsers = useMemo(() => {
+    return [...filteredUsers].sort((a, b) =>
+      sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
+    );
+  }, [filteredUsers, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / rowsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(() => {
+    const start = (safeCurrentPage - 1) * rowsPerPage;
+    return sortedUsers.slice(start, start + rowsPerPage);
+  }, [sortedUsers, safeCurrentPage, rowsPerPage]);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
@@ -56,7 +99,7 @@ export default function AllUsers() {
   };
 
   const handleSelectAll = () => {
-    if (selectedUsers.length === paginatedUsers.length) {
+    if (selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0) {
       setSelectedUsers([]);
     } else {
       setSelectedUsers(paginatedUsers.map((u) => u.id));
@@ -138,14 +181,6 @@ const handleSuspendToggle = async (user: User) => {
     setDeletingId(null);
   }
 };
-  // Status, Role, Search and Page are handled server-side via the API.
-  const paginatedUsers = [...users].sort((a, b) =>
-    sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
-  );
-
-  const totalPages = Math.max(1, pagination.totalPages || Math.ceil((pagination.total || 0) / rowsPerPage));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-
   // Reset to page 1 whenever filters change
   const handleStatusChange = (value: string) => {
     setStatus(value);
@@ -191,7 +226,7 @@ const handleSuspendToggle = async (user: User) => {
         status={status}       onStatusChange={handleStatusChange}
         role={role}           onRoleChange={handleRoleChange}
         sort={sort}           onSortChange={handleSortChange}
-        count={pagination.total}
+        count={filteredUsers.length}
         loading={loading}
         rightSlot={
           <div
