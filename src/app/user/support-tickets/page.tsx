@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./support-tickets.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 
-type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING";
+type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type MessageSender = "USER" | "ADMIN";
 
@@ -42,30 +42,36 @@ interface ReplyActionResult {
   error?: string;
 }
 
+const statusMap: Record<TicketStatus, string> = {
+  OPEN: "open",
+  IN_PROGRESS: "in_progress",
+  RESOLVED: "resolved",
+  CLOSED: "closed",
+};
+
 const STATUS_META: Record<TicketStatus, { label: string; dot: string }> = {
-  OPEN:        { label: "Open",        dot: "var(--st-status-open-col)" },
+  OPEN: { label: "Open", dot: "var(--st-status-open-col)" },
   IN_PROGRESS: { label: "In Progress", dot: "var(--st-status-inprog-col)" },
-  RESOLVED:    { label: "Resolved",    dot: "var(--st-status-resolved-col)" },
-  CLOSED:      { label: "Closed",      dot: "var(--st-status-closed-col)" },
-  WAITING:     { label: "Waiting",     dot: "var(--st-status-waiting-col)" },
+  RESOLVED: { label: "Resolved", dot: "var(--st-status-resolved-col)" },
+  CLOSED: { label: "Closed", dot: "var(--st-status-closed-col)" },
 };
 
 const PRIORITY_META: Record<TicketPriority, { label: string; icon: string }> = {
-  LOW:    { label: "Low",    icon: "↓" },
+  LOW: { label: "Low", icon: "↓" },
   MEDIUM: { label: "Medium", icon: "→" },
-  HIGH:   { label: "High",   icon: "↑" },
+  HIGH: { label: "High", icon: "↑" },
   URGENT: { label: "Urgent", icon: "⚠" },
 };
 
 const CAT_ICON: Record<string, string> = {
-  Billing:      "💳",
-  Technical:    "🔧",
-  Account:      "👤",
-  WhatsApp:     "💬",
+  Billing: "💳",
+  Technical: "🔧",
+  Account: "👤",
+  WhatsApp: "💬",
   Subscription: "📦",
-  Integration:  "🔌",
-  Performance:  "⚡",
-  Other:        "📋",
+  Integration: "🔌",
+  Performance: "⚡",
+  Other: "📋",
 };
 
 const AVATAR_COLORS: Record<string, string> = {
@@ -82,11 +88,10 @@ const AVATAR_COLORS: Record<string, string> = {
 
 // Track segment colors
 const TRACK_COLORS: Record<TicketStatus, string> = {
-  OPEN:        "#34d399",
+  OPEN: "#34d399",
   IN_PROGRESS: "#FBBF24",
-  WAITING:     "#FB923C",
-  RESOLVED:    "#818CF8",
-  CLOSED:      "#64748B",
+  RESOLVED: "#818CF8",
+  CLOSED: "#64748B",
 };
 
 const PAGE_SIZE = 8;
@@ -178,7 +183,7 @@ function Pager({
   });
 
   const from = total === 0 ? 0 : (page - 1) * size + 1;
-  const to   = Math.min(page * size, total);
+  const to = Math.min(page * size, total);
 
   return (
     <div className="st-pager">
@@ -256,9 +261,9 @@ function ConvPanel({
   };
 
   const metaItems = [
-    { key: "🗓 Created",   val: ticket.created },
-    { key: "🕐 Updated",   val: ticket.updated },
-    { key: "💬 Messages",  val: String(messages.length) },
+    { key: "🗓 Created", val: ticket.created },
+    { key: "🕐 Updated", val: ticket.updated },
+    { key: "💬 Messages", val: String(messages.length) },
   ];
 
   return (
@@ -320,9 +325,9 @@ function ConvPanel({
                         key={key}
                         className="st-status-dd__option"
                         style={{
-                          background:  ticket.status === key ? `${meta.dot}14` : "transparent",
-                          color:       ticket.status === key ? meta.dot : "var(--st-text-secondary)",
-                          fontWeight:  ticket.status === key ? 700 : 400,
+                          background: ticket.status === key ? `${meta.dot}14` : "transparent",
+                          color: ticket.status === key ? meta.dot : "var(--st-text-secondary)",
+                          fontWeight: ticket.status === key ? 700 : 400,
                         }}
                         onClick={() => { void onStatusChange(ticket.id, key); setShowStatus(false); }}
                       >
@@ -473,103 +478,103 @@ export default function SupportTickets() {
   );
 
   useEffect(() => {
-  if (!selected) return;
+    if (!selected) return;
 
-  const previousOverflow = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-  return () => {
-    document.body.style.overflow = previousOverflow;
-  };
-}, [selected]);
-useEffect(() => {
-  if (!selected) return;
-
-  const handleEscape = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      setSelectedId(null);
-    }
-  };
-
-  window.addEventListener("keydown", handleEscape);
-
-  return () => {
-    window.removeEventListener("keydown", handleEscape);
-  };
-}, [selected]);
-  // ─ Fetch all tickets ─
- const loadTickets = async () => {
-  try {
-    const { data } = await axiosInstance.get(
-      "/v1/admin/support/tickets/forward"
-    );
-
-    const ticketsData = data?.data ?? data?.tickets ?? [];
-
-    const sortedTickets = (Array.isArray(ticketsData) ? ticketsData : []).sort(
-      (a: any, b: any) =>
-        new Date(b.updated_at).getTime() -
-        new Date(a.updated_at).getTime()
-    );
-
-    let savedStatuses: Record<string, TicketStatus> = {};
-    try {
-      savedStatuses = JSON.parse(localStorage.getItem("st_ticket_statuses") || "{}");
-    } catch {}
-
-    const normalised: Ticket[] = sortedTickets.map((t: any) => {
-      const ticketIdStr = String(t.id);
-      const rawStatus = String(t.status || "OPEN").toUpperCase();
-      const serverStatus = (rawStatus === "PENDING" ? "OPEN" : rawStatus) as TicketStatus;
-      const cachedStatus = savedStatuses[ticketIdStr];
-
-      return {
-        id: ticketIdStr,
-        subject: t.message || "Support Ticket",
-        company: "Soft7 User",
-        companyLogo: "S",
-        companyCol: "#10b981",
-        user: t.name || "Unknown User",
-        userEmail: t.email || "",
-        userPhone: t.phone || "",
-        status: cachedStatus || serverStatus,
-        priority: "MEDIUM",
-        category: "Support",
-        created: new Date(t.created_at).toLocaleDateString(),
-        updated: new Date(t.updated_at).toLocaleDateString(),
-        unread: 0,
-        messages: [],
-      };
-    });
-
-   setTickets(prev => {
-  return normalised.map(ticket => {
-    const existing = prev.find(p => p.id === ticket.id);
-
-    return {
-      ...ticket,
-      status: existing?.status || ticket.status,
-      messages: existing?.messages || [],
+    return () => {
+      document.body.style.overflow = previousOverflow;
     };
-  });
-});
-  } catch (error) {
-    console.error("Failed to load tickets", error);
-  } finally {
-    setLoading(false);
-  }
-};
-useEffect(() => {
-  loadTickets();
+  }, [selected]);
+  useEffect(() => {
+    if (!selected) return;
 
-  const interval = setInterval(() => {
-    if (!selectedId) {
-      loadTickets();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [selected]);
+  // ─ Fetch all tickets ─
+  const loadTickets = async () => {
+    try {
+      const { data } = await axiosInstance.get(
+        "/v1/admin/support/tickets/forward"
+      );
+
+      const ticketsData = data?.data ?? data?.tickets ?? [];
+
+      const sortedTickets = (Array.isArray(ticketsData) ? ticketsData : []).sort(
+        (a: any, b: any) =>
+          new Date(b.updated_at).getTime() -
+          new Date(a.updated_at).getTime()
+      );
+
+      let savedStatuses: Record<string, TicketStatus> = {};
+      try {
+        savedStatuses = JSON.parse(localStorage.getItem("st_ticket_statuses") || "{}");
+      } catch { }
+
+      const normalised: Ticket[] = sortedTickets.map((t: any) => {
+        const ticketIdStr = String(t.id);
+        const rawStatus = String(t.status || "OPEN").toUpperCase();
+        const serverStatus = (rawStatus === "PENDING" ? "OPEN" : rawStatus) as TicketStatus;
+        const cachedStatus = savedStatuses[ticketIdStr];
+
+        return {
+          id: ticketIdStr,
+          subject: t.message || "Support Ticket",
+          company: "Soft7 User",
+          companyLogo: "S",
+          companyCol: "#10b981",
+          user: t.name || "Unknown User",
+          userEmail: t.email || "",
+          userPhone: t.phone || "",
+          status: cachedStatus || serverStatus,
+          priority: "MEDIUM",
+          category: "Support",
+          created: new Date(t.created_at).toLocaleDateString(),
+          updated: new Date(t.updated_at).toLocaleDateString(),
+          unread: 0,
+          messages: [],
+        };
+      });
+
+      setTickets(prev => {
+        return normalised.map(ticket => {
+          const existing = prev.find(p => p.id === ticket.id);
+
+          return {
+            ...ticket,
+            status: existing?.status || ticket.status,
+            messages: existing?.messages || [],
+          };
+        });
+      });
+    } catch (error) {
+      console.error("Failed to load tickets", error);
+    } finally {
+      setLoading(false);
     }
-  }, 5000);
+  };
+  useEffect(() => {
+    loadTickets();
 
-  return () => clearInterval(interval);
-}, [selectedId]);
+    const interval = setInterval(() => {
+      if (!selectedId) {
+        loadTickets();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedId]);
   // Deselect if ticket disappears
   useEffect(() => {
     if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {
@@ -584,11 +589,11 @@ useEffect(() => {
       tickets.filter(t => {
         const q = search.toLowerCase();
         return (
-          (statusF   === "ALL" || t.status   === statusF) &&
+          (statusF === "ALL" || t.status === statusF) &&
           (
-            t.subject.toLowerCase().includes(q)   ||
-            t.company.toLowerCase().includes(q)   ||
-            t.user.toLowerCase().includes(q)      ||
+            t.subject.toLowerCase().includes(q) ||
+            t.company.toLowerCase().includes(q) ||
+            t.user.toLowerCase().includes(q) ||
             t.userEmail.toLowerCase().includes(q) ||
             (t.userPhone && t.userPhone.toLowerCase().includes(q)) ||
             t.category.toLowerCase().includes(q)
@@ -618,32 +623,32 @@ useEffect(() => {
 
       const firstMessage = conversations[0];
       const formattedMessages: Message[] = conversations.map((msg: any, index: number) => ({
-        id:     msg.id || String(index),
+        id: msg.id || String(index),
         sender: msg.user_name === "Soft7 Tech" ? "ADMIN" : "USER",
-        name:   msg.user_name || "User",
+        name: msg.user_name || "User",
         avatar: (msg.user_name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
         content: msg.message || "",
-        time:   new Date(msg.created_at).toLocaleString(),
-        read:   true,
+        time: new Date(msg.created_at).toLocaleString(),
+        read: true,
       }));
 
       const existingTicket = tickets.find(t => t.id === ticketId);
       const formattedTicket: Ticket = {
-        id:          firstMessage.ticket_id || ticketId,
-        subject:     firstMessage.message || "Support Ticket",
-        company:     "Soft7 User",
+        id: firstMessage.ticket_id || ticketId,
+        subject: firstMessage.message || "Support Ticket",
+        company: "Soft7 User",
         companyLogo: "S",
-        companyCol:  "#10b981",
-        user:        firstMessage.user_name || existingTicket?.user || "Unknown User",
-        userEmail:   firstMessage.user_email || firstMessage.email || existingTicket?.userEmail || "",
-        userPhone:   firstMessage.user_phone || firstMessage.phone || existingTicket?.userPhone || "",
-        status:      existingTicket?.status || "OPEN",
-        priority:    "MEDIUM",
-        category:    "Support",
-        created:     new Date(firstMessage.created_at).toLocaleDateString(),
-        updated:     new Date(conversations[conversations.length - 1].created_at).toLocaleDateString(),
-        unread:      0,
-        messages:    formattedMessages,
+        companyCol: "#10b981",
+        user: firstMessage.user_name || existingTicket?.user || "Unknown User",
+        userEmail: firstMessage.user_email || firstMessage.email || existingTicket?.userEmail || "",
+        userPhone: firstMessage.user_phone || firstMessage.phone || existingTicket?.userPhone || "",
+        status: existingTicket?.status || "OPEN",
+        priority: "MEDIUM",
+        category: "Support",
+        created: new Date(firstMessage.created_at).toLocaleDateString(),
+        updated: new Date(conversations[conversations.length - 1].created_at).toLocaleDateString(),
+        unread: 0,
+        messages: formattedMessages,
       };
 
       setSelectedId(formattedTicket.id);
@@ -674,39 +679,13 @@ useEffect(() => {
       /* ignore storage error */
     }
 
-    // 2. Try host API status update endpoints
-    const dbStatusStr = status === "RESOLVED" ? "resolved" : status === "IN_PROGRESS" ? "in_progress" : status === "CLOSED" ? "closed" : "open";
-    const statusPayloads = [
-      { method: "put", url: `/v1/admin/support/tickets/forward/${id}`, data: { status: dbStatusStr, ticketId: id } },
-      { method: "patch", url: `/v1/admin/support/tickets/forward/${id}`, data: { status: dbStatusStr, ticketId: id } },
-      { method: "put", url: `/v1/admin/support/${id}/status`, data: { status: dbStatusStr, ticketId: id } },
-      { method: "patch", url: `/v1/admin/support/${id}/status`, data: { status: dbStatusStr, ticketId: id } },
-      { method: "put", url: `/v1/admin/support/${id}/resolve` },
-      { method: "put", url: `/v1/admin/support/${id}/close` },
-    ];
-
-    for (const ep of statusPayloads) {
-      try {
-        if (ep.method === "put") {
-          await axiosInstance.put(ep.url, ep.data);
-        } else if (ep.method === "patch") {
-          await axiosInstance.patch(ep.url, ep.data);
-        }
-        break;
-      } catch {
-        /* try next candidate endpoint */
-      }
-    }
-
-    // 3. Call local Next.js API route /api/admin/support-tickets
+    // 2. Call host API status update endpoint
+    const dbStatusStr = statusMap[status];
     try {
-      await fetch("/api/admin/support-tickets", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketId: id, status }),
-      });
-    } catch {
-      /* ignore fallback error */
+      await axiosInstance.patch(`/v1/admin/support/${id}/status`, { status: dbStatusStr });
+    }
+    catch (error) {
+      console.error("Failed to update ticket status:", error);
     }
   };
 
@@ -716,20 +695,20 @@ useEffect(() => {
       const selectedTicket = tickets.find(t => t.id === id);
       const { data } = await axiosInstance.post(`/v1/admin/support/${id}/forward/reply`, {
         message: text,
-        email:   selectedTicket?.userEmail || "",
-        phone:   selectedTicket?.userPhone || "",
+        email: selectedTicket?.userEmail || "",
+        phone: selectedTicket?.userPhone || "",
       });
       console.log("Reply API Response:", data);
       console.log("Reply API Response:", data);
 
       const newMessage: Message = {
-        id:      Date.now().toString(),
-        sender:  "ADMIN",
-        name:    "Soft7 Tech",
-        avatar:  "ST",
+        id: Date.now().toString(),
+        sender: "ADMIN",
+        name: "Soft7 Tech",
+        avatar: "ST",
         content: text,
-        time:    new Date().toLocaleString(),
-        read:    true,
+        time: new Date().toLocaleString(),
+        read: true,
       };
 
       setTickets(prev =>
@@ -746,10 +725,10 @@ useEffect(() => {
   };
 
   // ─ Derived counts ─
-  const openCount  = tickets.filter(t => t.status === "OPEN").length;
+  const openCount = tickets.filter(t => t.status === "OPEN").length;
   const inProgress = tickets.filter(t => t.status === "IN_PROGRESS").length;
-  const resolved   = tickets.filter(t => t.status === "RESOLVED").length;
-  const urgent     = tickets.filter(t => t.priority === "URGENT").length;
+  const resolved = tickets.filter(t => t.status === "RESOLVED").length;
+  const urgent = tickets.filter(t => t.priority === "URGENT").length;
   const totalUnread = tickets.reduce((acc, t) => acc + (typeof t.unread === "number" ? t.unread : 0), 0);
 
   return (
@@ -782,17 +761,17 @@ useEffect(() => {
 
           {/* KPI grid */}
           <div className="st-kpi-grid">
-            <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon="🎫" color="#34d399" />
-            <KPI label="In Progress"    value={String(inProgress)} sub="being handled"              icon="⚙️" color="#FBBF24" />
-            <KPI label="Resolved (7d)"  value={String(resolved)}   sub="closed this week"           icon="✅" color="#818CF8" />
-            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon="⚡" color="#34d399" />
+            <KPI label="Open Tickets" value={String(openCount)} sub={`${urgent} urgent`} icon="🎫" color="#34d399" />
+            <KPI label="In Progress" value={String(inProgress)} sub="being handled" icon="⚙️" color="#FBBF24" />
+            <KPI label="Resolved (7d)" value={String(resolved)} sub="closed this week" icon="✅" color="#818CF8" />
+            <KPI label="Avg Response" value="18m" sub="across all tickets" icon="⚡" color="#34d399" />
           </div>
 
           {/* Main grid */}
           <div className="st-main-grid st-main-grid--full">
 
             {/* List panel */}
-           <div className="st-list-panel">
+            <div className="st-list-panel">
               <div className="st-filters st-filters-row">
                 {/* Search */}
                 <div className="st-search-wrap">
@@ -807,7 +786,7 @@ useEffect(() => {
 
                 {/* Status pills */}
                 <div className="st-group st-status-group">
-                  {(["ALL", "OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"] as const).map(s => (
+                  {(["ALL", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const).map(s => (
                     <button
                       key={s}
                       onClick={() => { setStatusF(s); setPage(1); }}
@@ -815,13 +794,13 @@ useEffect(() => {
                       style={
                         statusF === s && s !== "ALL"
                           ? {
-                              background: `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-bg)`,
-                              color:      `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
-                              borderColor:`var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
-                            }
+                            background: `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-bg)`,
+                            color: `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
+                            borderColor: `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
+                          }
                           : statusF === s
-                          ? { background: "var(--st-surf3)", color: "var(--st-accent2)", borderColor: "rgba(16,185,129,0.35)" }
-                          : {}
+                            ? { background: "var(--st-surf3)", color: "var(--st-accent2)", borderColor: "rgba(16,185,129,0.35)" }
+                            : {}
                       }
                     >
                       {s === "ALL" ? "All Status" : STATUS_META[s]?.label}
@@ -840,8 +819,8 @@ useEffect(() => {
               {/* Ticket rows */}
               <div className="st-list">
                 {paginated.map(ticket => {
-                  const isActive  = selected?.id === ticket.id;
-                  const msgCount  = safeMessages(ticket).length;
+                  const isActive = selected?.id === ticket.id;
+                  const msgCount = safeMessages(ticket).length;
 
                   return (
                     <div
@@ -890,13 +869,13 @@ useEffect(() => {
                         </div>
                       </div>
 
-                   <div className="st-ticket-row__badges">
-  <StatusBadge status={ticket.status} />
-  <span className="st-cat-chip">
-    {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
-  </span>
-  <span className="st-msg-count">💬 {msgCount}</span>
-</div>
+                      <div className="st-ticket-row__badges">
+                        <StatusBadge status={ticket.status} />
+                        <span className="st-cat-chip">
+                          {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
+                        </span>
+                        <span className="st-msg-count">💬 {msgCount}</span>
+                      </div>
                     </div>
                   );
                 })}
@@ -917,27 +896,27 @@ useEffect(() => {
 
             {/* Conversation panel or empty state */}
             {selected ? (
-  <>
-    <div
-      className="st-conv-overlay"
-      onClick={() => setSelectedId(null)}
-    />
+              <>
+                <div
+                  className="st-conv-overlay"
+                  onClick={() => setSelectedId(null)}
+                />
 
-    <div
-      className="st-conv-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Ticket ${selected.id} details`}
-    >
-      <ConvPanel
-        ticket={selected}
-        onClose={() => setSelectedId(null)}
-        onStatusChange={handleStatusChange}
-        onReply={handleReply}
-      />
-    </div>
-  </>
-) : (
+                <div
+                  className="st-conv-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`Ticket ${selected.id} details`}
+                >
+                  <ConvPanel
+                    ticket={selected}
+                    onClose={() => setSelectedId(null)}
+                    onStatusChange={handleStatusChange}
+                    onReply={handleReply}
+                  />
+                </div>
+              </>
+            ) : (
               <div className="st-conv-empty">
                 <div className="st-conv-empty__icon">🎫</div>
                 <div style={{ textAlign: "center" }}>
