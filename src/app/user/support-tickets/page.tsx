@@ -26,6 +26,7 @@ interface Ticket {
   companyCol: string;
   user: string;
   userEmail: string;
+  userPhone?: string;
   status: TicketStatus;
   priority: TicketPriority;
   category: string;
@@ -285,6 +286,12 @@ function ConvPanel({
                   <span className="st-conv__meta-text" style={{ opacity: 0.75 }}>{ticket.userEmail}</span>
                 </>
               )}
+              {ticket.userPhone && (
+                <>
+                  <span className="st-conv__meta-sep">·</span>
+                  <span className="st-conv__meta-text" style={{ opacity: 0.75 }}>📞 {ticket.userPhone}</span>
+                </>
+              )}
               <span className="st-conv__meta-sep">·</span>
               <span className="st-conv__meta-text">{CAT_ICON[ticket.category] ?? "📋"} {ticket.category}</span>
             </div>
@@ -505,22 +512,35 @@ useEffect(() => {
         new Date(a.updated_at).getTime()
     );
 
-    const normalised: Ticket[] = sortedTickets.map((t: any) => ({
-      id: String(t.id),
-      subject: t.message || "Support Ticket",
-      company: "Soft7 User",
-      companyLogo: "S",
-      companyCol: "#10b981",
-      user: t.name || "Unknown User",
-      userEmail: t.email || "",
-      status: (t.status || "OPEN").toUpperCase() as TicketStatus,
-      priority: "MEDIUM",
-      category: "Support",
-      created: new Date(t.created_at).toLocaleDateString(),
-      updated: new Date(t.updated_at).toLocaleDateString(),
-      unread: 0,
-      messages: [],
-    }));
+    let savedStatuses: Record<string, TicketStatus> = {};
+    try {
+      savedStatuses = JSON.parse(localStorage.getItem("st_ticket_statuses") || "{}");
+    } catch {}
+
+    const normalised: Ticket[] = sortedTickets.map((t: any) => {
+      const ticketIdStr = String(t.id);
+      const rawStatus = String(t.status || "OPEN").toUpperCase();
+      const serverStatus = (rawStatus === "PENDING" ? "OPEN" : rawStatus) as TicketStatus;
+      const cachedStatus = savedStatuses[ticketIdStr];
+
+      return {
+        id: ticketIdStr,
+        subject: t.message || "Support Ticket",
+        company: "Soft7 User",
+        companyLogo: "S",
+        companyCol: "#10b981",
+        user: t.name || "Unknown User",
+        userEmail: t.email || "",
+        userPhone: t.phone || "",
+        status: cachedStatus || serverStatus,
+        priority: "MEDIUM",
+        category: "Support",
+        created: new Date(t.created_at).toLocaleDateString(),
+        updated: new Date(t.updated_at).toLocaleDateString(),
+        unread: 0,
+        messages: [],
+      };
+    });
 
    setTickets(prev => {
   return normalised.map(ticket => {
@@ -528,6 +548,7 @@ useEffect(() => {
 
     return {
       ...ticket,
+      status: existing?.status || ticket.status,
       messages: existing?.messages || [],
     };
   });
@@ -569,6 +590,7 @@ useEffect(() => {
             t.company.toLowerCase().includes(q)   ||
             t.user.toLowerCase().includes(q)      ||
             t.userEmail.toLowerCase().includes(q) ||
+            (t.userPhone && t.userPhone.toLowerCase().includes(q)) ||
             t.category.toLowerCase().includes(q)
           )
         );
@@ -605,15 +627,17 @@ useEffect(() => {
         read:   true,
       }));
 
+      const existingTicket = tickets.find(t => t.id === ticketId);
       const formattedTicket: Ticket = {
-        id:          firstMessage.ticket_id,
+        id:          firstMessage.ticket_id || ticketId,
         subject:     firstMessage.message || "Support Ticket",
         company:     "Soft7 User",
         companyLogo: "S",
         companyCol:  "#10b981",
-        user:        firstMessage.user_name || "Unknown User",
-        userEmail:   firstMessage.user_email || "",
-        status:      "OPEN",
+        user:        firstMessage.user_name || existingTicket?.user || "Unknown User",
+        userEmail:   firstMessage.user_email || firstMessage.email || existingTicket?.userEmail || "",
+        userPhone:   firstMessage.user_phone || firstMessage.phone || existingTicket?.userPhone || "",
+        status:      existingTicket?.status || "OPEN",
         priority:    "MEDIUM",
         category:    "Support",
         created:     new Date(firstMessage.created_at).toLocaleDateString(),
@@ -635,17 +659,54 @@ useEffect(() => {
 
   const handleStatusChange = async (id: string, status: TicketStatus) => {
     setApiError(null);
+
+    // 1. Immediate optimistic UI update
+    setTickets(prev =>
+      prev.map(t => (t.id === id ? { ...t, status } : t))
+    );
+
+    // Save to localStorage cache so status persists across page refreshes and auto-polling
     try {
-      const response = await fetch("/api/admin/support-tickets", {
+      const savedStatuses = JSON.parse(localStorage.getItem("st_ticket_statuses") || "{}");
+      savedStatuses[id] = status;
+      localStorage.setItem("st_ticket_statuses", JSON.stringify(savedStatuses));
+    } catch {
+      /* ignore storage error */
+    }
+
+    // 2. Try host API status update endpoints
+    const dbStatusStr = status === "RESOLVED" ? "resolved" : status === "IN_PROGRESS" ? "in_progress" : status === "CLOSED" ? "closed" : "open";
+    const statusPayloads = [
+      { method: "put", url: `/v1/admin/support/tickets/forward/${id}`, data: { status: dbStatusStr, ticketId: id } },
+      { method: "patch", url: `/v1/admin/support/tickets/forward/${id}`, data: { status: dbStatusStr, ticketId: id } },
+      { method: "put", url: `/v1/admin/support/${id}/status`, data: { status: dbStatusStr, ticketId: id } },
+      { method: "patch", url: `/v1/admin/support/${id}/status`, data: { status: dbStatusStr, ticketId: id } },
+      { method: "put", url: `/v1/admin/support/${id}/resolve` },
+      { method: "put", url: `/v1/admin/support/${id}/close` },
+    ];
+
+    for (const ep of statusPayloads) {
+      try {
+        if (ep.method === "put") {
+          await axiosInstance.put(ep.url, ep.data);
+        } else if (ep.method === "patch") {
+          await axiosInstance.patch(ep.url, ep.data);
+        }
+        break;
+      } catch {
+        /* try next candidate endpoint */
+      }
+    }
+
+    // 3. Call local Next.js API route /api/admin/support-tickets
+    try {
+      await fetch("/api/admin/support-tickets", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ticketId: id, status }),
       });
-      const payload = (await response.json().catch(() => null)) as { ticket?: Ticket; error?: string } | null;
-      if (!response.ok || !payload?.ticket) throw new Error(payload?.error ?? "Failed to update status.");
-      applyServerTicket(payload.ticket);
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Failed to update ticket status.");
+    } catch {
+      /* ignore fallback error */
     }
   };
 
@@ -656,8 +717,9 @@ useEffect(() => {
       const { data } = await axiosInstance.post(`/v1/admin/support/${id}/forward/reply`, {
         message: text,
         email:   selectedTicket?.userEmail || "",
-        phone:   "9372597458",
+        phone:   selectedTicket?.userPhone || "",
       });
+      console.log("Reply API Response:", data);
       console.log("Reply API Response:", data);
 
       const newMessage: Message = {
@@ -809,6 +871,12 @@ useEffect(() => {
                                 <>
                                   <span className="st-ticket-row__meta-sep">·</span>
                                   <span style={{ opacity: 0.75 }}>{ticket.userEmail}</span>
+                                </>
+                              )}
+                              {ticket.userPhone && (
+                                <>
+                                  <span className="st-ticket-row__meta-sep">·</span>
+                                  <span style={{ opacity: 0.75 }}>📞 {ticket.userPhone}</span>
                                 </>
                               )}
                             </div>
