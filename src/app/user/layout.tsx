@@ -56,120 +56,114 @@ React.useEffect(() => {
     "Profile":"Profile","Support Tickets":"Support Tickets",
   };
  return (
-  <div
-    data-theme={isDark ? "dark" : "light"}
-    style={{ minHeight: "100vh", background: t.bg }}
-  >
+   <div
+     data-theme={isDark ? "dark" : "light"}
+     style={{ minHeight: "100vh", background: t.bg }}
+   >
+     <Toaster
+       position="top-center"
+       gutter={0}
+       containerStyle={{
+         top: "20px",
+       }}
+       toastOptions={{
+         duration: 4000,
+         style: {
+           background: isDark ? "#0d1117" : "#ffffff",
+           color: isDark ? "#f8fafc" : "#111827",
+           border: "1px solid #10b981",
+           borderRadius: "12px",
+           padding: "18px 26px",
+           minWidth: "340px",
+           maxWidth: "460px",
+           justifyContent: "center",
+           fontSize: "18px",
+           fontWeight: "700",
+           textAlign: "center",
+           boxShadow: "0 18px 45px rgba(16, 185, 129, 0.22)",
+         },
+         success: {
+           icon: null,
+         },
+       }}
+     />
 
+     {/* ✅ DESKTOP SIDEBAR */}
+     {!isMobile && (
+       <div
+         style={{
+           position: "fixed",
+           top: 0,
+           left: 0,
+           width: `${desktopSidebarWidth}px`,
+           height: "100vh",
+           zIndex: 80,
+           overflow: "visible",
+         }}
+       >
+         <Sidebar
+           activeItem={activeNav}
+           onNavigate={setActiveNav}
+           onWidthChange={setDesktopSidebarWidth}
+         />
+       </div>
+     )}
 
-<Toaster
-  position="top-center"
-  gutter={0}
-  containerStyle={{
-    top: "50%",
-    transform: "translateY(-50%)",
-  }}
-  toastOptions={{
-    duration: 4000,
-    style: {
-      background: isDark ? "#0d1117" : "#ffffff",
-      color: isDark ? "#f8fafc" : "#111827",
-      border: "1px solid #10b981",
-      borderRadius: "12px",
-      padding: "18px 26px",
-      minWidth: "340px",
-      maxWidth: "460px",
-      justifyContent: "center",
-      fontSize: "18px",
-      fontWeight: "700",
-      textAlign: "center",
-      boxShadow:
-        "0 18px 45px rgba(16, 185, 129, 0.22)",
-    },
-    success: {
-      icon: null,
-    },
-  }}
-/>
+     {/* ✅ MOBILE SIDEBAR */}
+     {isMobile && (
+       <>
+         {sidebarOpen && (
+           <div
+             onClick={() => setSidebarOpen(false)}
+             style={{
+               position: "fixed",
+               inset: 0,
+               background: "rgba(0,0,0,0.4)",
+               zIndex: 100,
+             }}
+           />
+         )}
 
-    {/* ✅ DESKTOP SIDEBAR */}
-    {!isMobile && (
-  <div
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: `${desktopSidebarWidth}px`,
-      height: "100vh",
-      zIndex: 80,
-      overflow: "visible"
-    }}
-  >
-    <Sidebar
-      activeItem={activeNav}
-      onNavigate={setActiveNav}
-      onWidthChange={setDesktopSidebarWidth}
-    />
-  </div>
-)}
+         <div
+           style={{
+             position: "fixed",
+             top: 0,
+             left: sidebarOpen ? "0" : `-${mobileSidebarWidth}px`,
+             width: `${mobileSidebarWidth}px`,
+             height: "100vh",
+             zIndex: 200,
+             transition: "left 0.3s ease",
+           }}
+         >
+           <Sidebar
+             activeItem={activeNav}
+             onNavigate={(val) => {
+               setActiveNav(val);
+               setSidebarOpen(false);
+             }}
+           />
+         </div>
+       </>
+     )}
 
-    {/* ✅ MOBILE SIDEBAR */}
-    {isMobile && (
-      <>
-        {sidebarOpen && (
-          <div
-            onClick={() => setSidebarOpen(false)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.4)",
-              zIndex: 100
-            }}
-          />
-        )}
+     {/* ✅ MAIN CONTENT */}
+     <div
+       style={{
+         marginLeft: isMobile ? "0px" : `${desktopSidebarWidth}px`,
+         minHeight: "100vh",
+         display: "flex",
+         flexDirection: "column",
+         transition: "margin-left 220ms ease",
+       }}
+     >
+       <Topbar
+         title={titles[activeNav] ?? activeNav}
+         onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
+       />
 
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: sidebarOpen ? "0" : `-${mobileSidebarWidth}px`,
-            width: `${mobileSidebarWidth}px`,
-            height: "100vh",
-            zIndex: 200,
-            transition: "left 0.3s ease"
-          }}
-        >
-          <Sidebar
-            activeItem={activeNav}
-            onNavigate={(val) => {
-              setActiveNav(val);
-              setSidebarOpen(false);
-            }}
-          />
-        </div>
-      </>
-    )}
-
-    {/* ✅ MAIN CONTENT */}
-    <div
-      style={{
-        marginLeft: isMobile ? "0px" : `${desktopSidebarWidth}px`,
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        transition: "margin-left 220ms ease"
-      }}
-    >
-      <Topbar
-        title={titles[activeNav] ?? activeNav}
-        onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
-      />
-
-      {/* THIS fixes scroll issue */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {children}
-      </div>
-    </div>
-  </div>
-);
+       {/* THIS fixes scroll issue */}
+       <div style={{ flex: 1, overflowY: "auto" }}>{children}</div>
+     </div>
+   </div>
+ );
 }

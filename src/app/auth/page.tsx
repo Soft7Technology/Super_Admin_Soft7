@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 
 import { LoginForm } from "./components/LoginForm";
 import { RegisterForm } from "./components/RegisterForm";
@@ -401,9 +401,15 @@ export default function AuthPage() {
     setPasswordError("");
   };
 
-  // ── Render ──
   return (
     <>
+      <Toaster
+        position="top-center"
+        containerStyle={{
+          top: 5,
+        }}
+      />
+
       {authView === "login" ? (
         <LoginForm
           onSubmit={handleLogin}
