@@ -6,7 +6,7 @@ import { jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
 
 const ACCESS_SECRET = new TextEncoder().encode(
-  process.env.ACCESS_TOKEN_SECRET || "access_secret",
+  process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || "access_secret",
 );
 
 export async function POST() {
@@ -33,6 +33,7 @@ export async function POST() {
   const res = NextResponse.json({ message: "Logged out successfully" });
 
   res.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
+  res.cookies.set("token", "", { maxAge: 0, path: "/" });
   res.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
 
   return res;

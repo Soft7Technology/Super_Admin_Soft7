@@ -15,6 +15,11 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
   }
 }
 
+function isJwtExpired(payload: Record<string, any> | null): boolean {
+  if (!payload || typeof payload.exp !== "number") return false;
+  return Date.now() >= payload.exp * 1000;
+}
+
 const SUPER_ADMIN_ROLES = ["SUPER ADMIN", "superadmin", "super_admin", "admin"];
 
 function isSuperAdmin(payload: Record<string, any> | null): boolean {
@@ -25,21 +30,32 @@ function isSuperAdmin(payload: Record<string, any> | null): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const accessToken = request.cookies.get("accessToken")?.value;
+  const accessToken =
+    request.cookies.get("accessToken")?.value ||
+    request.cookies.get("token")?.value;
 
   // ── Protected routes (/user/*) ─────────────────────────────────────────────
   if (pathname.startsWith("/user")) {
     // 1. No token at all → redirect to login
     if (!accessToken) {
-      return NextResponse.redirect(new URL("/auth", request.url));
+      return NextResponse.redirect(new URL("/auth?error=missing_token", request.url));
     }
 
-    // 2. Token present but role is not super admin → clear cookies + redirect to login
+    // 2. Token present but payload is expired → clear cookies + redirect to login
     const payload = decodeJwtPayload(accessToken);
+    if (!payload || isJwtExpired(payload)) {
+      const response = NextResponse.redirect(new URL("/auth?error=session_expired", request.url));
+      response.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
+      response.cookies.set("token", "", { maxAge: 0, path: "/" });
+      response.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
+      return response;
+    }
+
+    // 3. Token present but role is not super admin → clear cookies + redirect to login
     if (!isSuperAdmin(payload)) {
       const response = NextResponse.redirect(new URL("/auth?error=access_denied", request.url));
-      // Clear the invalid cookies so the user isn't stuck in a redirect loop
       response.cookies.set("accessToken", "", { maxAge: 0, path: "/" });
+      response.cookies.set("token", "", { maxAge: 0, path: "/" });
       response.cookies.set("refreshToken", "", { maxAge: 0, path: "/" });
       return response;
     }
@@ -51,11 +67,10 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/auth")) {
     if (accessToken) {
       const payload = decodeJwtPayload(accessToken);
-      // Only redirect to dashboard if they're actually a super admin
-      if (isSuperAdmin(payload)) {
+      // Only redirect to dashboard if token is valid, unexpired, and super admin
+      if (payload && !isJwtExpired(payload) && isSuperAdmin(payload)) {
         return NextResponse.redirect(new URL("/user/dashboard", request.url));
       }
-      // Non-super-admin with a stale cookie → let them see the login page
     }
     return NextResponse.next();
   }

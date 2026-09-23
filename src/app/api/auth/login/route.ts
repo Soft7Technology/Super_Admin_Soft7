@@ -5,11 +5,11 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 
 const ACCESS_SECRET = new TextEncoder().encode(
-  process.env.ACCESS_TOKEN_SECRET || "access_secret",
+  process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || "access_secret",
 );
 
 const REFRESH_SECRET = new TextEncoder().encode(
-  process.env.REFRESH_TOKEN_SECRET || "refresh_secret",
+  process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || "refresh_secret",
 );
 
 export async function POST(req: Request) {
@@ -55,7 +55,8 @@ export async function POST(req: Request) {
       );
     }
 
-    if (user.role !== "SUPER ADMIN") {
+    const allowedRoles = ["SUPER ADMIN", "ADMIN", "SUPERADMIN", "SUPER_ADMIN"];
+    if (!allowedRoles.includes(user.role?.toUpperCase())) {
       return NextResponse.json(
         { error: "Access denied. Only Super Admins are allowed." },
         { status: 403 },
@@ -81,48 +82,30 @@ export async function POST(req: Request) {
       data: { refreshToken: hashedRefreshToken },
     });
 
-    // ✅ Create token
-    // const token = jwt.sign(
-    //   { id: user.id, email: user.email, name: user.name },
-    //   JWT_SECRET,
-    //   { expiresIn: "7d" }
-    // )
-
     // ✅ Response
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
-      token: accessToken, // ✅ IMPORTANT
+      token: accessToken,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role, // ✅ IMPORTANT
+        role: user.role,
       },
     });
 
-    // response.cookies.set("token", token, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "lax",
-    //   path: "/",
-    //   maxAge: 60 * 60 * 24 * 7
-    // })
-
-    response.cookies.set("accessToken", accessToken, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60,
-    });
-
-    response.cookies.set("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "lax" as const,
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
-    });
+    };
+
+    response.cookies.set("accessToken", accessToken, cookieOptions);
+    response.cookies.set("token", accessToken, cookieOptions);
+    response.cookies.set("refreshToken", refreshToken, cookieOptions);
 
     return response;
   } catch (error) {

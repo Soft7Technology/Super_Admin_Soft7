@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { setAuthToken } from "@/lib/auth-client";
 import toast from "react-hot-toast";
 
 import { LoginForm } from "./components/LoginForm";
@@ -196,8 +197,7 @@ const domain_name = typeof window !== "undefined" ? window.location.hostname : "
       }
       // ─────────────────────────────────────────────────────────────────────
 
-      localStorage.setItem("console_access_token", token);
-      document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+      setAuthToken(token);
 
       const rawCreditBalance = data?.data?.data?.credit_balance ?? data?.data?.company?.credit_balance;
       const creditBalance = rawCreditBalance === null || rawCreditBalance === undefined ? "0" : rawCreditBalance;

@@ -30,7 +30,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", route: "/user/dashboard" },
   { icon: Building2, label: "Manage Companies", route: "/user/manage-companies" },
-  { icon: Users, label: "All User", route: "/user/all-user" },
+  { icon: Users, label: "All Users", route: "/user/all-user" },
   // { icon: CreditCard, label: "Subscription", route: "/user/subscription" },
   { icon: ClipboardList, label: "Audit Logs", route: "/user/audit-logs" },
   { icon: Settings, label: "System", route: "/user/system" },
@@ -56,7 +56,7 @@ export default function Sidebar({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
 
   // Notify parent of fixed width on mount
   React.useEffect(() => {
@@ -114,12 +114,24 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* ── Footer ── */}
-        <div className="admin-sidebar__footer">
+        {/* ── Footer: Interactive System Status & Theme Switcher ── */}
+        <div
+          className="admin-sidebar__footer"
+          onClick={toggleTheme}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleTheme();
+            }
+          }}
+          title={`Click to switch to ${isDark ? "Light" : "Dark"} Mode`}
+        >
           <span className="admin-sidebar__status-dot" />
           <span>
             System Online
-            <small>{isDark ? "Dark Mode" : "Light Mode"}</small>
+            <small>{isDark ? "🌙 Dark Mode" : "☀️ Light Mode"} · Switch</small>
           </span>
         </div>
       </div>
@@ -247,6 +259,15 @@ export default function Sidebar({
           color: ${isDark ? "#93c5fd" : "#065f46"};
           font-size: 0.8rem;
           font-weight: 800;
+          cursor: pointer;
+          user-select: none;
+          transition: background 0.2s ease;
+        }
+
+        .admin-sidebar__footer:hover {
+          background: ${isDark
+            ? "rgba(255, 255, 255, 0.05)"
+            : "rgba(16, 185, 129, 0.08)"};
         }
 
         .admin-sidebar__footer span:not(.admin-sidebar__status-dot) {

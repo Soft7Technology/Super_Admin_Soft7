@@ -4,6 +4,8 @@ import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";          // ← ADD
 import { useTheme, tokens } from "../../../../context/ThemeContext";
 import { uploadToCloudinary } from "../../../../lib/cloudinary";
+import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthHeaders, redirectToLogin } from "@/lib/auth-client";
 
 interface FileState {
   file: File | null;
@@ -87,29 +89,21 @@ export default function AddCompanyPage() {
     };
 
     try {
-      const token = localStorage.getItem("console_access_token");
-      const response = await fetch("https://hostapi.soft7.in/v1/admin/companies/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
+      await axiosInstance.post("/v1/admin/companies/", payload, {
+        headers: getAuthHeaders(),
       });
 
-      if (response.ok) {
-        setSaved(true);
-        setTimeout(() => {
-          router.push("/user/dashboard");
-        }, 1500);
-      } else {
-        const errorData = await response.json();
-        console.error("API error:", errorData);
-        alert("Failed to save company.");
+      setSaved(true);
+      setTimeout(() => {
+        router.push("/user/dashboard");
+      }, 1500);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
       }
-    } catch (err) {
-      console.error("Fetch error:", err);
-      alert("Error saving company.");
+      console.error("API error:", err);
+      alert(err?.response?.data?.message || err?.message || "Failed to save company.");
     } finally {
       setSaving(false);
     }

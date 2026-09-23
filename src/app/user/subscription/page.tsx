@@ -3,35 +3,11 @@
 import { useState, useEffect } from "react";
 import "./subscription.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthHeaders, getAuthToken, redirectToLogin } from "@/lib/auth-client";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
  "/v1/admin/subscription/plan?active=true";
- const getExternalHeaders = () => {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
-
-  if (
-    token &&
-    token.startsWith('"') &&
-    token.endsWith('"')
-  ) {
-    token = token.slice(1, -1);
-  }
-
-  return {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-
-    ...(token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {}),
-  };
-};
 
 const updateSubscriptionPlan = async (
   id: string,
@@ -41,7 +17,7 @@ const updateSubscriptionPlan = async (
     `/v1/admin/subscription/plan/${id}`,
     payload,
     {
-      headers: getExternalHeaders(),
+      headers: getAuthHeaders(),
       withCredentials: false,
     }
   );
@@ -54,7 +30,7 @@ const createSubscriptionPlan = async (
     "/v1/admin/subscription/plan",
     payload,
     {
-      headers: getExternalHeaders(),
+      headers: getAuthHeaders(),
       withCredentials: false,
     }
   );
@@ -1215,12 +1191,20 @@ export default function Subscription() {
   let alive = true;
 
   const fetchData = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      if (alive) {
+        redirectToLogin("missing_token");
+      }
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       const { data: apiResponse } = await axiosInstance.get(EXTERNAL_API, {
-        headers: getExternalHeaders(),
+        headers: getAuthHeaders(),
         withCredentials: false,
       });
 
@@ -1337,10 +1321,15 @@ rawData: plan,
       setActiveCount(
         mapped.filter((s) => s.status === "ACTIVE").length
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("API ERROR:", err);
 
       if (!alive) return;
+
+      if (err?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
+      }
 
       setError("Failed to load subscription plans");
     } finally {

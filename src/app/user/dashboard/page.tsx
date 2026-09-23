@@ -1,9 +1,10 @@
-﻿﻿"use client";
+"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthHeaders, getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import CompanyOverview from "../../../components/CompanyOverview";
 import UserManagement from "../../../components/UserManagement";
 import PlatformGrowthChart, { GrowthPoint } from "../../../components/PlatformGrowthChart";
@@ -18,23 +19,6 @@ const DASHBOARD_API =
 
 const ACTIVITY_API =
   "/v1/admin/activity?role=user&page=1&limit=10&time_frame=7days";
-
-const getExternalHeaders = () => {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
-
-  if (token && token.startsWith('"') && token.endsWith('"')) {
-    token = token.slice(1, -1);
-  }
-
-  return {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
 
 // Type guard so we don't need to import the raw `axios` package just for
 // isAxiosError — keeps axiosInstance as the single integration pattern.
@@ -297,13 +281,21 @@ export default function DashboardPage() {
     let mounted = true;
 
     const loadDashboard = async () => {
+      const token = getAuthToken();
+      if (!token) {
+        if (mounted) {
+          router.replace("/auth");
+        }
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
 
         // ── Dashboard stats ──────────────────────────────────
         const { data: apiResponse } = await axiosInstance.get(DASHBOARD_API, {
-          headers: getExternalHeaders(),
+          headers: getAuthHeaders(),
           withCredentials: false,
         });
         if (!mounted) return;
@@ -317,55 +309,40 @@ export default function DashboardPage() {
         ]);
 
         // ── Companies ─────────────────────────────────────────
-        // API shape: { success, message, data: { data: [...], pagination } }
-        // axiosInstance unwraps one level (`apiResponse.data`), so
-        // `companiesResponse` here is `{ data: [...], pagination }`.
-        // Use recordsFromResponse to safely drill into `.data.data`
-        // instead of assuming `.data` is already the array.
         const { data: companiesResponse } = await axiosInstance.get(
           COMPANIES_API,
           {
-            headers: getExternalHeaders(),
+            headers: getAuthHeaders(),
             withCredentials: false,
           }
         );
         if (!mounted) return;
 
         const companiesData = recordsFromResponse(companiesResponse);
-
-        // Platform Growth uses the full companies list (not the 4-item
-        // slice below used for the overview table) so the monthly counts
-        // are accurate.
         setGrowth(growthPointsFromCompanies(companiesData, 6));
 
         setCompanies(
           companiesData.slice(0, 4).map((company: any, index: number) => ({
             id: company.id || index.toString(),
-
             name: company.name || "Unknown Company",
-
             ini: (company.name || "C")
               .split(" ")
               .map((n: string) => n[0])
               .join("")
               .toUpperCase()
               .slice(0, 2),
-
             col: [
               "#10b981",
               "#34d399",
               "#059669",
               "#0d9488",
             ][index % 4],
-
             status:
               company.status
                 ? company.status.charAt(0).toUpperCase() +
                   company.status.slice(1)
                 : "Active",
-
             plan: "Basic",
-
             users: 0,
           }))
         );
@@ -374,48 +351,43 @@ export default function DashboardPage() {
         const { data: usersResponse } = await axiosInstance.get(
           `${USERS_API}?role=user&page=1&limit=4`,
           {
-            headers: getExternalHeaders(),
+            headers: getAuthHeaders(),
             withCredentials: false,
           }
         );
         if (!mounted) return;
 
-const { data: adminUsersResponse } = await axiosInstance
-  .get(`${USERS_API}?role=admin`, {
-    headers: getExternalHeaders(),
-    withCredentials: false,
-  })
-  .catch(() => ({ data: null }));
+        const { data: adminUsersResponse } = await axiosInstance
+          .get(`${USERS_API}?role=admin`, {
+            headers: getAuthHeaders(),
+            withCredentials: false,
+          })
+          .catch(() => ({ data: null }));
 
-const usersData = [
-  ...recordsFromResponse(usersResponse),
-  ...recordsFromResponse(adminUsersResponse),
-];
-setUsers(
-  usersData.slice(0, 4).map((user: any, index: number) => ({
-    id: user.id || index.toString(),
-
+        const usersData = [
+          ...recordsFromResponse(usersResponse),
+          ...recordsFromResponse(adminUsersResponse),
+        ];
+        setUsers(
+          usersData.slice(0, 4).map((user: any, index: number) => ({
+            id: user.id || index.toString(),
             un: user.name || "Unknown User",
-
             role:
               user.role
                 ? user.role.charAt(0).toUpperCase() +
                   user.role.slice(1).toLowerCase()
                 : "User",
-
             status:
               user.status
                 ? user.status.charAt(0).toUpperCase() +
                   user.status.slice(1).toLowerCase()
                 : "Active",
-
             av: (user.name || "U")
               .split(" ")
               .map((n: string) => n[0])
               .join("")
               .toUpperCase()
               .slice(0, 2),
-
             col: [
               "#10b981",
               "#34d399",
@@ -429,7 +401,7 @@ setUsers(
         const { data: activityResponse } = await axiosInstance.get(
           ACTIVITY_API,
           {
-            headers: getExternalHeaders(),
+            headers: getAuthHeaders(),
             withCredentials: false,
           }
         );
@@ -444,14 +416,12 @@ setUsers(
               activity.id ||
               activity._id ||
               index.toString(),
-
             msg:
               activity.message ||
               activity.msg ||
               activity.description ||
               activity.action ||
               "Activity performed",
-
             actor:
               activity.actor ||
               activity.user_name ||
@@ -459,13 +429,11 @@ setUsers(
               activity.created_by?.name ||
               activity.name ||
               "System",
-
             time:
               activity.time ||
               activity.created_at ||
               activity.createdAt ||
               "Recently",
-
             sev:
               activity.severity ||
               activity.sev ||
@@ -473,8 +441,13 @@ setUsers(
               "info",
           }))
         );
-      } catch (err) {
+      } catch (err: any) {
         if (!mounted) return;
+        const status = err?.response?.status;
+        if (status === 401) {
+          redirectToLogin("session_expired");
+          return;
+        }
         if (isAxiosErrorLike(err)) {
           setError(err.response?.data?.message || err.message || "Failed to load dashboard.");
         } else if (err instanceof Error) {

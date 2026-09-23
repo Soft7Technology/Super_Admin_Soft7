@@ -2,7 +2,7 @@ import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
 const ACCESS_SECRET = new TextEncoder().encode(
-  process.env.ACCESS_TOKEN_SECRET || "access_secret",
+  process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || "access_secret",
 );
 
 export async function getCurrentUser() {

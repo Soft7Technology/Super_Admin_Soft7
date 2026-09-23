@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import { User, UserStats, timeAgo } from "../types";
 
 const EXTERNAL_USERS_API = "/v1/admin/companies/user";
@@ -175,6 +176,12 @@ export function useUsers(): UseUsersReturn {
     let cancelled = false;
 
     async function loadUsers() {
+      const token = getAuthToken();
+      if (!token) {
+        redirectToLogin("session_expired");
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -198,8 +205,12 @@ export function useUsers(): UseUsersReturn {
           });
           setStats(buildStats(mappedUsers, totalCount, resJson?.data?.stats ?? resJson?.stats));
         }
-      } catch (e) {
+      } catch (e: any) {
         if (!cancelled) {
+          if (e?.response?.status === 401) {
+            redirectToLogin("session_expired");
+            return;
+          }
           setUsers([]);
           setStats(EMPTY_STATS);
           setPagination(DEFAULT_PAGINATION);

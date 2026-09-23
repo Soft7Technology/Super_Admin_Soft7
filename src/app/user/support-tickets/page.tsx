@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./support-tickets.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING";
 type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -492,6 +493,12 @@ useEffect(() => {
 }, [selected]);
   // ─ Fetch all tickets ─
  const loadTickets = async () => {
+  const token = getAuthToken();
+  if (!token) {
+    redirectToLogin("missing_token");
+    return;
+  }
+
   try {
     const { data } = await axiosInstance.get(
       "/v1/admin/support/tickets/forward"
@@ -532,7 +539,11 @@ useEffect(() => {
     };
   });
 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.response?.status === 401) {
+      redirectToLogin("session_expired");
+      return;
+    }
     console.error("Failed to load tickets", error);
   } finally {
     setLoading(false);

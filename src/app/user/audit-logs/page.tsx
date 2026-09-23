@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import "./audit-logs.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type ActionType =
   | "LOGIN" 
@@ -330,6 +331,12 @@ const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
 
   // ── Fetch activity logs ───────────────────────────────────────────────────
   const fetchLogs = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      redirectToLogin("missing_token");
+      return;
+    }
+
     setLoading(true);
     setFetchError(null);
 
@@ -363,8 +370,12 @@ const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
 
       setLogs(raw.map(enrichLog));
       setTotalItems(Number(total) || 0);
-    } catch (error) {
+    } catch (error: any) {
       console.error("AUDIT LOGS ERROR =>", error);
+      if (error?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
+      }
       setFetchError(
         error instanceof Error ? error.message : "Failed to load audit logs",
       );
@@ -450,6 +461,9 @@ const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
   ).length;
 useEffect(() => {
   const fetchUsers = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
     try {
       const res = await axiosInstance.get("/v1/admin/companies/user", {
         params: {
@@ -469,7 +483,11 @@ useEffect(() => {
           email: u.email,
         })),
       );
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
+      }
       console.error("Failed to fetch users", err);
     }
   };

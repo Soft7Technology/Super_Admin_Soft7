@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
+import { fetchWalletBalance, getCachedWalletBalance } from "@/lib/wallet";
 import styles from "./transactions.module.css";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -161,6 +163,12 @@ const [balanceLoading, setBalanceLoading] = useState(true);
   /* ── Fetch ─────────────────────────────────────────────────── */
   const fetchTransactions = useCallback(
     async (currentFilter: FilterType, currentPage: number) => {
+      const token = getAuthToken();
+      if (!token) {
+        redirectToLogin("missing_token");
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
@@ -178,7 +186,11 @@ const [balanceLoading, setBalanceLoading] = useState(true);
 
         setTransactions(result.transactions);
         setPagination(result.pagination);
-      } catch (err: unknown) {
+      } catch (err: any) {
+        if (err?.response?.status === 401) {
+          redirectToLogin("session_expired");
+          return;
+        }
         setError(extractErrorMessage(err));
         setTransactions([]);
         setPagination(null);
@@ -193,30 +205,64 @@ const [balanceLoading, setBalanceLoading] = useState(true);
     fetchTransactions(filter, page);
   }, [filter, page, fetchTransactions]);
   
-useEffect(() => {
-  const fetchBalance = async () => {
-    try {
-      setBalanceLoading(true);
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    let cancelled = false;
+    let pollDelay = 30000;
 
-      const res = await axiosInstance.get("/v1/admin/users/");
+    const poll = async () => {
+      try {
+        setBalanceLoading(true);
+        const balance = await fetchWalletBalance();
+        if (!cancelled && balance !== undefined && balance !== null) {
+          setWalletBalance(Number(balance));
+        }
+        pollDelay = 30000;
+      } catch {
+        pollDelay = Math.min(pollDelay * 2, 120000);
+      } finally {
+        if (!cancelled) {
+          setBalanceLoading(false);
+          timer = setTimeout(poll, pollDelay);
+        }
+      }
+    };
 
-      const balance =
-        res.data?.data?.credit_balance ?? 0;
-
-      setWalletBalance(Number(balance));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBalanceLoading(false);
+    // 1. Initial cached balance for instant render
+    const cached = getCachedWalletBalance();
+    if (cached) {
+      setWalletBalance(Number(cached));
     }
-  };
 
-  fetchBalance();
+    // 2. Fetch immediately
+    poll();
 
-  const interval = setInterval(fetchBalance, 30000);
+    // 3. Listen for immediate sync across tabs, modals, and Topbar
+    const handleSync = (e: any) => {
+      const val = e?.detail ?? getCachedWalletBalance();
+      if (val !== null && val !== undefined) {
+        setWalletBalance(Number(val));
+      }
+    };
 
-  return () => clearInterval(interval);
-}, []);
+    // 4. Online event - reconnects polling immediately
+    const handleOnline = () => {
+      pollDelay = 30000;
+      poll();
+    };
+
+    window.addEventListener("wallet-balance-updated", handleSync);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("wallet-balance-updated", handleSync);
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
   /* ── Filter change resets to page 1 ───────────────────────── */
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(newFilter);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./profile.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { useTheme } from "@/context/ThemeContext";
 
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -165,7 +166,7 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
 
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif,   setSmsNotif]   = useState(false);
-  const [darkMode,   setDarkMode]   = useState(true);
+  const { isDark, toggleTheme }     = useTheme();
   const [compactUI,  setCompactUI]  = useState(false);
 
   const { saving, saved, go } = useSave();
@@ -183,7 +184,7 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
   const prefs = [
     { label: "Email Notifications", desc: "Receive system alerts and updates via email",   val: emailNotif, set: setEmailNotif },
     { label: "SMS Notifications",   desc: "Receive critical alerts via SMS",                val: smsNotif,   set: setSmsNotif   },
-    { label: "Dark Mode",           desc: "Use dark theme across the admin portal",         val: darkMode,   set: setDarkMode   },
+    { label: "Dark Mode",           desc: "Use dark theme across the admin portal",         val: isDark,     set: () => toggleTheme() },
     { label: "Compact UI",          desc: "Reduce spacing for a denser information layout", val: compactUI,  set: setCompactUI  },
   ];
 

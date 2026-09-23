@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import "./manage-companies.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -1291,10 +1293,20 @@ function AddCreditModal({
 }
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
-export default function ManageCompanies() {
-  const [search, setSearch] = useState("");
+function ManageCompaniesContent() {
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [filter, setFilter] = useState<"ALL" | Status>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Sync search query from URL (e.g. from Global Topbar Search)
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q !== null) {
+      setSearch(q);
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<Company | null>(null);
   const [viewTarget, setViewTarget] = useState<Company | null>(null);
@@ -1357,6 +1369,12 @@ export default function ManageCompanies() {
   };
 
   const fetchCompanies = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      redirectToLogin("session_expired");
+      return;
+    }
+
     setLoading(true);
     setFetchError(null);
 
@@ -1381,7 +1399,11 @@ export default function ManageCompanies() {
         : [];
 
       setCompanies(raw.map(enrichCompany));
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
+      }
       setFetchError(
         e instanceof Error ? e.message : "Failed to load companies",
       );
@@ -1782,5 +1804,13 @@ export default function ManageCompanies() {
         theme="dark"
       />
     </div>
+  );
+}
+
+export default function ManageCompanies() {
+  return (
+    <Suspense fallback={null}>
+      <ManageCompaniesContent />
+    </Suspense>
   );
 }

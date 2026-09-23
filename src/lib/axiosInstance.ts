@@ -1,6 +1,7 @@
 
 
 import axios from "axios";
+import { getAuthToken, setAuthToken, redirectToLogin } from "./auth-client";
 
 export const axiosInstance = axios.create({
   baseURL: "https://hostapi.soft7.in",
@@ -12,16 +13,9 @@ export const axiosInstance = axios.create({
   },
 });
 
-// When sending FormData, remove Content-Type so axios sets multipart/form-data with boundary
+// Automatically inject Authorization header if token exists
 axiosInstance.interceptors.request.use((config) => {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
-
-  if (token && token.startsWith('"') && token.endsWith('"')) {
-    token = token.slice(1, -1);
-  }
+  const token = getAuthToken();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -33,8 +27,9 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 Unauthorized globally
 axiosInstance.interceptors.response.use(
-  (response) => response, // If the request is successful, just return it
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
     const requestUrl = originalRequest?.url ?? "";
@@ -45,34 +40,34 @@ axiosInstance.interceptors.response.use(
       requestUrl.includes("/api/auth/get-role") ||
       requestUrl.includes("/v1/auth/");
 
-    const isExternalApi =
-      /^https?:\/\//i.test(requestUrl) || requestUrl.startsWith("/v1/");
-
-    // 1. Check if the error is 401 and we haven't already retried this request
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !isAuthRoute &&
-      !isExternalApi
-    ) {
+    // If 401 and not already retried, and not an auth attempt
+    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthRoute) {
       originalRequest._retry = true;
 
       try {
-        // 2. Call your refresh token API
-        // Note: We use the base axios to avoid an infinite interceptor loop
-        await axios.post("/api/auth/refresh", {}, { withCredentials: true });
+        // Attempt to refresh the access token via local refresh endpoint
+        const refreshRes = await axios.post("/api/auth/refresh", {}, { withCredentials: true });
+        const newToken =
+          refreshRes.data?.token ??
+          refreshRes.data?.accessToken ??
+          refreshRes.data?.access_token;
 
-        // 3. If refresh is successful, retry the original request
-        // The browser will automatically attach the new accessToken cookie
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // 4. If refresh fails (e.g., refresh token also expired/revoked)
-        // Redirect to login or clear global state
-        window.location.href = "/auth";
-        return Promise.reject(refreshError);
+        if (newToken) {
+          setAuthToken(newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return axiosInstance(originalRequest);
+        }
+      } catch {
+        // Token refresh failed or session completely expired
+        redirectToLogin("session_expired");
+        return Promise.reject(error);
       }
+
+      // If no token was obtained from refresh, redirect
+      redirectToLogin("session_expired");
     }
 
     return Promise.reject(error);
   },
 );
+

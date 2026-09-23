@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./manage-transaction.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { RefreshCw } from "lucide-react";
@@ -221,6 +222,12 @@ export default function ManageTransactions() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchTransactions = async (isRefresh = false) => {
+    const token = getAuthToken();
+    if (!token) {
+      redirectToLogin("missing_token");
+      return;
+    }
+
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setFetchError(null);
@@ -248,6 +255,10 @@ export default function ManageTransactions() {
       if (isRefresh) toast.success("Transactions refreshed");
     } catch (e: any) {
       console.error("TRANSACTIONS FETCH ERROR =>", e);
+      if (e?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
+      }
       const message =
         e?.response?.data?.message || e?.message || "Failed to load transactions";
       setFetchError(message);

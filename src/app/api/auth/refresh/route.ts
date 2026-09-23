@@ -6,8 +6,8 @@ import {jwtVerify, SignJWT} from "jose"
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs"
 
-const ACCESS_SECRET = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET || 'access_secret');
-const REFRESH_SECRET = new TextEncoder().encode(process.env.REFRESH_TOKEN_SECRET || 'refresh_secret');
+const ACCESS_SECRET = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || 'access_secret');
+const REFRESH_SECRET = new TextEncoder().encode(process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || 'refresh_secret');
 
 export async function POST(){
     try{

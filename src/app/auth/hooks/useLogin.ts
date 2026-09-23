@@ -3,14 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { setAuthToken } from "@/lib/auth-client";
 import { AUTH_BASE, type LoginPayload } from "../types/auth.types";
 
 function getHeaders() {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
-  if (token?.startsWith('"') && token?.endsWith('"')) token = token.slice(1, -1);
   return {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true",
@@ -46,13 +42,12 @@ export function useLogin() {
         return;
       }
 
-      localStorage.setItem("console_access_token", token);
-     // document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+      setAuthToken(token);
 
       if (data?.success !== false) {
         router.replace("/user/dashboard");
         queryClient.invalidateQueries({ queryKey: ["user-role"] });
-       toast.success("Signed in successfully", { id: "login-success" });
+        toast.success("Signed in successfully", { id: "login-success" });
       } else {
         setErrors({ general: data?.message || "Login failed" });
       }

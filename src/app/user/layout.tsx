@@ -1,15 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import { useTheme, tokens } from "../../context/ThemeContext";
 import { useRedirectOnRefresh } from "../../hooks/useRedirectOnRefresh";
 import { Toaster } from "react-hot-toast";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 const pathMappings: Record<string, string> = {
   "/user/dashboard": "Dashboard",
   "/user/manage-companies": "Manage Companies",
-  "/user/all-user": "All User",
+  "/user/all-user": "All Users",
   "/user/subscription": "Subscription",
   "/user/audit-logs": "Audit Logs",
   "/user/system": "System",
@@ -30,16 +31,29 @@ function getNavFromPath(pathname: string | null): string {
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [activeNav, setActiveNav] = useState("Dashboard");
+  const [authChecked, setAuthChecked] = useState(false);
 
   const [isMobile, setIsMobile] = useState(false);
 
-React.useEffect(() => {
-  const check = () => setIsMobile(window.innerWidth <= 768);
-  check();
-  window.addEventListener("resize", check);
-  return () => window.removeEventListener("resize", check);
-}, []);
+  // Client-side authentication check: ensure token exists before rendering children
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      setAuthChecked(false);
+      redirectToLogin("session_expired");
+      return;
+    }
+    setAuthChecked(true);
+  }, [pathname]);
+
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // Update activeNav when pathname changes
   useEffect(() => {
@@ -52,11 +66,24 @@ React.useEffect(() => {
   const t = isDark ? tokens.dark : tokens.light;
   const titles: Record<string,string> = {
     "Dashboard":"Dashboard","Manage Companies":"Manage Companies",
-    "All User":"All Users","Subscription":"Subscription",
+    "All Users":"All Users","Subscription":"Subscription",
     "Audit Logs":"Audit Logs","System":"System",
     "Profile":"Profile","Support Tickets":"Support Tickets",
     "Permissions":"Permissions",
   };
+
+  if (!authChecked) {
+    return (
+      <div
+        data-theme={isDark ? "dark" : "light"}
+        style={{
+          minHeight: "100vh",
+          background: t.bg,
+        }}
+      />
+    );
+  }
+
  return (
   <div
     data-theme={isDark ? "dark" : "light"}

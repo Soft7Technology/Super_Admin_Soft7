@@ -11,13 +11,16 @@ export const dynamic = "force-dynamic";
  * so WA_Dashboard can log the forward and update the ticket status.
  */
 export async function POST(_req: NextRequest) {
-  const expectedToken = process.env.SUPER_ADMIN_SUPPORT_TICKET_TOKEN?.trim();
+  const expectedTokens = [
+    process.env.SUPER_ADMIN_SUPPORT_TICKET_TOKEN?.trim(),
+    process.env.ADMIN_SECRET_KEY?.trim(),
+  ].filter(Boolean) as string[];
 
-  if (expectedToken) {
+  if (expectedTokens.length > 0) {
     const auth = _req.headers.get("authorization") || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
 
-    if (token !== expectedToken) {
+    if (!expectedTokens.includes(token)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }

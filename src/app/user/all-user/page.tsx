@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
 import {
@@ -21,9 +22,9 @@ import { Eye, Pencil, KeyRound, ShieldOff, ShieldCheck, Trash2 } from "lucide-re
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-
-export default function AllUsers() {
-  const [search, setSearch] = useState("");
+function AllUsersContent() {
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [status, setStatus] = useState("ALL");
   const [role,   setRole]   = useState("ALL");
   const [sort,   setSort]   = useState("name");
@@ -31,6 +32,15 @@ export default function AllUsers() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 20;
+
+  // Sync search query from URL (e.g. from Global Topbar Search)
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q !== null) {
+      setSearch(q);
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
 
   // Inline action states
   const [editUser,       setEditUser]       = useState<User | null>(null);
@@ -452,5 +462,13 @@ const handleSuspendToggle = async (user: User) => {
   theme="light"
 />
     </div>
+  );
+}
+
+export default function AllUsers() {
+  return (
+    <Suspense fallback={null}>
+      <AllUsersContent />
+    </Suspense>
   );
 }

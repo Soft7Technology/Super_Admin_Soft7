@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import UserManagement from "../../../../components/UserManagement";
 import { useTheme, tokens } from "../../../../context/ThemeContext";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthHeaders, getAuthToken, redirectToLogin } from "@/lib/auth-client";
 
 const USERS_API = "/v1/admin/companies/user";
 
@@ -32,23 +33,7 @@ const USER_COLORS = [
   "linear-gradient(135deg,#e03131,#c92a2a)",
 ];
 
-// Same header pattern used across the dashboard for external API calls.
-const getExternalHeaders = () => {
-  let token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
-      : null;
 
-  if (token && token.startsWith('"') && token.endsWith('"')) {
-    token = token.slice(1, -1);
-  }
-
-  return {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
 
 // Same response-unwrapping helper used on the dashboard page, so both
 // pages parse the external API's response shape identically.
@@ -100,6 +85,14 @@ export default function DashboardUsersPage() {
     let cancelled = false;
 
     async function loadUsers() {
+      const token = getAuthToken();
+      if (!token) {
+        if (!cancelled) {
+          redirectToLogin("missing_token");
+        }
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -107,7 +100,7 @@ export default function DashboardUsersPage() {
         const { data: usersResponse } = await axiosInstance.get(
           `${USERS_API}?limit=all`,
           {
-            headers: getExternalHeaders(),
+            headers: getAuthHeaders(),
             withCredentials: false,
           }
         );
@@ -132,8 +125,12 @@ export default function DashboardUsersPage() {
         }));
 
         setUsers(mappedUsers);
-      } catch (err) {
+      } catch (err: any) {
         if (cancelled) {
+          return;
+        }
+        if (err?.response?.status === 401) {
+          redirectToLogin("session_expired");
           return;
         }
         if (isAxiosErrorLike(err)) {

@@ -12,6 +12,7 @@ import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 //import { KPI } from "../all-user/components/KPI";
 import "../all-user/all-user.css";
 
@@ -197,12 +198,21 @@ export default function PermissionsPage() {
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
 
   const loadRequests = useCallback(async (silent = false) => {
+    const token = getAuthToken();
+    if (!token) {
+      redirectToLogin("missing_token");
+      return;
+    }
     if (!silent) setLoading(true);
     setError("");
     try {
-     const data = await domainService.getDomain();
+      const data = await domainService.getDomain();
       setRequests(data);
-    } catch (loadError) {
+    } catch (loadError: any) {
+      if (loadError?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
+      }
       setError(getDomainApiError(loadError));
     } finally {
       if (!silent) setLoading(false);
