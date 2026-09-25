@@ -13,8 +13,15 @@ export interface AuditLog {
 }
 
 export interface StatCard {
-  label: string; value: string; icon: string; change: string;
-  changeType: "up" | "down"; accent: "blue" | "green" | "purple" | "orange" | "red" | "teal";
+  label: string;
+  value: string;
+  icon: string;
+  change: string;
+  changeType: "up" | "down" | "neutral";
+  accent: "blue" | "green" | "purple" | "orange" | "red" | "teal";
+  dateRange?: string;
+  comparisonPeriod?: string;
+  prevValue?: string | number;
 }
 
 export interface SubscriptionTier {

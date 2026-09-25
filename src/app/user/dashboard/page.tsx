@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
@@ -7,118 +7,51 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import { getAuthHeaders, getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import CompanyOverview from "../../../components/CompanyOverview";
 import UserManagement from "../../../components/UserManagement";
-import PlatformGrowthChart, { GrowthPoint } from "../../../components/PlatformGrowthChart";
+import PlatformGrowthChart, {
+  GrowthPoint,
+  GrowthTimeRange,
+  TIME_RANGE_OPTIONS,
+} from "../../../components/PlatformGrowthChart";
 import AuditLogs from "../../../components/AuditLogs";
+import StatCards from "../../../components/StatCards";
 
-const DASHBOARD_API =
-  "/v1/admin/companies/dashboard";
-  const USERS_API =
-  "/v1/admin/companies/user";
-  const COMPANIES_API =
-  "/v1/admin/companies?status=active";
-
-const ACTIVITY_API =
-  "/v1/admin/activity?role=user&page=1&limit=10&time_frame=7days";
-
-// Type guard so we don't need to import the raw `axios` package just for
-// isAxiosError — keeps axiosInstance as the single integration pattern.
-function isAxiosErrorLike(err: unknown): err is { isAxiosError: true; response?: { data?: { message?: string } }; message?: string } {
-  return typeof err === "object" && err !== null && (err as any).isAxiosError === true;
-}
-
-const DEFAULT_STATS: StatCard[] = [
-  {
-    icon: "📢",
-    label: "Campaigns",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "blue",
-  },
-  {
-    icon: "👥",
-    label: "Users",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "green",
-  },
-  {
-    icon: "🤖",
-    label: "Chatbots",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "purple",
-  },
-  {
-    icon: "💬",
-    label: "Messages",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "orange",
-  },
-];
+const COMPANIES_API = "/v1/admin/companies?status=active";
+const USERS_API = "/v1/admin/companies/user";
+const ACTIVITY_API = "/v1/admin/activity?role=user&page=1&limit=10&time_frame=7days";
 
 interface DashboardCompany {
-  id: string; name: string; ini: string; col: string;
-  status: string; plan: string; users: number;
-}
-interface DashboardUser {
-  id: string; un: string; role: string; status: string; av: string; col: string;
-}
-interface DashboardLog {
-  id: string; msg: string; actor: string; time: string; sev: string;
+  id: string;
+  name: string;
+  ini: string;
+  col: string;
+  status: string;
+  plan: string;
+  users: number;
 }
 
-// Normalizes a variety of API response shapes into a flat array of records.
-// Handles:
-//   - bare arrays:                [ ... ]
-//   - { data: [ ... ] }
-//   - { data: { data: [ ... ] } }  <-- e.g. paginated /companies responses
-//   - { users: [ ... ] }
+interface DashboardUser {
+  id: string;
+  un: string;
+  role: string;
+  status: string;
+  av: string;
+  col: string;
+}
+
+interface DashboardLog {
+  id: string;
+  msg: string;
+  actor: string;
+  time: string;
+  sev: string;
+}
+
 function recordsFromResponse(json: any): any[] {
   if (Array.isArray(json)) return json;
   if (Array.isArray(json?.data)) return json.data;
   if (Array.isArray(json?.data?.data)) return json.data.data;
   if (Array.isArray(json?.users)) return json.users;
   return [];
-}
-
-// Builds "Platform Growth" points directly from the companies list, since
-// there's no dedicated growth endpoint — only /v1/admin/companies is
-// available. Buckets companies by the month of `created_at` and counts how
-// many were created in each of the last `monthsBack` months, ending with
-// the current month. The x-axis labels are the real trailing months (e.g.
-// if today is July 2026, labels run Feb → Jul 2026), so the range always
-// reflects the actual date range in the data rather than a fixed period.
-function growthPointsFromCompanies(
-  companies: any[],
-  monthsBack: number = 6
-): GrowthPoint[] {
-  const now = new Date();
-  // Build the trailing month buckets, oldest first.
-  const buckets: { key: string; label: string; value: number }[] = [];
-  for (let i = monthsBack - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    buckets.push({ key, label: d.toLocaleDateString("en-US", { month: "short" }), value: 0 });
-  }
-
-  const bucketByKey = new Map(buckets.map((b) => [b.key, b]));
-
-  for (const company of companies) {
-    const rawDate = company.created_at || company.createdAt;
-    if (!rawDate) continue;
-    const d = new Date(rawDate);
-    if (isNaN(d.getTime())) continue;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const bucket = bucketByKey.get(key);
-    if (bucket) bucket.value += 1;
-  }
-
-  return buckets.map(({ label, value }) => ({ label, value }));
 }
 
 function useWindowWidth() {
@@ -132,104 +65,6 @@ function useWindowWidth() {
   }, []);
 
   return width;
-}
-
-/* ─── Stat Meta ───────────────────────────────────────────── */
-const STAT_META = [
-  { icon: "📢", label: "Campaigns", accent: "#0d9488", glow: "rgba(13,148,136,0.18)" },
-  { icon: "👥", label: "Users",     accent: "#6366f1", glow: "rgba(99,102,241,0.18)" },
-  { icon: "🤖", label: "Chatbots",  accent: "#f59e0b", glow: "rgba(245,158,11,0.18)" },
-  { icon: "💬", label: "Messages",  accent: "#34d399", glow: "rgba(52,211,153,0.18)" },
-];
-
-/* ─── Inline StatCards ────────────────────────────────────── */
-function InlineStatCards({
-  stats,
-  isDark,
-  isMobile,
-}: {
-  stats: StatCard[];
-  isDark: boolean;
-  isMobile: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-        gap: "16px",
-        marginBottom: "28px",
-      }}
-    >
-      {stats.map((s, i) => {
-        const meta = STAT_META[i] ?? STAT_META[0];
-        return (
-          <div
-            key={s.label}
-            style={{
-              background: isDark ? "rgba(15,17,32,0.9)" : "#ffffff",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-              borderRadius: "14px",
-              padding: "20px 22px",
-              position: "relative",
-              overflow: "hidden",
-              transition: "box-shadow 0.2s, transform 0.2s",
-              boxShadow: isDark
-                ? "0 2px 8px rgba(0,0,0,0.25)"
-                : "0 1px 6px rgba(0,0,0,0.06)",
-            }}
-          >
-            {/* Soft orb */}
-            <div
-              style={{
-                position: "absolute", top: -10, right: -10,
-                width: 64, height: 64, borderRadius: "50%",
-                background: meta.glow, pointerEvents: "none",
-              }}
-            />
-            <div style={{
-              display: "flex", justifyContent: "space-between",
-              alignItems: "flex-start", marginBottom: "14px",
-            }}>
-              <span style={{
-                fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em",
-                color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
-                textTransform: "uppercase",
-              }}>
-                {meta.label}
-              </span>
-              <div style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "12px",
-                background: `${meta.accent}18`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "20px",
-              }}>
-                {meta.icon}
-              </div>
-            </div>
-            <div style={{
-              fontSize: "30px", fontWeight: 800,
-              color: isDark ? "#f1f5f9" : "#0f172a",
-              letterSpacing: "-0.03em", lineHeight: 1,
-              marginBottom: "6px",
-            }}>
-              {s.value}
-            </div>
-            <div style={{
-              height: "2px", width: "36px",
-              borderRadius: "2px",
-              background: meta.accent,
-              opacity: 0.7,
-            }} />
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 /* ─── Section wrapper ─────────────────────────────────────── */
@@ -246,13 +81,13 @@ function Section({
     <div
       style={{
         background: isDark ? "rgba(15,17,32,0.85)" : "#ffffff",
-        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.07)"}`,
+        border: isDark ? "1px solid rgba(255, 255, 255, 0.07)" : "1px solid #cbd5e1",
         borderRadius: "16px",
         padding: isMobile ? "20px" : "26px 28px",
         minWidth: 0,
         boxShadow: isDark
           ? "0 2px 10px rgba(0,0,0,0.22)"
-          : "0 1px 8px rgba(0,0,0,0.06)",
+          : "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
       {children}
@@ -260,218 +95,301 @@ function Section({
   );
 }
 
+/* ─── Initial Empty Stat Cards Placeholder ─────────────────── */
+const INITIAL_STATS: StatCard[] = [
+  {
+    icon: "📢",
+    label: "Campaigns",
+    value: "—",
+    change: "0.0%",
+    changeType: "neutral",
+    accent: "blue",
+    dateRange: "",
+    comparisonPeriod: "vs previous period",
+  },
+  {
+    icon: "👥",
+    label: "Users",
+    value: "—",
+    change: "0.0%",
+    changeType: "neutral",
+    accent: "green",
+    dateRange: "",
+    comparisonPeriod: "vs previous period",
+  },
+  {
+    icon: "🤖",
+    label: "Chatbots",
+    value: "—",
+    change: "0.0%",
+    changeType: "neutral",
+    accent: "purple",
+    dateRange: "",
+    comparisonPeriod: "vs previous period",
+  },
+  {
+    icon: "💬",
+    label: "Messages",
+    value: "—",
+    change: "0.0%",
+    changeType: "neutral",
+    accent: "orange",
+    dateRange: "",
+    comparisonPeriod: "vs previous period",
+  },
+];
+
 /* ─── Dashboard Page ──────────────────────────────────────── */
 export default function DashboardPage() {
   const { isDark } = useTheme();
   const t = useMemo(() => (isDark ? tokens.dark : tokens.light), [isDark]);
   const router = useRouter();
   const width = useWindowWidth();
-  const isMobile     = width <= 768;
+  const isMobile = width <= 768;
   const isHalfScreen = width <= 768;
 
-  const [stats, setStats]           = useState<StatCard[]>(DEFAULT_STATS);
-  const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
-  const [users, setUsers]           = useState<DashboardUser[]>([]);
-  const [logs, setLogs]             = useState<DashboardLog[]>([]);
-  const [growth, setGrowth]         = useState<GrowthPoint[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState<string | null>(null);
+  // Centralized time range state controlling all dashboard analytics
+  const [timeRange, setTimeRange] = useState<GrowthTimeRange>("30D");
 
-  useEffect(() => {
-    let mounted = true;
+  const [stats, setStats] = useState<StatCard[]>(INITIAL_STATS);
+  const [growth, setGrowth] = useState<GrowthPoint[]>([]);
+  const [companies, setCompanies] = useState<DashboardCompany[]>([]);
+  const [users, setUsers] = useState<DashboardUser[]>([]);
+  const [logs, setLogs] = useState<DashboardLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const loadDashboard = async () => {
-      const token = getAuthToken();
-      if (!token) {
-        if (mounted) {
-          router.replace("/auth");
-        }
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // ── Dashboard stats ──────────────────────────────────
-        const { data: apiResponse } = await axiosInstance.get(DASHBOARD_API, {
-          headers: getAuthHeaders(),
-          withCredentials: false,
-        });
-        if (!mounted) return;
-        const data = apiResponse?.data ?? apiResponse;
-
-        setStats([
-          { label: "Campaigns", value: Number(data.campaigns_count ?? 0).toLocaleString(), icon: "📢", change: "—", changeType: "up", accent: "blue" },
-          { label: "Users",     value: Number(data.users_count ?? 0).toLocaleString(),     icon: "👥", change: "—", changeType: "up", accent: "green" },
-          { label: "Chatbots",  value: Number(data.chatbot_count ?? 0).toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
-          { label: "Messages",  value: Number(data.total_messages ?? 0).toLocaleString(),  icon: "💬", change: "—", changeType: "up", accent: "orange" },
-        ]);
-
-        // ── Companies ─────────────────────────────────────────
-        const { data: companiesResponse } = await axiosInstance.get(
-          COMPANIES_API,
-          {
-            headers: getAuthHeaders(),
-            withCredentials: false,
-          }
-        );
-        if (!mounted) return;
-
-        const companiesData = recordsFromResponse(companiesResponse);
-        setGrowth(growthPointsFromCompanies(companiesData, 6));
-
-        setCompanies(
-          companiesData.slice(0, 4).map((company: any, index: number) => ({
-            id: company.id || index.toString(),
-            name: company.name || "Unknown Company",
-            ini: (company.name || "C")
-              .split(" ")
-              .map((n: string) => n[0])
-              .join("")
-              .toUpperCase()
-              .slice(0, 2),
-            col: [
-              "#10b981",
-              "#34d399",
-              "#059669",
-              "#0d9488",
-            ][index % 4],
-            status:
-              company.status
-                ? company.status.charAt(0).toUpperCase() +
-                  company.status.slice(1)
-                : "Active",
-            plan: "Basic",
-            users: 0,
-          }))
-        );
-
-        // ── Users (regular + admin) ──────────────────────────
-        const { data: usersResponse } = await axiosInstance.get(
-          `${USERS_API}?role=user&page=1&limit=4`,
-          {
-            headers: getAuthHeaders(),
-            withCredentials: false,
-          }
-        );
-        if (!mounted) return;
-
-        const { data: adminUsersResponse } = await axiosInstance
-          .get(`${USERS_API}?role=admin`, {
-            headers: getAuthHeaders(),
-            withCredentials: false,
-          })
-          .catch(() => ({ data: null }));
-
-        const usersData = [
-          ...recordsFromResponse(usersResponse),
-          ...recordsFromResponse(adminUsersResponse),
-        ];
-        setUsers(
-          usersData.slice(0, 4).map((user: any, index: number) => ({
-            id: user.id || index.toString(),
-            un: user.name || "Unknown User",
-            role:
-              user.role
-                ? user.role.charAt(0).toUpperCase() +
-                  user.role.slice(1).toLowerCase()
-                : "User",
-            status:
-              user.status
-                ? user.status.charAt(0).toUpperCase() +
-                  user.status.slice(1).toLowerCase()
-                : "Active",
-            av: (user.name || "U")
-              .split(" ")
-              .map((n: string) => n[0])
-              .join("")
-              .toUpperCase()
-              .slice(0, 2),
-            col: [
-              "#10b981",
-              "#34d399",
-              "#059669",
-              "#0d9488",
-            ][index % 4],
-          }))
-        );
-
-        // ── Activity Logs API ─────────────────────────────────
-        const { data: activityResponse } = await axiosInstance.get(
-          ACTIVITY_API,
-          {
-            headers: getAuthHeaders(),
-            withCredentials: false,
-          }
-        );
-
-        if (!mounted) return;
-
-        const activityData = recordsFromResponse(activityResponse);
-
-        setLogs(
-          activityData.slice(0, 5).map((activity: any, index: number) => ({
-            id:
-              activity.id ||
-              activity._id ||
-              index.toString(),
-            msg:
-              activity.message ||
-              activity.msg ||
-              activity.description ||
-              activity.action ||
-              "Activity performed",
-            actor:
-              activity.actor ||
-              activity.user_name ||
-              activity.user?.name ||
-              activity.created_by?.name ||
-              activity.name ||
-              "System",
-            time:
-              activity.time ||
-              activity.created_at ||
-              activity.createdAt ||
-              "Recently",
-            sev:
-              activity.severity ||
-              activity.sev ||
-              activity.type ||
-              "info",
-          }))
-        );
-      } catch (err: any) {
-        if (!mounted) return;
-        const status = err?.response?.status;
-        if (status === 401) {
-          redirectToLogin("session_expired");
-          return;
-        }
-        if (isAxiosErrorLike(err)) {
-          setError(err.response?.data?.message || err.message || "Failed to load dashboard.");
-        } else if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("Failed to load dashboard.");
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    loadDashboard();
-    return () => { mounted = false; };
-  }, []);
-
-  const handleStatCardClick = (stat: StatCard) => {
-    if (stat.label === "Total Companies") {
-      router.push("/user/dashboard/companies");
+  const fetchDashboardData = useCallback(async (selectedRange: GrowthTimeRange) => {
+    const token = getAuthToken();
+    if (!token) {
+      router.replace("/auth");
       return;
     }
 
-    if (stat.label === "Active Users") {
-      router.push("/user/dashboard/users");
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Primary centralized API call to fetch full real database analytics
+      const res = await fetch(`/api/admin/dashboard?range=${selectedRange}`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          redirectToLogin("session_expired");
+          return;
+        }
+        throw new Error(`Failed to load dashboard (${res.status})`);
+      }
+
+      const data = await res.json();
+
+      if (data.error) {
+        setError(data.error);
+      }
+
+      const metrics = data.metrics || {};
+      const cMetric = metrics.campaigns || {};
+      const uMetric = metrics.users || {};
+      const cbMetric = metrics.chatbots || {};
+      const mMetric = metrics.messages || {};
+
+      // 100% data-driven stat cards
+      setStats([
+        {
+          label: "Campaigns",
+          value: Number(cMetric.current ?? 0).toLocaleString(),
+          icon: "📢",
+          change: cMetric.change ?? "0.0%",
+          changeType: cMetric.changeType ?? "neutral",
+          dateRange: cMetric.dateRange ?? data.dateRange ?? "",
+          comparisonPeriod: cMetric.comparisonPeriod ?? data.comparisonPeriod ?? "vs previous period",
+          accent: "blue",
+        },
+        {
+          label: "Users",
+          value: Number(uMetric.current ?? 0).toLocaleString(),
+          icon: "👥",
+          change: uMetric.change ?? "0.0%",
+          changeType: uMetric.changeType ?? "neutral",
+          dateRange: uMetric.dateRange ?? data.dateRange ?? "",
+          comparisonPeriod: uMetric.comparisonPeriod ?? data.comparisonPeriod ?? "vs previous period",
+          accent: "green",
+        },
+        {
+          label: "Chatbots",
+          value: Number(cbMetric.current ?? 0).toLocaleString(),
+          icon: "🤖",
+          change: cbMetric.change ?? "0.0%",
+          changeType: cbMetric.changeType ?? "neutral",
+          dateRange: cbMetric.dateRange ?? data.dateRange ?? "",
+          comparisonPeriod: cbMetric.comparisonPeriod ?? data.comparisonPeriod ?? "vs previous period",
+          accent: "purple",
+        },
+        {
+          label: "Messages",
+          value: Number(mMetric.current ?? 0).toLocaleString(),
+          icon: "💬",
+          change: mMetric.change ?? "0.0%",
+          changeType: mMetric.changeType ?? "neutral",
+          dateRange: mMetric.dateRange ?? data.dateRange ?? "",
+          comparisonPeriod: mMetric.comparisonPeriod ?? data.comparisonPeriod ?? "vs previous period",
+          accent: "orange",
+        },
+      ]);
+
+      // Dynamic growth points from real database records
+      if (Array.isArray(data.growth)) {
+        setGrowth(data.growth);
+      }
+
+      // Recent companies list
+      if (Array.isArray(data.companies) && data.companies.length > 0) {
+        setCompanies(data.companies);
+      } else {
+        // Fallback to secondary companies endpoint if DB has no companies yet
+        try {
+          const { data: companiesResponse } = await axiosInstance.get(COMPANIES_API, {
+            headers: getAuthHeaders(),
+            withCredentials: false,
+          });
+          const companiesData = recordsFromResponse(companiesResponse);
+          if (companiesData.length > 0) {
+            setCompanies(
+              companiesData.slice(0, 4).map((company: any, index: number) => ({
+                id: String(company.id || index),
+                name: company.name || "Unknown Company",
+                ini: (company.name || "C")
+                  .split(" ")
+                  .map((n: string) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2),
+                col: ["#10b981", "#34d399", "#059669", "#0d9488"][index % 4],
+                status: company.status
+                  ? company.status.charAt(0).toUpperCase() + company.status.slice(1)
+                  : "Active",
+                plan: "Basic",
+                users: 0,
+              }))
+            );
+          }
+        } catch {
+          // Ignore secondary fallback errors
+        }
+      }
+
+      // Recent users list
+      if (Array.isArray(data.users) && data.users.length > 0) {
+        setUsers(data.users);
+      } else {
+        // Fallback to secondary users endpoint
+        try {
+          const { data: usersResponse } = await axiosInstance.get(
+            `${USERS_API}?role=user&page=1&limit=4`,
+            { headers: getAuthHeaders(), withCredentials: false }
+          );
+          const usersData = recordsFromResponse(usersResponse);
+          if (usersData.length > 0) {
+            setUsers(
+              usersData.slice(0, 4).map((user: any, index: number) => ({
+                id: String(user.id || index),
+                un: user.name || "Unknown User",
+                role: user.role
+                  ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
+                  : "User",
+                status: user.status
+                  ? user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase()
+                  : "Active",
+                av: (user.name || "U")
+                  .split(" ")
+                  .map((n: string) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2),
+                col: ["#10b981", "#34d399", "#059669", "#0d9488"][index % 4],
+              }))
+            );
+          }
+        } catch {
+          // Ignore secondary fallback errors
+        }
+      }
+
+      // Activity / Ticket logs
+      if (Array.isArray(data.logs) && data.logs.length > 0) {
+        setLogs(data.logs);
+      } else {
+        // Fallback to secondary activity logs endpoint
+        try {
+          const { data: activityResponse } = await axiosInstance.get(ACTIVITY_API, {
+            headers: getAuthHeaders(),
+            withCredentials: false,
+          });
+          const activityData = recordsFromResponse(activityResponse);
+          if (activityData.length > 0) {
+            setLogs(
+              activityData.slice(0, 5).map((activity: any, index: number) => ({
+                id: String(activity.id || activity._id || index),
+                msg:
+                  activity.message ||
+                  activity.msg ||
+                  activity.description ||
+                  activity.action ||
+                  "Activity performed",
+                actor:
+                  activity.actor ||
+                  activity.user_name ||
+                  activity.user?.name ||
+                  activity.created_by?.name ||
+                  activity.name ||
+                  "System",
+                time:
+                  activity.time ||
+                  activity.created_at ||
+                  activity.createdAt ||
+                  "Recently",
+                sev: activity.severity || activity.sev || activity.type || "info",
+              }))
+            );
+          }
+        } catch {
+          // Ignore secondary fallback errors
+        }
+      }
+    } catch (err: any) {
+      if (err?.message?.includes("401")) {
+        redirectToLogin("session_expired");
+        return;
+      }
+      setError(err?.message || "Failed to load dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    fetchDashboardData(timeRange);
+  }, [timeRange, fetchDashboardData]);
+
+  const handleTimeRangeChange = (newRange: GrowthTimeRange) => {
+    if (newRange === timeRange) return;
+    setTimeRange(newRange);
+  };
+
+  const handleStatCardClick = (stat: StatCard) => {
+    if (stat.label === "Total Companies") {
+      router.push("/user/manage-companies");
+      return;
+    }
+    if (stat.label === "Users" || stat.label === "Active Users") {
+      router.push("/user/all-user");
+      return;
+    }
+    if (stat.label === "Campaigns") {
+      router.push("/user/dashboard");
+      return;
     }
   };
 
@@ -520,26 +438,76 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {/* Global Time Filter Controls: 7D, 30D, 90D, 1Y, ALL */}
+        <div
+          role="group"
+          aria-label="Dashboard time range filter"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+            borderRadius: "10px",
+            padding: "3px",
+            gap: "3px",
+            flexShrink: 0,
+          }}
+        >
+          {TIME_RANGE_OPTIONS.map((rangeOption) => {
+            const active = timeRange === rangeOption.value;
+            return (
+              <button
+                key={rangeOption.value}
+                type="button"
+                onClick={() => handleTimeRangeChange(rangeOption.value)}
+                aria-pressed={active}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  cursor: "pointer",
+                  padding: isMobile ? "4px 8px" : "6px 12px",
+                  borderRadius: "7px",
+                  fontSize: isMobile ? "11px" : "12px",
+                  fontWeight: active ? 700 : 600,
+                  background: active ? "#10b981" : "transparent",
+                  color: active
+                    ? "#ffffff"
+                    : isDark
+                    ? "rgba(255,255,255,0.7)"
+                    : "rgba(0,0,0,0.7)",
+                  boxShadow: active
+                    ? "0 2px 8px rgba(16,185,129,0.35)"
+                    : "none",
+                  transition: "all 0.18s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              >
+                {rangeOption.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Stats */}
-      <InlineStatCards stats={stats} isDark={isDark} isMobile={isMobile} />
+      {/* 4 Dynamic Metric Cards */}
+      <StatCards stats={stats} isMobile={isMobile} />
 
       {error && (
         <div
           style={{
-            marginBottom: "18px", padding: "12px 16px",
+            marginBottom: "18px",
+            padding: "12px 16px",
             borderRadius: "10px",
-            border: "1px solid rgba(179, 68, 239, 0.25)",
+            border: "1px solid rgba(239, 68, 68, 0.25)",
             background: isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)",
-            color: "#ef4444", fontSize: "0.85rem",
+            color: "#ef4444",
+            fontSize: "0.85rem",
           }}
         >
           {error}
         </div>
       )}
 
-      {/* Row 2 */}
+      {/* Row 2: Company Overview & User Management */}
       <div
         style={{
           display: "grid",
@@ -557,16 +525,16 @@ export default function DashboardPage() {
           />
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
-        <UserManagement
-  users={users}
-  loading={loading}
-  error={error}
-  onViewAll={() => router.push("/user/all-user")}
-/>
+          <UserManagement
+            users={users}
+            loading={loading}
+            error={error}
+            onViewAll={() => router.push("/user/all-user")}
+          />
         </Section>
       </div>
 
-      {/* Row 3 */}
+      {/* Row 3: Platform Growth Chart & Audit Logs */}
       <div
         style={{
           display: "grid",
@@ -577,33 +545,110 @@ export default function DashboardPage() {
         <Section isDark={isDark} isMobile={isMobile}>
           <div
             style={{
+              display: "flex",
+              alignItems: isMobile ? "flex-start" : "center",
+              justifyContent: "space-between",
+              flexDirection: isMobile ? "column" : "row",
+              gap: "12px",
               marginBottom: "18px",
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "0.85rem",
-                fontWeight: 700,
-                color: t.text,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Platform Growth
-            </h2>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    color: t.text,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  Platform Growth
+                </h2>
+                <span
+                  style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    padding: "2px 7px",
+                    borderRadius: "8px",
+                    background: isDark ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.1)",
+                    color: "#10b981",
+                    border: "1px solid rgba(16,185,129,0.25)",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {TIME_RANGE_OPTIONS.find((o) => o.value === timeRange)?.badge ?? timeRange}
+                </span>
+              </div>
 
-            <p
+              <p
+                style={{
+                  margin: "4px 0 0",
+                  fontSize: "0.75rem",
+                  color: isDark ? t.textMuted : "#64748b",
+                }}
+              >
+                {TIME_RANGE_OPTIONS.find((o) => o.value === timeRange)?.desc ?? "Platform activity and engagement overview"}
+              </p>
+            </div>
+
+            {/* Synchronized Section Filter Controls */}
+            <div
+              role="group"
+              aria-label="Platform growth time range"
               style={{
-                margin: "4px 0 0",
-                fontSize: "0.75rem",
-                color: isDark ? t.textMuted : "#64748b",
+                display: "inline-flex",
+                alignItems: "center",
+                background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+                border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+                borderRadius: "10px",
+                padding: "3px",
+                gap: "3px",
               }}
             >
-              Monthly platform activity and engagement overview
-            </p>
+              {TIME_RANGE_OPTIONS.map((rangeOption) => {
+                const active = timeRange === rangeOption.value;
+                return (
+                  <button
+                    key={rangeOption.value}
+                    type="button"
+                    onClick={() => handleTimeRangeChange(rangeOption.value)}
+                    aria-pressed={active}
+                    style={{
+                      border: "none",
+                      outline: "none",
+                      cursor: "pointer",
+                      padding: "4px 10px",
+                      borderRadius: "7px",
+                      fontSize: "11px",
+                      fontWeight: active ? 700 : 600,
+                      background: active ? "#10b981" : "transparent",
+                      color: active
+                        ? "#ffffff"
+                        : isDark
+                        ? "rgba(255,255,255,0.6)"
+                        : "rgba(0,0,0,0.6)",
+                      boxShadow: active
+                        ? "0 2px 8px rgba(16,185,129,0.35)"
+                        : "none",
+                      transition: "all 0.18s cubic-bezier(0.4, 0, 0.2, 1)",
+                    }}
+                  >
+                    {rangeOption.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <PlatformGrowthChart data={growth} loading={loading} error={error} />
+          <PlatformGrowthChart
+            data={growth}
+            timeRange={timeRange}
+            onTimeRangeChange={handleTimeRangeChange}
+            loading={loading}
+            error={error}
+          />
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
           <AuditLogs logs={logs} loading={loading} error={error} />

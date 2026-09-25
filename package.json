@@ -7,9 +7,12 @@
     "start": "node server.js",
     "dev:backend": "nodemon server.js",
     "dev:frontend": "next dev",
+    "dev:all": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev": "next dev",
     "build": "next build",
-    "next:start": "next start"
+    "next:start": "next start",
+    "start:all": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"node server.js\" \"next start\"",
+    "build:start": "next build && concurrently -n \"backend,frontend\" -c \"blue,green\" \"node server.js\" \"next start\""
   },
   "repository": {
     "type": "git",

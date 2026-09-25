@@ -47,14 +47,14 @@ export const tokens = {
     iconBox: "rgba(255,255,255,0.05)", shadow: "rgba(0,0,0,0.4)",
   },
   light: {
-    bg: "#ffffff", surface: "#ffffff", surface2: "#f0fdf4",
-    border: "#99f6e4", text: "#000000", textSub: "#111827",
-    textMuted: "#1f2937", textFaint: "#4b5563",
+    bg: "#f3f4f6", surface: "#ffffff", surface2: "#f8fafc",
+    border: "#cbd5e1", text: "#0f172a", textSub: "#1e293b",
+    textMuted: "#475569", textFaint: "#64748b",
     accent: "#10b981", accentBg: "rgba(16,185,129,0.12)",
-    inputBg: "#ffffff", tableHead: "#ecfdf5",
+    inputBg: "#ffffff", tableHead: "#f1f5f9",
     navActive: "linear-gradient(135deg,rgba(16,185,129,0.18),rgba(13,148,136,0.12))",
     navHover: "rgba(16,185,129,0.08)", rowHover: "rgba(16,185,129,0.06)",
-    iconBox: "rgba(0,0,0,0.05)", shadow: "rgba(0,0,0,0.1)",
+    iconBox: "rgba(0,0,0,0.05)", shadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04)",
   },
 } as const;
 
