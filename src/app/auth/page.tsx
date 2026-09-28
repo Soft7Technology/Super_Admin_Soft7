@@ -82,6 +82,16 @@ export default function AuthPage() {
   // ── Login errors ──
   const [loginErrors, setLoginErrors] = useState<Record<string, string>>({});
 
+  // Pre-populate error if middleware redirected here with ?error=access_denied
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("error") === "access_denied") {
+        setLoginErrors({ general: "Access denied. Only Super Admins are allowed." });
+      }
+    }
+  }, []);
+
   // ── Register errors ──
   const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({});
 
@@ -108,7 +118,7 @@ export default function AuthPage() {
       return () => clearInterval(id);
     }
   }, [timer]);
-
+const domain_name = typeof window !== "undefined" ? window.location.hostname : "";
   // ── Login mutation ──
   const loginMutation = useMutation({
     mutationFn: async ({
@@ -119,9 +129,10 @@ export default function AuthPage() {
       password: string;
     }) => {
       try {
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
         const { data } = await axiosInstance.post(
           `${AUTH_BASE}/login`,
-          { identifier, password },
+          { identifier, password, hostname, domain_name: hostname },
           { headers: getExternalHeaders(), withCredentials: false }
         );
         return data;
@@ -140,6 +151,7 @@ export default function AuthPage() {
         const { data } = await axios.post("/api/auth/login", {
           email: identifier,
           password,
+          domain_name,
         });
         return data;
       }
@@ -167,8 +179,29 @@ export default function AuthPage() {
         return;
       }
 
+      // ── Role check: only Super Admins may access this panel ──────────────
+      try {
+        const base64 = token.split(".")[1];
+        const payload = JSON.parse(atob(base64.replace(/-/g, "+").replace(/_/g, "/")));
+        const role = String(payload?.role ?? "").toLowerCase().trim();
+        const allowed = ["super admin", "superadmin", "super_admin", "admin"];
+        if (!allowed.includes(role)) {
+          setLoginErrors({ general: "Access denied. Only Super Admins are allowed." });
+          return;
+        }
+      } catch {
+        // If we can't decode the token, block access to be safe
+        setLoginErrors({ general: "Invalid token. Please try again." });
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       localStorage.setItem("console_access_token", token);
       document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+
+      const rawCreditBalance = data?.data?.data?.credit_balance ?? data?.data?.company?.credit_balance;
+      const creditBalance = rawCreditBalance === null || rawCreditBalance === undefined ? "0" : rawCreditBalance;
+      localStorage.setItem("credit_balance", String(creditBalance));
 
       if (data?.success !== false) {
         router.replace("/user/dashboard");

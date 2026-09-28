@@ -11,6 +11,8 @@ import {
   TicketPercent,
   UserCircle,
   Users,
+  Receipt,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
@@ -29,11 +31,13 @@ const NAV_ITEMS: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", route: "/user/dashboard" },
   { icon: Building2, label: "Manage Companies", route: "/user/manage-companies" },
   { icon: Users, label: "All User", route: "/user/all-user" },
-  { icon: CreditCard, label: "Subscription", route: "/user/subscription" },
+  // { icon: CreditCard, label: "Subscription", route: "/user/subscription" },
   { icon: ClipboardList, label: "Audit Logs", route: "/user/audit-logs" },
   { icon: Settings, label: "System", route: "/user/system" },
   { icon: UserCircle, label: "Profile", route: "/user/profile" },
   { icon: TicketPercent, label: "Support Tickets", route: "/user/support-tickets" },
+  { icon: ShieldCheck, label: "Permissions", route: "/user/permissions" },
+  { icon: Receipt, label: "Transactions", route: "/user/transactions" }
 ];
 
 function isRouteActive(pathname: string | null, route: string) {
