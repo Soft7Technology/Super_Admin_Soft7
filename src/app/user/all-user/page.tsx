@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
 import {
@@ -30,7 +30,7 @@ export default function AllUsers() {
   const [detail, setDetail] = useState<User | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const rowsPerPage = 20;
 
   // Inline action states
   const [editUser,       setEditUser]       = useState<User | null>(null);
@@ -38,8 +38,57 @@ export default function AllUsers() {
   const [suspendingId,   setSuspendingId]   = useState<string | null>(null);
   const [deletingId,     setDeletingId]     = useState<string | null>(null);
 
-  const { users, stats, loading, error, refresh } = useUsers();
-  const query = search.trim().toLowerCase();
+  const { users, stats, loading, error, refresh, updateUserStatus } = useUsers();
+
+  // Filter users by status, role, and search query
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      // Status filter
+      if (status !== "ALL" && u.status.toUpperCase() !== status.toUpperCase()) {
+        return false;
+      }
+      // Role filter
+      if (role !== "ALL" && u.role.toLowerCase() !== role.toLowerCase()) {
+        return false;
+      }
+      // Search filter
+      if (q) {
+        const searchable = [
+          u.name,
+          u.email,
+          u.phone,
+          u.company,
+          u.companyDomain,
+          u.plan,
+          u.role,
+          u.status,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        if (!searchable.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [users, status, role, search]);
+
+  // Sort filtered users
+  const sortedUsers = useMemo(() => {
+    return [...filteredUsers].sort((a, b) =>
+      sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
+    );
+  }, [filteredUsers, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / rowsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(() => {
+    const start = (safeCurrentPage - 1) * rowsPerPage;
+    return sortedUsers.slice(start, start + rowsPerPage);
+  }, [sortedUsers, safeCurrentPage, rowsPerPage]);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
@@ -50,10 +99,10 @@ export default function AllUsers() {
   };
 
   const handleSelectAll = () => {
-    if (selectedUsers.length === filteredUsers.length) {
+    if (selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(filteredUsers.map((u) => u.id));
+      setSelectedUsers(paginatedUsers.map((u) => u.id));
     }
   };
 
@@ -86,15 +135,12 @@ const handleSuspendToggle = async (user: User) => {
     const { data } = await axiosInstance.put(endpoint);
 
     if (data.success !== false) {
-      user.status = isSuspended ? "ACTIVE" : "SUSPENDED";
-
       toast.success(
-        `User ${
-          isSuspended ? "restored" : "suspended"
-        } successfully`
+        `User ${isSuspended ? "restored" : "suspended"} successfully`
       );
-
-      refresh();
+      // Optimistically update the UI immediately
+      updateUserStatus(user.id, isSuspended ? "ACTIVE" : "SUSPENDED");
+      
     } else {
       toast.error(data.message || "Operation failed");
     }
@@ -135,25 +181,26 @@ const handleSuspendToggle = async (user: User) => {
     setDeletingId(null);
   }
 };
-  const filteredUsers = [...users]
-    .filter((user) => {
-      const emailDomain = user.email.includes("@") ? user.email.split("@").pop() ?? "" : "";
-      const searchable = [user.name, user.email, emailDomain, user.company, user.companyDomain]
-        .join(" ").toLowerCase();
-      const matchesSearch = !query || searchable.includes(query);
-      const matchesStatus = status === "ALL" || user.status === status;
-      const matchesRole   = role   === "ALL" || user.role.toLowerCase() === role.toLowerCase();
-      return matchesSearch && matchesStatus && matchesRole;
-    })
-    .sort((a, b) =>
-      sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name)
-    );
+  // Reset to page 1 whenever filters change
+  const handleStatusChange = (value: string) => {
+    setStatus(value);
+    setCurrentPage(1);
+  };
 
-  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleRoleChange = (value: string) => {
+    setRole(value);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSort(value);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="au-root">
@@ -173,35 +220,38 @@ const handleSuspendToggle = async (user: User) => {
         <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon="⭐" color="#f59e0b" />
       </div>
 
-      {/* Filters */}
+      {/* Filters, with Select All / bulk-delete pinned to the right of the same row */}
       <FilterBar
-        search={search}       onSearchChange={setSearch}
-        status={status}       onStatusChange={setStatus}
-        role={role}           onRoleChange={setRole}
-        sort={sort}           onSortChange={setSort}
+        search={search}       onSearchChange={handleSearchChange}
+        status={status}       onStatusChange={handleStatusChange}
+        role={role}           onRoleChange={handleRoleChange}
+        sort={sort}           onSortChange={handleSortChange}
         count={filteredUsers.length}
         loading={loading}
-      />
-
-      {/* Selection toolbar */}
-      <div className="au-selection-toolbar">
-        {selectedUsers.length > 0 && (
-          <button
-            className="au-btn au-btn--danger au-btn--bulk-delete"
-            onClick={handleDeleteSelected}
+        rightSlot={
+          <div
+            className="au-selection-toolbar"
+            style={{ display: "flex", alignItems: "center", gap: "12px", margin: 0, padding: 0 }}
           >
-            Delete Selected ({selectedUsers.length})
-          </button>
-        )}
-        <label className="au-select-all">
-          <input
-            type="checkbox"
-            checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
-            onChange={handleSelectAll}
-          />
-          Select All
-        </label>
-      </div>
+            {selectedUsers.length > 0 && (
+              <button
+                className="au-btn au-btn--danger au-btn--bulk-delete"
+                onClick={handleDeleteSelected}
+              >
+                Delete Selected ({selectedUsers.length})
+              </button>
+            )}
+            <label className="au-select-all" style={{ margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={paginatedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
+                onChange={handleSelectAll}
+              />
+              Select All
+            </label>
+          </div>
+        }
+      />
 
       {/* Grid */}
       <div className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"}`}>
@@ -212,7 +262,7 @@ const handleSuspendToggle = async (user: User) => {
                 <th style={{ width: "50px" }}>
                   <input
                     type="checkbox"
-                    checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
+                    checked={paginatedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
                     onChange={handleSelectAll}
                   />
                 </th>
@@ -223,12 +273,15 @@ const handleSuspendToggle = async (user: User) => {
                 <th style={{ width: "120px" }}>PLAN</th>
                 <th style={{ width: "120px" }}>STATUS</th>
                 <th style={{ width: "120px" }}>JOINED</th>
-                <th style={{ width: "220px" }}>ACTIONS</th>
+               <th style={{ width: "260px", minWidth: "260px" }}>
+  ACTIONS
+</th>
               </tr>
             </thead>
 
             <tbody>
-              {paginatedUsers.map((user) => (
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user) => (
                 <tr key={user.id}>
                   <td>
                     <input
@@ -337,17 +390,24 @@ const handleSuspendToggle = async (user: User) => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "32px 0", color: "#6b7280" }}>
+                    {loading ? "Loading users..." : "No users match your filters"}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
           {/* Pagination */}
           <div className="au-pagination">
-            <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+            <button disabled={safeCurrentPage <= 1 || loading} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
               Previous
             </button>
-            <span>Page {currentPage} of {totalPages}</span>
-            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+            <span>Page {safeCurrentPage} of {totalPages}</span>
+            <button disabled={safeCurrentPage >= totalPages || loading} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
               Next
             </button>
           </div>
@@ -379,7 +439,7 @@ const handleSuspendToggle = async (user: User) => {
 
       {/* Reset password modal */}
       {passwordUser && (
-        <ResetPasswordModal onClose={() => setPasswordUser(null)} />
+        <ResetPasswordModal user={passwordUser} onClose={() => setPasswordUser(null)} />
       )}
       <ToastContainer
   position="top-right"
