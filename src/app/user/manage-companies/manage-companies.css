@@ -837,9 +837,30 @@
 
 .mc-modal__grid-2  { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .mc-modal__divider { height: 1px; background: var(--mc-border); transition: background 0.3s; }
-.mc-modal__actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.mc-modal__actions .mc-btn { justify-content: center; }
+.mc-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
 
+.mc-modal__actions .mc-btn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  justify-content: center;
+  border-radius: 12px;
+}
+.mc-btn--ghost {
+  background: #1a2035;
+  color: #cbd5e1;
+  border: 1px solid #2d3748;
+}
+
+.mc-btn--ghost:hover {
+  background: #242b45;
+  color: #ffffff;
+}
 /* ─── DETAIL MODAL ───────────────────────────────────────── */
 .mc-detail          { width: 480px; }
 .mc-detail__header  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
@@ -1366,4 +1387,109 @@
 .mc-detail__logo,
 .mc-card__logo {
   overflow: hidden;
+}
+/* ==========================
+   PRIMARY BUTTON - GREEN 400
+========================== */
+.mc-btn--primary {
+  background: #10b981 !important; /* Emerald 500 */
+  color: #ffffff !important;
+  border: 1px solid #10b981 !important;
+}
+
+.mc-btn--primary:hover {
+  background: #059669 !important; /* Emerald 600 */
+  border-color: #059669 !important;
+  transform: translateY(-1px);
+}
+
+/* ==========================
+   CANCEL BUTTON - RED 200
+========================== */
+.mc-btn--ghost {
+  background: #fecaca !important; /* Red 200 */
+  color: #991b1b !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.mc-btn--ghost:hover {
+  background: #fca5a5 !important;
+  color: #7f1d1d !important;
+  border-color: #f87171 !important;
+}
+/* ==========================================
+   SWEETALERT2 THEME OVERRIDE
+   (SweetAlert2 renders its own markup outside
+   .mc-root, so it needs its own variable-based
+   styling to match dark/light theme)
+========================================== */
+
+.swal2-container {
+  background: var(--mc-modal-overlay) !important;
+}
+
+.swal2-popup {
+  background: var(--mc-modal-bg) !important;
+  border: 1px solid var(--mc-border) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--mc-modal-shadow) !important;
+  color: var(--mc-text) !important;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif !important;
+}
+
+.swal2-title {
+  color: var(--mc-title) !important;
+  font-weight: 800 !important;
+}
+
+.swal2-html-container {
+  color: var(--mc-muted) !important;
+}
+
+/* Warning icon (the orange "!" circle) */
+.swal2-icon.swal2-warning {
+  border-color: var(--mc-warn) !important;
+  color: var(--mc-warn) !important;
+}
+
+/* Close (X) button if enabled */
+.swal2-close {
+  color: var(--mc-muted) !important;
+}
+.swal2-close:hover {
+  color: var(--mc-text) !important;
+}
+
+/* Buttons */
+.swal2-actions {
+  gap: 12px !important;
+}
+
+.swal2-confirm {
+  background: var(--mc-btn-danger-bg) !important;
+  color: var(--mc-btn-danger-col) !important;
+  border: 1px solid var(--mc-btn-danger-br) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+.swal2-confirm:hover,
+.swal2-confirm:focus {
+  background: rgba(255, 107, 107, 0.14) !important;
+  box-shadow: none !important;
+}
+
+.swal2-cancel {
+  background: var(--mc-btn-ghost-bg) !important;
+  color: var(--mc-btn-ghost-col) !important;
+  border: 1px solid var(--mc-btn-ghost-br) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+.swal2-cancel:hover,
+.swal2-cancel:focus {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  color: var(--mc-text) !important;
+  box-shadow: none !important;
 }

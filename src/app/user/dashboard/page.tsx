@@ -1,13 +1,12 @@
-﻿﻿﻿"use client";
+﻿﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../context/ThemeContext";
 import { StatCard } from "../../../types";
-import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
 import CompanyOverview from "../../../components/CompanyOverview";
 import UserManagement from "../../../components/UserManagement";
-import PlatformGrowthChart from "../../../components/PlatformGrowthChart";
+import PlatformGrowthChart, { GrowthPoint } from "../../../components/PlatformGrowthChart";
 import AuditLogs from "../../../components/AuditLogs";
 
 const DASHBOARD_API =
@@ -15,7 +14,11 @@ const DASHBOARD_API =
   const USERS_API =
   "/v1/admin/companies/user";
   const COMPANIES_API =
-  "/v1/admin/companies";
+  "/v1/admin/companies?status=active";
+
+const ACTIVITY_API =
+  "/v1/admin/activity?role=user&page=1&limit=10&time_frame=7days";
+
 const getExternalHeaders = () => {
   let token =
     typeof window !== "undefined"
@@ -32,6 +35,12 @@ const getExternalHeaders = () => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
+
+// Type guard so we don't need to import the raw `axios` package just for
+// isAxiosError — keeps axiosInstance as the single integration pattern.
+function isAxiosErrorLike(err: unknown): err is { isAxiosError: true; response?: { data?: { message?: string } }; message?: string } {
+  return typeof err === "object" && err !== null && (err as any).isAxiosError === true;
+}
 
 const DEFAULT_STATS: StatCard[] = [
   {
@@ -79,6 +88,12 @@ interface DashboardLog {
   id: string; msg: string; actor: string; time: string; sev: string;
 }
 
+// Normalizes a variety of API response shapes into a flat array of records.
+// Handles:
+//   - bare arrays:                [ ... ]
+//   - { data: [ ... ] }
+//   - { data: { data: [ ... ] } }  <-- e.g. paginated /companies responses
+//   - { users: [ ... ] }
 function recordsFromResponse(json: any): any[] {
   if (Array.isArray(json)) return json;
   if (Array.isArray(json?.data)) return json.data;
@@ -87,28 +102,51 @@ function recordsFromResponse(json: any): any[] {
   return [];
 }
 
+// Builds "Platform Growth" points directly from the companies list, since
+// there's no dedicated growth endpoint — only /v1/admin/companies is
+// available. Buckets companies by the month of `created_at` and counts how
+// many were created in each of the last `monthsBack` months, ending with
+// the current month. The x-axis labels are the real trailing months (e.g.
+// if today is July 2026, labels run Feb → Jul 2026), so the range always
+// reflects the actual date range in the data rather than a fixed period.
+function growthPointsFromCompanies(
+  companies: any[],
+  monthsBack: number = 6
+): GrowthPoint[] {
+  const now = new Date();
+  // Build the trailing month buckets, oldest first.
+  const buckets: { key: string; label: string; value: number }[] = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    buckets.push({ key, label: d.toLocaleDateString("en-US", { month: "short" }), value: 0 });
+  }
+
+  const bucketByKey = new Map(buckets.map((b) => [b.key, b]));
+
+  for (const company of companies) {
+    const rawDate = company.created_at || company.createdAt;
+    if (!rawDate) continue;
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const bucket = bucketByKey.get(key);
+    if (bucket) bucket.value += 1;
+  }
+
+  return buckets.map(({ label, value }) => ({ label, value }));
+}
+
 function useWindowWidth() {
- const [width, setWidth] = useState<number>(1024);
+  const [width, setWidth] = useState<number>(1024);
 
-useEffect(() => {
-  setWidth(window.innerWidth);
-
-  const handleResize = () => {
-    setWidth(window.innerWidth);
-  };
-
-  window.addEventListener("resize", handleResize);
-
-  return () => {
-    window.removeEventListener("resize", handleResize);
-  };
-}, []);
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
   return width;
 }
 
@@ -176,18 +214,18 @@ function InlineStatCards({
               }}>
                 {meta.label}
               </span>
-        <div style={{
-        width: "42px",
-        height: "42px",
-        borderRadius: "12px",
-        background: `${meta.accent}18`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "20px",
-      }}>
-        {meta.icon}
-      </div>
+              <div style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "12px",
+                background: `${meta.accent}18`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "20px",
+              }}>
+                {meta.icon}
+              </div>
             </div>
             <div style={{
               fontSize: "30px", fontWeight: 800,
@@ -251,15 +289,19 @@ export default function DashboardPage() {
   const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
   const [users, setUsers]           = useState<DashboardUser[]>([]);
   const [logs, setLogs]             = useState<DashboardLog[]>([]);
+  const [growth, setGrowth]         = useState<GrowthPoint[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
+
     const loadDashboard = async () => {
       try {
         setLoading(true);
         setError(null);
+
+        // ── Dashboard stats ──────────────────────────────────
         const { data: apiResponse } = await axiosInstance.get(DASHBOARD_API, {
           headers: getExternalHeaders(),
           withCredentials: false,
@@ -273,53 +315,70 @@ export default function DashboardPage() {
           { label: "Chatbots",  value: Number(data.chatbot_count ?? 0).toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
           { label: "Messages",  value: Number(data.total_messages ?? 0).toLocaleString(),  icon: "💬", change: "—", changeType: "up", accent: "orange" },
         ]);
-const { data: companiesResponse } = await axiosInstance.get(
-  COMPANIES_API,
-  {
-    headers: getExternalHeaders(),
-    withCredentials: false,
-  }
-);
 
-const companiesData =
-  companiesResponse?.data || [];
+        // ── Companies ─────────────────────────────────────────
+        // API shape: { success, message, data: { data: [...], pagination } }
+        // axiosInstance unwraps one level (`apiResponse.data`), so
+        // `companiesResponse` here is `{ data: [...], pagination }`.
+        // Use recordsFromResponse to safely drill into `.data.data`
+        // instead of assuming `.data` is already the array.
+        const { data: companiesResponse } = await axiosInstance.get(
+          COMPANIES_API,
+          {
+            headers: getExternalHeaders(),
+            withCredentials: false,
+          }
+        );
+        if (!mounted) return;
 
-setCompanies(
-  companiesData.slice(0, 4).map((company: any, index: number) => ({
-    id: company.id || index.toString(),
+        const companiesData = recordsFromResponse(companiesResponse);
 
-    name: company.name || "Unknown Company",
+        // Platform Growth uses the full companies list (not the 4-item
+        // slice below used for the overview table) so the monthly counts
+        // are accurate.
+        setGrowth(growthPointsFromCompanies(companiesData, 6));
 
-    ini: (company.name || "C")
-      .split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2),
+        setCompanies(
+          companiesData.slice(0, 4).map((company: any, index: number) => ({
+            id: company.id || index.toString(),
 
-    col: [
-      "#10b981",
-      "#34d399",
-      "#059669",
-      "#0d9488",
-    ][index % 4],
+            name: company.name || "Unknown Company",
 
-    status:
-      company.status
-        ? company.status.charAt(0).toUpperCase() +
-          company.status.slice(1)
-        : "Active",
+            ini: (company.name || "C")
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2),
 
-    plan: "Basic",
+            col: [
+              "#10b981",
+              "#34d399",
+              "#059669",
+              "#0d9488",
+            ][index % 4],
 
-    users: 0,
-  }))
-);
+            status:
+              company.status
+                ? company.status.charAt(0).toUpperCase() +
+                  company.status.slice(1)
+                : "Active",
 
-       const { data: usersResponse } = await axiosInstance.get(`${USERS_API}?role=user&page=1&limit=4`, {
-  headers: getExternalHeaders(),
-  withCredentials: false,
-});
+            plan: "Basic",
+
+            users: 0,
+          }))
+        );
+
+        // ── Users (regular + admin) ──────────────────────────
+        const { data: usersResponse } = await axiosInstance.get(
+          `${USERS_API}?role=user&page=1&limit=4`,
+          {
+            headers: getExternalHeaders(),
+            withCredentials: false,
+          }
+        );
+        if (!mounted) return;
 
 const { data: adminUsersResponse } = await axiosInstance
   .get(`${USERS_API}?role=admin`, {
@@ -336,45 +395,87 @@ setUsers(
   usersData.slice(0, 4).map((user: any, index: number) => ({
     id: user.id || index.toString(),
 
-    un: user.name || "Unknown User",
+            un: user.name || "Unknown User",
 
-    role:
-      user.role
-        ? user.role.charAt(0).toUpperCase() +
-          user.role.slice(1).toLowerCase()
-        : "User",
+            role:
+              user.role
+                ? user.role.charAt(0).toUpperCase() +
+                  user.role.slice(1).toLowerCase()
+                : "User",
 
-    status:
-      user.status
-        ? user.status.charAt(0).toUpperCase() +
-          user.status.slice(1).toLowerCase()
-        : "Active",
+            status:
+              user.status
+                ? user.status.charAt(0).toUpperCase() +
+                  user.status.slice(1).toLowerCase()
+                : "Active",
 
-    av: (user.name || "U")
-      .split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2),
+            av: (user.name || "U")
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2),
 
-    col: [
-      "#10b981",
-      "#34d399",
-      "#059669",
-      "#0d9488",
-    ][index % 4],
-  }))
-);
-        setLogs([
-          { id:"1", msg:"New campaign launched successfully",          actor:"Sarah Johnson",     time:"2 mins ago",  sev:"info"    },
-          { id:"2", msg:"Company subscription upgraded to Enterprise", actor:"Michael Chen",      time:"18 mins ago", sev:"success" },
-          { id:"3", msg:"User access permissions updated",             actor:"Emily Davis",       time:"1 hour ago",  sev:"warning" },
-          { id:"4", msg:"Monthly analytics report generated",         actor:"System",            time:"3 hours ago", sev:"info"    },
-          { id:"5", msg:"API usage threshold reached",                actor:"Monitoring Service",time:"5 hours ago", sev:"warning" },
-        ]);
+            col: [
+              "#10b981",
+              "#34d399",
+              "#059669",
+              "#0d9488",
+            ][index % 4],
+          }))
+        );
+
+        // ── Activity Logs API ─────────────────────────────────
+        const { data: activityResponse } = await axiosInstance.get(
+          ACTIVITY_API,
+          {
+            headers: getExternalHeaders(),
+            withCredentials: false,
+          }
+        );
+
+        if (!mounted) return;
+
+        const activityData = recordsFromResponse(activityResponse);
+
+        setLogs(
+          activityData.slice(0, 5).map((activity: any, index: number) => ({
+            id:
+              activity.id ||
+              activity._id ||
+              index.toString(),
+
+            msg:
+              activity.message ||
+              activity.msg ||
+              activity.description ||
+              activity.action ||
+              "Activity performed",
+
+            actor:
+              activity.actor ||
+              activity.user_name ||
+              activity.user?.name ||
+              activity.created_by?.name ||
+              activity.name ||
+              "System",
+
+            time:
+              activity.time ||
+              activity.created_at ||
+              activity.createdAt ||
+              "Recently",
+
+            sev:
+              activity.severity ||
+              activity.sev ||
+              activity.type ||
+              "info",
+          }))
+        );
       } catch (err) {
         if (!mounted) return;
-        if (axios.isAxiosError(err)) {
+        if (isAxiosErrorLike(err)) {
           setError(err.response?.data?.message || err.message || "Failed to load dashboard.");
         } else if (err instanceof Error) {
           setError(err.message);
@@ -385,6 +486,7 @@ setUsers(
         if (mounted) setLoading(false);
       }
     };
+
     loadDashboard();
     return () => { mounted = false; };
   }, []);
@@ -474,15 +576,20 @@ setUsers(
         }}
       >
         <Section isDark={isDark} isMobile={isMobile}>
-       <CompanyOverview
-  companies={companies}
-  loading={loading}
-  error={error}
-  onViewAll={() => router.push("/user/manage-companies")}
-/>
+          <CompanyOverview
+            companies={companies}
+            loading={loading}
+            error={error}
+            onViewAll={() => router.push("/user/manage-companies")}
+          />
         </Section>
         <Section isDark={isDark} isMobile={isMobile}>
-          <UserManagement users={users} loading={loading} error={error} />
+        <UserManagement
+  users={users}
+  loading={loading}
+  error={error}
+  onViewAll={() => router.push("/user/all-user")}
+/>
         </Section>
       </div>
 
@@ -494,38 +601,37 @@ setUsers(
           gap: "20px",
         }}
       >
-        
-       <Section isDark={isDark} isMobile={isMobile}>
-  <div
-    style={{
-      marginBottom: "18px",
-    }}
-  >
-    <h2
-      style={{
-        margin: 0,
-        fontSize: "0.85rem",
-        fontWeight: 700,
-        color: t.text,
-        letterSpacing: "-0.02em",
-      }}
-    >
-      Platform Growth
-    </h2>
+        <Section isDark={isDark} isMobile={isMobile}>
+          <div
+            style={{
+              marginBottom: "18px",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                color: t.text,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Platform Growth
+            </h2>
 
-    <p
-      style={{
-        margin: "4px 0 0",
-        fontSize: "0.75rem",
-        color: isDark ? t.textMuted : "#64748b",
-      }}
-    >
-      Monthly platform activity and engagement overview
-    </p>
-  </div>
+            <p
+              style={{
+                margin: "4px 0 0",
+                fontSize: "0.75rem",
+                color: isDark ? t.textMuted : "#64748b",
+              }}
+            >
+              Monthly platform activity and engagement overview
+            </p>
+          </div>
 
-  <PlatformGrowthChart />
-</Section>
+          <PlatformGrowthChart data={growth} loading={loading} error={error} />
+        </Section>
         <Section isDark={isDark} isMobile={isMobile}>
           <AuditLogs logs={logs} loading={loading} error={error} />
         </Section>
@@ -533,4 +639,3 @@ setUsers(
     </div>
   );
 }
-

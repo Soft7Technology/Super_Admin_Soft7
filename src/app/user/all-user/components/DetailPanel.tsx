@@ -6,6 +6,8 @@ import { User, STATUS_DOT, roleColor, planColor } from "../types";
 import { Badge } from "./Badge";
 import { EditUserModal } from "./EditUserModal";
 import { ResetPasswordModal } from "./ResetPasswordModal";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface DetailPanelProps {
   user: User;
@@ -23,14 +25,11 @@ interface UserActivityStats {
 }
 
 export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
-  const [tab,           setTab]           = useState<"info" | "stats">("info");
-  const [passwordOpen,  setPasswordOpen]  = useState(false);
-  const [editOpen,      setEditOpen]      = useState(false);
-  const [userStats,     setUserStats]     = useState<UserActivityStats | null>(null);
-  const [statsLoading,  setStatsLoading]  = useState(false);
-  const [suspending,    setSuspending]    = useState(false);
-  const [deleting,      setDeleting]      = useState(false);
-  const [localStatus,   setLocalStatus]   = useState(user.status);
+  const [tab,          setTab]          = useState<"info" | "stats">("info");
+  const [userStats,    setUserStats]    = useState<UserActivityStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [editOpen,     setEditOpen]     = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   const fetchUserStats = async () => {
     try {
@@ -39,7 +38,7 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
       if (data.success !== false) {
         const s = data?.data ?? data;
         setUserStats({
-          messages:  Number(s?.sent_count   ?? s?.messages  ?? 0),
+          messages:  Number(s?.sent_count      ?? s?.messages  ?? 0),
           campaigns: Number(s?.campaigns_count ?? s?.campaigns ?? 0),
           contacts:  Number(s?.contacts_count  ?? s?.contacts  ?? 0),
           templates: Number(s?.template_count  ?? s?.templates ?? 0),
@@ -47,8 +46,12 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
           failed:    Number(s?.failed_count    ?? 0),
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Stats Error:", error);
+      toast.error(
+        error?.response?.data?.message ||
+        "Failed to load user statistics"
+      );
     } finally {
       setStatsLoading(false);
     }
@@ -57,55 +60,6 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
   const handleTabChange = (key: "info" | "stats") => {
     setTab(key);
     if (key === "stats") fetchUserStats();
-  };
-
-  const handleDeleteUser = async () => {
-    if (!confirm(`Are you sure you want to permanently delete "${user.name}"? This cannot be undone.`)) return;
-    try {
-      setDeleting(true);
-      const { data } = await axiosInstance.delete(`/v1/admin/users/${user.id}`);
-      if (data.success !== false) {
-        alert("✅ User deleted successfully");
-        onRefresh?.();
-        onClose();
-      } else {
-        alert(data.message || "Failed to delete user");
-      }
-    } catch (error: any) {
-      console.error("Delete User Error:", error);
-      alert(error?.response?.data?.message || "Something went wrong");
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleSuspendToggle = async () => {
-    const isSuspended = localStatus === "SUSPENDED";
-    const action = isSuspended ? "restore" : "suspend";
-    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
-
-    try {
-      setSuspending(true);
-      const endpoint = isSuspended
-        ? `/v1/admin/users/${user.id}/active-user`
-        : `/v1/admin/users/${user.id}/suspend-user`;
-
-      const { data } = await axiosInstance.put(endpoint);
-      if (data.success !== false) {
-        const newStatus = isSuspended ? "ACTIVE" : "SUSPENDED";
-        setLocalStatus(newStatus);
-        user.status = newStatus;
-        onRefresh?.();
-        alert(`✅ User ${isSuspended ? "restored" : "suspended"} successfully`);
-      } else {
-        alert(data.message || `Failed to ${action} user`);
-      }
-    } catch (error: any) {
-      console.error("Suspend/Restore Error:", error);
-      alert(error?.response?.data?.message || "Something went wrong");
-    } finally {
-      setSuspending(false);
-    }
   };
 
   return (
@@ -138,14 +92,14 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                 </div>
                 <div
                   className={`au-status-dot au-status-dot--panel ${
-                    STATUS_DOT[localStatus] ?? "au-status-dot--other"
+                    STATUS_DOT[user.status] ?? "au-status-dot--other"
                   }`}
                 />
               </div>
               <div className="au-panel__name">{user.name}</div>
               <div className="au-panel__email">{user.email}</div>
               <div className="au-panel__badges">
-                <Badge status={localStatus} />
+                <Badge status={user.status} />
                 <span
                   className="au-role-chip"
                   style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}
@@ -174,11 +128,11 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
               <div>
                 {(
                   [
-                    ["Company",    user.company, ""],
-                    ["Plan",       user.plan,    "plan"],
+                    ["Company",    user.company,      ""],
+                    ["Plan",       user.plan,         "plan"],
                     ["Phone",      user.phone || "—", ""],
-                    ["Joined",     user.joined, ""],
-                    ["Last Login", user.login,  ""],
+                    ["Joined",     user.joined,       ""],
+                    ["Last Login", user.login,        ""],
                   ] as [string, string, string][]
                 ).map(([label, value, type]) => (
                   <div key={label} className="au-info-row">
@@ -191,6 +145,16 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                     </span>
                   </div>
                 ))}
+
+                {/* Action buttons */}
+                <div className="au-modal__actions" style={{ marginTop: "1rem" }}>
+                  <button className="au-btn au-btn--primary" onClick={() => setEditOpen(true)}>
+                    Edit User
+                  </button>
+                  <button className="au-btn au-btn--ghost" onClick={() => setPasswordOpen(true)}>
+                    Reset Password
+                  </button>
+                </div>
               </div>
             )}
 
@@ -220,43 +184,6 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                 )}
               </div>
             )}
-
-            {/* Actions */}
-            {tab === "info" && (
-              <div className="au-panel__actions">
-                <button className="au-btn au-btn--primary" onClick={() => setEditOpen(true)}>
-                  Edit User
-                </button>
-                <button className="au-btn au-btn--ghost" onClick={() => setPasswordOpen(true)}>
-                  Reset Password
-                </button>
-                {localStatus === "SUSPENDED" ? (
-                  <button
-                    className="au-btn au-btn--success"
-                    onClick={handleSuspendToggle}
-                    disabled={suspending}
-                  >
-                    {suspending ? "Restoring…" : "Restore Account"}
-                  </button>
-                ) : (
-                  <button
-                    className="au-btn au-btn--danger"
-                    onClick={handleSuspendToggle}
-                    disabled={suspending}
-                  >
-                    {suspending ? "Suspending…" : "Suspend User"}
-                  </button>
-                )}
-                <button
-                  className="au-btn au-btn--danger"
-                  onClick={handleDeleteUser}
-                  disabled={deleting}
-                  style={{ marginTop: 4 }}
-                >
-                  {deleting ? "Deleting…" : "Delete User"}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -265,7 +192,7 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
         <EditUserModal
           user={user}
           onClose={() => setEditOpen(false)}
-          onUpdated={(updatedUser) => {
+          onUpdated={(updatedUser: Partial<User>) => {
             Object.assign(user, updatedUser);
             onRefresh?.();
           }}
@@ -273,7 +200,7 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
       )}
 
       {passwordOpen && (
-        <ResetPasswordModal onClose={() => setPasswordOpen(false)} />
+        <ResetPasswordModal user={user} onClose={() => setPasswordOpen(false)} />
       )}
     </>
   );

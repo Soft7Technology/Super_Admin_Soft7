@@ -123,57 +123,6 @@ function KPI({
   );
 }
 
-/** Signature element — proportional status bar at top */
-function StatusTrack({ tickets }: { tickets: Ticket[] }) {
-  const total = tickets.length;
-  if (total === 0) return null;
-
-  const counts = {
-    OPEN:        tickets.filter(t => t.status === "OPEN").length,
-    IN_PROGRESS: tickets.filter(t => t.status === "IN_PROGRESS").length,
-    WAITING:     tickets.filter(t => t.status === "WAITING").length,
-    RESOLVED:    tickets.filter(t => t.status === "RESOLVED").length,
-    CLOSED:      tickets.filter(t => t.status === "CLOSED").length,
-  } as Record<TicketStatus, number>;
-
-  const shown: TicketStatus[] = ["OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"];
-  const legend: TicketStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
-
-  return (
-    <div className="st-status-track">
-      <div className="st-status-track__bar">
-        {shown.map(s =>
-          counts[s] > 0 ? (
-            <div
-              key={s}
-              className="st-status-track__seg"
-              title={`${STATUS_META[s].label}: ${counts[s]}`}
-              style={{
-                width: `${(counts[s] / total) * 100}%`,
-                background: TRACK_COLORS[s],
-                opacity: 0.88,
-              }}
-            />
-          ) : null
-        )}
-      </div>
-      <div className="st-status-track__legend">
-        {legend.map(s => (
-          <div key={s} className="st-status-track__item">
-            <div className="st-status-track__dot" style={{ background: TRACK_COLORS[s] }} />
-            <span>{STATUS_META[s].label}</span>
-            <span className="st-status-track__num">{counts[s]}</span>
-          </div>
-        ))}
-        <div className="st-status-track__item">
-          <div className="st-status-track__dot" style={{ background: "var(--st-muted)" }} />
-          <span>Total</span>
-          <span className="st-status-track__num">{total}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function StatusBadge({ status }: { status: TicketStatus }) {
   return (
@@ -508,7 +457,6 @@ export default function SupportTickets() {
 
   const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState<"ALL" | TicketStatus>("ALL");
-  const [priorityF, setPriorityF] = useState<"ALL" | TicketPriority>("ALL");
   const [page, setPage] = useState(1);
 
 
@@ -543,57 +491,64 @@ useEffect(() => {
   };
 }, [selected]);
   // ─ Fetch all tickets ─
-  useEffect(() => {
-    let active = true;
-    const loadTickets = async () => {
-      setLoading(true);
-      setApiError(null);
-      try {
-        const { data } = await axiosInstance.get("/v1/admin/support/tickets/forward");
-        if (!active) return;
+ const loadTickets = async () => {
+  try {
+    const { data } = await axiosInstance.get(
+      "/v1/admin/support/tickets/forward"
+    );
 
-        const ticketsData = data?.data ?? data?.tickets ?? [];
-        const normalised: Ticket[] = (Array.isArray(ticketsData) ? ticketsData : []).map(
-          (t: any) => ({
-            id:          String(t.id),
-            subject:     t.message || "Support Ticket",
-            company:     "Soft7 User",
-            companyLogo: "S",
-            companyCol:  "#10b981",
-            user:        t.name || "Unknown User",
-            userEmail:   t.email || "",
-            status:      (t.status || "OPEN").toUpperCase() as TicketStatus,
-            priority:    "MEDIUM" as TicketPriority,
-            category:    "Support",
-            created:     new Date(t.created_at).toLocaleDateString(),
-            updated:     new Date(t.updated_at).toLocaleDateString(),
-            unread:      0,
-            messages: [
-              {
-                id:      "1",
-                sender:  "USER" as MessageSender,
-                name:    t.name || "User",
-                avatar:  (t.name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
-                content: t.message || "",
-                time:    new Date(t.created_at).toLocaleTimeString(),
-                read:    true,
-              },
-            ],
-          })
-        );
-        setTickets(normalised);
-      } catch {
-        if (!active) return;
-        setApiError("Unable to load support tickets. Please try again.");
-        setTickets([]);
-      } finally {
-        if (active) setLoading(false);
-      }
+    const ticketsData = data?.data ?? data?.tickets ?? [];
+
+    const sortedTickets = (Array.isArray(ticketsData) ? ticketsData : []).sort(
+      (a: any, b: any) =>
+        new Date(b.updated_at).getTime() -
+        new Date(a.updated_at).getTime()
+    );
+
+    const normalised: Ticket[] = sortedTickets.map((t: any) => ({
+      id: String(t.id),
+      subject: t.message || "Support Ticket",
+      company: "Soft7 User",
+      companyLogo: "S",
+      companyCol: "#10b981",
+      user: t.name || "Unknown User",
+      userEmail: t.email || "",
+      status: (t.status || "OPEN").toUpperCase() as TicketStatus,
+      priority: "MEDIUM",
+      category: "Support",
+      created: new Date(t.created_at).toLocaleDateString(),
+      updated: new Date(t.updated_at).toLocaleDateString(),
+      unread: 0,
+      messages: [],
+    }));
+
+   setTickets(prev => {
+  return normalised.map(ticket => {
+    const existing = prev.find(p => p.id === ticket.id);
+
+    return {
+      ...ticket,
+      messages: existing?.messages || [],
     };
-    void loadTickets();
-    return () => { active = false; };
-  }, []);
+  });
+});
+  } catch (error) {
+    console.error("Failed to load tickets", error);
+  } finally {
+    setLoading(false);
+  }
+};
+useEffect(() => {
+  loadTickets();
 
+  const interval = setInterval(() => {
+    if (!selectedId) {
+      loadTickets();
+    }
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, [selectedId]);
   // Deselect if ticket disappears
   useEffect(() => {
     if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {
@@ -609,7 +564,6 @@ useEffect(() => {
         const q = search.toLowerCase();
         return (
           (statusF   === "ALL" || t.status   === statusF) &&
-          (priorityF === "ALL" || t.priority === priorityF) &&
           (
             t.subject.toLowerCase().includes(q)   ||
             t.company.toLowerCase().includes(q)   ||
@@ -619,7 +573,7 @@ useEffect(() => {
           )
         );
       }),
-    [tickets, search, statusF, priorityF]
+    [tickets, search, statusF]
   );
 
   useEffect(() => {
@@ -762,9 +716,6 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Status track — signature element */}
-          <StatusTrack tickets={tickets} />
-
           {apiError && <div className="st-page-alert">{apiError}</div>}
 
           {/* KPI grid */}
@@ -812,31 +763,6 @@ useEffect(() => {
                       }
                     >
                       {s === "ALL" ? "All Status" : STATUS_META[s]?.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Priority pills */}
-                <div className="st-group st-priority-group">
-                  <span className="st-priority-label">Priority:</span>
-                  {(["ALL", "URGENT", "HIGH", "MEDIUM", "LOW"] as const).map(p => (
-                    <button
-                      key={p}
-                      onClick={() => { setPriorityF(p); setPage(1); }}
-                      className={`st-pill ${priorityF === p ? "st-pill--active" : ""}`}
-                      style={
-                        priorityF === p && p !== "ALL"
-                          ? {
-                              background: `var(--st-pri-${p.toLowerCase()}-bg)`,
-                              color:      `var(--st-pri-${p.toLowerCase()}-col)`,
-                              borderColor:`var(--st-pri-${p.toLowerCase()}-col)`,
-                            }
-                          : priorityF === p
-                          ? { background: "var(--st-surf3)", color: "var(--st-accent2)", borderColor: "rgba(16,185,129,0.35)" }
-                          : {}
-                      }
-                    >
-                      {p === "ALL" ? "All" : PRIORITY_META[p]?.label}
                     </button>
                   ))}
                 </div>
@@ -896,14 +822,13 @@ useEffect(() => {
                         </div>
                       </div>
 
-                      <div className="st-ticket-row__badges">
-                        <StatusBadge status={ticket.status} />
-                        <PriorityBadge priority={ticket.priority} />
-                        <span className="st-cat-chip">
-                          {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
-                        </span>
-                        <span className="st-msg-count">💬 {msgCount}</span>
-                      </div>
+                   <div className="st-ticket-row__badges">
+  <StatusBadge status={ticket.status} />
+  <span className="st-cat-chip">
+    {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
+  </span>
+  <span className="st-msg-count">💬 {msgCount}</span>
+</div>
                     </div>
                   );
                 })}

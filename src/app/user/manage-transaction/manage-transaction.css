@@ -1,0 +1,424 @@
+/* ─── Manage Transactions ───────────────────────────────────────────────── */
+/* Theme: matches the app's green brand color (see Transaction History page) */
+
+.tx-root {
+  --tx-accent: #10b981;
+  --tx-accent-hover: #0ea371;
+  --tx-accent-soft: rgba(16, 185, 129, 0.12);
+  padding: 28px 32px 60px;
+  color: var(--mc-text, #e8e6e1);
+  font-family: inherit;
+}
+
+/* Header */
+.tx-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.tx-header__title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+  color: var(--mc-text, #e8e6e1);
+}
+.tx-header__sub {
+  color: var(--mc-muted, #8890a0);
+  font-size: 13.5px;
+  margin: 6px 0 0;
+}
+
+.tx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--mc-border, #2c3657);
+  background: var(--mc-surface, #1a1a2e);
+  color: var(--mc-text, #e8e6e1);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+.tx-btn:hover {
+  border-color: #3a4568;
+}
+.tx-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.tx-btn--primary {
+  background: var(--tx-accent);
+  border-color: var(--tx-accent);
+  color: #fff;
+}
+.tx-btn--primary:hover {
+  background: var(--tx-accent-hover);
+}
+.tx-spin {
+  animation: tx-spin 0.9s linear infinite;
+}
+@keyframes tx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* KPI grid */
+.tx-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.tx-kpi {
+  position: relative;
+  background: var(--mc-surface, #1a1a2e);
+  border: 1px solid var(--mc-border, #2c3657);
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+  overflow: hidden;
+}
+.tx-kpi__orb {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  filter: blur(6px);
+}
+.tx-kpi__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.tx-kpi__label {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mc-muted, #8890a0);
+  font-weight: 600;
+}
+.tx-kpi__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.tx-kpi__value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Filter bar
+   ─────────────────────────────────────────────────────────────────────────
+   Fixed: the search input used to be `flex: 1`, which let it grow without
+   limit and crush the filter-group (All / Credit / Debit) down to almost
+   zero width — that's why only a purple sliver of the active "All" button
+   was visible. The search box now has a capped width, and the filter
+   group + count are protected with flex-shrink: 0 so they always render
+   at full size.
+*/
+.tx-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.tx-search-wrap {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 180px;
+  max-width: 360px;
+}
+.tx-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  opacity: 0.6;
+}
+.tx-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--mc-surface, #1a1a2e);
+  border: 1px solid var(--mc-border, #2c3657);
+  border-radius: 8px;
+  padding: 10px 12px 10px 34px;
+  color: var(--mc-text, #e8e6e1);
+  font-size: 13.5px;
+}
+.tx-search-input::placeholder {
+  color: var(--mc-muted, #8890a0);
+}
+
+.tx-filter-group {
+  display: flex;
+  gap: 6px;
+  background: var(--mc-surface, #1a1a2e);
+  border: 1px solid var(--mc-border, #2c3657);
+  border-radius: 8px;
+  padding: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.tx-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--mc-muted, #8890a0);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tx-filter-btn__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tx-filter-btn--active {
+  background: var(--tx-accent);
+  color: #fff;
+}
+.tx-filter-count {
+  font-size: 12.5px;
+  color: var(--mc-muted, #8890a0);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Empty / error state (used only for loading + hard errors now —
+   the "no rows match filters" case is rendered inside the table so
+   the column headers stay visible) */
+.tx-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--mc-muted, #8890a0);
+  background: var(--mc-surface, #1a1a2e);
+  border: 1px solid var(--mc-border, #2c3657);
+  border-radius: 12px;
+  font-size: 14px;
+}
+.tx-empty-row td {
+  padding: 48px 16px !important;
+  text-align: center;
+  color: var(--mc-muted, #8890a0);
+}
+
+/* Table */
+.tx-table-wrapper {
+  background: var(--mc-surface, #1a1a2e);
+  border: 1px solid var(--mc-border, #2c3657);
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.tx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.tx-table thead th {
+  text-align: left;
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--tx-accent);
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--tx-accent);
+  white-space: nowrap;
+}
+.tx-table thead tr th:first-child {
+  border-top-left-radius: 12px;
+}
+.tx-table thead tr th:last-child {
+  border-top-right-radius: 12px;
+}
+.tx-table tbody tr {
+  border-bottom: 1px solid var(--mc-border, #2c3657);
+  transition: background 0.12s;
+}
+.tx-table tbody tr:last-child {
+  border-bottom: none;
+}
+.tx-table tbody tr:hover {
+  background: var(--mc-hover, rgba(255, 255, 255, 0.02));
+}
+.tx-table td {
+  padding: 13px 16px;
+  vertical-align: middle;
+  color: var(--mc-text, #e8e6e1);
+}
+
+.tx-company-name {
+  font-weight: 600;
+}
+.tx-company-id {
+  color: var(--mc-muted, #8890a0);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.tx-desc {
+  color: var(--mc-muted, #8890a0);
+  max-width: 260px;
+}
+.tx-reference,
+.tx-created {
+  color: var(--mc-muted, #8890a0);
+  white-space: nowrap;
+}
+
+/* Type badge */
+.tx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.tx-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.tx-badge--credit {
+  color: #00cba4;
+  background: rgba(0, 203, 164, 0.12);
+}
+.tx-badge--debit {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.12);
+}
+
+/* Amount */
+.tx-amount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tx-amount--credit {
+  color: #00cba4;
+}
+.tx-amount--debit {
+  color: #ff6b6b;
+}
+
+/* Balance flow */
+.tx-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.tx-flow__before {
+  color: var(--mc-muted, #8890a0);
+}
+.tx-flow__arrow {
+  color: var(--mc-muted, #8890a0);
+  opacity: 0.7;
+}
+.tx-flow__after {
+  font-weight: 600;
+  color: var(--mc-text, #e8e6e1);
+}
+
+/* Pagination */
+.tx-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 4px 4px;
+}
+.tx-pagination__summary {
+  font-size: 13px;
+  color: var(--mc-muted, #8890a0);
+}
+.tx-pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tx-page-btn {
+  border: 1px solid var(--mc-border, #2c3657);
+  background: var(--mc-surface, #1a1a2e);
+  color: var(--mc-text, inherit);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.tx-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tx-page-num {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--mc-border, #2c3657);
+  background: var(--mc-surface, #1a1a2e);
+  color: var(--mc-text, inherit);
+  font-size: 13px;
+  cursor: pointer;
+}
+.tx-page-num--active {
+  background: var(--tx-accent);
+  border-color: var(--tx-accent);
+  color: #fff;
+  font-weight: 700;
+}
+.tx-pagination__ellipsis {
+  padding: 0 4px;
+  color: var(--mc-muted, #8890a0);
+}
+
+@media (max-width: 900px) {
+  .tx-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tx-search-wrap {
+    max-width: none;
+  }
+}
+@media (max-width: 600px) {
+  .tx-root {
+    padding: 20px 16px 48px;
+  }
+  .tx-desc {
+    max-width: 140px;
+  }
+  .tx-filter-count {
+    margin-left: 0;
+  }
+}
