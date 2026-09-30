@@ -217,19 +217,36 @@ html[data-theme="dark"], body[data-theme="dark"] {
 }
 .au-search-wrap {
   position: relative;
-  flex: 0 0 280px;
-  max-width: 280px;
+  flex: 1 1 300px;
+  max-width: 380px;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
 }
+.au-search-icon,
 .mc-search-icon {
-  position: absolute; left: 12px; top: 50%;
+  position: absolute;
+  left: 14px;
+  top: 50%;
   transform: translateY(-50%);
-  color: var(--muted); font-size: 14px; pointer-events: none;
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 2;
 }
 .au-search-input {
-  width: 100%; background: var(--surf);
+  width: 100%;
+  background: var(--surf);
   border: 1px solid var(--border);
-  color: var(--text); padding: 10px 14px 10px 37px;
-  border-radius: 10px; font-size: 13px; outline: none;
+  color: var(--text);
+  padding: 10px 16px 10px 42px;
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
   transition: border-color 0.2s, background 0.3s, color 0.3s;
 }
 .au-search-input:focus { border-color: var(--accent); }
@@ -634,8 +651,8 @@ html[data-theme="dark"], body[data-theme="dark"] {
    th/td as a fallback for markup that doesn't use <colgroup>. */
 .au-table col:nth-child(1)  { width: 32px;  }
 .au-table col:nth-child(2)  { width: 160px; }
-.au-table col:nth-child(3)  { width: 166px; }
-.au-table col:nth-child(4)  { width: 108px; }
+.au-table col:nth-child(3)  { min-width: 220px; width: auto; }
+.au-table col:nth-child(4)  { width: 150px; }
 .au-table col:nth-child(5)  { width: 68px;  }
 .au-table col:nth-child(6)  { width: 88px;  }
 .au-table col:nth-child(7)  { width: 78px;  }
@@ -651,8 +668,11 @@ html[data-theme="dark"], body[data-theme="dark"] {
   text-align: center;
 }
 .au-table th:nth-child(2), .au-table td:nth-child(2) { width: 160px; }
-.au-table th:nth-child(3), .au-table td:nth-child(3) { width: 166px; }
-.au-table th:nth-child(4), .au-table td:nth-child(4) { width: 108px; }
+.au-table th:nth-child(3), .au-table td:nth-child(3) {
+  min-width: 220px;
+  width: auto;
+}
+.au-table th:nth-child(4), .au-table td:nth-child(4) { width: 150px; min-width: 140px; }
 .au-table th:nth-child(5), .au-table td:nth-child(5) { width: 68px;  }
 .au-table th:nth-child(6), .au-table td:nth-child(6) { width: 88px;  }
 .au-table th:nth-child(7), .au-table td:nth-child(7) { width: 78px;  }
@@ -896,10 +916,255 @@ html[data-theme="dark"], body[data-theme="dark"] {
   flex: 1;
 }
 
-/* Also truncate email cell */
-.au-table td:nth-child(3) {
+/* Flexible email column: uses all available space and truncates cleanly only when constrained */
+.au-table td:nth-child(3),
+.au-email-cell {
+  min-width: 220px;
+  max-width: 0;
+  width: auto;
+}
+
+.au-email-text {
+  display: block;
+  width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 0; /* forces ellipsis inside fixed table-layout */
+  font-size: 13px;
+  color: var(--text);
 }
+
+/* ─── DELETE USER CONFIRMATION MODAL ─────────────────────── */
+.au-modal--delete {
+  max-width: 480px;
+  width: 95vw;
+}
+
+.au-delete-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.au-delete-prompt {
+  font-size: 14.5px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.au-delete-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+}
+
+.au-delete-user-card__name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-delete-user-card__email {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-delete-warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  color: #ef4444;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.au-delete-warning-banner__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.au-btn--danger-solid {
+  background: #ef4444;
+  color: #ffffff;
+  border: 1px solid #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.au-btn--danger-solid:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  opacity: 1;
+  color: #ffffff;
+}
+
+.au-btn--danger-solid:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.au-btn--ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.au-spinner {
+  animation: au-spin 1s linear infinite;
+}
+
+@keyframes au-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── STATUS USER CONFIRMATION MODAL ─────────────────────── */
+.au-modal--status {
+  max-width: 480px;
+  width: 95vw;
+}
+
+.au-status-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.au-status-icon-box--suspend {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.au-status-icon-box--activate {
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+}
+
+.au-status-prompt {
+  font-size: 14.5px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.au-status-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+}
+
+.au-status-user-card__name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-status-user-card__email {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-status-warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  color: #ef4444;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.au-status-warning-banner__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.au-status-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  color: #10b981;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.au-status-info-banner__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.au-btn--success-solid {
+  background: #10b981;
+  color: #ffffff;
+  border: 1px solid #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.au-btn--success-solid:hover:not(:disabled) {
+  background: #059669;
+  border-color: #059669;
+  opacity: 1;
+  color: #ffffff;
+}
+
+.au-btn--success-solid:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

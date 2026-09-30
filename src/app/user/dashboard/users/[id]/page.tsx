@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../../../context/ThemeContext";
+import { formatPhoneNumber } from "@/lib/phone";
 
 interface UserDetails {
   id: string;
@@ -149,7 +150,7 @@ export default function DashboardUserDetailsPage() {
         ["User ID", user.id],
         ["Name", user.name],
         ["Email", user.email],
-        ["Phone", user.phone ?? "—"],
+        ["Phone", formatPhoneNumber(user.phone)],
         ["Role", user.role],
         ["Status", user.status],
         ["Company", user.company?.name ?? "—"],

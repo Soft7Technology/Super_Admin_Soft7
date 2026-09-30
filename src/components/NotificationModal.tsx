@@ -20,7 +20,6 @@ export default function NotificationModal({
   onClose: () => void;
 }) {
   const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
 
   const [notifications, setNotifications] = useState<Notification[]>([
     {

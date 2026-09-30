@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
   ClipboardList,
-  CreditCard,
   LayoutDashboard,
   Settings,
   TicketPercent,
@@ -36,7 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: Settings, label: "System", route: "/user/system" },
   { icon: UserCircle, label: "Profile", route: "/user/profile" },
   { icon: TicketPercent, label: "Support Tickets", route: "/user/support-tickets" },
-  { icon: ShieldCheck, label: "Permissions", route: "/user/permissions" },
+  { icon: ShieldCheck, label: "Domain Approvals", route: "/user/permissions" },
   { icon: Receipt, label: "Transactions", route: "/user/transactions" }
 ];
 

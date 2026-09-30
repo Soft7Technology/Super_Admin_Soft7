@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 interface FilterBarProps {
   search: string;
   onSearchChange: (value: string) => void;
@@ -29,14 +31,16 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <div className="au-filter-bar">
-      {/* Search */}
+      {/* Search with aligned non-overlapping icon */}
       <div className="au-search-wrap">
-        <span className="mc-search-icon">🔍</span>
+        <span className="au-search-icon" aria-hidden="true">🔍</span>
         <input
           className="au-search-input"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search name, email, domain..."
+          aria-label="Search name, email, domain"
+          autoComplete="off"
         />
       </div>
 
@@ -45,6 +49,7 @@ export function FilterBar({
         {STATUS_FILTERS.map((f) => (
           <button
             key={f}
+            type="button"
             onClick={() => onStatusChange(f)}
             className={`au-filter-pill ${status === f ? "au-filter-pill--active" : ""}`}
           >
@@ -58,6 +63,7 @@ export function FilterBar({
         {ROLE_FILTERS.map((r) => (
           <button
             key={r}
+            type="button"
             onClick={() => onRoleChange(r)}
             className={`au-filter-pill au-filter-pill--role ${role === r ? "au-filter-pill--active" : ""}`}
           >
@@ -80,8 +86,7 @@ export function FilterBar({
         {loading ? "…" : `${count} users`}
       </span>
 
-      {/* Select All / bulk-delete toolbar — pushed to the far right of the
-          same row, right after the users count */}
+      {/* Select All / bulk-delete toolbar */}
       {rightSlot && (
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
           {rightSlot}

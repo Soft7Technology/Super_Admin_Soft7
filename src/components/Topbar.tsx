@@ -95,7 +95,6 @@ export default function Topbar({
   // Refs
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const consecutiveErrorsRef = useRef(0);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -504,12 +503,10 @@ export default function Topbar({
   // Execute Historical Data Cleanup
   const handleExecuteCleanup = async () => {
     setIsDeleting(true);
-    let anySuccess = false;
 
     // 1. Clean up external activity logs from backend API
     try {
       await axiosInstance.delete("/v1/admin/activity");
-      anySuccess = true;
     } catch (err: any) {
       console.warn("External activity cleanup:", err?.message || err);
     }
@@ -522,7 +519,7 @@ export default function Topbar({
         body: JSON.stringify({ range: confirmRange }),
       });
       if (res.ok) {
-        anySuccess = true;
+        // successfully cleaned internal audit logs
       }
     } catch (err: any) {
       console.warn("Internal database cleanup:", err?.message || err);
@@ -544,7 +541,6 @@ export default function Topbar({
         }
       }
       keysToRemove.forEach((k) => localStorage.removeItem(k));
-      anySuccess = true;
     } catch {}
 
     setIsDeleting(false);
@@ -608,8 +604,6 @@ export default function Topbar({
     if (pathname.includes("transactions")) return "Transactions";
     return "Dashboard";
   };
-
-  const pageTitle = title || getTitle();
 
   return (
     <header

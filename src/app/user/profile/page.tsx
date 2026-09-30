@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./profile.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useTheme } from "@/context/ThemeContext";
+import { formatPhoneNumber, getCountryFromPhoneNumber } from "@/lib/phone";
+import { InternationalPhoneInput } from "@/components/InternationalPhoneInput";
 
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -52,9 +54,17 @@ function Spin() {
 function useSave() {
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
-  const go = (cb?: () => void) => {
+  const go = async (action?: () => Promise<void> | void) => {
     setSaving(true);
-    setTimeout(() => { setSaving(false); setSaved(true); setTimeout(() => { setSaved(false); cb?.(); }, 2000); }, 900);
+    try {
+      if (action) await action();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      console.error("Save error:", err);
+    } finally {
+      setSaving(false);
+    }
   };
   return { saving, saved, go };
 }
@@ -77,7 +87,6 @@ interface ProfileData {
   status: string;
   avatar: string | null;
   last_login_at: string | null;
-  last_login_ip: string | null;
   created_at: string;
   settings: Record<string, unknown> | null;
 }
@@ -92,8 +101,10 @@ function HeroCard({
   profile: ProfileData | null;
   uploading: boolean;
   avatarEmoji: string | null;
-  onUpload: () => void;
+  onUpload: (file?: File) => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Derive initials from name
   const initials = profile?.name
     ? profile.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
@@ -107,6 +118,29 @@ function HeroCard({
     ? new Date(profile.last_login_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
     : null;
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please select a valid image file (PNG, JPG, WebP, GIF, or SVG).");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Image size exceeds the 10MB limit.");
+        return;
+      }
+      onUpload(file);
+    }
+    e.target.value = "";
+  };
+
+  const handleOverlayClick = () => {
+    if (uploading) return;
+    fileInputRef.current?.click();
+  };
+
+  const avatarUrl = profile?.avatar;
+
   return (
     <div className="pf-hero">
       <div className="pf-hero__banner">
@@ -119,11 +153,34 @@ function HeroCard({
       <div className="pf-hero__body">
         <div className="pf-hero__top-row">
           <div className="pf-avatar-wrap">
-            <div className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}>
-              {uploading ? "⬆" : (avatarEmoji ?? initials)}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+            />
+            <div
+              className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}
+              style={avatarUrl ? { overflow: "hidden", padding: 0 } : undefined}
+            >
+              {uploading ? (
+                "⬆"
+              ) : avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                avatarEmoji ?? initials
+              )}
             </div>
             <div className="pf-avatar__online" />
-            <div className="pf-avatar__upload-overlay" onClick={onUpload}>📷</div>
+            <div className="pf-avatar__upload-overlay" onClick={handleOverlayClick} title="Upload Profile Picture">📷</div>
           </div>
         </div>
 
@@ -135,7 +192,7 @@ function HeroCard({
           <div className="pf-hero__meta">
             {[
               { icon: "📧", val: profile?.email ?? "—" },
-              { icon: "📱", val: profile?.phone ? `+91 ${profile.phone}` : "—" },
+              { icon: "📱", val: formatPhoneNumber(profile?.phone) },
               ...(lastLogin ? [{ icon: "🕐", val: `Last login: ${lastLogin}` }] : []),
               { icon: "🌐", val: profile?.status === "active" ? "Active" : profile?.status ?? "—" },
            ].map(({ icon, val }, index) => (
@@ -151,13 +208,22 @@ function HeroCard({
 }
 
 // ─── TAB: PERSONAL INFO ───────────────────────────────────────────────────────
-function PersonalTab({ profile }: { profile: ProfileData | null }) {
+function PersonalTab({
+  profile,
+  onProfileUpdated,
+}: {
+  profile: ProfileData | null;
+  onProfileUpdated?: (updated: ProfileData) => void;
+}) {
   // Split `name` into first/last for display; API returns single `name` field
   const nameParts  = (profile?.name ?? "").split(" ");
   const [firstName, setFirstName] = useState(nameParts[0] ?? "");
   const [lastName,  setLastName]  = useState(nameParts.slice(1).join(" ") ?? "");
   const [email,     setEmail]     = useState(profile?.email    ?? "");
   const [phone,     setPhone]     = useState(profile?.phone    ?? "");
+  const [phoneCountry, setPhoneCountry] = useState<string>(() => {
+    return getCountryFromPhoneNumber(profile?.phone) || "us";
+  });
   const [location,  setLocation]  = useState("");
   const [website,   setWebsite]   = useState("");
   const [timezone,  setTimezone]  = useState("Asia/Kolkata");
@@ -179,6 +245,18 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
     setLastName(parts.slice(1).join(" ") ?? "");
     setEmail(profile.email    ?? "");
     setPhone(profile.phone    ?? "");
+
+    if (profile.settings && typeof profile.settings === "object") {
+      const s = profile.settings as Record<string, any>;
+      if (s.location) setLocation(String(s.location));
+      if (s.website) setWebsite(String(s.website));
+      if (s.timezone) setTimezone(String(s.timezone));
+      if (s.language) setLanguage(String(s.language));
+      if (s.weekStart) setWeekStart(String(s.weekStart));
+      if (typeof s.emailNotifications === "boolean") setEmailNotif(s.emailNotifications);
+      if (typeof s.smsNotifications === "boolean") setSmsNotif(s.smsNotifications);
+      if (typeof s.compactUI === "boolean") setCompactUI(s.compactUI);
+    }
   }, [profile]);
 
   const prefs = [
@@ -201,7 +279,20 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
             <Inp label="First Name" value={firstName} onChange={setFirstName} placeholder="First name" />
             <Inp label="Last Name"  value={lastName}  onChange={setLastName}  placeholder="Last name" />
             <Inp label="Email"      value={email}     onChange={setEmail}     type="email" hint="Used for login and notifications" />
-            <Inp label="Phone"      value={phone}     onChange={setPhone}     type="tel"   prefix="📱" />
+            <div className="pf-field">
+              <label className="pf-field__label">PHONE</label>
+              <InternationalPhoneInput
+                value={phone}
+                onChange={(val, details) => {
+                  setPhone(val);
+                  if (details?.countryCode) {
+                    setPhoneCountry(details.countryCode);
+                  }
+                }}
+                defaultCountry={phoneCountry}
+                placeholder="Enter phone number"
+              />
+            </div>
             <Inp label="Location"   value={location}  onChange={setLocation}  placeholder="City, Country" />
             <Inp label="Website"    value={website}   onChange={setWebsite}   type="url"   placeholder="https://…" />
           </div>
@@ -275,7 +366,37 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
       </div>
 
       <div className="pf-save-row">
-        <SaveBtn onClick={() => go()} saving={saving} saved={saved} />
+        <SaveBtn
+          onClick={() => {
+            const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+            go(async () => {
+              const res = await fetch("/api/admin/profile", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: fullName,
+                  phone,
+                  location,
+                  website,
+                  timezone,
+                  language,
+                  weekStart,
+                  emailNotifications: emailNotif,
+                  smsNotifications: smsNotif,
+                  compactUI,
+                }),
+              });
+              if (res.ok) {
+                const json = await res.json();
+                if (json?.success && json?.data) {
+                  onProfileUpdated?.(json.data);
+                }
+              }
+            });
+          }}
+          saving={saving}
+          saved={saved}
+        />
       </div>
     </div>
   );
@@ -340,37 +461,13 @@ function ChangeOwnershipModal({
 
 // ─── TAB: SECURITY ────────────────────────────────────────────────────────────
 function SecurityTab({ profile }: { profile: ProfileData | null }) {
-  const [curPwd,    setCurPwd]    = useState("");
-  const [newPwd,    setNewPwd]    = useState("");
-  const [confPwd,   setConfPwd]   = useState("");
-  const [pwdSaving, setPwdSaving] = useState(false);
-  const [pwdSaved,  setPwdSaved]  = useState(false);
-  const [pwdErr,    setPwdErr]    = useState("");
   const [showOwnershipModal, setShowOwnershipModal] = useState(false);
   const [ownershipStep,      setOwnershipStep]      = useState<1 | 2>(1);
-
-  const strength = newPwd.length === 0 ? 0 : newPwd.length < 6 ? 1 : newPwd.length < 10 ? 2
-    : /[A-Z]/.test(newPwd) && /[0-9]/.test(newPwd) && /[^a-zA-Z0-9]/.test(newPwd) ? 4 : 3;
-  const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][strength];
-  const strengthColor = ["", "var(--pf-danger)", "var(--pf-warn)", "var(--pf-info)", "var(--pf-success)"][strength];
-
-  const savePwd = () => {
-    if (!curPwd.trim())     { setPwdErr("Current password is required."); return; }
-    if (newPwd.length < 8)  { setPwdErr("New password must be at least 8 characters."); return; }
-    if (newPwd !== confPwd) { setPwdErr("Passwords do not match."); return; }
-    setPwdErr(""); setPwdSaving(true);
-    setTimeout(() => {
-      setPwdSaving(false); setPwdSaved(true);
-      setCurPwd(""); setNewPwd(""); setConfPwd("");
-      setTimeout(() => setPwdSaved(false), 2500);
-    }, 1000);
-  };
 
   // Last login info from API
   const lastLoginAt = profile?.last_login_at
     ? new Date(profile.last_login_at).toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" })
     : "—";
-  const lastLoginIp = profile?.last_login_ip ?? "—";
 
   return (
     <div className="pf-tab-section">
@@ -383,49 +480,12 @@ function SecurityTab({ profile }: { profile: ProfileData | null }) {
             <div className="pf-card__desc">Most recent login session details from the server.</div>
           </div>
           <div className="pf-card__body">
-            <div className="pf-grid-2">
+            <div>
               <Inp label="Last Login At" value={lastLoginAt} onChange={() => {}} disabled />
-              <Inp label="Last Login IP" value={lastLoginIp} onChange={() => {}} disabled />
             </div>
           </div>
         </div>
       )}
-
-      {/* Change password */}
-      <div className="pf-card">
-        <div className="pf-card__header">
-          <div className="pf-card__title">Change Password</div>
-          <div className="pf-card__desc">Use a strong, unique password you don't use elsewhere.</div>
-        </div>
-        <div className="pf-card__body">
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Inp label="Current Password" value={curPwd} onChange={setCurPwd} type="password" placeholder="••••••••••••" />
-            <div className="pf-grid-2">
-              <div>
-                <Inp label="New Password" value={newPwd} onChange={setNewPwd} type="password" placeholder="Min 8 characters" />
-                {newPwd.length > 0 && (
-                  <div className="pf-strength">
-                    <div className="pf-strength__bars">
-                      {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="pf-strength__bar"
-                          style={{ background: i <= strength ? strengthColor : "var(--pf-surf3)" }} />
-                      ))}
-                    </div>
-                    <span className="pf-strength__label" style={{ color: strengthColor }}>{strengthLabel}</span>
-                  </div>
-                )}
-              </div>
-              <Inp label="Confirm Password" value={confPwd} onChange={setConfPwd} type="password" placeholder="Repeat new password" />
-            </div>
-            {pwdErr && <div className="pf-pwd-err">{pwdErr}</div>}
-            <div className="pf-btn-row">
-              <button onClick={savePwd} className={`pf-btn-pwd ${pwdSaved ? "pf-btn-pwd--saved" : ""}`}>
-                {pwdSaving ? <><Spin /> Updating…</> : pwdSaved ? <>✓ Updated!</> : <>Update Password</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Danger zone */}
       <div className="pf-danger-card">
@@ -541,32 +601,38 @@ type TabId = typeof TABS[number]["id"];
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function Profile() {
-  const [tab,         setTab]         = useState<TabId>("personal");
-  const [uploading,   setUploading]   = useState(false);
-  const [avatarEmoji, setAvatarEmoji] = useState<string | null>(null);
+  const [tab,       setTab]       = useState<TabId>("personal");
+  const [uploading, setUploading] = useState(false);
 
   // ── Shared profile state fetched once ──
-  const [profile,  setProfile]  = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     const fetchProfile = async () => {
       try {
-        const { data: result } = await axiosInstance.get("/v1/admin/users/");
+        // 1. Fetch from local Next.js profile API first
+        const res = await fetch("/api/admin/profile");
+        if (res.ok) {
+          const result = await res.json();
+          if (!mounted) return;
+          if (result?.success && result?.data) {
+            setProfile(result.data as ProfileData);
+            return;
+          }
+        }
 
+        // 2. Fallback to hostapi if needed
+        const { data: result } = await axiosInstance.get("/v1/admin/users/");
         if (!mounted) return;
 
-        console.log("PROFILE API", result);
         if (result?.success && result?.data) {
           setProfile(result.data as ProfileData);
         }
       } catch (error) {
         if (!mounted) return;
         console.error("Profile fetch error:", error);
-      } finally {
-        if (mounted) setLoading(false);
       }
     };
 
@@ -574,9 +640,28 @@ export default function Profile() {
     return () => { mounted = false; };
   }, []);
 
-  const triggerUpload = () => {
+  const triggerUpload = async (file?: File) => {
+    if (!file) return;
     setUploading(true);
-    setTimeout(() => { setUploading(false); setAvatarEmoji("🧑‍💻"); }, 1200);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/profile/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data?.success && data?.data?.avatar) {
+        setProfile(prev => prev ? { ...prev, avatar: data.data.avatar } : prev);
+      } else {
+        alert(data?.error || "Failed to upload image. Please try again.");
+      }
+    } catch (err) {
+      console.error("Avatar upload error:", err);
+      alert("Failed to upload image. Please check your connection and try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -601,12 +686,11 @@ export default function Profile() {
           status: "",
           avatar: null,
           last_login_at: null,
-          last_login_ip: null,
           created_at: "",
           settings: null,
         }}
         uploading={uploading}
-        avatarEmoji={avatarEmoji}
+        avatarEmoji={null}
         onUpload={triggerUpload}
       />
 
@@ -623,7 +707,7 @@ export default function Profile() {
 
       {/* ── TAB CONTENT ── */}
       <div key={tab} className="pf-content">
-        {tab === "personal" && <PersonalTab profile={profile} />}
+        {tab === "personal" && <PersonalTab profile={profile} onProfileUpdated={(updated) => setProfile(updated)} />}
         {tab === "security" && <SecurityTab profile={profile} />}
         {tab === "activity" && <ActivityTab />}
       </div>

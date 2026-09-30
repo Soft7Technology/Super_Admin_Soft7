@@ -3,14 +3,16 @@
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { getAuthHeaders } from "@/lib/auth-client";
 import "./all-user.css";
 import {
   User,
-  UserStats,
   roleColor,
   planColor,
+  formatPhoneNumber,
 } from "./types";
 
+import Swal from "sweetalert2";
 import { Badge } from "./components/Badge";
 import { useUsers } from "./hooks/useUsers";
 import { KPI } from "./components/KPI";
@@ -18,6 +20,9 @@ import { FilterBar } from "./components/FilterBar";
 import { DetailPanel } from "./components/DetailPanel";
 import { EditUserModal } from "./components/EditUserModal";
 import { ResetPasswordModal } from "./components/ResetPasswordModal";
+import { AddUserModal } from "./components/AddUserModal";
+import { DeleteUserModal } from "./components/DeleteUserModal";
+import { StatusUserModal } from "./components/StatusUserModal";
 import { Eye, Pencil, KeyRound, ShieldOff, ShieldCheck, Trash2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -43,12 +48,18 @@ function AllUsersContent() {
   }, [searchParams]);
 
   // Inline action states
+  const [showAddModal,   setShowAddModal]   = useState(false);
   const [editUser,       setEditUser]       = useState<User | null>(null);
   const [passwordUser,   setPasswordUser]   = useState<User | null>(null);
+  const [userToDelete,   setUserToDelete]   = useState<User | null>(null);
+  const [statusUserModal, setStatusUserModal] = useState<{
+    user: User;
+    targetStatus: "ACTIVE" | "SUSPENDED";
+  } | null>(null);
   const [suspendingId,   setSuspendingId]   = useState<string | null>(null);
   const [deletingId,     setDeletingId]     = useState<string | null>(null);
 
-  const { users, stats, loading, error, refresh, updateUserStatus } = useUsers();
+  const { users, stats, loading, refresh, updateUserStatus, companies, companiesMap } = useUsers();
 
   // Filter users by status, role, and search query
   const filteredUsers = useMemo(() => {
@@ -117,80 +128,205 @@ function AllUsersContent() {
   };
 
   const handleDeleteSelected = async () => {
-    if (!selectedUsers.length) return;
-    const confirmDelete = window.confirm(`Delete ${selectedUsers.length} users?`);
-    if (!confirmDelete) return;
+    if (!selectedUsers.length || deletingId) return;
+
+    const result = await Swal.fire({
+      title: `Delete ${selectedUsers.length} Selected Users?`,
+      html: `Are you sure you want to delete <strong>${selectedUsers.length}</strong> selected users?<br/><br/><span style="font-size:13px;color:#ef4444;">This action cannot be undone.</span>`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Delete Selected",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
-      await axiosInstance.delete("/v1/admin/users/bulk-delete", {
-        data: { user_ids: selectedUsers },
-      });
-  toast.success(`${selectedUsers.length} users deleted successfully`);
-      window.location.reload();
+      setDeletingId("bulk");
+      let deleted = false;
+      try {
+        const { data } = await axiosInstance.delete("/v1/admin/users/bulk-delete", {
+          data: { user_ids: selectedUsers },
+        });
+        if (data?.success !== false) deleted = true;
+      } catch (extErr: any) {
+        console.warn("External bulk delete note:", extErr?.message);
+      }
+
+      try {
+        await Promise.all(
+          selectedUsers.map((uid) =>
+            fetch(`/api/admin/users/${uid}`, { method: "DELETE" }).catch(() => null)
+          )
+        );
+        deleted = true;
+      } catch (locErr: any) {
+        console.warn("Local bulk delete note:", locErr?.message);
+      }
+
+      if (deleted) {
+        toast.success(`${selectedUsers.length} users deleted successfully`);
+        setSelectedUsers([]);
+        refresh();
+      } else {
+        toast.error("Failed to delete selected users");
+      }
     } catch (error) {
-      console.error(error);
-   toast.error("Failed to delete users");
+      console.error("Bulk delete error:", error);
+      toast.error("Failed to delete users");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-const handleSuspendToggle = async (user: User) => {
-  const isSuspended = user.status === "SUSPENDED";
+  const handleOpenStatusModal = (user: User) => {
+    if (suspendingId) return;
+    const isSuspended = user.status === "SUSPENDED";
+    const targetStatus = isSuspended ? "ACTIVE" : "SUSPENDED";
+    setStatusUserModal({ user, targetStatus });
+  };
 
-  try {
-    setSuspendingId(user.id);
+  const handleConfirmStatusChange = async () => {
+    if (!statusUserModal || suspendingId) return;
 
-    const endpoint = isSuspended
-      ? `/v1/admin/users/${user.id}/active-user`
-      : `/v1/admin/users/${user.id}/suspend-user`;
+    const { user, targetStatus } = statusUserModal;
+    const isSuspending = targetStatus === "SUSPENDED";
+    const actionVerb = isSuspending ? "suspend" : "activate";
 
-    const { data } = await axiosInstance.put(endpoint);
+    try {
+      setSuspendingId(user.id);
 
-    if (data.success !== false) {
-      toast.success(
-        `User ${isSuspended ? "restored" : "suspended"} successfully`
-      );
-      // Optimistically update the UI immediately
-      updateUserStatus(user.id, isSuspended ? "ACTIVE" : "SUSPENDED");
-      
-    } else {
-      toast.error(data.message || "Operation failed");
-    }
-  } catch (error: any) {
-    toast.error(
-      error?.response?.data?.message ||
-      "Something went wrong"
-    );
-  } finally {
-    setSuspendingId(null);
-  }
-};
-  const handleDeleteUser = async (user: User) => {
-  try {
-    setDeletingId(user.id);
+      let updated = false;
 
-    const { data } = await axiosInstance.delete(
-      `/v1/admin/users/${user.id}`
-    );
+      // 1. Try external endpoint
+      try {
+        const endpoint = isSuspending
+          ? `/v1/admin/users/${user.id}/suspend-user`
+          : `/v1/admin/users/${user.id}/active-user`;
+        const { data } = await axiosInstance.put(endpoint);
+        if (data?.success !== false) {
+          updated = true;
+        }
+      } catch (extErr: any) {
+        console.warn("External status update note:", extErr?.message);
+      }
 
-    if (data.success !== false) {
-      toast.success(
-        `User "${user.name}" deleted successfully`
-      );
+      // 2. Try internal Next.js Prisma API
+      try {
+        const localRes = await fetch(`/api/admin/users/${user.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify({ status: targetStatus }),
+        });
+        if (localRes.ok) {
+          const localData = await localRes.json().catch(() => ({}));
+          if (localData?.success !== false) {
+            updated = true;
+          }
+        }
+      } catch (localErr: any) {
+        console.warn("Local status update note:", localErr?.message);
+      }
 
-      refresh();
-    } else {
+      if (updated) {
+        toast.success(
+          `User "${user.name}" ${isSuspending ? "suspended" : "activated"} successfully`
+        );
+        updateUserStatus(user.id, targetStatus);
+        setStatusUserModal(null);
+        refresh();
+      } else {
+        toast.error(`Failed to ${actionVerb} user. Please try again.`);
+      }
+    } catch (error: any) {
+      console.error("Status toggle error:", error);
       toast.error(
-        data.message || "Failed to delete user"
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to update user status"
       );
+    } finally {
+      setSuspendingId(null);
     }
-  } catch (error: any) {
-    toast.error(
-      error?.response?.data?.message ||
-      "Something went wrong"
-    );
-  } finally {
-    setDeletingId(null);
-  }
-};
+  };
+
+  const handleDeleteUser = (user: User) => {
+    if (deletingId) return;
+    setUserToDelete(user);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete || deletingId) return;
+
+    const targetUser = userToDelete;
+    const targetUserId = targetUser.id;
+    const targetUserName = targetUser.name?.trim() || targetUser.email || "User";
+
+    try {
+      setDeletingId(targetUserId);
+
+      let deleted = false;
+      let errorMessage = "Failed to delete user. Please try again.";
+
+      // 1. Try external backend
+      try {
+        const { data } = await axiosInstance.delete(`/v1/admin/users/${targetUserId}`);
+        if (data?.success !== false) {
+          deleted = true;
+        } else if (data?.message) {
+          errorMessage = data.message;
+        }
+      } catch (extErr: any) {
+        console.warn("External user delete note:", extErr?.message);
+        if (extErr?.response?.data?.message) {
+          errorMessage = extErr.response.data.message;
+        }
+      }
+
+      // 2. Try internal Next.js Prisma API
+      try {
+        const localRes = await fetch(`/api/admin/users/${targetUserId}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        });
+        if (localRes.ok) {
+          const localData = await localRes.json().catch(() => ({}));
+          if (localData?.success !== false) {
+            deleted = true;
+          }
+        }
+      } catch (localErr: any) {
+        console.warn("Local user delete note:", localErr?.message);
+      }
+
+      if (deleted) {
+        toast.success(`User "${targetUserName}" deleted successfully`);
+        setUserToDelete(null);
+        setSelectedUsers((prev) => prev.filter((id) => id !== targetUserId));
+        if (detail?.id === targetUserId) {
+          setDetail(null);
+        }
+        refresh();
+      } else {
+        toast.error(errorMessage);
+      }
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to delete user"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
   // Reset to page 1 whenever filters change
   const handleStatusChange = (value: string) => {
     setStatus(value);
@@ -215,11 +351,30 @@ const handleSuspendToggle = async (user: User) => {
   return (
     <div className="au-root">
       {/* Header */}
-      <div className="au-header">
+      <div className="au-header" style={{ alignItems: "center" }}>
         <div>
           <h1 className="au-header__title">All Users</h1>
           <p className="au-header__subtitle">All platform users across every company</p>
         </div>
+        <button
+          type="button"
+          className="au-btn au-btn--primary"
+          style={{
+            width: "auto",
+            minWidth: "130px",
+            height: "40px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            padding: "0 18px",
+            fontSize: "13px",
+            fontWeight: 700,
+          }}
+          onClick={() => setShowAddModal(true)}
+        >
+          + Add User
+        </button>
       </div>
 
       {/* KPIs */}
@@ -264,7 +419,7 @@ const handleSuspendToggle = async (user: User) => {
       />
 
       {/* Grid */}
-      <div className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"}`}>
+      <div className="au-main-grid au-main-grid--full">
         <div className="au-table-wrapper">
           <table className="au-table">
             <thead>
@@ -277,8 +432,8 @@ const handleSuspendToggle = async (user: User) => {
                   />
                 </th>
                 <th style={{ width: "180px", maxWidth: "180px" }}>USER</th>
-                <th style={{ width: "240px", maxWidth: "240px" }}>EMAIL</th>
-                <th style={{ width: "150px" }}>PHONE</th>
+                <th style={{ minWidth: "220px" }}>EMAIL</th>
+                <th style={{ width: "150px", minWidth: "140px" }}>PHONE</th>
                 <th style={{ width: "100px" }}>ROLE</th>
                 <th style={{ width: "120px" }}>PLAN</th>
                 <th style={{ width: "120px" }}>STATUS</th>
@@ -310,8 +465,10 @@ const handleSuspendToggle = async (user: User) => {
                     </div>
                   </td>
 
-                  <td>{user.email}</td>
-                  <td>{user.phone || "-"}</td>
+                  <td title={user.email} className="au-email-cell">
+                    <span className="au-email-text">{user.email}</span>
+                  </td>
+                  <td>{formatPhoneNumber(user.phone)}</td>
 
                   <td>
                     <span
@@ -372,8 +529,8 @@ const handleSuspendToggle = async (user: User) => {
                         <button
                           className="au-action-btn au-action-btn--restore"
                           title="Restore Account"
-                          disabled={suspendingId === user.id}
-                          onClick={() => handleSuspendToggle(user)}
+                          disabled={suspendingId !== null}
+                          onClick={() => handleOpenStatusModal(user)}
                         >
                           <ShieldCheck size={15} />
                         </button>
@@ -381,8 +538,8 @@ const handleSuspendToggle = async (user: User) => {
                         <button
                           className="au-action-btn au-action-btn--suspend"
                           title="Suspend User"
-                          disabled={suspendingId === user.id}
-                          onClick={() => handleSuspendToggle(user)}
+                          disabled={suspendingId !== null}
+                          onClick={() => handleOpenStatusModal(user)}
                         >
                           <ShieldOff size={15} />
                         </button>
@@ -392,7 +549,7 @@ const handleSuspendToggle = async (user: User) => {
                       <button
                         className="au-action-btn au-action-btn--delete"
                         title="Delete User"
-                        disabled={deletingId === user.id}
+                        disabled={deletingId !== null}
                         onClick={() => handleDeleteUser(user)}
                       >
                         <Trash2 size={15} />
@@ -422,16 +579,28 @@ const handleSuspendToggle = async (user: User) => {
             </button>
           </div>
         </div>
-
-        {/* Detail panel (view only — no action buttons) */}
-        {detail && (
-          <DetailPanel
-            user={detail}
-            onClose={() => setDetail(null)}
-            onRefresh={refresh}
-          />
-        )}
       </div>
+
+      {/* User Details Modal (rendered outside table grid) */}
+      {detail && (
+        <DetailPanel
+          user={detail}
+          onClose={() => setDetail(null)}
+          onRefresh={refresh}
+          companiesMap={companiesMap}
+        />
+      )}
+
+      {/* Add / Invite User Modal */}
+      {showAddModal && (
+        <AddUserModal
+          companies={companies}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            refresh();
+          }}
+        />
+      )}
 
       {/* Edit modal */}
       {editUser && (
@@ -450,6 +619,33 @@ const handleSuspendToggle = async (user: User) => {
       {/* Reset password modal */}
       {passwordUser && (
         <ResetPasswordModal user={passwordUser} onClose={() => setPasswordUser(null)} />
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <DeleteUserModal
+          user={userToDelete}
+          isDeleting={deletingId === userToDelete.id}
+          onClose={() => {
+            if (deletingId) return;
+            setUserToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {/* Status User Confirmation Modal */}
+      {statusUserModal && (
+        <StatusUserModal
+          user={statusUserModal.user}
+          targetStatus={statusUserModal.targetStatus}
+          isUpdating={suspendingId === statusUserModal.user.id}
+          onClose={() => {
+            if (suspendingId) return;
+            setStatusUserModal(null);
+          }}
+          onConfirm={handleConfirmStatusChange}
+        />
       )}
       <ToastContainer
   position="top-right"

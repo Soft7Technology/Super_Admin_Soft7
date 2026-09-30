@@ -1,0 +1,270 @@
+/* ============================================================
+   international-phone-input.css
+   Modern, responsive, theme-aware styling for international phone input
+   ============================================================ */
+
+.intl-phone-wrapper {
+  width: 100%;
+  position: relative;
+  font-family: inherit;
+}
+
+.intl-phone-wrapper .react-tel-input {
+  width: 100%;
+  font-family: inherit;
+}
+
+/* ── Base Input ────────────────────────────────────────── */
+.intl-phone-wrapper .react-tel-input .form-control {
+  width: 100% !important;
+  height: 44px !important;
+  padding-left: 56px !important;
+  padding-right: 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 10px !important;
+  outline: none !important;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s, color 0.2s;
+  box-sizing: border-box !important;
+}
+
+/* ── Flag Dropdown Button ──────────────────────────────── */
+.intl-phone-wrapper .react-tel-input .flag-dropdown {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  border-radius: 10px 0 0 10px !important;
+  transition: background-color 0.2s, border-color 0.2s;
+  z-index: 10;
+}
+
+.intl-phone-wrapper .react-tel-input .selected-flag {
+  width: 48px !important;
+  padding: 0 0 0 11px !important;
+  border-radius: 10px 0 0 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  background: transparent !important;
+}
+
+.intl-phone-wrapper .react-tel-input .selected-flag:hover,
+.intl-phone-wrapper .react-tel-input .selected-flag:focus {
+  background: rgba(16, 185, 129, 0.08) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .selected-flag .arrow {
+  left: 31px !important;
+  border-top-color: currentColor !important;
+  opacity: 0.65;
+  transition: transform 0.2s ease;
+}
+
+.intl-phone-wrapper .react-tel-input .selected-flag.open .arrow {
+  transform: rotate(180deg);
+  border-top-color: #10b981 !important;
+}
+
+/* ── Country Dropdown List ─────────────────────────────── */
+.intl-phone-wrapper .react-tel-input .country-list {
+  width: 320px !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: 260px !important;
+  border-radius: 12px !important;
+  margin-top: 6px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35) !important;
+  z-index: 1000 !important;
+  overflow-y: auto !important;
+  padding: 6px 0 !important;
+  font-size: 13px !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .country {
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .country .country-name {
+  font-size: 13px !important;
+  margin-right: 6px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .country .dial-code {
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  margin-left: auto !important;
+  opacity: 0.85;
+}
+
+/* Search Box inside dropdown */
+.intl-phone-wrapper .react-tel-input .country-list .search {
+  padding: 8px 10px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .search-box {
+  width: 100% !important;
+  height: 36px !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+/* ── DARK THEME (default) ────────────────────────────────── */
+:root,
+[data-theme="dark"],
+.dark {
+  --ph-bg: #12182b;
+  --ph-border: #2c3657;
+  --ph-text: #e2e8f0;
+  --ph-placeholder: #64748b;
+  --ph-dropdown-bg: #171f38;
+  --ph-dropdown-border: #2c3657;
+  --ph-item-hover: #232e52;
+  --ph-item-active: rgba(16, 185, 129, 0.18);
+  --ph-accent: #10b981;
+  --ph-accent-glow: rgba(16, 185, 129, 0.2);
+}
+
+.intl-phone-wrapper .react-tel-input .form-control {
+  background: var(--ph-bg) !important;
+  color: var(--ph-text) !important;
+  border: 1px solid var(--ph-border) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .form-control:focus {
+  border-color: var(--ph-accent) !important;
+  box-shadow: 0 0 0 3px var(--ph-accent-glow) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .flag-dropdown {
+  background: var(--ph-bg) !important;
+  border: 1px solid var(--ph-border) !important;
+  border-right: none !important;
+  color: var(--ph-text) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list {
+  background: var(--ph-dropdown-bg) !important;
+  color: var(--ph-text) !important;
+  border: 1px solid var(--ph-dropdown-border) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .search {
+  background: var(--ph-dropdown-bg) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .search-box {
+  background: #0f1424 !important;
+  color: var(--ph-text) !important;
+  border: 1px solid var(--ph-border) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .search-box:focus {
+  border-color: var(--ph-accent) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .country:hover {
+  background: var(--ph-item-hover) !important;
+}
+
+.intl-phone-wrapper .react-tel-input .country-list .country.highlight {
+  background: var(--ph-item-hover) !important;
+  color: var(--ph-accent) !important;
+}
+
+/* ── LIGHT THEME ─────────────────────────────────────────── */
+[data-theme="light"],
+.light {
+  --ph-bg: #ffffff;
+  --ph-border: #cbd5e1;
+  --ph-text: #0f172a;
+  --ph-placeholder: #94a3b8;
+  --ph-dropdown-bg: #ffffff;
+  --ph-dropdown-border: #e2e8f0;
+  --ph-item-hover: #f1f5f9;
+  --ph-item-active: rgba(16, 185, 129, 0.12);
+  --ph-accent: #10b981;
+  --ph-accent-glow: rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .form-control,
+.light .intl-phone-wrapper .react-tel-input .form-control {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .form-control:focus,
+.light .intl-phone-wrapper .react-tel-input .form-control:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .flag-dropdown,
+.light .intl-phone-wrapper .react-tel-input .flag-dropdown {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .country-list,
+.light .intl-phone-wrapper .react-tel-input .country-list {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14) !important;
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .country-list .search,
+.light .intl-phone-wrapper .react-tel-input .country-list .search {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .country-list .search-box,
+.light .intl-phone-wrapper .react-tel-input .country-list .search-box {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .country-list .country:hover,
+.light .intl-phone-wrapper .react-tel-input .country-list .country:hover {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .intl-phone-wrapper .react-tel-input .country-list .country.highlight,
+.light .intl-phone-wrapper .react-tel-input .country-list .country.highlight {
+  background: #f1f5f9 !important;
+  color: #10b981 !important;
+}
+
+/* ── Error state ─────────────────────────────────────────── */
+.intl-phone-wrapper--error .react-tel-input .form-control {
+  border-color: #ef4444 !important;
+}
+
+.intl-phone-wrapper--error .react-tel-input .form-control:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+
+.intl-phone-error-text {
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 4px;
+}

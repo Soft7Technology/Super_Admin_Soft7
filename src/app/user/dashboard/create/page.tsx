@@ -6,6 +6,8 @@ import { useTheme, tokens } from "../../../../context/ThemeContext";
 import { uploadToCloudinary } from "../../../../lib/cloudinary";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { getAuthHeaders, redirectToLogin } from "@/lib/auth-client";
+import { InternationalPhoneInput } from "@/components/InternationalPhoneInput";
+import { validatePhoneNumber } from "@/lib/phone";
 
 interface FileState {
   file: File | null;
@@ -23,6 +25,7 @@ export default function AddCompanyPage() {
   const [name,    setName]    = useState("");
   const [email,   setEmail]   = useState("");
   const [phone,   setPhone]   = useState("");
+  const [phoneCountry, setPhoneCountry] = useState("us");
   const [businessId, setBusinessId] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [initialCredit, setInitialCredit] = useState<number | string>(1000);
@@ -55,7 +58,8 @@ export default function AddCompanyPage() {
     const errs: Record<string, string> = {};
     if (!name.trim())  errs.name = "Company name is required";
     if (!email.trim()) errs.email = "Email is required";
-    if (!phone.trim()) errs.phone = "Phone is required";
+    const phoneVal = validatePhoneNumber(phone, phoneCountry);
+    if (!phoneVal.isValid) errs.phone = phoneVal.error || "Please enter a valid international phone number";
     if (!adminName.trim()) errs.adminName = "Admin name is required";
     if (!adminEmail.trim()) errs.adminEmail = "Admin email is required";
     if (!adminPassword.trim()) errs.adminPassword = "Admin password is required";
@@ -169,7 +173,20 @@ export default function AddCompanyPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <TextInput label="Company Name" required value={name} onChange={(e: any) => { setName(e.target.value); if (errors.name) setErrors(p => ({...p, name: ""})); }} error={errors.name} C={C} placeholder="e.g. Acme Corporation" />
             <TextInput label="Company Email" required value={email} onChange={(e: any) => { setEmail(e.target.value); if (errors.email) setErrors(p => ({...p, email: ""})); }} error={errors.email} C={C} placeholder="hello@acme.com" type="email" />
-            <TextInput label="Company Phone" required value={phone} onChange={(e: any) => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({...p, phone: ""})); }} error={errors.phone} C={C} placeholder="e.g. +1 234 567 890" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: C.label }}>Company Phone *</label>
+              <InternationalPhoneInput
+                value={phone}
+                onChange={(val, details) => {
+                  setPhone(val);
+                  if (details?.countryCode) setPhoneCountry(details.countryCode);
+                  if (errors.phone) setErrors(p => ({...p, phone: ""}));
+                }}
+                defaultCountry={phoneCountry}
+                error={errors.phone}
+                placeholder="Enter company phone"
+              />
+            </div>
             <TextInput label="Business ID" value={businessId} onChange={(e: any) => setBusinessId(e.target.value)} C={C} placeholder="e.g. BIZ-123" />
             <TextInput label="Webhook URL" value={webhookUrl} onChange={(e: any) => setWebhookUrl(e.target.value)} C={C} placeholder="https://..." />
             <TextInput label="Initial Credit" value={initialCredit} onChange={(e: any) => setInitialCredit(e.target.value)} C={C} placeholder="1000" type="number" />

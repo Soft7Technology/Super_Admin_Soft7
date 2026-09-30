@@ -360,21 +360,28 @@
   margin-right: 10px;
 }
 
+.mc-search-wrap .mc-search-input,
 .mc-search-input {
   width: 100%;
   height: 48px;
   background: var(--mc-surf);
   border: 1px solid var(--mc-border);
   border-radius: 14px;
-  padding: 0 14px 0 44px;
+  padding: 0 16px 0 48px;
   color: var(--mc-text);
   font-size: 15px;
   font-weight: 500;
+  line-height: normal;
   outline: none;
   transition: all 0.2s ease;
   box-shadow:
     0 1px 2px rgba(0,0,0,0.04),
     0 6px 18px rgba(0,0,0,0.04);
+}
+
+.mc-search-input::placeholder {
+  color: var(--mc-placeholder);
+  opacity: 1;
 }
 
 .mc-search-input:hover {
@@ -388,17 +395,23 @@
     0 8px 22px rgba(0,0,0,0.06);
 }
 
+.mc-search-wrap .mc-search-icon,
 .mc-search-icon {
   position: absolute;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 15px;
+  width: 20px;
+  height: 20px;
+  font-size: 16px;
+  line-height: 1;
   color: var(--mc-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  user-select: none;
+  z-index: 2;
 }
 
 /* SORT SELECT */
@@ -974,54 +987,105 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: rgba(231, 92, 92, 0.12);
-  border: 1px solid rgba(231, 92, 92, 0.35);
-  margin-bottom: 16px;
-  animation: mc-bulk-in 0.2s ease;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: var(--mc-surf2);
+  border: 1px solid var(--mc-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  animation: mc-bulk-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-wrap: wrap;
 }
 @keyframes mc-bulk-in {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0);   }
 }
 .mc-bulk-bar__left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 .mc-bulk-bar__count {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 6px;
 }
 .mc-bulk-bar__num {
   font-size: 18px;
-  font-weight: 700;
-  color: #f99a9a;
+  font-weight: 800;
+  color: var(--mc-accent);
 }
 .mc-bulk-bar__label {
-  font-size: 13px;
-  color: var(--mc-muted, #a88a8a);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mc-title);
 }
 .mc-bulk-bar__link {
-  font-size: 12.5px;
-  color: #ca7474;
+  font-size: 13px;
+  color: var(--mc-muted);
   background: none;
   border: none;
   cursor: pointer;
   text-decoration: underline;
-  padding: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.mc-bulk-bar__link:hover:not(:disabled) {
+  color: var(--mc-text);
+  background: rgba(255, 255, 255, 0.04);
 }
 .mc-bulk-bar__link:disabled {
   opacity: 0.4;
-  cursor: default;
+  cursor: not-allowed;
   text-decoration: none;
 }
 .mc-bulk-bar__link--muted {
-  color: var(--mc-muted, #a88a8a);
+  color: var(--mc-muted);
+}
+.mc-bulk-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mc-bulk-btn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  line-height: 1.2;
+}
+.mc-bulk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.mc-bulk-btn--suspend {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+.mc-bulk-btn--suspend:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+.mc-bulk-btn--delete {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.mc-bulk-btn--delete:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.55);
 }
 
 /* ── Danger modal variant ── */
@@ -1177,6 +1241,10 @@
   background: rgba(16, 185, 129, 0.04);
 }
 
+.mc-table tbody tr.mc-row--selected {
+  background: rgba(16, 185, 129, 0.08);
+}
+
 /* Company Cell */
 
 .mc-company-cell {
@@ -1324,8 +1392,18 @@
   -moz-appearance: textfield;
 }
 .mc-search-wrap-small {
+  width: 100%;
   max-width: 420px;
-  flex: 0 0 420px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .mc-search-wrap-small {
+    max-width: 100%;
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
 }
 .mc-filter-bar-top {
   margin-bottom: 24px;

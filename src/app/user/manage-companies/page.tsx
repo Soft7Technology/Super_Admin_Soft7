@@ -4,13 +4,16 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import "./manage-companies.css";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
+import { getAuthHeaders, getAuthToken, redirectToLogin } from "@/lib/auth-client";
+import { validateCreditAmount } from "@/lib/credit-validation";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Swal from "sweetalert2";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { formatPhoneNumber, validatePhoneNumber, getCountryFromPhoneNumber } from "@/lib/phone";
+import { InternationalPhoneInput } from "@/components/InternationalPhoneInput";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
@@ -95,6 +98,67 @@ function normaliseStatus(raw: string): Status {
   return map[raw?.toLowerCase()] ?? "ACTIVE";
 }
 
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "yahoo.co.in",
+  "yahoo.co.uk",
+  "yahoo.ca",
+  "yahoo.com.au",
+  "ymail.com",
+  "rocketmail.com",
+  "outlook.com",
+  "hotmail.com",
+  "hotmail.co.uk",
+  "live.com",
+  "msn.com",
+  "icloud.com",
+  "me.com",
+  "mac.com",
+  "aol.com",
+  "aim.com",
+  "proton.me",
+  "protonmail.com",
+  "protonmail.ch",
+  "zoho.com",
+  "zohomail.com",
+  "mail.com",
+  "gmx.com",
+  "gmx.net",
+  "fastmail.com",
+  "tutanota.com",
+  "tuta.io",
+  "rediffmail.com",
+  "inbox.com",
+  "yandex.com",
+  "yandex.ru",
+]);
+
+function resolveCompanyDomain(rawDomain?: string | null, email?: string | null): string {
+  // 1. Prefer stored company domain from database if present and not a public provider
+  if (rawDomain && typeof rawDomain === "string") {
+    const trimmed = rawDomain.trim();
+    if (trimmed && trimmed !== "—" && trimmed !== "null" && trimmed !== "undefined") {
+      const clean = trimmed.toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+      if (!PUBLIC_EMAIL_DOMAINS.has(clean)) {
+        return clean;
+      }
+    }
+  }
+
+  // 2. If no valid stored domain, check corporate email domain (excluding public email providers like gmail.com)
+  if (email && typeof email === "string" && email.includes("@")) {
+    const domainPart = email.split("@").pop()?.trim().toLowerCase() ?? "";
+    if (domainPart && !PUBLIC_EMAIL_DOMAINS.has(domainPart)) {
+      return domainPart;
+    }
+  }
+
+  // 3. Fallback to empty/placeholder when unavailable
+  return "—";
+}
+
 function enrichCompany(raw: RawCompany): Company {
   const email = raw.email || raw.adminEmail || "";
   return {
@@ -102,7 +166,7 @@ function enrichCompany(raw: RawCompany): Company {
     name: raw.name || "Unnamed",
     email,
     phone: raw.phone || "—",
-    domain: raw.domain || email.split("@")[1] || "—",
+    domain: resolveCompanyDomain(raw.domain, email),
     logo: (raw.name || "??").slice(0, 2).toUpperCase(),
     logoUrl: raw.logo,
     col: avatarColor(String(raw.id)),
@@ -362,6 +426,9 @@ function CompanyModal({
   const [phone, setPhone] = useState(
     company?.phone === "—" ? "" : company?.phone || "",
   );
+  const [phoneCountry, setPhoneCountry] = useState<string>(() => {
+    return getCountryFromPhoneNumber(company?.phone) || "us";
+  });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>(company?.status || "ACTIVE");
@@ -392,9 +459,7 @@ function CompanyModal({
     const file = e.target.files?.[0] ?? null;
     if (!file) return;
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    const minDimension = 100;
+    const maxSize = 10 * 1024 * 1024; // 10MB
 
     const resetLogo = () => {
       setLogoInvalid(true);
@@ -403,58 +468,39 @@ function CompanyModal({
       e.target.value = "";
     };
 
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Only PNG, JPG, JPEG and WEBP logo files are allowed.");
-      setErr("Only PNG, JPG, JPEG and WEBP logo files are allowed.");
+    // Support any image format (PNG, JPG, JPEG, WEBP, SVG, GIF, AVIF, BMP, ICO, etc.)
+    const isImage =
+      file.type.startsWith("image/") ||
+      /\.(png|jpe?g|webp|svg|gif|avif|bmp|ico|tiff|heic|heif)$/i.test(file.name);
+
+    if (!isImage) {
+      toast.error("Please upload a valid image file.");
+      setErr("Please upload a valid image file.");
       resetLogo();
       return;
     }
 
     if (file.size > maxSize) {
-      toast.error("Logo size must be less than 2MB.");
-      setErr("Logo size must be less than 2MB.");
+      toast.error("Image size must be less than 10MB.");
+      setErr("Image size must be less than 10MB.");
       resetLogo();
       return;
     }
 
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
+    setLogoInvalid(false);
+    setErr(null);
+    setLogoFile(file);
 
-    img.onload = () => {
-      const { width, height } = img;
-      URL.revokeObjectURL(objectUrl);
-
-      if (width !== height) {
-        toast.error("Only square logos are allowed. Example: 512 x 512 px.");
-        setErr("Only square logos are allowed. Example: 512 x 512 px.");
-        resetLogo();
-        return;
-      }
-
-      if (width < minDimension || height < minDimension) {
-        toast.error("Logo is too small. Please upload at least 100 x 100 px.");
-        setErr("Logo is too small. Please upload at least 100 x 100 px.");
-        resetLogo();
-        return;
-      }
-
-      setLogoInvalid(false);
-      setErr(null);
-      setLogoFile(file);
-
-      const reader = new FileReader();
-      reader.onloadend = () => setLogoPreview(reader.result as string);
-      reader.readAsDataURL(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLogoPreview(reader.result as string);
     };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      toast.error("Invalid image file. Please upload a valid logo.");
-      setErr("Invalid image file. Please upload a valid logo.");
+    reader.onerror = () => {
+      toast.error("Failed to read image file. Please try another image.");
+      setErr("Failed to read image file. Please try another image.");
       resetLogo();
     };
-
-    img.src = objectUrl;
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async () => {
@@ -469,7 +515,10 @@ function CompanyModal({
     if (!emailRegex.test(email.trim()))
       return setErr("Please enter a valid email address.");
 
-    if (!phone.trim()) return setErr("Phone number is required.");
+    const phoneValidation = validatePhoneNumber(phone, phoneCountry);
+    if (!phoneValidation.isValid)
+      return setErr(phoneValidation.error || "Please enter a valid international phone number.");
+    const normalizedPhone = phoneValidation.e164!;
 
     if (logoInvalid)
       return setErr("Please choose a valid logo image before continuing.");
@@ -479,8 +528,17 @@ function CompanyModal({
       return setErr("Company logo is required.");
     }
 
-    if (creditBalance !== "" && Number(creditBalance) < 0)
-      return setErr("Credit balance cannot be negative.");
+    if (creditBalance !== "") {
+      const creditNum = Number(creditBalance);
+      if (isNaN(creditNum) || creditNum < 0 || !Number.isFinite(creditNum)) {
+        return setErr("Credit balance cannot be negative.");
+      }
+      const strVal = String(creditBalance).trim();
+      const parts = strVal.split(".");
+      if (parts.length === 2 && parts[1].length > 2) {
+        return setErr("Credit balance cannot have more than 2 decimal places.");
+      }
+    }
 
     if (!company) {
       if (!password.trim()) return setErr("Password is required.");
@@ -511,7 +569,7 @@ function CompanyModal({
 
       formData.append("name", name);
       formData.append("email", email);
-      if (phone) formData.append("phone", phone);
+      if (normalizedPhone) formData.append("phone", normalizedPhone);
       formData.append("credit_balance", String(creditBalance || 0));
 
       if (!isEdit) {
@@ -520,7 +578,7 @@ function CompanyModal({
           JSON.stringify({
             name: name.trim(),
             email: email.trim(),
-            phone: phone || undefined,
+            phone: normalizedPhone || undefined,
             password,
           }),
         );
@@ -581,23 +639,40 @@ function CompanyModal({
       const creditDiff = newBalance - oldBalance;
 
       if (creditDiff > 0) {
-        const companyId = isEdit ? company.id : data?.data?.id ?? data?.id;
-        const companyName = isEdit ? company.name : name;
+        const validation = validateCreditAmount(creditDiff);
+        if (validation.isValid) {
+          const companyId = isEdit ? company.id : data?.data?.id ?? data?.id;
+          const companyName = isEdit ? company.name : name;
 
-        if (companyId) {
-          try {
-            await axiosInstance.post("/v1/admin/credits/add", {
-              company_id: companyId,
-              company_name: companyName,
-              amount: creditDiff,
-              description: isEdit
-                ? "Credit balance updated via Edit Company"
-                : "Initial credit balance",
-              created_by: localStorage.getItem("email") || "admin@company.com",
-            });
-          } catch (creditErr) {
-            console.error("CREDIT UPDATE ERROR =>", creditErr);
-            toast.error("Company saved, but failed to update credit balance");
+          if (companyId) {
+            try {
+              const payload = {
+                company_id: companyId,
+                company_name: companyName,
+                amount: validation.amount,
+                description: isEdit
+                  ? "Credit balance updated via Edit Company"
+                  : "Initial credit balance",
+                created_by: localStorage.getItem("email") || "admin@company.com",
+              };
+              let synced = false;
+              try {
+                const res = await fetch("/api/admin/credits/add", {
+                  method: "POST",
+                  headers: getAuthHeaders(),
+                  body: JSON.stringify(payload),
+                });
+                if (res.ok) synced = true;
+              } catch {
+                // Ignore and fallback to axiosInstance
+              }
+              if (!synced) {
+                await axiosInstance.post("/v1/admin/credits/add", payload);
+              }
+            } catch (creditErr) {
+              console.error("CREDIT UPDATE ERROR =>", creditErr);
+              toast.error("Company saved, but failed to update credit balance");
+            }
           }
         }
       }
@@ -643,7 +718,16 @@ function CompanyModal({
                 : "Fill in the details below."}
             </div>
           </div>
-          <button className="mc-modal__close" onClick={onClose}>
+          <button
+            type="button"
+            className="mc-modal__close"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="Close"
+          >
             ×
           </button>
         </div>
@@ -677,36 +761,17 @@ function CompanyModal({
 
           <div className="mc-field">
             <div className="mc-field__label">PHONE *</div>
-            <PhoneInput
-              country={"in"}
+            <InternationalPhoneInput
               value={phone}
-              onChange={(value) => {
+              onChange={(value, details) => {
                 setPhone(value);
+                if (details?.countryCode) {
+                  setPhoneCountry(details.countryCode);
+                }
                 setErr(null);
               }}
-              enableSearch
-              searchPlaceholder="Search country..."
+              defaultCountry={phoneCountry}
               placeholder="Enter phone number"
-              inputStyle={{
-                width: "100%",
-                height: "48px",
-                background: "#12182b",
-                color: "#fff",
-                border: "1px solid #2c3657",
-                borderRadius: "10px",
-                paddingLeft: "55px",
-              }}
-              buttonStyle={{
-                background: "#12182b",
-                border: "1px solid #2c3657",
-                borderRadius: "10px 0 0 10px",
-              }}
-              dropdownStyle={{
-                background: "#1b2338",
-                color: "#fff",
-                border: "1px solid #2c3657",
-                maxHeight: "250px",
-              }}
             />
           </div>
 
@@ -737,9 +802,9 @@ function CompanyModal({
                   fontSize: 20,
                 }}
               >
-                {logoPreview ? (
+                {logoPreview || company?.logoUrl ? (
                   <img
-                    src={logoPreview}
+                    src={logoPreview || company?.logoUrl || ""}
                     alt="Logo preview"
                     style={{
                       width: "100%",
@@ -770,12 +835,12 @@ function CompanyModal({
                     marginTop: 4,
                   }}
                 >
-                  PNG, JPG or WEBP — max 2MB
+                  Supports all image formats (PNG, JPG, SVG, WEBP, etc.) — max 10MB
                 </div>
               </div>
               <input
                 type="file"
-                accept="image/png,image/jpeg,image/webp"
+                accept="image/*"
                 style={{ display: "none" }}
                 onChange={handleLogoChange}
               />
@@ -841,8 +906,25 @@ function CompanyModal({
               step="0.01"
               placeholder="0.00"
               value={creditBalance}
+              onKeyDown={(e) => {
+                if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") {
+                  e.preventDefault();
+                }
+              }}
+              onPaste={(e) => {
+                const pasteData = e.clipboardData.getData("text");
+                if (pasteData.includes("-")) {
+                  e.preventDefault();
+                  setErr("Credit balance cannot be negative.");
+                }
+              }}
               onChange={(e) => {
-                setCreditBalance(e.target.value);
+                const val = e.target.value;
+                if (val.startsWith("-") || val.includes("-")) {
+                  setErr("Credit balance cannot be negative.");
+                  return;
+                }
+                setCreditBalance(val);
                 setErr(null);
               }}
             />
@@ -890,7 +972,15 @@ function CompanyModal({
             >
               {saving ? "Saving…" : company ? "Save Changes" : "Create Company"}
             </button>
-            <button className="mc-btn mc-btn--ghost" onClick={onClose}>
+            <button
+              type="button"
+              className="mc-btn mc-btn--ghost"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
+            >
               Cancel
             </button>
           </div>
@@ -941,7 +1031,16 @@ function CompanyDetailModal({
               </div>
             </div>
           </div>
-          <button className="mc-modal__close" onClick={onClose}>
+          <button
+            type="button"
+            className="mc-modal__close"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="Close"
+          >
             ×
           </button>
         </div>
@@ -952,7 +1051,7 @@ function CompanyDetailModal({
           {(
             [
               ["Domain", company.domain, "var(--mc-accent2)"],
-              ["Phone", company.phone, "var(--mc-success)"],
+              ["Phone", formatPhoneNumber(company.phone), "var(--mc-success)"],
               ["Credit Balance", `₹${company.creditBalance}`, "var(--mc-warn)"],
               ["Member Since", company.createdAt, "var(--mc-accent2)"],
             ] as [string, string, string][]
@@ -1075,7 +1174,7 @@ function CompanyCard({
         {(
           [
             ["EMAIL", company.email, "📧"],
-            ["PHONE", company.phone, "📞"],
+            ["PHONE", formatPhoneNumber(company.phone), "📞"],
             ["CREDIT", `₹${company.creditBalance}`, "💰"],
             ["JOINED", company.createdAt, "📅"],
           ] as [string, string, string][]
@@ -1158,52 +1257,82 @@ function AddCreditModal({
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // Compute live validation status for UI feedback and submit button
+  const currentValidation = amount.trim() ? validateCreditAmount(amount) : null;
+  const isAmountValid = currentValidation?.isValid ?? false;
+
   const handleAddCredit = async () => {
     setErr(null);
 
-    // ── Validation ──────────────────────────────────────────────────────────
-    const numAmount = Number(amount);
-
-    if (!amount.trim() || isNaN(numAmount)) {
-      setErr("Please enter a valid amount.");
+    // ── Client-side Boundary Validation ───────────────────────────────────
+    const validation = validateCreditAmount(amount);
+    if (!validation.isValid) {
+      setErr(validation.error || "Credit amount must be greater than 0.");
       return;
     }
 
-    if (numAmount <= 0) {
-      setErr("Amount must be greater than 0.");
-      return;
-    }
+    const numAmount = validation.amount;
 
     try {
       setLoading(true);
 
       const adminEmail = localStorage.getItem("email") || "admin@company.com";
-
-      const response = await axiosInstance.post("/v1/admin/credits/add", {
+      const payload = {
         company_id: company.id,
         company_name: company.name,
         amount: numAmount,
         description: description.trim() || "Top-up credits",
         created_by: adminEmail,
-      });
+      };
 
-      const data = response.data;
+      // 1. Try internal Next.js API first (which has full server-side boundary validation & atomic DB sync)
+      let data: any = null;
+      let localSucceeded = false;
 
-      // FIX: check data.success before showing success toast
-      if (!data.success) {
-        setErr(data?.message || "Failed to add credit.");
-        return;
+      try {
+        const localRes = await fetch("/api/admin/credits/add", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        });
+
+        const json = await localRes.json().catch(() => null);
+
+        if (!localRes.ok) {
+          // If server rejected with a 4xx validation or auth error, respect server message and do not retry
+          setErr(json?.message || json?.error || "Credit amount rejected by server.");
+          return;
+        }
+
+        if (json?.success) {
+          data = json;
+          localSucceeded = true;
+        }
+      } catch {
+        // Network/proxy fallback to axiosInstance
+      }
+
+      // 2. If internal API didn't complete, fallback to axiosInstance
+      if (!localSucceeded) {
+        const response = await axiosInstance.post("/v1/admin/credits/add", payload);
+        data = response.data;
+
+        if (!data?.success) {
+          setErr(data?.message || "Failed to add credit.");
+          return;
+        }
       }
 
       toast.success("Credit added successfully");
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error(error);
+      console.error("[AddCreditModal] error =>", error);
       setErr(
         error?.response?.data?.message ||
+          error?.response?.data?.error ||
           error?.message ||
-          "Failed to add credit",
+          "Failed to add credit"
       );
     } finally {
       setLoading(false);
@@ -1218,7 +1347,16 @@ function AddCreditModal({
             <div className="mc-modal__title">Add Credit</div>
             <div className="mc-modal__sub">Top up {company.name}'s balance</div>
           </div>
-          <button className="mc-modal__close" onClick={onClose}>
+          <button
+            type="button"
+            className="mc-modal__close"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="Close"
+          >
             ×
           </button>
         </div>
@@ -1245,13 +1383,40 @@ function AddCreditModal({
             <input
               className="mc-input"
               type="number"
-              min="1"
+              min="0.01"
               step="0.01"
-              placeholder="Enter amount"
+              placeholder="Enter amount (e.g. 500)"
               value={amount}
+              onKeyDown={(e) => {
+                // Prevent entering negative sign, plus sign, or exponential notation
+                if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") {
+                  e.preventDefault();
+                }
+              }}
+              onPaste={(e) => {
+                const pasteData = e.clipboardData.getData("text");
+                if (pasteData.includes("-")) {
+                  e.preventDefault();
+                  setErr("Credit amount must be greater than 0.");
+                }
+              }}
               onChange={(e) => {
-                setAmount(e.target.value);
-                setErr(null);
+                const val = e.target.value;
+                if (val.startsWith("-") || val.includes("-")) {
+                  setErr("Credit amount must be greater than 0.");
+                  return;
+                }
+                setAmount(val);
+                if (val.trim()) {
+                  const check = validateCreditAmount(val);
+                  if (!check.isValid) {
+                    setErr(check.error);
+                  } else {
+                    setErr(null);
+                  }
+                } else {
+                  setErr(null);
+                }
               }}
             />
           </div>
@@ -1274,7 +1439,7 @@ function AddCreditModal({
               type="button"
               className="mc-btn mc-btn--primary"
               onClick={handleAddCredit}
-              disabled={loading}
+              disabled={loading || !amount.trim() || !isAmountValid}
             >
               {loading ? "Adding…" : "Add Credit"}
             </button>
@@ -1314,16 +1479,47 @@ function ManageCompaniesContent() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const query = search.trim().toLowerCase();
+  const filtered = companies.filter((c) => {
+    const emailDomain = c.email.includes("@")
+      ? c.email.split("@").pop()?.trim().toLowerCase() ?? ""
+      : "";
+    const isPublicEmail = PUBLIC_EMAIL_DOMAINS.has(emailDomain);
+    const domainText = c.domain && c.domain !== "—" ? c.domain : "";
+    const searchable = [
+      c.name,
+      c.email,
+      isPublicEmail ? "" : emailDomain,
+      domainText,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return (
+      (filter === "ALL" || c.status === filter) &&
+      (!query || searchable.includes(query))
+    );
+  });
+
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<"suspend" | "delete" | null>(null);
+
+  // Compute reactive Select All state based on filtered companies
+  const isAllSelected =
+    filtered.length > 0 &&
+    filtered.every((c) => selectedCompanies.includes(c.id));
 
   const handleSelectAll = () => {
-    if (selectAll) {
+    if (isAllSelected) {
       setSelectedCompanies([]);
     } else {
       setSelectedCompanies(filtered.map((c) => c.id));
     }
-    setSelectAll(!selectAll);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCompanies([]);
   };
 
   const handleSelectCompany = (companyId: string) => {
@@ -1334,37 +1530,200 @@ function ManageCompaniesContent() {
     );
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedCompanies.length === 0) return;
+  // Clean up selected companies when search, filter, or loaded companies change
+  useEffect(() => {
+    setSelectedCompanies((prev) =>
+      prev.filter((id) => filtered.some((c) => c.id === id)),
+    );
+  }, [search, filter, companies]);
+
+  const handleBulkSuspend = async () => {
+    if (selectedCompanies.length === 0 || bulkLoading) return;
+
+    const validSelected = companies.filter((c) => selectedCompanies.includes(c.id));
+    if (validSelected.length === 0) {
+      toast.error("No valid companies selected.");
+      setSelectedCompanies([]);
+      return;
+    }
+
+    const count = validSelected.length;
 
     const result = await Swal.fire({
-      title: "Delete Selected Companies?",
-      text: "This action cannot be undone",
+      title: `Suspend ${count} Selected Compan${count === 1 ? "y" : "ies"}?`,
+      text: `Are you sure you want to suspend ${count} selected compan${count === 1 ? "y" : "ies"}? Their access will be blocked.`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#ef4444",
+      confirmButtonColor: "#f59e0b",
       cancelButtonColor: "#6b7280",
-      confirmButtonText: "Delete",
+      confirmButtonText: "Confirm Suspend",
+      cancelButtonText: "Cancel",
     });
 
     if (!result.isConfirmed) return;
 
     try {
-      await Promise.all(
-        selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/admin/companies/${id}`),
-        ),
-      );
+      setBulkLoading(true);
+      setBulkActionType("suspend");
+
+      let succeeded = 0;
+      let failed = 0;
+
+      // 1. Try Next.js bulk suspend endpoint first
+      let bulkSucceeded = false;
+      try {
+        const localRes = await fetch("/api/admin/companies/bulk-suspend", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ companyIds: validSelected.map((c) => c.id) }),
+        });
+        const json = await localRes.json().catch(() => null);
+        if (localRes.ok && json?.success) {
+          succeeded = json.succeeded ?? validSelected.length;
+          failed = json.failed ?? 0;
+          bulkSucceeded = true;
+        }
+      } catch {
+        // Fallback to axiosInstance
+      }
+
+      // 2. If bulk endpoint didn't handle, fallback to individual suspend endpoints
+      if (!bulkSucceeded) {
+        const results = await Promise.allSettled(
+          validSelected.map((c) =>
+            axiosInstance.put(`/v1/admin/companies/${c.id}/suspend`),
+          ),
+        );
+
+        for (const res of results) {
+          if (res.status === "fulfilled" && (res.value.data?.success ?? true)) {
+            succeeded++;
+          } else {
+            failed++;
+          }
+        }
+      }
 
       setSelectedCompanies([]);
-      setSelectAll(false);
-      toast.success(
-        `${selectedCompanies.length} companies deleted successfully`,
+
+      if (failed === 0) {
+        toast.success(
+          `${succeeded} compan${succeeded === 1 ? "y" : "ies"} suspended successfully.`,
+        );
+      } else if (succeeded > 0) {
+        toast.warning(
+          `${succeeded} compan${succeeded === 1 ? "y" : "ies"} suspended, ${failed} failed.`,
+        );
+      } else {
+        toast.error("Failed to suspend selected companies.");
+      }
+
+      await fetchCompanies();
+    } catch (error: any) {
+      console.error("[handleBulkSuspend] Error =>", error);
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to suspend selected companies.",
       );
-      fetchCompanies();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete selected companies");
+    } finally {
+      setBulkLoading(false);
+      setBulkActionType(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCompanies.length === 0 || bulkLoading) return;
+
+    const validSelected = companies.filter((c) => selectedCompanies.includes(c.id));
+    if (validSelected.length === 0) {
+      toast.error("No valid companies selected.");
+      setSelectedCompanies([]);
+      return;
+    }
+
+    const count = validSelected.length;
+
+    const result = await Swal.fire({
+      title: `Delete ${count} Selected Compan${count === 1 ? "y" : "ies"}?`,
+      text: `Are you sure you want to delete ${count} selected compan${count === 1 ? "y" : "ies"}? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Confirm Delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setBulkLoading(true);
+      setBulkActionType("delete");
+
+      let succeeded = 0;
+      let failed = 0;
+
+      // 1. Try Next.js bulk delete endpoint first
+      let bulkSucceeded = false;
+      try {
+        const localRes = await fetch("/api/admin/companies/bulk-delete", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ companyIds: validSelected.map((c) => c.id) }),
+        });
+        const json = await localRes.json().catch(() => null);
+        if (localRes.ok && json?.success) {
+          succeeded = json.succeeded ?? validSelected.length;
+          failed = json.failed ?? 0;
+          bulkSucceeded = true;
+        }
+      } catch {
+        // Fallback to axiosInstance
+      }
+
+      // 2. If bulk endpoint didn't handle, fallback to individual delete endpoints
+      if (!bulkSucceeded) {
+        const results = await Promise.allSettled(
+          validSelected.map((c) =>
+            axiosInstance.delete(`/v1/admin/companies/${c.id}`),
+          ),
+        );
+
+        for (const res of results) {
+          if (res.status === "fulfilled" && (res.value.data?.success ?? true)) {
+            succeeded++;
+          } else {
+            failed++;
+          }
+        }
+      }
+
+      setSelectedCompanies([]);
+
+      if (failed === 0) {
+        toast.success(
+          `${succeeded} compan${succeeded === 1 ? "y" : "ies"} deleted successfully.`,
+        );
+      } else if (succeeded > 0) {
+        toast.warning(
+          `${succeeded} compan${succeeded === 1 ? "y" : "ies"} deleted, ${failed} failed.`,
+        );
+      } else {
+        toast.error("Failed to delete selected companies.");
+      }
+
+      await fetchCompanies();
+    } catch (error: any) {
+      console.error("[handleBulkDelete] Error =>", error);
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to delete selected companies.",
+      );
+    } finally {
+      setBulkLoading(false);
+      setBulkActionType(null);
     }
   };
 
@@ -1423,20 +1782,6 @@ function ManageCompaniesContent() {
     "SUSPENDED",
     "INACTIVE",
   ];
-  const query = search.trim().toLowerCase();
-
-  const filtered = companies.filter((c) => {
-    const emailDomain = c.email.includes("@")
-      ? c.email.split("@").pop() ?? ""
-      : "";
-    const searchable = [c.name, c.email, emailDomain, c.domain]
-      .join(" ")
-      .toLowerCase();
-    return (
-      (filter === "ALL" || c.status === filter) &&
-      (!query || searchable.includes(query))
-    );
-  });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1584,23 +1929,28 @@ function ManageCompaniesContent() {
           color="#FF6B6B"
         />
         <KPI
-          label="On Trial"
-          value={String(companies.filter((c) => c.status === "TRIAL").length)}
-          icon="⏳"
-          color="#FDCB6E"
+          label="Inactive"
+          value={String(
+            companies.filter((c) => c.status === "INACTIVE").length,
+          )}
+          icon="⏸️"
+          color="#6b7280"
         />
       </div>
 
       {/* FILTER BAR */}
       <div className="mc-filter-bar mc-filter-bar-top">
         <div className="mc-search-wrap mc-search-wrap-small">
-          <span className="mc-search-icon">🔍</span>
+          <span className="mc-search-icon" aria-hidden="true">
+            🔍
+          </span>
           <input
             className="mc-search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email or domain…"
             autoComplete="off"
+            aria-label="Search by name, email or domain"
           />
         </div>
         <div className="mc-filter-group">
@@ -1617,22 +1967,69 @@ function ManageCompaniesContent() {
           ))}
         </div>
         <div className="mc-bulk-actions">
-          {selectedCompanies.length > 0 && (
-            <button className="mc-delete-selected" onClick={handleBulkDelete}>
-              Delete Selected ({selectedCompanies.length})
-            </button>
-          )}
-          <label className="mc-select-all">
+          <label className="mc-select-all" title="Select all visible companies">
             <input
               type="checkbox"
-              checked={selectAll}
+              checked={isAllSelected}
               onChange={handleSelectAll}
+              aria-label="Select all companies"
             />
             Select All
           </label>
           <span className="mc-filter-count">{filtered.length} companies</span>
         </div>
       </div>
+
+      {/* BULK ACTION TOOLBAR (visible ONLY when one or more companies are selected) */}
+      {selectedCompanies.length > 0 && (
+        <div
+          className="mc-bulk-bar"
+          role="region"
+          aria-label="Bulk actions toolbar"
+        >
+          <div className="mc-bulk-bar__left">
+            <div className="mc-bulk-bar__count">
+              <span className="mc-bulk-bar__num">{selectedCompanies.length}</span>
+              <span className="mc-bulk-bar__label">
+                compan{selectedCompanies.length === 1 ? "y" : "ies"} selected
+              </span>
+            </div>
+            <button
+              type="button"
+              className="mc-bulk-bar__link mc-bulk-bar__link--muted"
+              onClick={handleClearSelection}
+              disabled={bulkLoading}
+              title="Clear selection"
+            >
+              Clear Selection
+            </button>
+          </div>
+          <div className="mc-bulk-bar__actions">
+            <button
+              type="button"
+              className="mc-bulk-btn mc-bulk-btn--suspend"
+              onClick={handleBulkSuspend}
+              disabled={bulkLoading}
+              title="Suspend all selected companies"
+            >
+              {bulkLoading && bulkActionType === "suspend"
+                ? "Suspending…"
+                : `⏸️ Bulk Suspend (${selectedCompanies.length})`}
+            </button>
+            <button
+              type="button"
+              className="mc-bulk-btn mc-bulk-btn--delete"
+              onClick={handleBulkDelete}
+              disabled={bulkLoading}
+              title="Delete all selected companies"
+            >
+              {bulkLoading && bulkActionType === "delete"
+                ? "Deleting…"
+                : `🗑️ Bulk Delete (${selectedCompanies.length})`}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TABLE */}
       {loading ? (
@@ -1651,8 +2048,9 @@ function ManageCompaniesContent() {
                 <th style={{ width: "50px" }}>
                   <input
                     type="checkbox"
-                    checked={selectAll}
+                    checked={isAllSelected}
                     onChange={handleSelectAll}
+                    aria-label="Select all companies"
                   />
                 </th>
                 <th>COMPANY</th>
@@ -1666,12 +2064,16 @@ function ManageCompaniesContent() {
             </thead>
             <tbody>
               {paginatedCompanies.map((company) => (
-                <tr key={company.id}>
+                <tr
+                  key={company.id}
+                  className={selectedCompanies.includes(company.id) ? "mc-row--selected" : ""}
+                >
                   <td>
                     <input
                       type="checkbox"
                       checked={selectedCompanies.includes(company.id)}
                       onChange={() => handleSelectCompany(company.id)}
+                      aria-label={`Select company ${company.name}`}
                     />
                   </td>
                   <td>
@@ -1694,7 +2096,7 @@ function ManageCompaniesContent() {
                     </div>
                   </td>
                   <td>{company.email}</td>
-                  <td>{company.phone}</td>
+                  <td>{formatPhoneNumber(company.phone)}</td>
                   <td className="mc-credit-cell">
                     ₹{Number(company.creditBalance || 0).toFixed(2)}
                   </td>

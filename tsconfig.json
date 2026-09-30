@@ -10,6 +10,8 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -23,6 +25,7 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"

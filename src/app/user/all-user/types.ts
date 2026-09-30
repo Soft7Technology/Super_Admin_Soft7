@@ -71,3 +71,11 @@ export function timeAgo(dateString: string | null): string {
   if (diffHours > 0) return `${diffHours}h ago`;
   return "Just now";
 }
+
+export {
+  formatPhoneNumber,
+  validatePhoneNumber,
+  normalizePhoneNumber,
+  parsePhoneNumber,
+} from "@/lib/phone";
+

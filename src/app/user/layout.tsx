@@ -1,10 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import { useTheme, tokens } from "../../context/ThemeContext";
-import { useRedirectOnRefresh } from "../../hooks/useRedirectOnRefresh";
 import { Toaster } from "react-hot-toast";
 import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 const pathMappings: Record<string, string> = {
@@ -16,7 +15,8 @@ const pathMappings: Record<string, string> = {
   "/user/system": "System",
   "/user/profile": "Profile",
   "/user/support-tickets": "Support Tickets",
-  "/user/permissions": "Permissions",
+  "/user/permissions": "Domain Approvals",
+  "/user/domain-approvals": "Domain Approvals",
 };
 
 function getNavFromPath(pathname: string | null): string {
@@ -31,7 +31,6 @@ function getNavFromPath(pathname: string | null): string {
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [authChecked, setAuthChecked] = useState(false);
 

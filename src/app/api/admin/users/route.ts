@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../../lib/prisma";
 import { getPrismaConnectionErrorMessage } from "../../../../lib/prisma-errors";
+import bcrypt from "bcryptjs";
+import { validatePhoneNumber } from "@/lib/phone";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +78,7 @@ export async function GET(req: NextRequest) {
           createdAt: true,
           updatedAt: true,
           company: {
-            select: { id: true, name: true },
+            select: { id: true, name: true, domain: true },
           },
           _count: {
             select: {
@@ -99,21 +101,23 @@ export async function GET(req: NextRequest) {
 
     // ── Serialize ───────────────────────────────────────────────────────────
     const serialized = users.map((u) => ({
-      id:        u.id,
-      name:      u.name,
-      email:     u.email,
-      phone:     u.phone ?? "",
-      role:      u.role === "ADMIN" ? "Admin" : "User",
-      status:    u.status as string,
-      company:   u.company?.name ?? "—",
-      plan:      u.subscriptionPlan ?? "Starter",
-      av:        avatarColor(u.id),
-      login:     formatRelative(u.updatedAt),
-      joined:    formatDate(u.createdAt),
-      msgs:      u._count.messages,
-      campaigns: u._count.campaigns,
-      chatbots:  u._count.chatbots,
-      pro:       u.isPremium,
+      id:            String(u.id),
+      name:          u.name,
+      email:         u.email,
+      phone:         u.phone ?? "",
+      role:          u.role === "ADMIN" ? "Admin" : "User",
+      status:        u.status as string,
+      company:       u.company?.name ?? "—",
+      companyId:     u.company?.id ? String(u.company.id) : undefined,
+      companyDomain: u.company?.domain ?? "",
+      plan:          u.subscriptionPlan ?? "Starter",
+      av:            avatarColor(u.id),
+      login:         formatRelative(u.updatedAt),
+      joined:        formatDate(u.createdAt),
+      msgs:          u._count.messages,
+      campaigns:     u._count.campaigns,
+      chatbots:      u._count.chatbots,
+      pro:           u.isPremium,
     }));
 
     return NextResponse.json({
@@ -163,3 +167,158 @@ function formatRelative(d: Date): string {
   const months = Math.floor(days / 30);
   return `${months} month${months > 1 ? "s" : ""} ago`;
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { name, email, phone, password, role, status, plan, companyId } = body;
+
+    // 1. Validation
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Validation Error", message: "Full name is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Validation Error", message: "Email is required." },
+        { status: 400 }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json(
+        { success: false, error: "Validation Error", message: "Please enter a valid email address." },
+        { status: 400 }
+      );
+    }
+
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return NextResponse.json(
+        { success: false, error: "Validation Error", message: "Password must be at least 8 characters long." },
+        { status: 400 }
+      );
+    }
+
+    const lowerEmail = email.trim().toLowerCase();
+
+    // 2. Duplicate Email Check
+    const existing = await prisma.user.findUnique({
+      where: { email: lowerEmail },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: "Duplicate Error", message: "A user with this email already exists." },
+        { status: 409 }
+      );
+    }
+
+    // 3. International Phone Validation & E.164 Normalization
+    let normalizedPhone: string | null = null;
+    if (phone && String(phone).trim()) {
+      const phoneValidation = validatePhoneNumber(phone);
+      if (!phoneValidation.isValid) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Validation Error",
+            message: phoneValidation.error || "Please enter a valid international phone number.",
+          },
+          { status: 400 }
+        );
+      }
+      normalizedPhone = phoneValidation.e164!;
+
+      // Duplicate Phone Check on normalized E.164
+      const existingPhone = await prisma.user.findFirst({
+        where: { phone: normalizedPhone },
+      });
+      if (existingPhone) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Duplicate Error",
+            message: "A user with this phone number already exists.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // 4. Password Hashing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 5. Status and Role Normalization
+    const rawStatus = String(status || "ACTIVE").toUpperCase();
+    const prismaStatus =
+      rawStatus === "SUSPENDED"
+        ? "SUSPENDED"
+        : rawStatus === "INACTIVE"
+        ? "PENDING"
+        : "ACTIVE";
+
+    const finalRole = String(role || "USER").toUpperCase() === "ADMIN" ? "ADMIN" : "USER";
+
+    const parsedCompanyId =
+      companyId !== null && companyId !== undefined && companyId !== ""
+        ? Number(companyId)
+        : null;
+
+    // 6. Database Persistence
+    const newUser = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: lowerEmail,
+        phone: normalizedPhone,
+        password: hashedPassword,
+        role: finalRole,
+        status: prismaStatus as any,
+        isActive: rawStatus === "ACTIVE",
+        subscriptionPlan: plan ? String(plan).trim() : "Starter",
+        companyId: parsedCompanyId && !isNaN(parsedCompanyId) && parsedCompanyId > 0 ? parsedCompanyId : null,
+        memberSince: new Date(),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        subscriptionPlan: true,
+        createdAt: true,
+        company: {
+          select: { id: true, name: true, domain: true },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "User created successfully",
+      user: {
+        id: String(newUser.id),
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone ?? "",
+        role: newUser.role === "ADMIN" ? "Admin" : "User",
+        status: rawStatus,
+        company: newUser.company?.name ?? "—",
+        companyId: newUser.company?.id ? String(newUser.company.id) : undefined,
+        companyDomain: newUser.company?.domain ?? "",
+        plan: newUser.subscriptionPlan ?? "Starter",
+      },
+    });
+  } catch (error: any) {
+    console.error("[admin/users POST] error:", error);
+    return NextResponse.json(
+      { success: false, error: "Server Error", message: error?.message || "Failed to create user." },
+      { status: 500 }
+    );
+  }
+}
+

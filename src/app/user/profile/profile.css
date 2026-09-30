@@ -63,8 +63,6 @@
   --pf-hero-border:     #ECFDF5;
   --pf-perm-granted-bg: rgba(5,150,105,0.08);
   --pf-perm-denied-bg:  #D1FAE5;
-  --pf-pwd-err-bg:      rgba(220,38,38,0.06);
-  --pf-pwd-err-br:      rgba(220,38,38,0.18);
   --pf-danger-card-bg:  rgba(220,38,38,0.03);
   --pf-danger-card-br:  rgba(220,38,38,0.18);
   --pf-danger-card-hbr: rgba(220,38,38,0.12);
@@ -378,45 +376,6 @@
   border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
   animation: pf-spin 0.7s linear infinite; display: inline-block;
 }
-
-/* ─── PASSWORD STRENGTH ──────────────────────────────────── */
-.pf-strength { margin-top: 8px; }
-.pf-strength__bars { display: flex; gap: 4px; margin-bottom: 5px; }
-.pf-strength__bar {
-  flex: 1; height: 3px; border-radius: 2px;
-  background: var(--pf-surf3); transition: all 0.3s;
-}
-.pf-strength__label { font-size: 10px; font-weight: 700; transition: color 0.3s; }
-
-/* Password error */
-.pf-pwd-err {
-  font-size: 11px; color: var(--pf-danger);
-  background: var(--pf-pwd-err-bg);
-  border: 1px solid var(--pf-pwd-err-br);
-  border-radius: 8px; padding: 9px 12px;
-  transition: background 0.3s, border-color 0.3s;
-}
-
-/* Password action btn */
-.pf-btn-pwd {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  color: #fff; border: none;
-  padding: 9px 22px; border-radius: 9px; cursor: pointer;
-  font-size: 13px; font-weight: 700;
-  display: flex; align-items: center; gap: 7px;
-  transition: all 0.2s;
-  box-shadow: none;
-}
-.pf-btn-pwd--saved {
-  background: rgba(52,211,153,0.10); color: var(--pf-success);
-  border: 1px solid rgba(52,211,153,0.30);
-  box-shadow: none;
-}
-[data-theme="light"] .pf-btn-pwd--saved {
-  background: rgba(5,150,105,0.09); color: var(--pf-success);
-  border-color: rgba(5,150,105,0.28);
-}
-.pf-btn-row { display: flex; justify-content: flex-end; }
 
 /* ─── DANGER ZONE ────────────────────────────────────────── */
 .pf-danger-card {

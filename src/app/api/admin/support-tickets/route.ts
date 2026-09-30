@@ -5,7 +5,7 @@ import { sendSupportTicketReplyEmail } from "../../../../lib/support-ticket-emai
 export const dynamic = "force-dynamic";
 const FORWARD_LOG_PREFIX = "[FORWARDED_TO_SUPER_ADMIN]";
 
-type UiTicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING";
+type UiTicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING" | "SPAM";
 type DbTicketStatus = "PENDING" | "IN_PROGRESS" | "RESOLVED";
 
 const UI_TO_DB_STATUS: Record<UiTicketStatus, DbTicketStatus> = {
@@ -14,6 +14,7 @@ const UI_TO_DB_STATUS: Record<UiTicketStatus, DbTicketStatus> = {
   IN_PROGRESS: "IN_PROGRESS",
   RESOLVED: "RESOLVED",
   CLOSED: "RESOLVED",
+  SPAM: "RESOLVED",
 };
 
 const ticketInclude = {
@@ -257,5 +258,36 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[POST /api/admin/support-tickets]", err);
     return NextResponse.json({ error: "Failed to send ticket reply" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const idParam = searchParams.get("id");
+    const body = await req.json().catch(() => null) as { ticketId?: number | string } | null;
+    const ticketId = parseTicketId(idParam ?? body?.ticketId);
+
+    if (!ticketId) {
+      return NextResponse.json({ error: "Valid ticketId is required" }, { status: 400 });
+    }
+
+    const existing = await prisma.support_tickets.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (existing) {
+      await prisma.support_ticket_replies.deleteMany({
+        where: { ticketId },
+      });
+      await prisma.support_tickets.delete({
+        where: { id: ticketId },
+      });
+    }
+
+    return NextResponse.json({ success: true, message: `Ticket #${ticketId} deleted successfully` });
+  } catch (err) {
+    console.error("[DELETE /api/admin/support-tickets]", err);
+    return NextResponse.json({ error: "Failed to delete ticket" }, { status: 500 });
   }
 }

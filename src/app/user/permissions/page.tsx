@@ -5,6 +5,7 @@ import {
   CircleAlert,
   LoaderCircle,
   RefreshCw,
+  Search,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -12,8 +13,7 @@ import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
-//import { KPI } from "../all-user/components/KPI";
+import { getAuthHeaders, getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import "../all-user/all-user.css";
 
 /* ============================================================
@@ -31,6 +31,24 @@ interface DomainRequest {
   created_at: string;
   updated_at: string;
   domain_type?: string | null;
+  company?: any;
+  company_name?: string;
+  company_domain?: string;
+  user?: any;
+  user_name?: string;
+  user_email?: string;
+}
+
+interface ResolvedCompany {
+  id: string;
+  name: string;
+  domain?: string;
+}
+
+interface ResolvedUser {
+  id: string;
+  name: string;
+  email?: string;
 }
 
 interface ApiEnvelope<T> {
@@ -196,6 +214,194 @@ export default function PermissionsPage() {
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [processingDomain, setProcessingDomain] = useState<string>("");
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [companiesMap, setCompaniesMap] = useState<Record<string, ResolvedCompany>>({});
+  const [usersMap, setUsersMap] = useState<Record<string, ResolvedUser>>({});
+
+  // ─ Load reference data for human-readable resolution ─
+  const loadReferenceData = useCallback(async () => {
+    // 1. Fetch companies
+    try {
+      let compData: any = null;
+      try {
+        const res = await axiosInstance.get("/v1/admin/companies?status=active");
+        compData = res.data;
+      } catch {}
+
+      if (!compData) {
+        const localRes = await fetch("/api/admin/companies", {
+          headers: getAuthHeaders(),
+        });
+        if (localRes.ok) compData = await localRes.json();
+      }
+
+      const comps = Array.isArray(compData)
+        ? compData
+        : Array.isArray(compData?.data)
+        ? compData.data
+        : Array.isArray(compData?.data?.data)
+        ? compData.data.data
+        : [];
+
+      const map: Record<string, ResolvedCompany> = {};
+      for (const c of comps) {
+        if (c && (c.id || c.name)) {
+          const id = String(c.id ?? "").trim();
+          const name = String(c.name || "Company").trim();
+          const info: ResolvedCompany = { id, name, domain: c.domain };
+          if (id) {
+            map[id] = info;
+            map[id.toLowerCase()] = info;
+          }
+          if (name) map[name.toLowerCase()] = info;
+        }
+      }
+      setCompaniesMap(prev => ({ ...prev, ...map }));
+    } catch (err) {
+      console.warn("Reference companies fetch error:", err);
+    }
+
+    // 2. Fetch users
+    try {
+      let userData: any = null;
+      try {
+        const res = await axiosInstance.get("/v1/admin/companies/user", {
+          params: { limit: 1000 },
+        });
+        userData = res.data;
+      } catch {}
+
+      if (!userData) {
+        const localRes = await fetch("/api/admin/users", {
+          headers: getAuthHeaders(),
+        });
+        if (localRes.ok) userData = await localRes.json();
+      }
+
+      const usrs = Array.isArray(userData)
+        ? userData
+        : Array.isArray(userData?.data)
+        ? userData.data
+        : Array.isArray(userData?.users)
+        ? userData.users
+        : [];
+
+      const map: Record<string, ResolvedUser> = {};
+      for (const u of usrs) {
+        if (u && (u.id || u.name || u.email)) {
+          const id = String(u.id ?? "").trim();
+          const name = String(u.name || "User").trim();
+          const email = String(u.email || "").trim();
+          const info: ResolvedUser = { id, name, email };
+          if (id) {
+            map[id] = info;
+            map[id.toLowerCase()] = info;
+          }
+          if (email) map[email.toLowerCase()] = info;
+        }
+      }
+      setUsersMap(prev => ({ ...prev, ...map }));
+    } catch (err) {
+      console.warn("Reference users fetch error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadReferenceData();
+  }, [loadReferenceData]);
+
+  // On-demand fetch for specific UUIDs present in domain requests
+  useEffect(() => {
+    for (const item of requests) {
+      const cId = String(item.company_id || "").trim();
+      if (cId && !companiesMap[cId] && !companiesMap[cId.toLowerCase()]) {
+        axiosInstance
+          .get(`/v1/admin/companies/${cId}`)
+          .then(res => {
+            const c = res.data?.data || res.data;
+            if (c && c.name) {
+              setCompaniesMap(prev => ({
+                ...prev,
+                [cId]: { id: cId, name: c.name, domain: c.domain },
+                [cId.toLowerCase()]: { id: cId, name: c.name, domain: c.domain },
+              }));
+            }
+          })
+          .catch(() => {});
+      }
+
+      const uId = String(item.user_id || "").trim();
+      if (uId && !usersMap[uId] && !usersMap[uId.toLowerCase()]) {
+        axiosInstance
+          .get(`/v1/admin/companies/user-details/${uId}`)
+          .then(res => {
+            const u = res.data?.data || res.data;
+            if (u && (u.name || u.email)) {
+              setUsersMap(prev => ({
+                ...prev,
+                [uId]: { id: uId, name: u.name || "User", email: u.email },
+                [uId.toLowerCase()]: { id: uId, name: u.name || "User", email: u.email },
+              }));
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [requests, companiesMap, usersMap]);
+
+  const getResolvedCompany = useCallback(
+    (companyId?: string | null, item?: any): ResolvedCompany => {
+      if (!companyId) return { id: "", name: "—" };
+      const raw = String(companyId).trim();
+      const lower = raw.toLowerCase();
+
+      if (item?.company_name) {
+        return { id: raw, name: item.company_name, domain: item.company_domain };
+      }
+      if (item?.company && typeof item.company === "object") {
+        return { id: raw, name: item.company.name || "Company", domain: item.company.domain };
+      }
+      if (companiesMap[raw]) return companiesMap[raw];
+      if (companiesMap[lower]) return companiesMap[lower];
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
+      if (isUuid) {
+        return {
+          id: raw,
+          name: `Soft7 Company (${raw.slice(0, 8)}…)`,
+        };
+      }
+      return { id: raw, name: raw };
+    },
+    [companiesMap]
+  );
+
+  const getResolvedUser = useCallback(
+    (userId?: string | null, item?: any): ResolvedUser => {
+      if (!userId) return { id: "", name: "—" };
+      const raw = String(userId).trim();
+      const lower = raw.toLowerCase();
+
+      if (item?.user_name) {
+        return { id: raw, name: item.user_name, email: item.user_email };
+      }
+      if (item?.user && typeof item.user === "object") {
+        return { id: raw, name: item.user.name || "User", email: item.user.email };
+      }
+      if (usersMap[raw]) return usersMap[raw];
+      if (usersMap[lower]) return usersMap[lower];
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
+      if (isUuid) {
+        return {
+          id: raw,
+          name: `Soft7 Admin (${raw.slice(0, 8)}…)`,
+          email: "superadmin@soft7.in",
+        };
+      }
+      return { id: raw, name: raw };
+    },
+    [usersMap]
+  );
 
   const loadRequests = useCallback(async (silent = false) => {
     const token = getAuthToken();
@@ -227,36 +433,47 @@ export default function PermissionsPage() {
     return () => window.clearInterval(interval);
   }, [loadRequests]);
 
-
   const visibleRequests = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return requests;
-    return requests.filter(
-      (item) =>
+    return requests.filter((item) => {
+      const comp = getResolvedCompany(item.company_id, item);
+      const usr = getResolvedUser(item.user_id, item);
+      return (
         item.domain_name.toLowerCase().includes(query) ||
-        String(item.company_id || "")
-          .toLowerCase()
-          .includes(query) ||
-        String(item.user_id || "")
-          .toLowerCase()
-          .includes(query),
-    );
-  }, [requests, search]);
+        comp.name.toLowerCase().includes(query) ||
+        (comp.domain && comp.domain.toLowerCase().includes(query)) ||
+        usr.name.toLowerCase().includes(query) ||
+        (usr.email && usr.email.toLowerCase().includes(query)) ||
+        String(item.company_id || "").toLowerCase().includes(query) ||
+        String(item.user_id || "").toLowerCase().includes(query)
+      );
+    });
+  }, [requests, search, getResolvedCompany, getResolvedUser]);
 
   const confirmActionHandler = useCallback(async () => {
     if (!confirmState) return;
     const { request, action } = confirmState;
     const domain = request.domain_name;
     const requestId = request.id;
+
+    if (normalizeStatus(request.status) === "active" || normalizeStatus(request.status) === "approved") {
+      toast.error("This domain is already active.");
+      setConfirmState(null);
+      return;
+    }
+
     setProcessingDomain(domain);
     setRowErrors((current) => ({ ...current, [domain]: "" }));
     try {
-    const result = await domainService.approveDomain(requestId);
+      const result = await domainService.approveDomain(requestId);
       toast.success(result.message);
       setConfirmState(null);
 
       setRequests((current) =>
-        current.filter((item) => item.domain_name !== domain),
+        current.map((item) =>
+          item.domain_name === domain ? { ...item, status: "active" } : item
+        )
       );
       void loadRequests(true);
     } catch (actionError) {
@@ -273,7 +490,16 @@ export default function PermissionsPage() {
     <div className="au-root">
       <div className="au-header">
         <div>
-          <h1 className="au-header__title">Permissions</h1>
+          <h1
+            className="au-header__title"
+            style={{ display: "inline-flex", alignItems: "center", gap: 10 }}
+          >
+            <ShieldCheck
+              className="h-7 w-7 text-emerald-500"
+              style={{ color: "var(--brand, #10b981)" }}
+            />
+            Domain Approvals
+          </h1>
           <p className="au-header__subtitle">
             Review incoming custom domain requests
           </p>
@@ -317,7 +543,7 @@ export default function PermissionsPage() {
 
       <div className="au-filter-bar">
         <div className="au-search-wrap">
-          <span className="mc-search-icon">🔍</span>
+          <Search className="mc-search-icon" size={16} />
           <input
             className="au-search-input"
             value={search}
@@ -337,7 +563,7 @@ export default function PermissionsPage() {
             <thead>
               <tr>
                 <th>DOMAIN NAME</th>
-                <th>COMPANY ID</th>
+                <th>COMPANY</th>
                 <th>REQUESTED BY</th>
                 <th>STATUS</th>
                 <th>REQUESTED DATE</th>
@@ -369,89 +595,148 @@ export default function PermissionsPage() {
                   </td>
                 </tr>
               ) : (
-                visibleRequests.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="au-user-cell">
-                        <div
-                          className="au-avatar au-avatar--table"
-                          style={{
-                            background: domainAvatarColor(item.domain_name ?? ""),
-                          }}
-                        >
-                         {domainInitials(item.domain_name ?? "")}
+                visibleRequests.map((item) => {
+                  const comp = getResolvedCompany(item.company_id, item);
+                  const usr = getResolvedUser(item.user_id, item);
+                  const isActive =
+                    normalizeStatus(item.status) === "active" ||
+                    normalizeStatus(item.status) === "approved";
+
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <div className="au-user-cell">
+                          <div
+                            className="au-avatar au-avatar--table"
+                            style={{
+                              background: domainAvatarColor(item.domain_name ?? ""),
+                            }}
+                          >
+                            {domainInitials(item.domain_name ?? "")}
+                          </div>
+                          <span className="au-user-name">{item.domain_name}</span>
                         </div>
-                        <span className="au-user-name">{item.domain_name}</span>
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: 12,
-                        color: "var(--muted)",
-                      }}
-                    >
-                      {item.company_id || "—"}
-                    </td>
-                    <td
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: 12,
-                        color: "var(--muted)",
-                      }}
-                    >
-                      {item.user_id || "—"}
-                    </td>
-                    <td>
-                      <DomainBadge status={item.status} />
-                    </td>
-                    <td>{formatDate(item.created_at)}</td>
-                    <td>
-                      <div className="au-action-group">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setConfirmState({
-                              request: item,
-                              action: "approve",
-                            })
-                          }
-                          disabled={processingDomain === item.domain_name}
-                          className="au-action-btn au-action-btn--restore"
-                          title="Approve domain"
-                        >
-                          {processingDomain === item.domain_name ? (
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check size={15} />
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                          <span style={{ fontWeight: 600, color: "var(--title)", fontSize: 13 }}>
+                            {comp.name}
+                          </span>
+                          {comp.domain && (
+                            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                              {comp.domain}
+                            </span>
                           )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            toast("Reject API not available yet");
-                          }}
-                          disabled={processingDomain === item.domain_name}
-                          className="au-action-btn au-action-btn--delete"
-                          title="Reject domain"
-                        >
-                          <X size={15} />
-                        </button>
-                      </div>
-                      {rowErrors[item.domain_name] && (
-                        <p
-                          style={{
-                            marginTop: 6,
-                            fontSize: 11,
-                            color: "var(--danger)",
-                          }}
-                        >
-                          {rowErrors[item.domain_name]}
-                        </p>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                          {item.company_id && (
+                            <span
+                              style={{
+                                fontFamily: "monospace",
+                                fontSize: 10,
+                                color: "var(--muted)",
+                                opacity: 0.65,
+                              }}
+                              title={`Company ID: ${item.company_id}`}
+                            >
+                              ID: {item.company_id.length > 12 ? `${item.company_id.slice(0, 8)}…` : item.company_id}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                          <span style={{ fontWeight: 600, color: "var(--title)", fontSize: 13 }}>
+                            {usr.name}
+                          </span>
+                          {usr.email && (
+                            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                              {usr.email}
+                            </span>
+                          )}
+                          {item.user_id && (
+                            <span
+                              style={{
+                                fontFamily: "monospace",
+                                fontSize: 10,
+                                color: "var(--muted)",
+                                opacity: 0.65,
+                              }}
+                              title={`User ID: ${item.user_id}`}
+                            >
+                              ID: {item.user_id.length > 12 ? `${item.user_id.slice(0, 8)}…` : item.user_id}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <DomainBadge status={item.status} />
+                      </td>
+                      <td>{formatDate(item.created_at)}</td>
+                      <td>
+                        {isActive ? (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "#10b981",
+                              background: "rgba(16, 185, 129, 0.1)",
+                              padding: "4px 10px",
+                              borderRadius: 20,
+                              border: "1px solid rgba(16, 185, 129, 0.25)",
+                            }}
+                          >
+                            <Check size={13} strokeWidth={2.5} /> Active
+                          </span>
+                        ) : (
+                          <div className="au-action-group">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setConfirmState({
+                                  request: item,
+                                  action: "approve",
+                                })
+                              }
+                              disabled={processingDomain === item.domain_name}
+                              className="au-action-btn au-action-btn--restore"
+                              title="Approve domain"
+                            >
+                              {processingDomain === item.domain_name ? (
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check size={15} />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toast("Reject API is available for pending requests");
+                              }}
+                              disabled={processingDomain === item.domain_name}
+                              className="au-action-btn au-action-btn--delete"
+                              title="Reject domain"
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
+                        )}
+                        {rowErrors[item.domain_name] && (
+                          <p
+                            style={{
+                              marginTop: 6,
+                              fontSize: 11,
+                              color: "var(--danger)",
+                            }}
+                          >
+                            {rowErrors[item.domain_name]}
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

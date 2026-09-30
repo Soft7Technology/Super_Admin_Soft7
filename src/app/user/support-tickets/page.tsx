@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import "./support-tickets.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
+import { Ban, Search, Trash2 } from "lucide-react";
+import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 
-type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING";
+type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING" | "SPAM";
 type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type MessageSender = "USER" | "ADMIN";
 
@@ -48,6 +51,7 @@ const STATUS_META: Record<TicketStatus, { label: string; dot: string }> = {
   RESOLVED:    { label: "Resolved",    dot: "var(--st-status-resolved-col)" },
   CLOSED:      { label: "Closed",      dot: "var(--st-status-closed-col)" },
   WAITING:     { label: "Waiting",     dot: "var(--st-status-waiting-col)" },
+  SPAM:        { label: "Spam",        dot: "var(--st-status-spam-col)" },
 };
 
 const PRIORITY_META: Record<TicketPriority, { label: string; icon: string }> = {
@@ -65,6 +69,7 @@ const CAT_ICON: Record<string, string> = {
   Subscription: "📦",
   Integration:  "🔌",
   Performance:  "⚡",
+  Spam:         "🚫",
   Other:        "📋",
 };
 
@@ -87,6 +92,7 @@ const TRACK_COLORS: Record<TicketStatus, string> = {
   WAITING:     "#FB923C",
   RESOLVED:    "#818CF8",
   CLOSED:      "#64748B",
+  SPAM:        "#EF4444",
 };
 
 const PAGE_SIZE = 8;
@@ -212,11 +218,15 @@ function ConvPanel({
   onClose,
   onStatusChange,
   onReply,
+  onDelete,
+  onMarkSpam,
 }: {
   ticket: Ticket;
   onClose: () => void;
   onStatusChange: (id: string, status: TicketStatus) => Promise<void>;
   onReply: (id: string, text: string) => Promise<ReplyActionResult>;
+  onDelete: (id: string, subject?: string) => Promise<void>;
+  onMarkSpam: (id: string, subject?: string) => Promise<void>;
 }) {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
@@ -292,6 +302,23 @@ function ConvPanel({
           </div>
 
           <div className="st-conv__header-right">
+            <button
+              type="button"
+              className="st-row-btn st-row-btn--spam"
+              onClick={() => void onMarkSpam(ticket.id, ticket.subject)}
+              title="Mark as Spam"
+            >
+              <Ban size={12} /> Spam
+            </button>
+            <button
+              type="button"
+              className="st-row-btn st-row-btn--delete"
+              onClick={() => void onDelete(ticket.id, ticket.subject)}
+              title="Delete Ticket"
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+
             {/* Status dropdown */}
             <div className="st-status-dd">
               <button
@@ -386,7 +413,7 @@ function ConvPanel({
       </div>
 
       {/* Reply / Closed footer */}
-      {ticket.status !== "CLOSED" ? (
+      {ticket.status !== "CLOSED" && ticket.status !== "SPAM" ? (
         <div className="st-reply">
           <div className="st-reply__label">Reply to {ticket.user}</div>
           <textarea
@@ -421,6 +448,20 @@ function ConvPanel({
               >
                 ✕ Close Ticket
               </button>
+              <button
+                type="button"
+                className="st-btn-spam"
+                onClick={() => void onMarkSpam(ticket.id, ticket.subject)}
+              >
+                <Ban size={13} /> Spam
+              </button>
+              <button
+                type="button"
+                className="st-btn-delete"
+                onClick={() => void onDelete(ticket.id, ticket.subject)}
+              >
+                <Trash2 size={13} /> Delete
+              </button>
             </div>
 
             <button
@@ -438,10 +479,21 @@ function ConvPanel({
         </div>
       ) : (
         <div className="st-conv__closed-footer">
-          <div className="st-conv__closed-text">This ticket has been closed.</div>
-          <button className="st-btn-reopen" onClick={() => void onStatusChange(ticket.id, "OPEN")}>
-            ↺ Reopen Ticket
-          </button>
+          <div className="st-conv__closed-text">
+            {ticket.status === "SPAM" ? "This ticket has been marked as spam." : "This ticket has been closed."}
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button className="st-btn-reopen" onClick={() => void onStatusChange(ticket.id, "OPEN")}>
+              ↺ Reopen Ticket
+            </button>
+            <button
+              type="button"
+              className="st-btn-delete"
+              onClick={() => void onDelete(ticket.id, ticket.subject)}
+            >
+              <Trash2 size={13} /> Delete Ticket
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -492,74 +544,174 @@ useEffect(() => {
   };
 }, [selected]);
   // ─ Fetch all tickets ─
- const loadTickets = async () => {
-  const token = getAuthToken();
-  if (!token) {
-    redirectToLogin("missing_token");
-    return;
-  }
-
-  try {
-    const { data } = await axiosInstance.get(
-      "/v1/admin/support/tickets/forward"
-    );
-
-    const ticketsData = data?.data ?? data?.tickets ?? [];
-
-    const sortedTickets = (Array.isArray(ticketsData) ? ticketsData : []).sort(
-      (a: any, b: any) =>
-        new Date(b.updated_at).getTime() -
-        new Date(a.updated_at).getTime()
-    );
-
-    const normalised: Ticket[] = sortedTickets.map((t: any) => ({
-      id: String(t.id),
-      subject: t.message || "Support Ticket",
-      company: "Soft7 User",
-      companyLogo: "S",
-      companyCol: "#10b981",
-      user: t.name || "Unknown User",
-      userEmail: t.email || "",
-      status: (t.status || "OPEN").toUpperCase() as TicketStatus,
-      priority: "MEDIUM",
-      category: "Support",
-      created: new Date(t.created_at).toLocaleDateString(),
-      updated: new Date(t.updated_at).toLocaleDateString(),
-      unread: 0,
-      messages: [],
-    }));
-
-   setTickets(prev => {
-  return normalised.map(ticket => {
-    const existing = prev.find(p => p.id === ticket.id);
-
-    return {
-      ...ticket,
-      messages: existing?.messages || [],
-    };
-  });
-});
-  } catch (error: any) {
-    if (error?.response?.status === 401) {
-      redirectToLogin("session_expired");
+  const loadTickets = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      redirectToLogin("missing_token");
       return;
     }
-    console.error("Failed to load tickets", error);
-  } finally {
-    setLoading(false);
-  }
-};
-useEffect(() => {
-  loadTickets();
 
-  const interval = setInterval(() => {
-    if (!selectedId) {
-      loadTickets();
+    try {
+      const { data } = await axiosInstance.get(
+        "/v1/admin/support/tickets/forward"
+      );
+
+      const ticketsData = data?.data ?? data?.tickets ?? [];
+      const rawTickets = Array.isArray(ticketsData) ? ticketsData : [];
+
+      let deletedIds = new Set<string>();
+      try {
+        deletedIds = new Set<string>(
+          JSON.parse(localStorage.getItem("deleted_support_tickets_v1") || "[]")
+        );
+      } catch {}
+
+      let spamIds = new Set<string>();
+      try {
+        spamIds = new Set<string>(
+          JSON.parse(localStorage.getItem("spam_support_tickets_v1") || "[]")
+        );
+      } catch {}
+
+      const activeRawTickets = rawTickets.filter(
+        (t: any) => !deletedIds.has(String(t.id))
+      );
+
+      const sortedTickets = activeRawTickets.sort(
+        (a: any, b: any) =>
+          new Date(b.updated_at || b.created_at).getTime() -
+          new Date(a.updated_at || a.created_at).getTime()
+      );
+
+      let cachedMessagesMap: Record<string, Message[]> = {};
+      try {
+        cachedMessagesMap = JSON.parse(
+          localStorage.getItem("support_ticket_messages_cache_v1") || "{}"
+        );
+      } catch {
+        cachedMessagesMap = {};
+      }
+
+      const normalised: Ticket[] = sortedTickets.map((t: any) => {
+        const tId = String(t.id);
+        const isSpam = spamIds.has(tId);
+        const rawStatus = isSpam ? "SPAM" : (t.status || "OPEN").toUpperCase();
+        const status: TicketStatus = (rawStatus in STATUS_META ? rawStatus : "OPEN") as TicketStatus;
+
+        const initialMsg: Message = {
+          id: `init-${tId}`,
+          sender: "USER",
+          name: t.name || "User",
+          avatar: (t.name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
+          content: t.message || "",
+          time: new Date(t.created_at).toLocaleString(),
+          read: true,
+        };
+
+        const existingMsgs = cachedMessagesMap[tId] && cachedMessagesMap[tId].length > 0
+          ? cachedMessagesMap[tId]
+          : [initialMsg];
+
+        return {
+          id: tId,
+          subject: t.message || "Support Ticket",
+          company: "Soft7 User",
+          companyLogo: "S",
+          companyCol: "#10b981",
+          user: t.name || "Unknown User",
+          userEmail: t.email || "",
+          status,
+          priority: "MEDIUM",
+          category: isSpam ? "Spam" : "Support",
+          created: new Date(t.created_at).toLocaleDateString(),
+          updated: new Date(t.updated_at || t.created_at).toLocaleDateString(),
+          unread: 0,
+          messages: existingMsgs,
+        };
+      });
+
+      setTickets(prev => {
+        return normalised.map(ticket => {
+          const existing = prev.find(p => p.id === ticket.id);
+          const messages = (existing?.messages && existing.messages.length > 0)
+            ? existing.messages
+            : ticket.messages;
+
+          return {
+            ...ticket,
+            messages,
+          };
+        });
+      });
+
+      // Synchronize exact conversation threads in parallel so message counts are 100% accurate
+      const convPromises = sortedTickets.map(async (t: any) => {
+        const tId = String(t.id);
+        try {
+          const { data: convData } = await axiosInstance.get(`/v1/admin/support/${tId}/forward`);
+          const convs = Array.isArray(convData?.data) ? convData.data : [];
+          if (convs.length > 0) {
+            const formattedMessages: Message[] = convs.map((msg: any, index: number) => ({
+              id: msg.id ? String(msg.id) : `${tId}-${index}`,
+              sender: (msg.user_name === "Soft7 Tech" || msg.sender === "ADMIN" || msg.is_admin) ? "ADMIN" : "USER",
+              name: msg.user_name || (msg.is_admin ? "Support Team" : t.name) || "User",
+              avatar: (msg.user_name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
+              content: msg.message || "",
+              time: new Date(msg.created_at).toLocaleString(),
+              read: true,
+            }));
+            return { id: tId, messages: formattedMessages };
+          }
+        } catch {}
+        return null;
+      });
+
+      Promise.allSettled(convPromises).then(results => {
+        const freshMap: Record<string, Message[]> = {};
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value) {
+            freshMap[r.value.id] = r.value.messages;
+          }
+        }
+
+        if (Object.keys(freshMap).length > 0) {
+          try {
+            const updatedCache = { ...cachedMessagesMap, ...freshMap };
+            localStorage.setItem("support_ticket_messages_cache_v1", JSON.stringify(updatedCache));
+          } catch {}
+
+          setTickets(prev =>
+            prev.map(t =>
+              freshMap[t.id]
+                ? { ...t, messages: freshMap[t.id] }
+                : t
+            )
+          );
+        }
+      });
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        redirectToLogin("session_expired");
+        return;
+      }
+      console.error("Failed to load tickets", error);
+    } finally {
+      setLoading(false);
     }
-  }, 5000);
+  };
 
-  return () => clearInterval(interval);
-}, [selectedId]);
+  useEffect(() => {
+    loadTickets();
+
+    const interval = setInterval(() => {
+      if (!selectedId) {
+        loadTickets();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedId]);
+
   // Deselect if ticket disappears
   useEffect(() => {
     if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {
@@ -567,14 +719,12 @@ useEffect(() => {
     }
   }, [selectedId, tickets]);
 
-
-
   const filtered = useMemo(
     () =>
       tickets.filter(t => {
         const q = search.toLowerCase();
         return (
-          (statusF   === "ALL" || t.status   === statusF) &&
+          (statusF === "ALL" || t.status === statusF) &&
           (
             t.subject.toLowerCase().includes(q)   ||
             t.company.toLowerCase().includes(q)   ||
@@ -694,10 +844,123 @@ useEffect(() => {
     }
   };
 
+  const handleDeleteTicket = async (ticketId: string, subject?: string) => {
+    const ticketSubject = subject || tickets.find(t => t.id === ticketId)?.subject || `Ticket #${ticketId}`;
+
+    const result = await Swal.fire({
+      title: "Delete Support Ticket?",
+      html: `Are you sure you want to delete ticket <strong>#${ticketId}</strong>?<br/><div style="font-size:13px;color:#8A97A8;margin-top:8px;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">"${ticketSubject}"</div><br/><span style="font-size:12px;color:#ef4444;font-weight:600;">This action is permanent and cannot be undone.</span>`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#4B5563",
+      confirmButtonText: "Yes, Delete Ticket",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      // 1. Delete from local database API
+      try {
+        await fetch(`/api/admin/support-tickets?id=${ticketId}`, {
+          method: "DELETE",
+        });
+      } catch (err) {
+        console.warn("Delete internal API:", err);
+      }
+
+      // 2. Attempt remote forward delete if supported
+      try {
+        await axiosInstance.delete(`/v1/admin/support/${ticketId}/forward`).catch(() => null);
+      } catch {}
+
+      // 3. Persist deleted ID in localStorage
+      try {
+        const deletedIds: string[] = JSON.parse(
+          localStorage.getItem("deleted_support_tickets_v1") || "[]"
+        );
+        if (!deletedIds.includes(ticketId)) {
+          deletedIds.push(ticketId);
+          localStorage.setItem("deleted_support_tickets_v1", JSON.stringify(deletedIds));
+        }
+      } catch {}
+
+      // 4. Update state
+      setTickets(prev => prev.filter(t => t.id !== ticketId));
+      if (selectedId === ticketId) {
+        setSelectedId(null);
+      }
+
+      toast.success("Support ticket deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete ticket", error);
+      toast.error("Failed to delete support ticket.");
+    }
+  };
+
+  const handleMarkSpam = async (ticketId: string, subject?: string) => {
+    const ticketSubject = subject || tickets.find(t => t.id === ticketId)?.subject || `Ticket #${ticketId}`;
+
+    const result = await Swal.fire({
+      title: "Mark Ticket as Spam?",
+      html: `Mark ticket <strong>#${ticketId}</strong> as junk/spam?<br/><div style="font-size:13px;color:#8A97A8;margin-top:8px;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">"${ticketSubject}"</div><br/><span style="font-size:12px;color:#f59e0b;font-weight:600;">Junk test tickets will be moved to the Spam category.</span>`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#f59e0b",
+      cancelButtonColor: "#4B5563",
+      confirmButtonText: "Mark as Spam",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      // 1. Update status on backend
+      try {
+        await fetch("/api/admin/support-tickets", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticketId, status: "SPAM" }),
+        });
+      } catch (err) {
+        console.warn("Spam status internal API:", err);
+      }
+
+      // 2. Persist spam ID in localStorage
+      try {
+        const spamIds: string[] = JSON.parse(
+          localStorage.getItem("spam_support_tickets_v1") || "[]"
+        );
+        if (!spamIds.includes(ticketId)) {
+          spamIds.push(ticketId);
+          localStorage.setItem("spam_support_tickets_v1", JSON.stringify(spamIds));
+        }
+      } catch {}
+
+      // 3. Update state
+      setTickets(prev =>
+        prev.map(t =>
+          t.id === ticketId
+            ? { ...t, status: "SPAM", category: "Spam" }
+            : t
+        )
+      );
+
+      toast.success("Ticket marked as spam");
+    } catch (error) {
+      console.error("Failed to mark ticket as spam", error);
+      toast.error("Failed to mark ticket as spam.");
+    }
+  };
+
   // ─ Derived counts ─
   const openCount  = tickets.filter(t => t.status === "OPEN").length;
   const inProgress = tickets.filter(t => t.status === "IN_PROGRESS").length;
   const resolved   = tickets.filter(t => t.status === "RESOLVED").length;
+  const spamCount  = tickets.filter(t => t.status === "SPAM").length;
   const urgent     = tickets.filter(t => t.priority === "URGENT").length;
   const totalUnread = tickets.reduce((acc, t) => acc + (typeof t.unread === "number" ? t.unread : 0), 0);
 
@@ -734,7 +997,7 @@ useEffect(() => {
             <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon="🎫" color="#34d399" />
             <KPI label="In Progress"    value={String(inProgress)} sub="being handled"              icon="⚙️" color="#FBBF24" />
             <KPI label="Resolved (7d)"  value={String(resolved)}   sub="closed this week"           icon="✅" color="#818CF8" />
-            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon="⚡" color="#34d399" />
+            <KPI label="Spam / Junk"    value={String(spamCount)}  sub="filtered out"               icon="🚫" color="#F87171" />
           </div>
 
           {/* Main grid */}
@@ -745,7 +1008,7 @@ useEffect(() => {
               <div className="st-filters st-filters-row">
                 {/* Search */}
                 <div className="st-search-wrap">
-                  <span className="st-search-icon">🔍</span>
+                  <Search className="st-search-icon" size={16} />
                   <input
                     className="st-search-input"
                     value={search}
@@ -756,7 +1019,7 @@ useEffect(() => {
 
                 {/* Status pills */}
                 <div className="st-group st-status-group">
-                  {(["ALL", "OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"] as const).map(s => (
+                  {(["ALL", "OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED", "SPAM"] as const).map(s => (
                     <button
                       key={s}
                       onClick={() => { setStatusF(s); setPage(1); }}
@@ -833,13 +1096,38 @@ useEffect(() => {
                         </div>
                       </div>
 
-                   <div className="st-ticket-row__badges">
-  <StatusBadge status={ticket.status} />
-  <span className="st-cat-chip">
-    {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
-  </span>
-  <span className="st-msg-count">💬 {msgCount}</span>
-</div>
+                      <div className="st-ticket-row__badges">
+                        <StatusBadge status={ticket.status} />
+                        <span className="st-cat-chip">
+                          {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
+                        </span>
+                        <span className="st-msg-count">💬 {msgCount}</span>
+
+                        <div className="st-row-actions" onClick={e => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="st-row-btn st-row-btn--spam"
+                            onClick={e => {
+                              e.stopPropagation();
+                              void handleMarkSpam(ticket.id, ticket.subject);
+                            }}
+                            title="Mark as Spam"
+                          >
+                            <Ban size={11} /> Spam
+                          </button>
+                          <button
+                            type="button"
+                            className="st-row-btn st-row-btn--delete"
+                            onClick={e => {
+                              e.stopPropagation();
+                              void handleDeleteTicket(ticket.id, ticket.subject);
+                            }}
+                            title="Delete Ticket"
+                          >
+                            <Trash2 size={11} /> Delete
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -860,27 +1148,29 @@ useEffect(() => {
 
             {/* Conversation panel or empty state */}
             {selected ? (
-  <>
-    <div
-      className="st-conv-overlay"
-      onClick={() => setSelectedId(null)}
-    />
+              <>
+                <div
+                  className="st-conv-overlay"
+                  onClick={() => setSelectedId(null)}
+                />
 
-    <div
-      className="st-conv-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Ticket ${selected.id} details`}
-    >
-      <ConvPanel
-        ticket={selected}
-        onClose={() => setSelectedId(null)}
-        onStatusChange={handleStatusChange}
-        onReply={handleReply}
-      />
-    </div>
-  </>
-) : (
+                <div
+                  className="st-conv-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`Ticket ${selected.id} details`}
+                >
+                  <ConvPanel
+                    ticket={selected}
+                    onClose={() => setSelectedId(null)}
+                    onStatusChange={handleStatusChange}
+                    onReply={handleReply}
+                    onDelete={handleDeleteTicket}
+                    onMarkSpam={handleMarkSpam}
+                  />
+                </div>
+              </>
+            ) : (
               <div className="st-conv-empty">
                 <div className="st-conv-empty__icon">🎫</div>
                 <div style={{ textAlign: "center" }}>

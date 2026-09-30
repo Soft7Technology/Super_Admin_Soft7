@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { User, STATUS_DOT, roleColor, planColor } from "../types";
+import { User, STATUS_DOT, roleColor, planColor, formatPhoneNumber } from "../types";
 import { Badge } from "./Badge";
 import { EditUserModal } from "./EditUserModal";
 import { ResetPasswordModal } from "./ResetPasswordModal";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 
 interface DetailPanelProps {
   user: User;
   onClose: () => void;
   onRefresh?: () => void;
+  companiesMap?: Record<string, string>;
 }
 
 interface UserActivityStats {
@@ -24,12 +24,109 @@ interface UserActivityStats {
   failed: number;
 }
 
-export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
-  const [tab,          setTab]          = useState<"info" | "stats">("info");
-  const [userStats,    setUserStats]    = useState<UserActivityStats | null>(null);
+function isRawIdentifier(val: unknown): boolean {
+  if (!val || typeof val !== "string") return false;
+  const trimmed = val.trim();
+  if (trimmed.startsWith("ID:")) return true;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return true;
+  }
+  if (/^\d+$/.test(trimmed)) {
+    return true;
+  }
+  return false;
+}
+
+export function DetailPanel({ user, onClose, onRefresh, companiesMap = {} }: DetailPanelProps) {
+  const [tab, setTab] = useState<"info" | "stats">("info");
+  const [userStats, setUserStats] = useState<UserActivityStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
-  const [editOpen,     setEditOpen]     = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+
+  // Dynamic human-readable company name resolution
+  const [resolvedCompany, setResolvedCompany] = useState<string>(() => {
+    if (user.company && !isRawIdentifier(user.company) && user.company !== "—") {
+      return user.company;
+    }
+    if (user.companyId && companiesMap[user.companyId]) {
+      return companiesMap[user.companyId];
+    }
+    return user.company || "—";
+  });
+
+  // Resolve company name dynamically from backend if only UUID or ID is available
+  useEffect(() => {
+    let active = true;
+
+    async function resolveCompany() {
+      // If already a valid readable business name, keep it
+      if (user.company && !isRawIdentifier(user.company) && user.company !== "—") {
+        setResolvedCompany(user.company);
+        return;
+      }
+
+      // Check map first
+      if (user.companyId && companiesMap[user.companyId]) {
+        setResolvedCompany(companiesMap[user.companyId]);
+        return;
+      }
+
+      // Fetch company details by ID
+      if (user.companyId) {
+        try {
+          const res = await axiosInstance.get(`/v1/admin/companies/${user.companyId}`).catch(() => null);
+          const compName = res?.data?.data?.name || res?.data?.company?.name || res?.data?.name;
+          if (active && compName) {
+            setResolvedCompany(String(compName).trim());
+            return;
+          }
+        } catch {}
+
+        try {
+          const localRes = await fetch(`/api/admin/companies/${user.companyId}`).catch(() => null);
+          if (localRes && localRes.ok) {
+            const data = await localRes.json();
+            const compName = data?.company?.name || data?.name;
+            if (active && compName) {
+              setResolvedCompany(String(compName).trim());
+              return;
+            }
+          }
+        } catch {}
+      }
+
+      // Fallback
+      if (active && (!resolvedCompany || resolvedCompany === "—" || isRawIdentifier(resolvedCompany))) {
+        setResolvedCompany("Independent / No Company");
+      }
+    }
+
+    resolveCompany();
+
+    return () => {
+      active = false;
+    };
+  }, [user, companiesMap]);
+
+  // Keyboard accessibility: Escape closes modal immediately without page reload
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    onClose();
+  };
 
   const fetchUserStats = async () => {
     try {
@@ -38,20 +135,22 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
       if (data.success !== false) {
         const s = data?.data ?? data;
         setUserStats({
-          messages:  Number(s?.sent_count      ?? s?.messages  ?? 0),
+          messages: Number(s?.sent_count ?? s?.messages ?? 0),
           campaigns: Number(s?.campaigns_count ?? s?.campaigns ?? 0),
-          contacts:  Number(s?.contacts_count  ?? s?.contacts  ?? 0),
-          templates: Number(s?.template_count  ?? s?.templates ?? 0),
+          contacts: Number(s?.contacts_count ?? s?.contacts ?? 0),
+          templates: Number(s?.template_count ?? s?.templates ?? 0),
           delivered: Number(s?.delivered_count ?? 0),
-          failed:    Number(s?.failed_count    ?? 0),
+          failed: Number(s?.failed_count ?? 0),
         });
+
+        // If user details response also carries company business name
+        const backendCompName = s?.company_name || s?.company?.name;
+        if (backendCompName && !isRawIdentifier(backendCompName)) {
+          setResolvedCompany(backendCompName);
+        }
       }
     } catch (error: any) {
-      console.error("Stats Error:", error);
-      toast.error(
-        error?.response?.data?.message ||
-        "Failed to load user statistics"
-      );
+      console.warn("User stats fetch note:", error?.message || error);
     } finally {
       setStatsLoading(false);
     }
@@ -64,10 +163,9 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
 
   return (
     <>
-      <div className="au-overlay" onClick={onClose}>
+      <div className="au-overlay" onClick={handleClose}>
         <div
           className="au-modal au-modal--detail"
-          style={{ maxWidth: "520px", width: "100%", maxHeight: "85vh", overflowY: "auto" }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="au-modal__header">
@@ -75,7 +173,14 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
               <div className="au-modal__title">User Details</div>
               <div className="au-modal__sub">{user.email}</div>
             </div>
-            <button className="au-modal__close" onClick={onClose}>×</button>
+            <button
+              type="button"
+              className="au-modal__close"
+              onClick={handleClose}
+              aria-label="Close user details modal"
+            >
+              ×
+            </button>
           </div>
 
           <div className="au-modal__body">
@@ -115,6 +220,7 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
               {(["info", "stats"] as const).map((k) => (
                 <button
                   key={k}
+                  type="button"
                   onClick={() => handleTabChange(k)}
                   className={`au-panel__tab ${tab === k ? "au-panel__tab--active" : ""}`}
                 >
@@ -128,11 +234,11 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
               <div>
                 {(
                   [
-                    ["Company",    user.company,      ""],
-                    ["Plan",       user.plan,         "plan"],
-                    ["Phone",      user.phone || "—", ""],
-                    ["Joined",     user.joined,       ""],
-                    ["Last Login", user.login,        ""],
+                    ["Company", resolvedCompany, ""],
+                    ["Plan", user.plan, "plan"],
+                    ["Phone", formatPhoneNumber(user.phone), ""],
+                    ["Joined", user.joined, ""],
+                    ["Last Login", user.login, ""],
                   ] as [string, string, string][]
                 ).map(([label, value, type]) => (
                   <div key={label} className="au-info-row">
@@ -147,11 +253,19 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                 ))}
 
                 {/* Action buttons */}
-                <div className="au-modal__actions" style={{ marginTop: "1rem" }}>
-                  <button className="au-btn au-btn--primary" onClick={() => setEditOpen(true)}>
+                <div className="au-modal__actions" style={{ marginTop: "1.25rem" }}>
+                  <button
+                    type="button"
+                    className="au-btn au-btn--primary"
+                    onClick={() => setEditOpen(true)}
+                  >
                     Edit User
                   </button>
-                  <button className="au-btn au-btn--ghost" onClick={() => setPasswordOpen(true)}>
+                  <button
+                    type="button"
+                    className="au-btn au-btn--ghost"
+                    onClick={() => setPasswordOpen(true)}
+                  >
                     Reset Password
                   </button>
                 </div>
@@ -167,12 +281,12 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                   <>
                     {(
                       [
-                        ["messages",  userStats?.messages  ?? 0, "#10b981", "Messages Sent"],
-                        ["campaigns", userStats?.campaigns ?? 0, "#6366f1", "Campaigns"],
-                        ["contacts",  userStats?.contacts  ?? 0, "#3b82f6", "Contacts"],
+                        ["messages", userStats?.messages ?? user.msgs ?? 0, "#10b981", "Messages Sent"],
+                        ["campaigns", userStats?.campaigns ?? user.campaigns ?? 0, "#6366f1", "Campaigns"],
+                        ["contacts", userStats?.contacts ?? 0, "#3b82f6", "Contacts"],
                         ["templates", userStats?.templates ?? 0, "#f59e0b", "Templates"],
                         ["delivered", userStats?.delivered ?? 0, "#34d399", "Delivered"],
-                        ["failed",    userStats?.failed    ?? 0, "#ef4444", "Failed"],
+                        ["failed", userStats?.failed ?? 0, "#ef4444", "Failed"],
                       ] as [string, number, string, string][]
                     ).map(([key, val, color, lbl]) => (
                       <div key={key} className="au-stats-cell">

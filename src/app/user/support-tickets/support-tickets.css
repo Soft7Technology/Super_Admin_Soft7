@@ -67,6 +67,8 @@
   --st-status-closed-col:  #94A3B8;
   --st-status-waiting-bg:  rgba(251,146,60,0.12);
   --st-status-waiting-col: #FB923C;
+  --st-status-spam-bg:     rgba(239,68,68,0.12);
+  --st-status-spam-col:    #F87171;
 
   --st-pri-low-bg:         rgba(100,116,139,0.12);
   --st-pri-low-col:        #94A3B8;
@@ -153,6 +155,8 @@
   --st-status-closed-col:  #64748B;
   --st-status-waiting-bg:  rgba(234,88,12,0.09);
   --st-status-waiting-col: #EA580C;
+  --st-status-spam-bg:     rgba(220,38,38,0.09);
+  --st-status-spam-col:    #DC2626;
 
   --st-pri-low-bg:         rgba(100,116,139,0.09);
   --st-pri-low-col:        #64748B;
@@ -434,22 +438,30 @@
 }
 .st-search-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 .st-search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--st-muted);
-  font-size: 13px;
+  font-size: 14px;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  line-height: 1;
 }
 .st-search-input {
   width: 100%;
   background: var(--st-input-bg);
   border: 1px solid var(--st-border);
   color: var(--st-text);
-  padding: 9px 12px 9px 36px;
+  padding: 10px 14px 10px 44px;
   border-radius: 10px;
   font-size: 13px;
   outline: none;
@@ -705,6 +717,8 @@
 .st-status-badge--CLOSED .st-status-badge__dot      { background: var(--st-status-closed-col); }
 .st-status-badge--WAITING     { background: var(--st-status-waiting-bg);  color: var(--st-status-waiting-col); }
 .st-status-badge--WAITING .st-status-badge__dot     { background: var(--st-status-waiting-col); }
+.st-status-badge--SPAM        { background: var(--st-status-spam-bg);     color: var(--st-status-spam-col); }
+.st-status-badge--SPAM .st-status-badge__dot        { background: var(--st-status-spam-col); }
 
 .st-priority-badge {
   font-size: 11px;
@@ -1181,6 +1195,80 @@
   transition: border-color 0.15s, background 0.3s, color 0.3s;
 }
 .st-btn-close-ticket:hover { border-color: var(--st-danger); color: var(--st-danger); }
+
+.st-btn-spam {
+  background: rgba(245, 158, 11, 0.10);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  padding: 8px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+}
+.st-btn-spam:hover {
+  background: rgba(245, 158, 11, 0.20);
+  border-color: #f59e0b;
+}
+
+.st-btn-delete {
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--st-danger);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  padding: 8px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+}
+.st-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.20);
+  border-color: var(--st-danger);
+}
+
+.st-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+}
+
+.st-row-btn {
+  background: transparent;
+  border: 1px solid var(--st-border);
+  color: var(--st-muted);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.st-row-btn:hover {
+  color: var(--st-text);
+  border-color: var(--st-border-strong);
+}
+.st-row-btn--spam:hover {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.10);
+}
+.st-row-btn--delete:hover {
+  color: var(--st-danger);
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.10);
+}
 
 .st-btn-send {
   border: none;
