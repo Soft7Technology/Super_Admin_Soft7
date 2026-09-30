@@ -633,21 +633,34 @@ useEffect(() => {
     setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
   };
 
-  const handleStatusChange = async (id: string, status: TicketStatus) => {
-    setApiError(null);
-    try {
-      const response = await fetch("/api/admin/support-tickets", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketId: id, status }),
-      });
-      const payload = (await response.json().catch(() => null)) as { ticket?: Ticket; error?: string } | null;
-      if (!response.ok || !payload?.ticket) throw new Error(payload?.error ?? "Failed to update status.");
-      applyServerTicket(payload.ticket);
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Failed to update ticket status.");
+const handleStatusChange = async (id: string, status: TicketStatus) => {
+  setApiError(null);
+
+  try {
+    if (status === "RESOLVED") {
+      await axiosInstance.put(`/v1/admin/support/${id}/resolve`);
+    } else if (status === "CLOSED") {
+      await axiosInstance.put(`/v1/admin/support/${id}/close`);
+    } else {
+      setApiError(`Status "${status}" unable to update.`);
+      return;
     }
-  };
+
+    await loadTickets();
+
+    if (selectedId === id) {
+      await loadSingleTicket(id);
+    }
+  } catch (error: any) {
+    console.error("Status update failed:", error);
+
+    setApiError(
+      error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to update ticket status.",
+    );
+  }
+};
 
   const handleReply = async (id: string, text: string): Promise<ReplyActionResult> => {
     setApiError(null);
