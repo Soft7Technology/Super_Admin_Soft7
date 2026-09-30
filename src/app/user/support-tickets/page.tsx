@@ -490,86 +490,134 @@ useEffect(() => {
     window.removeEventListener("keydown", handleEscape);
   };
 }, [selected]);
-  // ─ Fetch all tickets ─
- const loadTickets = async () => {
-  try {
-    const { data } = await axiosInstance.get(
-      "/v1/admin/support/tickets/forward"
-    );
+  // ─ Super-admin ticket APIs ─
+  //
+  // GET  /v1/super-admin/tickets/forward
+  // GET  /v1/super-admin/tickets/:ticketId/conversations
+  // POST /v1/super-admin/tickets/:ticketId/forward/reply
+  // PATCH /v1/super-admin/tickets/:ticketId/status
 
-    const ticketsData = data?.data ?? data?.tickets ?? [];
+  const loadTickets = async () => {
+    try {
+      setApiError(null);
 
-    const sortedTickets = (Array.isArray(ticketsData) ? ticketsData : []).sort(
-      (a: any, b: any) =>
-        new Date(b.updated_at).getTime() -
-        new Date(a.updated_at).getTime()
-    );
+      const { data } = await axiosInstance.get(
+        "/v1/super-admin/tickets/forward"
+      );
 
-    const normalised: Ticket[] = sortedTickets.map((t: any) => ({
-      id: String(t.id),
-      subject: t.message || "Support Ticket",
-      company: "Soft7 User",
-      companyLogo: "S",
-      companyCol: "#10b981",
-      user: t.name || "Unknown User",
-      userEmail: t.email || "",
-      status: (t.status || "OPEN").toUpperCase() as TicketStatus,
-      priority: "MEDIUM",
-      category: "Support",
-      created: new Date(t.created_at).toLocaleDateString(),
-      updated: new Date(t.updated_at).toLocaleDateString(),
-      unread: 0,
-      messages: [],
-    }));
+      // API response:
+      // {
+      //   success: true,
+      //   data: {
+      //     items: [...],
+      //     pagination: {...}
+      //   }
+      // }
+      const ticketsData = Array.isArray(data?.data?.items)
+        ? data.data.items
+        : [];
 
-   setTickets(prev => {
-  return normalised.map(ticket => {
-    const existing = prev.find(p => p.id === ticket.id);
+      const sortedTickets = [...ticketsData].sort(
+        (a: any, b: any) =>
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+      );
 
-    return {
-      ...ticket,
-      messages: existing?.messages || [],
-    };
-  });
-});
-  } catch (error) {
-    console.error("Failed to load tickets", error);
-  } finally {
-    setLoading(false);
-  }
-};
-useEffect(() => {
-  loadTickets();
+      const normalised: Ticket[] = sortedTickets.map((t: any) => ({
+        id: String(t.id),
+        // The list API does not return subject/message/name/email.
+        // Keep the available IDs visible until the conversation API is opened.
+        subject: `Support Ticket #${String(t.id).slice(0, 8)}`,
+        company: t.company_id ? `Company ${String(t.company_id).slice(0, 8)}` : "Unknown Company",
+        companyLogo: "S",
+        companyCol: "#10b981",
+        user: t.user_id ? `User ${String(t.user_id).slice(0, 8)}` : "Unknown User",
+        userEmail: "",
+        status: (t.status || "OPEN").toUpperCase() as TicketStatus,
+        priority: "MEDIUM",
+        category: "Support",
+        created: t.created_at
+          ? new Date(t.created_at).toLocaleDateString()
+          : "-",
+        updated: t.created_at
+          ? new Date(t.created_at).toLocaleDateString()
+          : "-",
+        unread: 0,
+        messages: [],
+      }));
 
-  const interval = setInterval(() => {
-    if (!selectedId) {
-      loadTickets();
+      setTickets(prev =>
+        normalised.map(ticket => {
+          const existing = prev.find(p => p.id === ticket.id);
+
+          return {
+            ...ticket,
+            // Keep already-loaded conversation messages while refreshing the list.
+            messages: existing?.messages || [],
+            // Keep enriched detail information if this ticket was already opened.
+            subject:
+              existing?.messages?.length && existing.subject
+                ? existing.subject
+                : ticket.subject,
+            company:
+              existing?.messages?.length && existing.company
+                ? existing.company
+                : ticket.company,
+            user:
+              existing?.messages?.length && existing.user
+                ? existing.user
+                : ticket.user,
+            userEmail: existing?.userEmail || ticket.userEmail,
+          };
+        })
+      );
+    } catch (error: any) {
+      console.error("Failed to load super-admin tickets:", error);
+
+      setApiError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to load support tickets."
+      );
+    } finally {
+      setLoading(false);
     }
-  }, 5000);
+  };
 
-  return () => clearInterval(interval);
-}, [selectedId]);
-  // Deselect if ticket disappears
+  useEffect(() => {
+    void loadTickets();
+
+    const interval = setInterval(() => {
+      // Do not refresh the list while the conversation modal is open.
+      if (!selectedId) {
+        void loadTickets();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedId]);
+
+  // Deselect if ticket disappears from the server response.
   useEffect(() => {
     if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {
       setSelectedId(null);
     }
   }, [selectedId, tickets]);
 
-
-
   const filtered = useMemo(
     () =>
       tickets.filter(t => {
         const q = search.toLowerCase();
+
         return (
-          (statusF   === "ALL" || t.status   === statusF) &&
+          (statusF === "ALL" || t.status === statusF) &&
           (
-            t.subject.toLowerCase().includes(q)   ||
-            t.company.toLowerCase().includes(q)   ||
-            t.user.toLowerCase().includes(q)      ||
+            t.subject.toLowerCase().includes(q) ||
+            t.company.toLowerCase().includes(q) ||
+            t.user.toLowerCase().includes(q) ||
             t.userEmail.toLowerCase().includes(q) ||
-            t.category.toLowerCase().includes(q)
+            t.category.toLowerCase().includes(q) ||
+            t.id.toLowerCase().includes(q)
           )
         );
       }),
@@ -590,111 +638,209 @@ useEffect(() => {
   const loadSingleTicket = async (ticketId: string) => {
     try {
       setApiError(null);
-      const { data } = await axiosInstance.get(`/v1/admin/support/${ticketId}/forward`);
-      const conversations = Array.isArray(data?.data) ? data.data : [];
-      if (conversations.length === 0) { setApiError("No conversation found."); return; }
+
+      const { data } = await axiosInstance.get(
+        `/v1/super-admin/tickets/${ticketId}/conversations`
+      );
+
+      // API response:
+      // {
+      //   success: true,
+      //   data: {
+      //     ticket: {...},
+      //     messages: [...]
+      //   }
+      // }
+      const ticketData = data?.data?.ticket;
+      const conversations = Array.isArray(data?.data?.messages)
+        ? data.data.messages
+        : [];
+
+      if (!ticketData) {
+        setApiError("Ticket details not found.");
+        return;
+      }
+
+      const formattedMessages: Message[] = conversations.map(
+        (msg: any, index: number) => {
+          const name = msg.user_name || "User";
+          const isAdmin = name === "Soft7 Tech";
+
+          return {
+            id: msg.id || String(index),
+            sender: isAdmin ? "ADMIN" : "USER",
+            name,
+            avatar: name
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase(),
+            content: msg.message || "",
+            time: msg.created_at
+              ? new Date(msg.created_at).toLocaleString()
+              : "-",
+            read: true,
+          };
+        }
+      );
 
       const firstMessage = conversations[0];
-      const formattedMessages: Message[] = conversations.map((msg: any, index: number) => ({
-        id:     msg.id || String(index),
-        sender: msg.user_name === "Soft7 Tech" ? "ADMIN" : "USER",
-        name:   msg.user_name || "User",
-        avatar: (msg.user_name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
-        content: msg.message || "",
-        time:   new Date(msg.created_at).toLocaleString(),
-        read:   true,
-      }));
+      const lastMessage = conversations[conversations.length - 1];
 
       const formattedTicket: Ticket = {
-        id:          firstMessage.ticket_id,
-        subject:     firstMessage.message || "Support Ticket",
-        company:     "Soft7 User",
+        id: String(ticketData.id || ticketId),
+        subject:
+          firstMessage?.message ||
+          `Support Ticket #${String(ticketData.id || ticketId).slice(0, 8)}`,
+        company: ticketData.company_id
+          ? `Company ${String(ticketData.company_id).slice(0, 8)}`
+          : "Unknown Company",
         companyLogo: "S",
-        companyCol:  "#10b981",
-        user:        firstMessage.user_name || "Unknown User",
-        userEmail:   firstMessage.user_email || "",
-        status:      "OPEN",
-        priority:    "MEDIUM",
-        category:    "Support",
-        created:     new Date(firstMessage.created_at).toLocaleDateString(),
-        updated:     new Date(conversations[conversations.length - 1].created_at).toLocaleDateString(),
-        unread:      0,
-        messages:    formattedMessages,
+        companyCol: "#10b981",
+        user: firstMessage?.user_name || "Unknown User",
+        userEmail: "",
+        status: (ticketData.status || "OPEN").toUpperCase() as TicketStatus,
+        priority: "MEDIUM",
+        category: "Support",
+        created: ticketData.created_at
+          ? new Date(ticketData.created_at).toLocaleDateString()
+          : "-",
+        updated: (
+          lastMessage?.created_at ||
+          ticketData.created_at
+        )
+          ? new Date(
+              lastMessage?.created_at || ticketData.created_at
+            ).toLocaleDateString()
+          : "-",
+        unread: 0,
+        messages: formattedMessages,
       };
 
       setSelectedId(formattedTicket.id);
-      setTickets(prev => prev.map(t => t.id === formattedTicket.id ? formattedTicket : t));
-    } catch {
-      setApiError("Failed to load ticket details.");
-    }
-  };
 
-  const applyServerTicket = (updatedTicket: Ticket) => {
-    setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
-  };
+      setTickets(prev => {
+        const exists = prev.some(t => t.id === formattedTicket.id);
 
-const handleStatusChange = async (id: string, status: TicketStatus) => {
-  setApiError(null);
+        if (!exists) {
+          return [...prev, formattedTicket];
+        }
 
-  try {
-    if (status === "RESOLVED") {
-      await axiosInstance.put(`/v1/admin/support/${id}/resolve`);
-    } else if (status === "CLOSED") {
-      await axiosInstance.put(`/v1/admin/support/${id}/close`);
-    } else {
-      setApiError(`Status "${status}" unable to update.`);
-      return;
-    }
-
-    await loadTickets();
-
-    if (selectedId === id) {
-      await loadSingleTicket(id);
-    }
-  } catch (error: any) {
-    console.error("Status update failed:", error);
-
-    setApiError(
-      error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        "Failed to update ticket status.",
-    );
-  }
-};
-
-  const handleReply = async (id: string, text: string): Promise<ReplyActionResult> => {
-    setApiError(null);
-    try {
-      const selectedTicket = tickets.find(t => t.id === id);
-      const { data } = await axiosInstance.post(`/v1/admin/support/${id}/forward/reply`, {
-        message: text,
-        email:   selectedTicket?.userEmail || "",
-        phone:   "9372597458",
+        return prev.map(t =>
+          t.id === formattedTicket.id ? formattedTicket : t
+        );
       });
-      console.log("Reply API Response:", data);
+    } catch (error: any) {
+      console.error("Failed to load ticket conversation:", error);
+
+      setApiError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to load ticket details."
+      );
+    }
+  };
+
+  const handleStatusChange = async (id: string, status: TicketStatus) => {
+    setApiError(null);
+
+    try {
+      // New API uses one PATCH endpoint for all ticket statuses.
+      // Backend response/status values are lowercase.
+      const { data } = await axiosInstance.patch(
+        `/v1/super-admin/tickets/${id}/status`,
+        {
+          status: status.toLowerCase(),
+        }
+      );
+
+      console.log("Ticket status API response:", data);
+
+      await loadTickets();
+
+      if (selectedId === id) {
+        await loadSingleTicket(id);
+      }
+    } catch (error: any) {
+      console.error("Status update failed:", error);
+
+      setApiError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to update ticket status."
+      );
+    }
+  };
+
+  const handleReply = async (
+    id: string,
+    text: string
+  ): Promise<ReplyActionResult> => {
+    setApiError(null);
+
+    try {
+      // New API accepts the reply message for the ticket.
+      // The super-admin user is resolved by the authenticated token.
+      const { data } = await axiosInstance.post(
+        `/v1/super-admin/tickets/${id}/forward/reply`,
+        {
+          message: text,
+        }
+      );
+
+      console.log("Reply API response:", data);
+
+      // The API returns the newly-created message:
+      // {
+      //   id,
+      //   ticket_id,
+      //   user_id,
+      //   message,
+      //   created_at
+      // }
+      const responseMessage = data?.data;
 
       const newMessage: Message = {
-        id:      Date.now().toString(),
-        sender:  "ADMIN",
-        name:    "Soft7 Tech",
-        avatar:  "ST",
-        content: text,
-        time:    new Date().toLocaleString(),
-        read:    true,
+        id: responseMessage?.id || Date.now().toString(),
+        sender: "ADMIN",
+        name: "Soft7 Tech",
+        avatar: "ST",
+        content: responseMessage?.message || text,
+        time: responseMessage?.created_at
+          ? new Date(responseMessage.created_at).toLocaleString()
+          : new Date().toLocaleString(),
+        read: true,
       };
 
       setTickets(prev =>
         prev.map(t =>
           t.id === id
-            ? { ...t, updated: new Date().toLocaleDateString(), messages: [...(t.messages || []), newMessage] }
+            ? {
+                ...t,
+                updated: new Date(
+                  responseMessage?.created_at || Date.now()
+                ).toLocaleDateString(),
+                messages: [...(t.messages || []), newMessage],
+              }
             : t
         )
       );
+
       return { ok: true };
-    } catch {
-      return { ok: false, error: "Unable to send reply right now." };
+    } catch (error: any) {
+      console.error("Reply API failed:", error);
+
+      return {
+        ok: false,
+        error:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Unable to send reply right now.",
+      };
     }
   };
+
 
   // ─ Derived counts ─
   const openCount  = tickets.filter(t => t.status === "OPEN").length;
