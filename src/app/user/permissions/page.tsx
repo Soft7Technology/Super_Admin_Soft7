@@ -213,16 +213,13 @@ export default function PermissionsPage() {
   const visibleRequests = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return requests;
-    return requests.filter(
-      (item) =>
-        item.domain_name.toLowerCase().includes(query) ||
-        String(item.company_id || "")
-          .toLowerCase()
-          .includes(query) ||
-        String(item.user_id || "")
-          .toLowerCase()
-          .includes(query),
-    );
+   return requests.filter(
+     (item) =>
+       item.domain_name.toLowerCase().includes(query) ||
+       String(item.company_id || "")
+         .toLowerCase()
+         .includes(query),
+   );
   }, [requests, search]);
 
   const confirmActionHandler = useCallback(async () => {
@@ -320,7 +317,7 @@ export default function PermissionsPage() {
               <tr>
                 <th>DOMAIN NAME</th>
                 <th>COMPANY ID</th>
-                <th>REQUESTED BY</th>
+                
                 <th>STATUS</th>
                 <th>REQUESTED DATE</th>
                 <th style={{ width: 160 }}>ACTIONS</th>
@@ -329,7 +326,7 @@ export default function PermissionsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="au-empty">
                       <div className="au-empty__spinner" />
                       <p className="au-empty__title">Loading requests…</p>
@@ -338,7 +335,7 @@ export default function PermissionsPage() {
                 </tr>
               ) : visibleRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="au-empty">
                       <div className="au-empty__icon">🌐</div>
                       <p className="au-empty__title">
@@ -375,15 +372,7 @@ export default function PermissionsPage() {
                     >
                       {item.company_id || "—"}
                     </td>
-                    <td
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: 12,
-                        color: "var(--muted)",
-                      }}
-                    >
-                      {item.user_id || "—"}
-                    </td>
+                   
                     <td>
                       <DomainBadge status={item.status} />
                     </td>
