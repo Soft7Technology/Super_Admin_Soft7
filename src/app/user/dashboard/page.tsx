@@ -362,11 +362,11 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
         style={{
           display: "inline-flex",
           alignItems: "center",
-          padding: "4px 5px",
+          padding: "3px 4px",
           borderRadius: "9999px",
-          background: isDark ? "rgba(255, 255, 255, 0.06)" : "#f4f1ea",
-          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)"}`,
-          boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 1px 4px rgba(0,0,0,0.04)",
+          background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
+          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0"}`,
+          boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.04)",
         }}
       >
         {options.map((opt) => {
@@ -380,15 +380,27 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
                 border: "none",
                 outline: "none",
                 cursor: "pointer",
-                padding: "8px 18px",
+                padding: "7px 16px",
                 borderRadius: "9999px",
-                fontSize: "0.82rem",
-                fontWeight: isActive ? 700 : 600,
-                color: isActive ? "#ffffff" : isDark ? "rgba(255, 255, 255, 0.6)" : "#665e52",
+                fontSize: "0.8rem",
+                fontWeight: isActive ? 600 : 500,
+                color: isActive
+                  ? isDark
+                    ? "#ffffff"
+                    : "#0f172a"
+                  : isDark
+                  ? "rgba(255, 255, 255, 0.55)"
+                  : "#64748b",
                 background: isActive
-                  ? "linear-gradient(135deg, #f97316, #ea580c)"
+                  ? isDark
+                    ? "rgba(255, 255, 255, 0.14)"
+                    : "#ffffff"
                   : "transparent",
-                boxShadow: isActive ? "0 3px 10px rgba(234, 88, 12, 0.35)" : "none",
+                boxShadow: isActive
+                  ? isDark
+                    ? "0 2px 6px rgba(0,0,0,0.3)"
+                    : "0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)"
+                  : "none",
                 transition: "all 0.2s ease",
               }}
             >
@@ -402,7 +414,7 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
         style={{
           fontSize: "0.74rem",
           fontWeight: 500,
-          color: isDark ? "rgba(255, 255, 255, 0.4)" : "#8c8275",
+          color: isDark ? "rgba(255, 255, 255, 0.4)" : "#64748b",
           paddingRight: "6px",
         }}
       >
