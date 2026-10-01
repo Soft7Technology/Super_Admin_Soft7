@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./manage-transaction.css";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
+import { getAuthToken, redirectToLogin, getAuthHeaders } from "@/lib/auth-client";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { RefreshCw } from "lucide-react";
@@ -54,11 +54,16 @@ interface Transaction {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-function enrichTransaction(raw: RawTransaction): Transaction {
+function enrichTransaction(raw: RawTransaction, companiesMap?: Record<string, string>): Transaction {
+  const resolvedName =
+    raw.company_name ||
+    (companiesMap && companiesMap[String(raw.company_id)]) ||
+    (companiesMap && companiesMap[String(raw.company_id).toLowerCase()]) ||
+    (raw.company_id ? `Company (${String(raw.company_id).slice(0, 8)}…)` : "Unknown company");
   return {
     id: raw.id,
     companyId: raw.company_id,
-    companyName: raw.company_name || "Unknown company",
+    companyName: resolvedName,
     type: raw.type,
     amount: Number(raw.amount || 0),
     balanceBefore: Number(raw.balance_before || 0),
@@ -221,6 +226,70 @@ export default function ManageTransactions() {
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  /* ── Company name resolution map (company_id → name) ──────── */
+  const [companiesMap, setCompaniesMap] = useState<Record<string, string>>({});
+  const companiesFetched = useRef(false);
+  const rawTransactionsRef = useRef<RawTransaction[]>([]);
+
+  useEffect(() => {
+    if (companiesFetched.current) return;
+    companiesFetched.current = true;
+
+    const loadCompanies = async () => {
+      const map: Record<string, string> = {};
+
+      // 1. Try external host API
+      try {
+        const res = await axiosInstance.get("/v1/admin/companies?status=active");
+        const comps = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+        for (const c of comps) {
+          if (c?.id && c?.name) {
+            map[String(c.id)] = c.name;
+            map[String(c.id).toLowerCase()] = c.name;
+          }
+        }
+      } catch {
+        // fallback below
+      }
+
+      // 2. Fallback to local Prisma-backed companies API
+      if (Object.keys(map).length === 0) {
+        try {
+          const localRes = await fetch("/api/admin/companies", {
+            headers: getAuthHeaders(),
+          });
+          if (localRes.ok) {
+            const localData = await localRes.json();
+            const comps = Array.isArray(localData) ? localData : localData?.data ?? [];
+            for (const c of comps) {
+              if (c?.id && c?.name) {
+                map[String(c.id)] = c.name;
+                map[String(c.id).toLowerCase()] = c.name;
+              }
+            }
+          }
+        } catch {
+          // silent
+        }
+      }
+
+      setCompaniesMap(map);
+    };
+
+    loadCompanies();
+  }, []);
+
+  // Re-enrich transactions when companiesMap becomes available
+  useEffect(() => {
+    if (Object.keys(companiesMap).length > 0 && rawTransactionsRef.current.length > 0) {
+      setTransactions(rawTransactionsRef.current.map((r) => enrichTransaction(r, companiesMap)));
+    }
+  }, [companiesMap]);
+
   const fetchTransactions = async (isRefresh = false) => {
     const token = getAuthToken();
     if (!token) {
@@ -250,7 +319,8 @@ export default function ManageTransactions() {
         ? payload.data
         : [];
 
-      setTransactions(raw.map(enrichTransaction));
+      rawTransactionsRef.current = raw;
+      setTransactions(raw.map((r) => enrichTransaction(r, companiesMap)));
 
       if (isRefresh) toast.success("Transactions refreshed");
     } catch (e: any) {
