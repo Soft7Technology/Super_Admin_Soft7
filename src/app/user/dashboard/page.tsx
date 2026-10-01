@@ -311,6 +311,107 @@ function InlineStatCards({
   );
 }
 
+/* ─── Time Range Pills Filter ──────────────────────────────── */
+function TimeRangePills({ isDark }: { isDark: boolean }) {
+  const [selected, setSelected] = useState("All Time");
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+
+  useEffect(() => {
+    const now = new Date();
+    setLastUpdated(
+      now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
+  }, []);
+
+  const options = [
+    "Last 7 Days",
+    "Last Month",
+    "Last 6 Months",
+    "Last Year",
+    "All Time",
+  ];
+
+  const handleSelect = (opt: string) => {
+    setSelected(opt);
+    const now = new Date();
+    setLastUpdated(
+      now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+        gap: "6px",
+      }}
+    >
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "4px 5px",
+          borderRadius: "9999px",
+          background: isDark ? "rgba(255, 255, 255, 0.06)" : "#f4f1ea",
+          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)"}`,
+          boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 1px 4px rgba(0,0,0,0.04)",
+        }}
+      >
+        {options.map((opt) => {
+          const isActive = selected === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => handleSelect(opt)}
+              style={{
+                border: "none",
+                outline: "none",
+                cursor: "pointer",
+                padding: "8px 18px",
+                borderRadius: "9999px",
+                fontSize: "0.82rem",
+                fontWeight: isActive ? 700 : 600,
+                color: isActive ? "#ffffff" : isDark ? "rgba(255, 255, 255, 0.6)" : "#665e52",
+                background: isActive
+                  ? "linear-gradient(135deg, #f97316, #ea580c)"
+                  : "transparent",
+                boxShadow: isActive ? "0 3px 10px rgba(234, 88, 12, 0.35)" : "none",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+
+      <span
+        style={{
+          fontSize: "0.74rem",
+          fontWeight: 500,
+          color: isDark ? "rgba(255, 255, 255, 0.4)" : "#8c8275",
+          paddingRight: "6px",
+        }}
+      >
+        Last updated: {lastUpdated || "—"}
+      </span>
+    </div>
+  );
+}
+
 /* ─── Section wrapper ─────────────────────────────────────── */
 function Section({
   children,
@@ -728,6 +829,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        <TimeRangePills isDark={isDark} />
       </div>
 
       {/* Stats */}
