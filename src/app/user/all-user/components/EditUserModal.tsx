@@ -25,11 +25,14 @@ export function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) 
 
     try {
       setLoading(true);
-      const { data } = await axiosInstance.put(`/v1/admin/users/${user.id}`, {
-        name,
-        email,
-        phone,
-      });
+      const { data } = await axiosInstance.patch(
+        `/v1/super-admin/companies/${user.companyId}/users/${user.id}`,
+        {
+          name,
+          email,
+          phone,
+        },
+      );
 
      if (data.success) {
   
