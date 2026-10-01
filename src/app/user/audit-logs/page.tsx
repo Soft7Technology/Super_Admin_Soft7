@@ -5,7 +5,7 @@ import "./audit-logs.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type ActionType =
-  | "LOGIN" 
+  | "LOGIN"
   | "SEND"
   | "UPDATE"
   | "ACTIVATE"
@@ -28,7 +28,7 @@ type TimeFrame = "today" | "7days" | "30days" | "90days" | "1year";
 interface LogEntry {
   id: number | string;
   action: string;
-  userId: string; 
+  userId: string;
   entityType: string;
   resource: string;
   detail: string;
@@ -293,14 +293,14 @@ export default function AuditLogs() {
   const [totalItems, setTotalItems] = useState(0);
 
 
-const [search, setSearch] = useState("");
-const [userSuggestions, setUserSuggestions] = useState<UserOption[]>([]);
-const [suggestLoading, setSuggestLoading] = useState(false);
-const [showSuggestions, setShowSuggestions] = useState(false);
-const searchWrapRef = useRef<HTMLDivElement>(null);
-const [users,setUsers] = useState<UserOption[]>([]);
-const [selectedUserId, setSelectedUserId] = useState("");
-const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
+  const [search, setSearch] = useState("");
+  const [userSuggestions, setUserSuggestions] = useState<UserOption[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
+  const [users,setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
 
   type Toast = {
     id: number;
@@ -335,20 +335,20 @@ const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
 
     try {
       const params = new URLSearchParams();
-      params.append("role", "user");
       params.append("page", String(currentPage));
-      params.append("limit", String(LIMIT));
-      params.append("time_frame", timeFrame);
+      params.append("limit", "25");
 
       if (typeFilter !== "ALL") params.append("type", typeFilter);
       if (actionFilter !== "ALL") params.append("action", actionFilter);
       if (selectedUserId) params.append("user_id", selectedUserId);
 
-      const endpoint = `/v1/admin/activity?${params.toString()}`;
+      const endpoint = `/v1/super-admin/activities?${params.toString()}`;
       const res = await axiosInstance.get(endpoint);
 
       const raw: RawLog[] = Array.isArray(res.data?.data?.data)
         ? res.data.data.data
+        : Array.isArray(res.data?.data?.items)
+        ? res.data.data.items
         : Array.isArray(res.data?.data)
         ? res.data.data
         : Array.isArray(res.data?.logs)
@@ -385,18 +385,18 @@ const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
   }, [typeFilter, actionFilter, timeFrame, search, selectedUserId]);
 
   // ── Client-side search filter — now also matches on user_id ────────────────
- const filtered = logs.filter((l) => {
-   if (selectedUserId) return true; // already filtered server-side by user_id — don't re-filter by email text
-   if (!search.trim()) return true;
-   const q = search.toLowerCase();
-   return (
-     l.userId.toLowerCase().includes(q) ||
-     l.detail.toLowerCase().includes(q) ||
-     l.entityType.toLowerCase().includes(q) ||
-     l.company.toLowerCase().includes(q) ||
-     l.action.toLowerCase().includes(q)
-   );
- });
+  const filtered = logs.filter((l) => {
+    if (selectedUserId) return true; // already filtered server-side by user_id — don't re-filter by email text
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      l.userId.toLowerCase().includes(q) ||
+      l.detail.toLowerCase().includes(q) ||
+      l.entityType.toLowerCase().includes(q) ||
+      l.company.toLowerCase().includes(q) ||
+      l.action.toLowerCase().includes(q)
+    );
+  });
 
   const totalPages = Math.max(1, Math.ceil(totalItems / LIMIT));
 
@@ -420,7 +420,7 @@ const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
       async () => {
         setClearing(true);
         try {
-          await axiosInstance.delete("/v1/admin/activity");
+          await axiosInstance.delete("/v1/super-admin/activities");
           await fetchLogs();
           pushToast("success", "All audit logs were cleared.");
         } catch (e) {
@@ -448,77 +448,80 @@ const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
   const errorCount = logs.filter(
     (l) => severityBucket(l.severity) === "error",
   ).length;
-useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      const res = await axiosInstance.get("/v1/admin/companies/user", {
-        params: {
-          role: "user",
-          page: 1,
-          limit: 10,
-          status: "all",
-        },
-      });
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await axiosInstance.get("/v1/super-admin/users", {
+          params: {
+            page: 1,
+            limit: 25,
+          },
+        });
 
-      const raw = res.data?.data?.data || [];
+        const raw =
+          (Array.isArray(res.data?.data?.data) ? res.data.data.data : null) ||
+          (Array.isArray(res.data?.data?.items) ? res.data.data.items : null) ||
+          (Array.isArray(res.data?.data?.users) ? res.data.data.users : null) ||
+          (Array.isArray(res.data?.data) ? res.data.data : null) ||
+          [];
 
-      setUsers(
-        raw.map((u: any) => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-        })),
-      );
-    } catch (err) {
-      console.error("Failed to fetch users", err);
-    }
-  };
+        setUsers(
+          raw.map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+          })),
+        );
+      } catch (err) {
+        console.error("Failed to fetch users", err);
+      }
+    };
 
-  fetchUsers();
-}, []);
-useEffect(() => {
-  if (selectedUser || search.trim().length < 2) {
-    setUserSuggestions([]);
-    return;
-  }
-  const handle = setTimeout(async () => {
-    setSuggestLoading(true);
-    try {
-      const res = await axiosInstance.get("/v1/admin/companies/user", {
-        params: { search, limit: 8 },
-      });
-      const raw = Array.isArray(res.data?.data?.data)
-        ? res.data.data.data
-        : Array.isArray(res.data?.data)
-        ? res.data.data
-        : [];
-      setUserSuggestions(
-        raw.map((u: any) => ({ id: u.id, name: u.name, email: u.email })),
-      );
-      setShowSuggestions(true);
-    } catch (e) {
-      console.error("USER SEARCH ERROR =>", e);
+    fetchUsers();
+  }, []);
+  useEffect(() => {
+    if (selectedUser || search.trim().length < 2) {
       setUserSuggestions([]);
-    } finally {
-      setSuggestLoading(false);
+      return;
     }
-  }, 350);
-  return () => clearTimeout(handle);
-}, [search, selectedUser]);
+    const handle = setTimeout(async () => {
+      setSuggestLoading(true);
+      try {
+        const res = await axiosInstance.get("/v1/super-admin/users", {
+          params: { search, limit: 8 },
+        });
+        const raw = Array.isArray(res.data?.data?.data)
+          ? res.data.data.data
+          : Array.isArray(res.data?.data)
+            ? res.data.data
+            : [];
+        setUserSuggestions(
+          raw.map((u: any) => ({ id: u.id, name: u.name, email: u.email })),
+        );
+        setShowSuggestions(true);
+      } catch (e) {
+        console.error("USER SEARCH ERROR =>", e);
+        setUserSuggestions([]);
+      } finally {
+        setSuggestLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [search, selectedUser]);
 
-// Close suggestion dropdown on outside click
-useEffect(() => {
-  const handleClick = (e: MouseEvent) => {
-    if (
-      searchWrapRef.current &&
-      !searchWrapRef.current.contains(e.target as Node)
-    ) {
-      setShowSuggestions(false);
-    }
-  };
-  document.addEventListener("mousedown", handleClick);
-  return () => document.removeEventListener("mousedown", handleClick);
-}, []);
+  // Close suggestion dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        searchWrapRef.current &&
+        !searchWrapRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   return (
     <div className="al-root">
@@ -536,7 +539,7 @@ useEffect(() => {
             disabled={exporting || filtered.length === 0}
             className={`al-btn-export ${
               exportDone ? "al-btn-export--done" : ""
-            }`}
+              }`}
           >
             {exporting ? (
               <>
@@ -610,7 +613,7 @@ useEffect(() => {
             onChange={(e) => {
               setSearch(e.target.value);
               if (selectedUser) {
-                setSelectedUser(null); 
+                setSelectedUser(null);
                 setSelectedUserId("");
               }
             }}
@@ -694,11 +697,11 @@ useEffect(() => {
             onChange={(e) => {
               const id = e.target.value;
               setSelectedUserId(id);
-              if(id===""){
+              if (id === "") {
                 setSelectedUser(null);
                 setSearch("");
-              }else{
-                const u= users.find((usr) => usr.id === id)|| null;
+              } else {
+                const u = users.find((usr) => usr.id === id) || null;
                 setSelectedUser(u);
                 setSearch(u?.email || "");
               }
