@@ -12,12 +12,22 @@ import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
-const COMPANIES_API = "/v1/admin/companies?status=active";
-const ACTIVE_COMPANIES_API = "/v1/admin/companies?status=active";
-const SUSPENDED_COMPANIES_API = "/v1/admin/companies?status=suspend";
-const INACTIVE_COMPANIES_API =
-  "/v1/admin/companies?page=1&limit=10&status=inactive";
-const ITEMS_PER_PAGE = 50;
+const COMPANIES_API = "/v1/super-admin/companies";
+const ITEMS_PER_PAGE = 25;
+
+interface CompaniesPagination {
+  total: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+const DEFAULT_PAGINATION: CompaniesPagination = {
+  total: 0,
+  totalPages: 1,
+  page: 1,
+  limit: ITEMS_PER_PAGE,
+};
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface RawCompany {
@@ -499,8 +509,8 @@ function CompanyModal({
     try {
       const isEdit = !!company;
       const url = isEdit
-        ? `/v1/admin/companies/${company.id}`
-        : "/v1/admin/companies";
+        ? `/v1/super-admin/companies/${company.id}`
+        : "/v1/super-admin/companies";
 
       console.log("API URL =>", url);
 
@@ -533,21 +543,21 @@ function CompanyModal({
 
       if (isEdit) {
         // FIX: explicit multipart header for edit
-        const response = await axiosInstance.put(url, formData, {
+        const response = await axiosInstance.patch(url, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
         data = response.data;
 
-        // Handle Active / Suspend status change
         if (
           company?.status !== status &&
           (status === "ACTIVE" || status === "SUSPENDED")
         ) {
-          const statusEndpoint =
-            status === "ACTIVE"
-              ? `/v1/admin/companies/${company.id}/active`
-              : `/v1/admin/companies/${company.id}/suspend`;
-          await axiosInstance.put(statusEndpoint);
+          const statusEndpoint = `/v1/super-admin/companies/${company.id}/status`;
+
+          await axiosInstance.patch(statusEndpoint, {
+            status: status === "ACTIVE" ? "active" : "suspended",
+            reason: status === "ACTIVE" ? "Review completed" : "Account review",
+          });
         }
       } else {
         const response = await axiosInstance.post(url, formData, {
@@ -578,27 +588,28 @@ function CompanyModal({
       const oldBalance = Number(company?.creditBalance || 0);
       const creditDiff = newBalance - oldBalance;
 
-      if (creditDiff > 0) {
-        const companyId = isEdit ? company.id : data?.data?.id ?? data?.id;
-        const companyName = isEdit ? company.name : name;
 
-        if (companyId) {
-          try {
-            await axiosInstance.post("/v1/admin/credits/add", {
-              company_id: companyId,
-              company_name: companyName,
-              amount: creditDiff,
-              description: isEdit
-                ? "Credit balance updated via Edit Company"
-                : "Initial credit balance",
-              created_by: localStorage.getItem("email") || "admin@company.com",
-            });
-          } catch (creditErr) {
-            console.error("CREDIT UPDATE ERROR =>", creditErr);
-            toast.error("Company saved, but failed to update credit balance");
-          }
-        }
-      }
+if (creditDiff > 0) {
+  const companyId = isEdit ? company.id : data?.data?.id ?? data?.id;
+
+  if (companyId) {
+    try {
+      const requestId = crypto.randomUUID();
+
+      await axiosInstance.post(
+        `/v1/super-admin/companies/${companyId}/credits`,
+        {
+          amount: creditDiff,
+          request_id: requestId,
+          reason: "Top-up credits",
+        },
+      );
+    } catch (creditErr) {
+      console.error("CREDIT UPDATE ERROR =>", creditErr);
+      toast.error("Company saved, but failed to update credit balance");
+    }
+  }
+}
 
       // ── Done ─────────────────────────────────────────────────────────────
       await onSuccess();
@@ -1177,13 +1188,18 @@ function AddCreditModal({
 
       const adminEmail = localStorage.getItem("email") || "admin@company.com";
 
-      const response = await axiosInstance.post("/v1/admin/credits/add", {
-        company_id: company.id,
-        company_name: company.name,
-        amount: numAmount,
-        description: description.trim() || "Top-up credits",
-        created_by: adminEmail,
-      });
+      
+
+      const requestId = crypto.randomUUID();
+
+     const response=  await axiosInstance.post(
+        `/v1/super-admin/companies/${company.id}/credits`,
+        {
+          amount: numAmount,
+          request_id: requestId,
+          reason: description.trim() || "Top-up credits",
+        },
+      );
 
       const data = response.data;
 
@@ -1304,6 +1320,8 @@ export default function ManageCompanies() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [pagination, setPagination] =
+    useState<CompaniesPagination>(DEFAULT_PAGINATION);
 
   const handleSelectAll = () => {
     if (selectAll) {
@@ -1340,7 +1358,7 @@ export default function ManageCompanies() {
     try {
       await Promise.all(
         selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/admin/companies/${id}`),
+          axiosInstance.delete(`/v1/super-admin/companies/${id}`),
         ),
       );
 
@@ -1361,31 +1379,72 @@ export default function ManageCompanies() {
     setFetchError(null);
 
     try {
-      let endpoint = COMPANIES_API;
-      if (filter === "ACTIVE") endpoint = ACTIVE_COMPANIES_API;
-      if (filter === "SUSPENDED") endpoint = SUSPENDED_COMPANIES_API;
-      if (filter === "INACTIVE") endpoint = INACTIVE_COMPANIES_API;
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      };
 
-      const companiesRes = await axiosInstance.get(endpoint);
+      if (filter !== "ALL") {
+        params.status = filter.toLowerCase();
+      }
+
+      const companiesRes = await axiosInstance.get(COMPANIES_API, {
+        params,
+      });
 
       console.log("GET COMPANY RESPONSE =>", companiesRes.data);
 
-      // API shape: { success, message, data: { data: Company[], pagination: {...} } }
-      // Some endpoints may also return { success, data: Company[] } directly,
-      // so we handle both shapes defensively here.
       const payload = companiesRes.data?.data;
-      const raw: RawCompany[] = Array.isArray(payload?.data)
+
+      // Backend pagination response:
+      // { success, message, data: { items: [...], pagination: {...} } }
+      const raw: RawCompany[] = Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.data)
         ? payload.data
         : Array.isArray(payload)
         ? payload
         : [];
 
+      const backendPagination = payload?.pagination ?? {};
+
+      const total = Number(
+        backendPagination.total ??
+          backendPagination.totalCompanies ??
+          backendPagination.count ??
+          0,
+      );
+
+      const page = Number(backendPagination.page ?? currentPage);
+
+      const limit = Number(backendPagination.limit ?? ITEMS_PER_PAGE);
+
+      const totalPages = Number(
+        backendPagination.totalPages ??
+          backendPagination.total_pages ??
+          Math.max(1, Math.ceil(total / limit)),
+      );
+
       setCompanies(raw.map(enrichCompany));
+
+      setPagination({
+        total,
+        totalPages: Math.max(1, totalPages),
+        page,
+        limit,
+      });
+
+      setSelectedCompanies([]);
+      setSelectAll(false);
     } catch (e) {
       setFetchError(
         e instanceof Error ? e.message : "Failed to load companies",
       );
       setCompanies([]);
+      setPagination({
+        ...DEFAULT_PAGINATION,
+        page: currentPage,
+      });
     } finally {
       setLoading(false);
     }
@@ -1393,7 +1452,7 @@ export default function ManageCompanies() {
 
   useEffect(() => {
     fetchCompanies();
-  }, [filter]);
+  }, [filter, currentPage]);
 
   const FILTERS: ("ALL" | Status)[] = [
     "ALL",
@@ -1403,30 +1462,26 @@ export default function ManageCompanies() {
   ];
   const query = search.trim().toLowerCase();
 
+  // The backend already paginates the response. Search remains a
+  // client-side filter over the currently loaded backend page.
   const filtered = companies.filter((c) => {
     const emailDomain = c.email.includes("@")
       ? c.email.split("@").pop() ?? ""
       : "";
+
     const searchable = [c.name, c.email, emailDomain, c.domain]
       .join(" ")
       .toLowerCase();
+
     return (
       (filter === "ALL" || c.status === filter) &&
       (!query || searchable.includes(query))
     );
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, pagination.totalPages);
   const safePage = Math.min(currentPage, totalPages);
-  const pageStart = (safePage - 1) * ITEMS_PER_PAGE;
-  const paginatedCompanies = filtered.slice(
-    pageStart,
-    pageStart + ITEMS_PER_PAGE,
-  );
+  const paginatedCompanies = filtered;
 
   const openAdd = () => {
     setEditTarget(null);
@@ -1452,7 +1507,7 @@ export default function ManageCompanies() {
     if (!result.isConfirmed) return;
 
     try {
-      const endpoint = `/v1/admin/companies/${companyId}`;
+      const endpoint = `/v1/super-admin/companies/${companyId}`;
       console.log("DELETE URL =>", endpoint);
 
       const { data } = await axiosInstance.delete(endpoint);
@@ -1495,13 +1550,12 @@ export default function ManageCompanies() {
     if (!result.isConfirmed) return;
 
     try {
-      const endpoint =
-        newStatus === "ACTIVE"
-          ? `/v1/admin/companies/${companyId}/active`
-          : `/v1/admin/companies/${companyId}/suspend`;
+      const endpoint = `/v1/super-admin/companies/${companyId}/status`;
 
-      console.log("STATUS API =>", endpoint);
-      const { data } = await axiosInstance.put(endpoint);
+      const { data } = await axiosInstance.patch(endpoint, {
+        status: newStatus === "ACTIVE" ? "active" : "suspended",
+        reason: newStatus === "ACTIVE" ? "Review completed" : "Account review",
+      });
       console.log("STATUS RESPONSE =>", data);
 
       if (data?.success) {
@@ -1543,7 +1597,7 @@ export default function ManageCompanies() {
       <div className="mc-kpi-grid">
         <KPI
           label="Total Companies"
-          value={String(companies.length)}
+          value={String(pagination.total)}
           icon="🏢"
           color="#6C5CE7"
         />
@@ -1608,7 +1662,7 @@ export default function ManageCompanies() {
             />
             Select All
           </label>
-          <span className="mc-filter-count">{filtered.length} companies</span>
+          <span className="mc-filter-count">{pagination.total} companies</span>
         </div>
       </div>
 
@@ -1723,11 +1777,11 @@ export default function ManageCompanies() {
       )}
 
       {/* PAGINATION */}
-      {!loading && !fetchError && filtered.length > 0 && (
+      {!loading && !fetchError && pagination.total > 0 && (
         <Pagination
           currentPage={safePage}
           totalPages={totalPages}
-          totalItems={filtered.length}
+          totalItems={pagination.total}
           pageSize={ITEMS_PER_PAGE}
           onPageChange={(page) => setCurrentPage(page)}
         />
