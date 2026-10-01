@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
 import {
@@ -292,12 +293,22 @@ const handleSuspendToggle = async (user: User) => {
                   </td>
 
                   <td>
-                    <div className="au-user-cell">
+                    <Link
+                      href={`/user/all-user/${user.id}`}
+                      onClick={() => {
+                        try {
+                          sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
+                          sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
+                        } catch {}
+                      }}
+                      className="au-user-cell"
+                      title={`View profile of ${user.name}`}
+                    >
                       <div className="au-avatar au-avatar--table" style={{ background: user.av }}>
                         {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <span className="au-user-name">{user.name}</span>
-                    </div>
+                    </Link>
                   </td>
 
                   <td>{user.email}</td>
