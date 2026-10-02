@@ -1622,7 +1622,7 @@ export default function ManageCompanies() {
 
       {/* CREATE / EDIT MODAL */}
 
-      {showModal && (
+      {showModal && editTarget &&(
         <CompanyModal
           company={editTarget}
           onClose={() => {
