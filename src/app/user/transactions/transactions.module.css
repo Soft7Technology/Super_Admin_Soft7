@@ -101,6 +101,13 @@
   flex-wrap: wrap;
 }
 
+.tx-toolbar__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
 .tx-count {
   font-size: 0.8125rem;
   color: var(--text-muted);
@@ -117,6 +124,17 @@
   background: var(--bg-table-head);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tx-segment__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.25rem 0 0.5rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .tx-segment__btn {

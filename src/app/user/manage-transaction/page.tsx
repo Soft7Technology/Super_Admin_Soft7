@@ -3,20 +3,22 @@
 import { useState, useEffect } from "react";
 import "./manage-transaction.css";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
+import { getAuthToken, redirectToLogin, getAuthHeaders } from "@/lib/auth-client";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Calendar } from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
+import {
+  DateRangeOption,
+  DATE_RANGE_OPTIONS,
+  isWithinDateRange,
+  resolveTransactionCompanyNames,
+} from "@/lib/transaction-utils";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 const TRANSACTIONS_API = "/v1/admin/credits/superadmin/transaction";
-const COMPANIES_API = "/api/admin/companies";
 const ITEMS_PER_PAGE = 50;
-
-// ─── Company name cache (persists across re-renders / refreshes) ─────────────
-const _companyNameCache: Record<string, string> = {};
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +38,7 @@ interface RawTransaction {
   meta_data: unknown;
   created_at: string;
   company_name: string | null;
+  company?: { id: string; name: string } | null;
   user_id: string | null;
   email: string | null;
   balance_transafered_by: string | null;
@@ -58,63 +61,15 @@ interface Transaction {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-/**
- * Fetch all companies from the local API and build an id → name lookup map.
- * Results are merged into the module-level cache so subsequent calls are free.
- */
-async function fetchCompanyNameMap(): Promise<Record<string, string>> {
-  try {
-    const res = await fetch(COMPANIES_API);
-    if (!res.ok) return _companyNameCache;
-    const companies: { id: string; name: string }[] = await res.json();
-    if (Array.isArray(companies)) {
-      for (const c of companies) {
-        if (c.id && c.name) {
-          _companyNameCache[String(c.id)] = c.name;
-        }
-      }
-    }
-  } catch {
-    // Silently fall back to whatever is already cached
-  }
-  return _companyNameCache;
-}
-
-/**
- * Resolve missing company_name fields in a batch of raw transactions.
- * For every transaction where company_name is null / empty, we look up the
- * company_id in the local companies cache (fetching once if needed).
- */
-async function resolveCompanyNames(
-  raw: RawTransaction[]
-): Promise<RawTransaction[]> {
-  const missing = raw.filter((t) => !t.company_name && t.company_id);
-  if (missing.length === 0) return raw;
-
-  // Check if any missing IDs are already cached
-  const uncachedIds = Array.from(
-    new Set(missing.map((t) => t.company_id))
-  ).filter((id) => !_companyNameCache[id]);
-
-  // Fetch company list only if we have uncached IDs
-  if (uncachedIds.length > 0) {
-    await fetchCompanyNameMap();
-  }
-
-  // Patch names from cache
-  return raw.map((t) => {
-    if (!t.company_name && t.company_id && _companyNameCache[t.company_id]) {
-      return { ...t, company_name: _companyNameCache[t.company_id] };
-    }
-    return t;
-  });
-}
-
 function enrichTransaction(raw: RawTransaction): Transaction {
+  const displayCompany =
+    raw.company_name ||
+    (raw.company_id ? `Company (${String(raw.company_id).slice(0, 8)}…)` : "Unknown company");
+
   return {
     id: raw.id,
     companyId: raw.company_id,
-    companyName: raw.company_name || "Unknown company",
+    companyName: displayCompany,
     type: raw.type,
     amount: Number(raw.amount || 0),
     balanceBefore: Number(raw.balance_before || 0),
@@ -271,6 +226,7 @@ export default function ManageTransactions() {
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | TxType>("ALL");
+  const [dateRange, setDateRange] = useState<DateRangeOption>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -289,10 +245,25 @@ export default function ManageTransactions() {
     setFetchError(null);
 
     try {
-      const res = await axiosInstance.get(TRANSACTIONS_API);
-      const data = res.data;
-
-      console.log("GET TRANSACTIONS RESPONSE =>", data);
+      let data: any = null;
+      try {
+        const res = await axiosInstance.get(TRANSACTIONS_API);
+        data = res.data;
+      } catch (err: any) {
+        // Fallback to local endpoint
+        try {
+          const localRes = await fetch("/api/admin/credits/transactions?limit=100", {
+            headers: getAuthHeaders(),
+          });
+          if (localRes.ok) {
+            data = await localRes.json();
+          } else {
+            throw err;
+          }
+        } catch {
+          throw err;
+        }
+      }
 
       if (data?.success === false) {
         throw new Error(data?.message || "Failed to load transactions");
@@ -307,7 +278,7 @@ export default function ManageTransactions() {
         : [];
 
       // Resolve missing company names before enriching
-      const resolved = await resolveCompanyNames(raw);
+      const resolved = await resolveTransactionCompanyNames(raw);
       setTransactions(resolved.map(enrichTransaction));
 
       if (isRefresh) toast.success("Transactions refreshed");
@@ -334,12 +305,13 @@ export default function ManageTransactions() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, typeFilter]);
+  }, [search, typeFilter, dateRange]);
 
   const query = search.trim().toLowerCase();
 
   const filtered = transactions.filter((t) => {
     if (typeFilter !== "ALL" && t.type !== typeFilter) return false;
+    if (!isWithinDateRange(t.createdAtRaw, dateRange)) return false;
     if (!query) return true;
     const searchable = [
       t.companyName,
@@ -353,13 +325,13 @@ export default function ManageTransactions() {
     return searchable.includes(query);
   });
 
-  const totalCredit = transactions
+  const totalCredit = filtered
     .filter((t) => t.type === "credit")
     .reduce((sum, t) => sum + t.amount, 0);
-  const totalDebit = transactions
+  const totalDebit = filtered
     .filter((t) => t.type === "debit")
     .reduce((sum, t) => sum + t.amount, 0);
-  const companyCount = new Set(transactions.map((t) => t.companyId)).size;
+  const companyCount = new Set(filtered.map((t) => t.companyId).filter(Boolean)).size;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -367,7 +339,6 @@ export default function ManageTransactions() {
   const paginated = filtered.slice(pageStart, pageStart + ITEMS_PER_PAGE);
 
   // ─── Theme-aware CSS variables ──────────────────────────────────────────
-  // These override the --mc-* fallbacks used throughout manage-transaction.css
   const themeVars = isDark
     ? {
         "--mc-text": "#e8e6e1",
@@ -408,7 +379,7 @@ export default function ManageTransactions() {
       <div className="tx-kpi-grid">
         <KPI
           label="Transactions"
-          value={String(transactions.length)}
+          value={String(filtered.length)}
           icon="📒"
           color="#10B981"
         />
@@ -429,6 +400,8 @@ export default function ManageTransactions() {
             autoComplete="off"
           />
         </div>
+
+        {/* Type Filter Buttons */}
         <div className="tx-filter-group">
           {(["ALL", "credit", "debit"] as const).map((f) => (
             <button
@@ -447,6 +420,24 @@ export default function ManageTransactions() {
             </button>
           ))}
         </div>
+
+        {/* Date Range Filter Buttons */}
+        <div className="tx-filter-group">
+          <span style={{ display: "inline-flex", alignItems: "center", paddingLeft: "8px", color: "var(--mc-muted)" }}>
+            <Calendar size={14} />
+          </span>
+          {DATE_RANGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setDateRange(opt.value)}
+              className={`tx-filter-btn ${dateRange === opt.value ? "tx-filter-btn--active" : ""}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         <span className="tx-filter-count">{filtered.length} transactions</span>
       </div>
 

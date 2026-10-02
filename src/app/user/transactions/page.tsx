@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet, Calendar } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
+import { getAuthToken, redirectToLogin, getAuthHeaders } from "@/lib/auth-client";
 import { fetchWalletBalance, getCachedWalletBalance } from "@/lib/wallet";
+import {
+  DateRangeOption,
+  DATE_RANGE_OPTIONS,
+  isWithinDateRange,
+  resolveTransactionCompanyNames,
+} from "@/lib/transaction-utils";
 import styles from "./transactions.module.css";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -22,6 +28,7 @@ interface Transaction {
   meta_data: unknown;
   created_at: string;
   company_name: string | null;
+  company?: { id: string; name: string } | null;
   user_id: string | null;
   email: string | null;
 }
@@ -35,18 +42,6 @@ interface Pagination {
   hasPreviousPage: boolean;
 }
 
-/**
- * Actual API response shape:
- * {
- *   success: boolean,
- *   message: string,
- *   data: {
- *     data: Transaction[],
- *     pagination: Pagination
- *   },
- *   meta: { timestamp: string }
- * }
- */
 interface ApiResponse {
   success: boolean;
   message: string;
@@ -68,96 +63,70 @@ const FILTERS: { label: string; value: FilterType }[] = [
 
 const LIMIT = 50;
 const TRANSACTIONS_API = "/v1/admin/credits/transactions";
-const COMPANIES_API = "/api/admin/companies";
 
-// ── Company name cache (persists across re-renders / refreshes) ──
-const _companyNameCache: Record<string, string> = {};
-
-/* ── API helpers ───────────────────────────────────────────── */
-
-/**
- * Fetch all companies from the local API and build an id → name lookup map.
- * Results are merged into the module-level cache so subsequent calls are free.
- */
-async function fetchCompanyNameMap(): Promise<Record<string, string>> {
-  try {
-    const res = await fetch(COMPANIES_API);
-    if (!res.ok) return _companyNameCache;
-    const companies: { id: string; name: string }[] = await res.json();
-    if (Array.isArray(companies)) {
-      for (const c of companies) {
-        if (c.id && c.name) {
-          _companyNameCache[String(c.id)] = c.name;
-        }
-      }
-    }
-  } catch {
-    // Silently fall back to whatever is already cached
-  }
-  return _companyNameCache;
-}
-
-/**
- * Resolve missing company_name fields in a batch of transactions.
- */
-async function resolveCompanyNames(
-  txs: Transaction[]
-): Promise<Transaction[]> {
-  const missing = txs.filter((t) => !t.company_name && t.company_id);
-  if (missing.length === 0) return txs;
-
-  const uncachedIds = Array.from(
-    new Set(missing.map((t) => t.company_id))
-  ).filter((id) => !_companyNameCache[id]);
-
-  if (uncachedIds.length > 0) {
-    await fetchCompanyNameMap();
-  }
-
-  return txs.map((t) => {
-    if (!t.company_name && t.company_id && _companyNameCache[t.company_id]) {
-      return { ...t, company_name: _companyNameCache[t.company_id] };
-    }
-    return t;
-  });
-}
+/* ── Data Fetching ─────────────────────────────────────────── */
 
 async function fetchTransactionsApi(
   type: "credit" | "debit",
   page: number,
-  limit: number
+  limit: number,
+  dateRange: DateRangeOption = "all"
 ): Promise<{ transactions: Transaction[]; pagination: Pagination }> {
-  const response = await axiosInstance.get<ApiResponse>(TRANSACTIONS_API, {
-    params: { limit, page, type },
-  });
+  let response: any = null;
 
-  // Actual shape: response.data.data.data (axios wraps in .data, then our API wraps in data: { data: [] })
+  try {
+    response = await axiosInstance.get<ApiResponse>(TRANSACTIONS_API, {
+      params: { limit, page, type, time_frame: dateRange },
+    });
+  } catch (err: any) {
+    // If hostapi is unreachable, fallback to local backend route
+    try {
+      const localRes = await fetch(
+        `/api/admin/credits/transactions?limit=${limit}&page=${page}&type=${type}&time_frame=${dateRange}`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+      if (localRes.ok) {
+        const localJson = await localRes.json();
+        response = { data: localJson };
+      } else {
+        throw err;
+      }
+    } catch {
+      throw err;
+    }
+  }
+
   const payload = response?.data?.data;
-  const transactions: Transaction[] = Array.isArray(payload?.data)
+  const rawTransactions: Transaction[] = Array.isArray(payload?.data)
     ? payload.data
+    : Array.isArray(payload)
+    ? payload
     : [];
+
   const pagination: Pagination = payload?.pagination ?? {
     page: 1,
     limit,
-    total: transactions.length,
+    total: rawTransactions.length,
     totalPages: 1,
     hasNextPage: false,
     hasPreviousPage: false,
   };
 
-  // Resolve missing company names before returning
-  const resolved = await resolveCompanyNames(transactions);
-
+  // Resolve company names (specifically ensuring Subscription Commission entries have associated names)
+  const resolved = await resolveTransactionCompanyNames(rawTransactions);
   return { transactions: resolved, pagination };
 }
 
 async function fetchAllTransactions(
   page: number,
-  limit: number
+  limit: number,
+  dateRange: DateRangeOption = "all"
 ): Promise<{ transactions: Transaction[]; pagination: Pagination }> {
   const [creditResult, debitResult] = await Promise.all([
-    fetchTransactionsApi("credit", page, limit),
-    fetchTransactionsApi("debit", page, limit),
+    fetchTransactionsApi("credit", page, limit, dateRange),
+    fetchTransactionsApi("debit", page, limit, dateRange),
   ]);
 
   const merged = [
@@ -168,7 +137,6 @@ async function fetchAllTransactions(
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
-  // Combine pagination totals for "all" view
   const combinedPagination: Pagination = {
     page,
     limit,
@@ -211,13 +179,14 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [dateRange, setDateRange] = useState<DateRangeOption>("all");
   const [page, setPage] = useState(1);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceLoading, setBalanceLoading] = useState(true);
 
   /* ── Fetch ─────────────────────────────────────────────────── */
   const fetchTransactions = useCallback(
-    async (currentFilter: FilterType, currentPage: number) => {
+    async (currentFilter: FilterType, currentPage: number, currentDateRange: DateRangeOption) => {
       const token = getAuthToken();
       if (!token) {
         redirectToLogin("missing_token");
@@ -230,12 +199,13 @@ const [balanceLoading, setBalanceLoading] = useState(true);
         let result: { transactions: Transaction[]; pagination: Pagination };
 
         if (currentFilter === "all") {
-          result = await fetchAllTransactions(currentPage, LIMIT);
+          result = await fetchAllTransactions(currentPage, LIMIT, currentDateRange);
         } else {
           result = await fetchTransactionsApi(
             currentFilter,
             currentPage,
-            LIMIT
+            LIMIT,
+            currentDateRange
           );
         }
 
@@ -257,9 +227,9 @@ const [balanceLoading, setBalanceLoading] = useState(true);
   );
 
   useEffect(() => {
-    fetchTransactions(filter, page);
-  }, [filter, page, fetchTransactions]);
-  
+    fetchTransactions(filter, page, dateRange);
+  }, [filter, page, dateRange, fetchTransactions]);
+
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let cancelled = false;
@@ -283,16 +253,13 @@ const [balanceLoading, setBalanceLoading] = useState(true);
       }
     };
 
-    // 1. Initial cached balance for instant render
     const cached = getCachedWalletBalance();
     if (cached) {
       setWalletBalance(Number(cached));
     }
 
-    // 2. Fetch immediately
     poll();
 
-    // 3. Listen for immediate sync across tabs, modals, and Topbar
     const handleSync = (e: any) => {
       const val = e?.detail ?? getCachedWalletBalance();
       if (val !== null && val !== undefined) {
@@ -300,7 +267,6 @@ const [balanceLoading, setBalanceLoading] = useState(true);
       }
     };
 
-    // 4. Online event - reconnects polling immediately
     const handleOnline = () => {
       pollDelay = 30000;
       poll();
@@ -318,11 +284,23 @@ const [balanceLoading, setBalanceLoading] = useState(true);
       window.removeEventListener("online", handleOnline);
     };
   }, []);
-  /* ── Filter change resets to page 1 ───────────────────────── */
+
+  /* ── Handlers ─────────────────────────────────────────────── */
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(newFilter);
     setPage(1);
   };
+
+  const handleDateRangeChange = (newRange: DateRangeOption) => {
+    setDateRange(newRange);
+    setPage(1);
+  };
+
+  /* ── Reactive Filtered Transactions by Date Range ─────────── */
+  const displayedTransactions = useMemo(() => {
+    const list = Array.isArray(transactions) ? transactions : [];
+    return list.filter((tx) => isWithinDateRange(tx.created_at, dateRange));
+  }, [transactions, dateRange]);
 
   /* ── Formatters ──────────────────────────────────────────── */
   const formatCurrency = (val: string | number) =>
@@ -354,12 +332,10 @@ const [balanceLoading, setBalanceLoading] = useState(true);
       ? ref.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
       : "—";
 
-  const safeTransactions = Array.isArray(transactions) ? transactions : [];
-
   /* ── Render ──────────────────────────────────────────────── */
   return (
     <div className={styles["tx-page"]}>
-     {/* Header */}
+      {/* Header */}
       <div className={styles["tx-page__header"]}>
         <h1 className={styles["tx-page__title"]}>Transaction History</h1>
         <p className={styles["tx-page__subtitle"]}>
@@ -390,39 +366,66 @@ const [balanceLoading, setBalanceLoading] = useState(true);
 
       {/* Toolbar */}
       <div className={styles["tx-toolbar"]}>
-        <div
-          className={styles["tx-segment"]}
-          role="tablist"
-          aria-label="Filter by type"
-        >
-          {FILTERS.map((opt) => (
-            <button
-              key={opt.value}
-              role="tab"
-              aria-selected={filter === opt.value}
-              className={`${styles["tx-segment__btn"]} ${
-                filter === opt.value ? styles["tx-segment__btn--active"] : ""
-              }`}
-              onClick={() => handleFilterChange(opt.value)}
-            >
-              {opt.value !== "all" && (
-                <span
-                  className={`${styles["tx-segment__dot"]} ${
-                    opt.value === "credit"
-                      ? styles["tx-segment__dot--credit"]
-                      : styles["tx-segment__dot--debit"]
-                  }`}
-                />
-              )}
-              {opt.label}
-            </button>
-          ))}
+        <div className={styles["tx-toolbar__filters"]}>
+          {/* Segment Buttons: Type (All, Credit, Debit) */}
+          <div
+            className={styles["tx-segment"]}
+            role="tablist"
+            aria-label="Filter by type"
+          >
+            {FILTERS.map((opt) => (
+              <button
+                key={opt.value}
+                role="tab"
+                aria-selected={filter === opt.value}
+                className={`${styles["tx-segment__btn"]} ${
+                  filter === opt.value ? styles["tx-segment__btn--active"] : ""
+                }`}
+                onClick={() => handleFilterChange(opt.value)}
+              >
+                {opt.value !== "all" && (
+                  <span
+                    className={`${styles["tx-segment__dot"]} ${
+                      opt.value === "credit"
+                        ? styles["tx-segment__dot--credit"]
+                        : styles["tx-segment__dot--debit"]
+                    }`}
+                  />
+                )}
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Segment Buttons: Date Range alongside Type filter */}
+          <div
+            className={styles["tx-segment"]}
+            role="tablist"
+            aria-label="Filter by date range"
+          >
+            <span className={styles["tx-segment__icon"]} title="Filter by date range">
+              <Calendar size={13} />
+            </span>
+            {DATE_RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                role="tab"
+                aria-selected={dateRange === opt.value}
+                className={`${styles["tx-segment__btn"]} ${
+                  dateRange === opt.value ? styles["tx-segment__btn--active"] : ""
+                }`}
+                onClick={() => handleDateRangeChange(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {!loading && !error && pagination && (
+        {!loading && !error && (
           <span className={styles["tx-count"]}>
-            {pagination.total} transaction
-            {pagination.total !== 1 ? "s" : ""}
+            {displayedTransactions.length} transaction
+            {displayedTransactions.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -499,7 +502,7 @@ const [balanceLoading, setBalanceLoading] = useState(true);
                     <div className={styles["tx-empty__hint"]}>{error}</div>
                     <button
                       className={styles["tx-retry"]}
-                      onClick={() => fetchTransactions(filter, page)}
+                      onClick={() => fetchTransactions(filter, page, dateRange)}
                     >
                       Try again
                     </button>
@@ -509,18 +512,19 @@ const [balanceLoading, setBalanceLoading] = useState(true);
             )}
 
             {/* Empty */}
-            {!loading && !error && safeTransactions.length === 0 && (
+            {!loading && !error && displayedTransactions.length === 0 && (
               <tr>
                 <td colSpan={7}>
                   <div className={styles["tx-empty"]}>
                     <div className={styles["tx-empty__text"]}>
                       No {filter !== "all" ? filter : ""} transactions found
+                      {dateRange !== "all"
+                        ? ` for ${DATE_RANGE_OPTIONS.find((d) => d.value === dateRange)?.label}`
+                        : ""}
                     </div>
-                    {filter !== "all" && (
-                      <div className={styles["tx-empty__hint"]}>
-                        Try switching the filter to "All"
-                      </div>
-                    )}
+                    <div className={styles["tx-empty__hint"]}>
+                      Try switching filters or adjusting your date range
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -529,16 +533,20 @@ const [balanceLoading, setBalanceLoading] = useState(true);
             {/* Rows */}
             {!loading &&
               !error &&
-              safeTransactions.map((tx) => {
+              displayedTransactions.map((tx) => {
                 const isCredit = tx.type === "credit";
                 const amount = Number(tx.amount);
+                const displayCompany =
+                  tx.company_name ||
+                  (tx.company_id ? `Company (${tx.company_id.slice(0, 8)}…)` : "—");
+
                 return (
                   <tr key={tx.id}>
                     <td className={styles["td-date"]}>
                       {formatDate(tx.created_at)}
                     </td>
                     <td className={styles["td-company"]}>
-                      {tx.company_name ?? "—"}
+                      {displayCompany}
                     </td>
                     <td>
                       <span
