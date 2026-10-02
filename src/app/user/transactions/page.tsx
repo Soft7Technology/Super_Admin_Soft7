@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { getAuthToken, redirectToLogin, getAuthHeaders } from "@/lib/auth-client";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import { fetchWalletBalance, getCachedWalletBalance } from "@/lib/wallet";
 import styles from "./transactions.module.css";
 
@@ -68,8 +68,60 @@ const FILTERS: { label: string; value: FilterType }[] = [
 
 const LIMIT = 50;
 const TRANSACTIONS_API = "/v1/admin/credits/transactions";
+const COMPANIES_API = "/api/admin/companies";
+
+// ── Company name cache (persists across re-renders / refreshes) ──
+const _companyNameCache: Record<string, string> = {};
 
 /* ── API helpers ───────────────────────────────────────────── */
+
+/**
+ * Fetch all companies from the local API and build an id → name lookup map.
+ * Results are merged into the module-level cache so subsequent calls are free.
+ */
+async function fetchCompanyNameMap(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(COMPANIES_API);
+    if (!res.ok) return _companyNameCache;
+    const companies: { id: string; name: string }[] = await res.json();
+    if (Array.isArray(companies)) {
+      for (const c of companies) {
+        if (c.id && c.name) {
+          _companyNameCache[String(c.id)] = c.name;
+        }
+      }
+    }
+  } catch {
+    // Silently fall back to whatever is already cached
+  }
+  return _companyNameCache;
+}
+
+/**
+ * Resolve missing company_name fields in a batch of transactions.
+ */
+async function resolveCompanyNames(
+  txs: Transaction[]
+): Promise<Transaction[]> {
+  const missing = txs.filter((t) => !t.company_name && t.company_id);
+  if (missing.length === 0) return txs;
+
+  const uncachedIds = Array.from(
+    new Set(missing.map((t) => t.company_id))
+  ).filter((id) => !_companyNameCache[id]);
+
+  if (uncachedIds.length > 0) {
+    await fetchCompanyNameMap();
+  }
+
+  return txs.map((t) => {
+    if (!t.company_name && t.company_id && _companyNameCache[t.company_id]) {
+      return { ...t, company_name: _companyNameCache[t.company_id] };
+    }
+    return t;
+  });
+}
+
 async function fetchTransactionsApi(
   type: "credit" | "debit",
   page: number,
@@ -93,7 +145,10 @@ async function fetchTransactionsApi(
     hasPreviousPage: false,
   };
 
-  return { transactions, pagination };
+  // Resolve missing company names before returning
+  const resolved = await resolveCompanyNames(transactions);
+
+  return { transactions: resolved, pagination };
 }
 
 async function fetchAllTransactions(
@@ -158,63 +213,7 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [page, setPage] = useState(1);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [balanceLoading, setBalanceLoading] = useState(true);
-
-  /* ── Company name resolution map (company_id → name) ──────── */
-  const [companiesMap, setCompaniesMap] = useState<Record<string, string>>({});
-  const companiesFetched = useRef(false);
-
-  useEffect(() => {
-    if (companiesFetched.current) return;
-    companiesFetched.current = true;
-
-    const loadCompanies = async () => {
-      const map: Record<string, string> = {};
-
-      // 1. Try external host API
-      try {
-        const res = await axiosInstance.get("/v1/admin/companies?status=active");
-        const comps = Array.isArray(res.data)
-          ? res.data
-          : Array.isArray(res.data?.data)
-          ? res.data.data
-          : [];
-        for (const c of comps) {
-          if (c?.id && c?.name) {
-            map[String(c.id)] = c.name;
-            map[String(c.id).toLowerCase()] = c.name;
-          }
-        }
-      } catch {
-        // fallback below
-      }
-
-      // 2. Fallback to local Prisma-backed companies API
-      if (Object.keys(map).length === 0) {
-        try {
-          const localRes = await fetch("/api/admin/companies", {
-            headers: getAuthHeaders(),
-          });
-          if (localRes.ok) {
-            const localData = await localRes.json();
-            const comps = Array.isArray(localData) ? localData : localData?.data ?? [];
-            for (const c of comps) {
-              if (c?.id && c?.name) {
-                map[String(c.id)] = c.name;
-                map[String(c.id).toLowerCase()] = c.name;
-              }
-            }
-          }
-        } catch {
-          // silent
-        }
-      }
-
-      setCompaniesMap(map);
-    };
-
-    loadCompanies();
-  }, []);
+const [balanceLoading, setBalanceLoading] = useState(true);
 
   /* ── Fetch ─────────────────────────────────────────────────── */
   const fetchTransactions = useCallback(
@@ -533,20 +532,13 @@ export default function TransactionsPage() {
               safeTransactions.map((tx) => {
                 const isCredit = tx.type === "credit";
                 const amount = Number(tx.amount);
-                /* Resolve company name: prefer API-provided name,
-                   fall back to our lookup map by company_id */
-                const resolvedCompanyName =
-                  tx.company_name ||
-                  companiesMap[tx.company_id] ||
-                  companiesMap[String(tx.company_id).toLowerCase()] ||
-                  (tx.company_id ? `Company (${tx.company_id.slice(0, 8)}…)` : "—");
                 return (
                   <tr key={tx.id}>
                     <td className={styles["td-date"]}>
                       {formatDate(tx.created_at)}
                     </td>
                     <td className={styles["td-company"]}>
-                      {resolvedCompanyName}
+                      {tx.company_name ?? "—"}
                     </td>
                     <td>
                       <span

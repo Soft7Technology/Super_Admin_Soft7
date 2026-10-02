@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import "./manage-transaction.css";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { getAuthToken, redirectToLogin, getAuthHeaders } from "@/lib/auth-client";
+import { getAuthToken, redirectToLogin } from "@/lib/auth-client";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { RefreshCw } from "lucide-react";
@@ -12,7 +12,11 @@ import { useTheme } from "../../../context/ThemeContext";
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 const TRANSACTIONS_API = "/v1/admin/credits/superadmin/transaction";
+const COMPANIES_API = "/api/admin/companies";
 const ITEMS_PER_PAGE = 50;
+
+// ─── Company name cache (persists across re-renders / refreshes) ─────────────
+const _companyNameCache: Record<string, string> = {};
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +35,7 @@ interface RawTransaction {
   created_by: string | null;
   meta_data: unknown;
   created_at: string;
-  company_name: string;
+  company_name: string | null;
   user_id: string | null;
   email: string | null;
   balance_transafered_by: string | null;
@@ -54,16 +58,63 @@ interface Transaction {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-function enrichTransaction(raw: RawTransaction, companiesMap?: Record<string, string>): Transaction {
-  const resolvedName =
-    raw.company_name ||
-    (companiesMap && companiesMap[String(raw.company_id)]) ||
-    (companiesMap && companiesMap[String(raw.company_id).toLowerCase()]) ||
-    (raw.company_id ? `Company (${String(raw.company_id).slice(0, 8)}…)` : "Unknown company");
+/**
+ * Fetch all companies from the local API and build an id → name lookup map.
+ * Results are merged into the module-level cache so subsequent calls are free.
+ */
+async function fetchCompanyNameMap(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(COMPANIES_API);
+    if (!res.ok) return _companyNameCache;
+    const companies: { id: string; name: string }[] = await res.json();
+    if (Array.isArray(companies)) {
+      for (const c of companies) {
+        if (c.id && c.name) {
+          _companyNameCache[String(c.id)] = c.name;
+        }
+      }
+    }
+  } catch {
+    // Silently fall back to whatever is already cached
+  }
+  return _companyNameCache;
+}
+
+/**
+ * Resolve missing company_name fields in a batch of raw transactions.
+ * For every transaction where company_name is null / empty, we look up the
+ * company_id in the local companies cache (fetching once if needed).
+ */
+async function resolveCompanyNames(
+  raw: RawTransaction[]
+): Promise<RawTransaction[]> {
+  const missing = raw.filter((t) => !t.company_name && t.company_id);
+  if (missing.length === 0) return raw;
+
+  // Check if any missing IDs are already cached
+  const uncachedIds = Array.from(
+    new Set(missing.map((t) => t.company_id))
+  ).filter((id) => !_companyNameCache[id]);
+
+  // Fetch company list only if we have uncached IDs
+  if (uncachedIds.length > 0) {
+    await fetchCompanyNameMap();
+  }
+
+  // Patch names from cache
+  return raw.map((t) => {
+    if (!t.company_name && t.company_id && _companyNameCache[t.company_id]) {
+      return { ...t, company_name: _companyNameCache[t.company_id] };
+    }
+    return t;
+  });
+}
+
+function enrichTransaction(raw: RawTransaction): Transaction {
   return {
     id: raw.id,
     companyId: raw.company_id,
-    companyName: resolvedName,
+    companyName: raw.company_name || "Unknown company",
     type: raw.type,
     amount: Number(raw.amount || 0),
     balanceBefore: Number(raw.balance_before || 0),
@@ -226,70 +277,6 @@ export default function ManageTransactions() {
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  /* ── Company name resolution map (company_id → name) ──────── */
-  const [companiesMap, setCompaniesMap] = useState<Record<string, string>>({});
-  const companiesFetched = useRef(false);
-  const rawTransactionsRef = useRef<RawTransaction[]>([]);
-
-  useEffect(() => {
-    if (companiesFetched.current) return;
-    companiesFetched.current = true;
-
-    const loadCompanies = async () => {
-      const map: Record<string, string> = {};
-
-      // 1. Try external host API
-      try {
-        const res = await axiosInstance.get("/v1/admin/companies?status=active");
-        const comps = Array.isArray(res.data)
-          ? res.data
-          : Array.isArray(res.data?.data)
-          ? res.data.data
-          : [];
-        for (const c of comps) {
-          if (c?.id && c?.name) {
-            map[String(c.id)] = c.name;
-            map[String(c.id).toLowerCase()] = c.name;
-          }
-        }
-      } catch {
-        // fallback below
-      }
-
-      // 2. Fallback to local Prisma-backed companies API
-      if (Object.keys(map).length === 0) {
-        try {
-          const localRes = await fetch("/api/admin/companies", {
-            headers: getAuthHeaders(),
-          });
-          if (localRes.ok) {
-            const localData = await localRes.json();
-            const comps = Array.isArray(localData) ? localData : localData?.data ?? [];
-            for (const c of comps) {
-              if (c?.id && c?.name) {
-                map[String(c.id)] = c.name;
-                map[String(c.id).toLowerCase()] = c.name;
-              }
-            }
-          }
-        } catch {
-          // silent
-        }
-      }
-
-      setCompaniesMap(map);
-    };
-
-    loadCompanies();
-  }, []);
-
-  // Re-enrich transactions when companiesMap becomes available
-  useEffect(() => {
-    if (Object.keys(companiesMap).length > 0 && rawTransactionsRef.current.length > 0) {
-      setTransactions(rawTransactionsRef.current.map((r) => enrichTransaction(r, companiesMap)));
-    }
-  }, [companiesMap]);
-
   const fetchTransactions = async (isRefresh = false) => {
     const token = getAuthToken();
     if (!token) {
@@ -319,8 +306,9 @@ export default function ManageTransactions() {
         ? payload.data
         : [];
 
-      rawTransactionsRef.current = raw;
-      setTransactions(raw.map((r) => enrichTransaction(r, companiesMap)));
+      // Resolve missing company names before enriching
+      const resolved = await resolveCompanyNames(raw);
+      setTransactions(resolved.map(enrichTransaction));
 
       if (isRefresh) toast.success("Transactions refreshed");
     } catch (e: any) {
