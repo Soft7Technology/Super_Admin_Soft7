@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { User, UserStats, timeAgo } from "../types";
 
-const EXTERNAL_USERS_API = "/v1/admin/companies/user";
+const EXTERNAL_USERS_API = "/v1/super-admin/users";
 
 export interface PaginationInfo {
   total: number;
@@ -40,24 +40,42 @@ const DEFAULT_PAGINATION: PaginationInfo = {
   total: 0,
   totalPages: 1,
   page: 1,
-  limit: 20,
+  limit: 25,
 };
 
 function recordsFromResponse(json: any): any[] {
-  if (Array.isArray(json)) return json;
-  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.data?.items)) return json.data.items;
   if (Array.isArray(json?.data?.data)) return json.data.data;
+  if (Array.isArray(json?.data)) return json.data;
   if (Array.isArray(json?.users)) return json.users;
+  if (Array.isArray(json)) return json;
+
   return [];
 }
 
-function paginationFromResponse(json: any): Partial<PaginationInfo> {
+function paginationFromResponse(
+  json: any,
+  requestedPage: number,
+  requestedLimit: number,
+): PaginationInfo {
   const p = json?.data?.pagination ?? json?.pagination ?? {};
+
+  const total = Number(
+    p.total ?? p.totalUsers ?? p.count ?? json?.data?.total ?? 0,
+  );
+
+  const page = Number(p.page ?? requestedPage);
+  const limit = Number(p.limit ?? requestedLimit);
+
+  const totalPages = Number(
+    p.totalPages ?? p.total_pages ?? Math.max(1, Math.ceil(total / limit)),
+  );
+
   return {
-    total: Number(p.total ?? p.totalUsers ?? p.count ?? 0),
-    totalPages: Number(p.totalPages ?? p.total_pages ?? 1),
-    page: Number(p.page ?? 1),
-    limit: Number(p.limit ?? 10),
+    total,
+    totalPages: Math.max(1, totalPages),
+    page,
+    limit,
   };
 }
 
@@ -70,10 +88,25 @@ function normalisePlan(planName: string): string {
 function mapExternalUser(u: any): User {
   const email = String(u.email || "");
   const emailDomain = email.includes("@") ? email.split("@").pop() ?? "" : "";
-  const role = String(u.role || "").toLowerCase() === "admin" ? "Admin" : "User";
-  const plan = normalisePlan(String(u.plan_name || u.plan || u.subscription_plan || ""));
+
+  const role =
+    String(u.role || "").toLowerCase() === "admin" ? "Admin" : "User";
+
+  const plan = normalisePlan(
+    String(
+      u.plan_name ||
+        u.plan ||
+        u.subscription_plan ||
+        u.plan_details?.plan_name ||
+        "",
+    ),
+  );
+
   const companyId = u.company_id ?? u.companyId ?? u.company?.id;
-  const companyDomain = String(u.company?.domain || u.company_domain || u.domain || emailDomain || "");
+
+  const companyDomain = String(
+    u.company?.domain || u.company_domain || u.domain || emailDomain || "",
+  );
 
   return {
     id: String(u.id),
@@ -82,21 +115,38 @@ function mapExternalUser(u: any): User {
     phone: String(u.phone || ""),
     role,
     status: String(u.status || "active").toUpperCase(),
-    company: String(u.company?.name || u.company_name || (companyId ? `ID: ${String(companyId).slice(0, 8)}...` : "-")),
+
+    company: String(
+      u.company?.name ||
+        u.company_name ||
+        (companyId ? `ID: ${String(companyId).slice(0, 8)}...` : "-"),
+    ),
+
     companyId: companyId ? String(companyId) : undefined,
     companyDomain,
+
     plan,
+
     av: "#10b981",
+
     login: timeAgo(u.last_login_at || u.updated_at || null),
+
     joined: u.created_at ? new Date(u.created_at).toLocaleDateString() : "-",
+
     msgs: Number(u.msgs || u.messages || 0),
+
     campaigns: Number(u.campaigns || 0),
     chatbots: Number(u.chatbots || 0),
+
     pro: ["Pro", "Enterprise"].includes(plan),
   };
 }
 
-function buildStats(users: User[], totalUsers?: number, rawStats?: any): UserStats {
+function buildStats(
+  users: User[],
+  totalUsers?: number,
+  rawStats?: any,
+): UserStats {
   if (rawStats && typeof rawStats.totalUsers === "number") {
     return {
       totalUsers: rawStats.totalUsers,
@@ -105,68 +155,78 @@ function buildStats(users: User[], totalUsers?: number, rawStats?: any): UserSta
       premiumUsers: rawStats.premiumUsers ?? 0,
     };
   }
+
   return {
     totalUsers: totalUsers ?? users.length,
+
     activeUsers: users.filter((u) => u.status === "ACTIVE").length,
+
     adminUsers: users.filter((u) => u.role.toLowerCase() === "admin").length,
-    premiumUsers: users.filter((u) =>
-      ["Pro", "Enterprise"].includes(u.plan)
-    ).length,
+
+    premiumUsers: users.filter((u) => ["Pro", "Enterprise"].includes(u.plan))
+      .length,
   };
 }
 
-/**
- * Maps the UI status filter value (ALL / ACTIVE / INACTIVE / SUSPENDED)
- * to the `status` query param expected by the API:
- *   all | active | inactive | suspended
- */
 function toApiStatus(status: string): string {
   switch (String(status).toUpperCase()) {
     case "ACTIVE":
       return "active";
+
     case "INACTIVE":
       return "inactive";
+
     case "SUSPENDED":
     case "SUSPEND":
       return "suspended";
+
     default:
       return "all";
   }
 }
 
-/**
- * Maps the UI role filter value (ALL / ADMIN / USER)
- * to the `role` query param expected by the API:
- *   all | admin | user
- */
 function toApiRole(role: string): string {
   switch (String(role).toUpperCase()) {
     case "ADMIN":
       return "admin";
+
     case "USER":
       return "user";
+
     default:
       return "all";
   }
 }
 
-export function useUsers(): UseUsersReturn {
+export function useUsers({
+  page = 1,
+  limit = 25,
+}: UseUsersParams = {}): UseUsersReturn {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
-  const [pagination, setPagination] = useState<PaginationInfo>(DEFAULT_PAGINATION);
+
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    ...DEFAULT_PAGINATION,
+    page,
+    limit,
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
-  const refresh = () => setTick((t) => t + 1);
+  const refresh = () => {
+    setTick((t) => t + 1);
+  };
 
-  // Optimistically update a single user's status in local state
   const updateUserStatus = (userId: string, statusVal: string) => {
     setUsers((prev) => {
       const updated = prev.map((u) =>
-        u.id === userId ? { ...u, status: statusVal } : u
+        u.id === userId ? { ...u, status: statusVal } : u,
       );
+
       setStats((prevStats) => buildStats(updated, prevStats.totalUsers));
+
       return updated;
     });
   };
@@ -180,29 +240,42 @@ export function useUsers(): UseUsersReturn {
 
       try {
         const { data: resJson } = await axiosInstance.get(EXTERNAL_USERS_API, {
-          params: { limit: 1000 },
+          params: {
+            page,
+            limit,
+          },
         });
 
-        const p = paginationFromResponse(resJson);
         const records = recordsFromResponse(resJson);
+
         const mappedUsers = records.map(mapExternalUser);
+
+        const paginationData = paginationFromResponse(resJson, page, limit);
 
         if (!cancelled) {
           setUsers(mappedUsers);
-          const totalCount = p.total ?? mappedUsers.length;
-          setPagination({
-            total: totalCount,
-            totalPages: Math.max(1, p.totalPages ?? Math.ceil(totalCount / 20)),
-            page: 1,
-            limit: 20,
-          });
-          setStats(buildStats(mappedUsers, totalCount, resJson?.data?.stats ?? resJson?.stats));
+
+          setPagination(paginationData);
+
+          setStats(
+            buildStats(
+              mappedUsers,
+              paginationData.total,
+              resJson?.data?.stats ?? resJson?.stats,
+            ),
+          );
         }
       } catch (e) {
         if (!cancelled) {
           setUsers([]);
           setStats(EMPTY_STATS);
-          setPagination(DEFAULT_PAGINATION);
+
+          setPagination({
+            ...DEFAULT_PAGINATION,
+            page,
+            limit,
+          });
+
           setError(e instanceof Error ? e.message : "Failed to fetch users.");
         }
       } finally {
@@ -217,7 +290,15 @@ export function useUsers(): UseUsersReturn {
     return () => {
       cancelled = true;
     };
-  }, [tick]);
+  }, [page, limit, tick]);
 
-  return { users, stats, pagination, loading, error, refresh, updateUserStatus };
+  return {
+    users,
+    stats,
+    pagination,
+    loading,
+    error,
+    refresh,
+    updateUserStatus,
+  };
 }

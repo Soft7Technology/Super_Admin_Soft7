@@ -37,10 +37,11 @@ function niceMax(rawMax: number): number {
 }
 
 function computeGridTicks(rawMax: number): { max: number; ticks: number[] } {
-  if (rawMax <= 0) return { max: 5, ticks: [1, 2, 3, 4, 5] };
+  if (rawMax <= 0) return { max: 6, ticks: [2, 4, 6] };
 
-  const max = rawMax <= 5 ? 5 : rawMax <= 10 ? Math.max(5, Math.ceil(rawMax)) : niceMax(rawMax);
-  const tickCount = Math.min(5, max);
+  // Provide headroom so bars and line markers don't awkwardly hit the top ceiling
+  const max = rawMax <= 5 ? 6 : rawMax <= 10 ? 12 : niceMax(rawMax * 1.15);
+  const tickCount = max <= 6 ? 3 : 4;
   const step = max / tickCount;
 
   const rounded = Array.from({ length: tickCount }, (_, i) => Math.round(step * (i + 1)));

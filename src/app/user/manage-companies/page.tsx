@@ -1,25 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { ChangeEvent, CSSProperties } from "react";
 import "./manage-companies.css";
+
 import { axiosInstance } from "@/lib/axiosInstance";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 import Swal from "sweetalert2";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const COMPANIES_API = "/v1/super-admin/companies";
+const ITEMS_PER_PAGE = 25;
 
-const COMPANIES_API = "/v1/admin/companies?page=1&limit=20&status=active";
-const ACTIVE_COMPANIES_API = "/v1/admin/companies?page=1&limit=20&status=active";
-const SUSPENDED_COMPANIES_API = "/v1/admin/companies?page=1&limit=20&status=suspend";
-const INACTIVE_COMPANIES_API =
-  "/v1/admin/companies?page=1&limit=20&status=inactive";
-const ITEMS_PER_PAGE = 20;
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── TYPES ────────────────────────────────────────────────────────────────────
+interface CompaniesPagination {
+  total: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+const DEFAULT_PAGINATION: CompaniesPagination = {
+  total: 0,
+  totalPages: 1,
+  page: 1,
+  limit: ITEMS_PER_PAGE,
+};
+
 interface RawCompany {
   id: string | number;
   name: string;
@@ -27,7 +46,6 @@ interface RawCompany {
   adminEmail?: string;
   phone: string | null;
   domain: string | null;
-  logo: string | null;
   status: string;
   credit_balance: string;
   created_at: string;
@@ -42,6 +60,7 @@ interface RawCompany {
 }
 
 type Status = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "TRIAL";
+
 type Plan = "Starter" | "Basic" | "Pro" | "Enterprise";
 
 interface Company {
@@ -50,8 +69,7 @@ interface Company {
   email: string;
   phone: string;
   domain: string;
-  logo: string;
-  logoUrl?: string | null;
+  businessId: string;
   col: string;
   status: Status;
   plan: Plan;
@@ -63,7 +81,10 @@ interface Company {
   apiKey: string | null;
 }
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
 const AVATAR_COLORS = [
   "#6C5CE7",
   "#0d9462",
@@ -77,8 +98,11 @@ const AVATAR_COLORS = [
 
 function avatarColor(id: string) {
   let hash = 0;
-  for (let i = 0; i < id.length; i++)
+
+  for (let i = 0; i < id.length; i++) {
     hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
@@ -90,19 +114,30 @@ function normaliseStatus(raw: string): Status {
     suspended: "SUSPENDED",
     trial: "TRIAL",
   };
+
   return map[raw?.toLowerCase()] ?? "ACTIVE";
 }
-
+function getCompanyInitials(name: string) {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase() || "CO"
+  );
+}
 function enrichCompany(raw: RawCompany): Company {
   const email = raw.email || raw.adminEmail || "";
+
   return {
     id: String(raw.id),
     name: raw.name || "Unnamed",
     email,
     phone: raw.phone || "—",
     domain: raw.domain || email.split("@")[1] || "—",
-    logo: (raw.name || "??").slice(0, 2).toUpperCase(),
-    logoUrl: raw.logo,
+    businessId: raw.business_id || "",
     col: avatarColor(String(raw.id)),
     status: normaliseStatus(raw.status),
     plan: "Starter",
@@ -117,17 +152,20 @@ function enrichCompany(raw: RawCompany): Company {
   };
 }
 
-// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
-function Badge({ status }: { status: Status }) {
+function getApiError(error: any, fallback: string) {
   return (
-    <span className={`mc-badge mc-badge--${status}`}>
-      <span className="mc-badge__dot" />
-      {status[0] + status.slice(1).toLowerCase()}
-    </span>
+    error?.response?.data?.error?.message ||
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
   );
 }
 
-// ─── ERROR BANNER ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ERROR BANNER
+// ─────────────────────────────────────────────────────────────────────────────
+
 function ErrorBanner({
   message,
   onDismiss,
@@ -138,7 +176,9 @@ function ErrorBanner({
   return (
     <div className="mc-error-banner" role="alert">
       <AlertCircle size={18} className="mc-error-banner__icon" />
+
       <span className="mc-error-banner__text">{message}</span>
+
       <button
         type="button"
         className="mc-error-banner__close"
@@ -151,12 +191,26 @@ function ErrorBanner({
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS
+// ─────────────────────────────────────────────────────────────────────────────
+
 const STATUS_COLORS: Record<Status, string> = {
   ACTIVE: "#10b981",
   SUSPENDED: "#ef4444",
   INACTIVE: "#6b7280",
   TRIAL: "#f59e0b",
 };
+
+function Badge({ status }: { status: Status }) {
+  return (
+    <span className={`mc-badge mc-badge--${status}`}>
+      <span className="mc-badge__dot" />
+
+      {status[0] + status.slice(1).toLowerCase()}
+    </span>
+  );
+}
 
 function StatusDropdown({
   company,
@@ -167,16 +221,17 @@ function StatusDropdown({
 }) {
   const color = STATUS_COLORS[company.status];
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as Status;
+
     if (newStatus === company.status) return;
+
     if (newStatus === "ACTIVE" || newStatus === "SUSPENDED") {
       onStatusChange(company.id, newStatus);
     } else {
-      toast.info(
-        "Switching directly to Inactive/Trial isn't supported here — use Edit Company.",
-      );
+      toast.info("Switching directly to Inactive/Trial isn't supported here.");
     }
+
     e.target.value = company.status;
   };
 
@@ -207,7 +262,10 @@ function StatusDropdown({
   );
 }
 
-// ─── PAGINATION ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGINATION
+// ─────────────────────────────────────────────────────────────────────────────
+
 function Pagination({
   currentPage,
   totalPages,
@@ -232,6 +290,7 @@ function Pagination({
   for (let p = 1; p <= totalPages; p++) {
     const inWindow =
       p >= currentPage - windowSize && p <= currentPage + windowSize;
+
     if (p === 1 || p === totalPages || inWindow) {
       pages.push(p);
     } else if (pages[pages.length - 1] !== "...") {
@@ -239,7 +298,7 @@ function Pagination({
     }
   }
 
-  const navBtnStyle = (disabled: boolean): React.CSSProperties => ({
+  const navBtnStyle = (disabled: boolean): CSSProperties => ({
     border: "1px solid var(--mc-border, #2c3657)",
     background: "var(--mc-surface, #1a1a2e)",
     color: disabled ? "var(--mc-muted, #6b7280)" : "inherit",
@@ -276,33 +335,38 @@ function Pagination({
           ‹ Prev
         </button>
 
-        {pages.map((p, i) =>
-          p === "..." ? (
+        {pages.map((page, index) =>
+          page === "..." ? (
             <span
-              key={`ellipsis-${i}`}
-              style={{ padding: "0 4px", color: "var(--mc-muted, #6b7280)" }}
+              key={`ellipsis-${index}`}
+              style={{
+                padding: "0 4px",
+                color: "var(--mc-muted, #6b7280)",
+              }}
             >
               …
             </span>
           ) : (
             <button
-              key={p}
+              key={page}
               type="button"
-              onClick={() => onPageChange(p)}
+              onClick={() => onPageChange(page)}
               style={{
                 minWidth: 32,
                 height: 32,
                 borderRadius: 8,
                 border: "1px solid var(--mc-border, #2c3657)",
                 background:
-                  p === currentPage ? "#10b981" : "var(--mc-surface, #1a1a2e)",
-                color: p === currentPage ? "#fff" : "inherit",
-                fontWeight: p === currentPage ? 700 : 400,
+                  page === currentPage
+                    ? "#10b981"
+                    : "var(--mc-surface, #1a1a2e)",
+                color: page === currentPage ? "#fff" : "inherit",
+                fontWeight: page === currentPage ? 700 : 400,
                 fontSize: 13,
                 cursor: "pointer",
               }}
             >
-              {p}
+              {page}
             </button>
           ),
         )}
@@ -320,6 +384,10 @@ function Pagination({
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// KPI
+// ─────────────────────────────────────────────────────────────────────────────
+
 function KPI({
   label,
   value,
@@ -334,293 +402,158 @@ function KPI({
   return (
     <div className="mc-kpi">
       <div className="mc-kpi__orb" style={{ background: `${color}10` }} />
+
       <div className="mc-kpi__top">
         <span className="mc-kpi__label">{label}</span>
+
         <div className="mc-kpi__icon" style={{ background: `${color}18` }}>
           {icon}
         </div>
       </div>
+
       <div className="mc-kpi__value">{value}</div>
     </div>
   );
 }
 
-// ─── ADD / EDIT MODAL ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PHONE INPUT STYLES
+// ─────────────────────────────────────────────────────────────────────────────
+
+const phoneInputStyle: CSSProperties = {
+  width: "100%",
+  height: "48px",
+  background: "#12182b",
+  color: "#fff",
+  border: "1px solid #2c3657",
+  borderRadius: "10px",
+  paddingLeft: "55px",
+};
+
+const phoneButtonStyle: CSSProperties = {
+  background: "#12182b",
+  border: "1px solid #2c3657",
+  borderRadius: "10px 0 0 10px",
+};
+
+const phoneDropdownStyle: CSSProperties = {
+  background: "#1b2338",
+  color: "#fff",
+  border: "1px solid #2c3657",
+  maxHeight: "250px",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPANY MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+
 function CompanyModal({
   company,
   onClose,
   onSuccess,
 }: {
-  company: Company | null;
+  company: Company;
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [name, setName] = useState(company?.name || "");
-  const [email, setEmail] = useState(company?.email || "");
-  const [phone, setPhone] = useState(
-    company?.phone === "—" ? "" : company?.phone || "",
-  );
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [status, setStatus] = useState<Status>(company?.status || "ACTIVE");
-  const [creditBalance, setCreditBalance] = useState(
-    company?.creditBalance ?? "0",
-  );
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoInvalid, setLogoInvalid] = useState(false);
+  const [name, setName] = useState(company.name || "");
+  const [email, setEmail] = useState(company.email || "");
+ const [phone, setPhone] = useState(
+   company.phone === "—" ? "" : company.phone || "",
+ );
+
+
+  const [businessId, setBusinessId] = useState(company.businessId || "");
+  const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  // Reset when target changes
-  useEffect(() => {
-    setName(company?.name || "");
-    setEmail(company?.email || "");
-    setPhone(company?.phone === "—" ? "" : company?.phone || "");
-    setPassword("");
-    setStatus(company?.status || "ACTIVE");
-    setCreditBalance(company?.creditBalance ?? "0");
-    setLogoFile(null);
-    setLogoPreview(null);
-    setLogoInvalid(false);
-    setErr(null);
-  }, [company]);
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    if (!file) return;
-
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    const minDimension = 100;
-
-    const resetLogo = () => {
-      setLogoInvalid(true);
-      setLogoFile(null);
-      setLogoPreview(null);
-      e.target.value = "";
-    };
-
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Only PNG, JPG, JPEG and WEBP logo files are allowed.");
-      setErr("Only PNG, JPG, JPEG and WEBP logo files are allowed.");
-      resetLogo();
-      return;
-    }
-
-    if (file.size > maxSize) {
-      toast.error("Logo size must be less than 2MB.");
-      setErr("Logo size must be less than 2MB.");
-      resetLogo();
-      return;
-    }
-
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-
-    img.onload = () => {
-      const { width, height } = img;
-      URL.revokeObjectURL(objectUrl);
-
-      if (width !== height) {
-        toast.error("Only square logos are allowed. Example: 512 x 512 px.");
-        setErr("Only square logos are allowed. Example: 512 x 512 px.");
-        resetLogo();
-        return;
-      }
-
-      if (width < minDimension || height < minDimension) {
-        toast.error("Logo is too small. Please upload at least 100 x 100 px.");
-        setErr("Logo is too small. Please upload at least 100 x 100 px.");
-        resetLogo();
-        return;
-      }
-
-      setLogoInvalid(false);
-      setErr(null);
-      setLogoFile(file);
-
-      const reader = new FileReader();
-      reader.onloadend = () => setLogoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      toast.error("Invalid image file. Please upload a valid logo.");
-      setErr("Invalid image file. Please upload a valid logo.");
-      resetLogo();
-    };
-
-    img.src = objectUrl;
-  };
 
   const handleSubmit = async () => {
     setErr(null);
 
-    // ── Validation ──────────────────────────────────────────────────────────
-    if (!name.trim()) return setErr("Company name is required.");
+    if (!name.trim()) {
+      setErr("Company name is required.");
+      return;
+    }
 
-    if (!email.trim()) return setErr("Email is required.");
+    if (!email.trim()) {
+      setErr("Company email is required.");
+      return;
+    }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim()))
-      return setErr("Please enter a valid email address.");
 
-    if (!phone.trim()) return setErr("Phone number is required.");
-
-    if (logoInvalid)
-      return setErr("Please choose a valid logo image before continuing.");
-
-    if (!company && !logoFile) {
-      toast.error("Company logo is required.");
-      return setErr("Company logo is required.");
+    if (!emailRegex.test(email.trim())) {
+      setErr("Please enter a valid email address.");
+      return;
     }
 
-    if (creditBalance !== "" && Number(creditBalance) < 0)
-      return setErr("Credit balance cannot be negative.");
+  if (!phone.trim()) {
+    setErr("Company phone is required.");
+    return;
+  }
 
-    if (!company) {
-      if (!password.trim()) return setErr("Password is required.");
+if (phone.replace(/\D/g, "").length < 10) {
+  setErr("Please enter a valid company phone number.");
+  return;
+}
 
-      if (password.length < 8)
-        return setErr("Password must be at least 8 characters.");
-
-      const passwordRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-      if (!passwordRegex.test(password))
-        return setErr(
-          "Password must contain uppercase, lowercase, number and special character.",
-        );
+    if (!businessId.trim()) {
+      setErr("Business ID is required.");
+      return;
     }
 
-    setSaving(true);
+    if (!reason.trim()) {
+      setErr("Reason is required.");
+      return;
+    }
 
     try {
-      const isEdit = !!company;
-      const url = isEdit
-        ? `/v1/admin/companies/${company.id}`
-        : "/v1/admin/companies";
+      setSaving(true);
 
-      console.log("API URL =>", url);
+      const payload = {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        business_id: businessId.trim(),
+        reason: reason.trim(),
+      };
 
-      // ── Build FormData ───────────────────────────────────────────────────
-      const formData = new FormData();
+      console.log("EDIT COMPANY PAYLOAD =>", payload);
 
-      formData.append("name", name);
-      formData.append("email", email);
-      if (phone) formData.append("phone", phone);
-      formData.append("credit_balance", String(creditBalance || 0));
-
-      if (!isEdit) {
-        formData.append(
-          "user",
-          JSON.stringify({
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone || undefined,
-            password,
-          }),
-        );
-      }
-
-      if (logoFile) {
-        formData.append("file", logoFile);
-      }
-
-      // ── API call ─────────────────────────────────────────────────────────
-      let data;
-
-      if (isEdit) {
-        // FIX: explicit multipart header for edit
-        const response = await axiosInstance.put(url, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        data = response.data;
-
-        // Handle Active / Suspend status change
-        if (
-          company?.status !== status &&
-          (status === "ACTIVE" || status === "SUSPENDED")
-        ) {
-          const statusEndpoint =
-            status === "ACTIVE"
-              ? `/v1/admin/companies/${company.id}/active`
-              : `/v1/admin/companies/${company.id}/suspend`;
-          await axiosInstance.put(statusEndpoint);
-        }
-      } else {
-        const response = await axiosInstance.post(url, formData, {
+      const response = await axiosInstance.patch(
+        `/v1/super-admin/companies/${company.id}`,
+        payload,
+        {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
           },
-        });
+        },
+      );
 
-        console.log("CREATE RESPONSE", response.data);
-        data = response.data;
-      }
+      const data = response.data;
 
-      console.log("COMPANY RESPONSE =>", data);
+      console.log("EDIT COMPANY RESPONSE =>", data);
 
-      if (!data.success) {
-        if (data?.message?.toLowerCase().includes("already exists")) {
-          setErr("⚠️ Company with this email already exists");
-          return;
-        }
+      if (!data?.success) {
         setErr(
-          data?.error?.message || data?.message || "Company request failed",
+          data?.error?.message || data?.message || "Failed to update company.",
         );
         return;
       }
 
-      // ── Credit top-up (only when balance increased) ──────────────────────
-      const newBalance = Number(creditBalance || 0);
-      const oldBalance = Number(company?.creditBalance || 0);
-      const creditDiff = newBalance - oldBalance;
+      toast.success("Company updated successfully");
 
-      if (creditDiff > 0) {
-        const companyId = isEdit ? company.id : data?.data?.id ?? data?.id;
-        const companyName = isEdit ? company.name : name;
-
-        if (companyId) {
-          try {
-            await axiosInstance.post("/v1/admin/credits/add", {
-              company_id: companyId,
-              company_name: companyName,
-              amount: creditDiff,
-              description: isEdit
-                ? "Credit balance updated via Edit Company"
-                : "Initial credit balance",
-              created_by: localStorage.getItem("email") || "admin@company.com",
-            });
-          } catch (creditErr) {
-            console.error("CREDIT UPDATE ERROR =>", creditErr);
-            toast.error("Company saved, but failed to update credit balance");
-          }
-        }
-      }
-
-      // ── Done ─────────────────────────────────────────────────────────────
       await onSuccess();
-      toast.success(
-        company
-          ? "Company updated successfully"
-          : "Company created successfully",
-      );
+      onClose();
+    } catch (error: any) {
+      console.error("EDIT COMPANY ERROR =>", error);
 
-      setName("");
-      setEmail("");
-      setPhone("");
-      setPassword("");
-      setCreditBalance("0");
-      setLogoFile(null);
-      setLogoPreview(null);
-      setLogoInvalid(false);
-      setErr(null);
-    } catch (e: any) {
-      console.error(e);
       setErr(
-        e?.response?.data?.message || e?.message || "Something went wrong",
+        error?.response?.data?.message ||
+          error?.response?.data?.error?.message ||
+          error?.message ||
+          "Failed to update company.",
       );
     } finally {
       setSaving(false);
@@ -632,15 +565,11 @@ function CompanyModal({
       <div className="mc-modal" onClick={(e) => e.stopPropagation()}>
         <div className="mc-modal__header">
           <div>
-            <div className="mc-modal__title">
-              {company ? "Edit Company" : "Add New Company"}
-            </div>
-            <div className="mc-modal__sub">
-              {company
-                ? `Editing ${company.name}`
-                : "Fill in the details below."}
-            </div>
+            <div className="mc-modal__title">Edit Company</div>
+
+            <div className="mc-modal__sub">Update {company.name}</div>
           </div>
+
           <button className="mc-modal__close" onClick={onClose}>
             ×
           </button>
@@ -651,6 +580,7 @@ function CompanyModal({
 
           <div className="mc-field">
             <div className="mc-field__label">COMPANY NAME *</div>
+
             <input
               className="mc-input"
               placeholder="e.g. Acme Corp"
@@ -660,31 +590,28 @@ function CompanyModal({
           </div>
 
           <div className="mc-field">
-            <div className="mc-field__label">EMAIL *</div>
+            <div className="mc-field__label">COMPANY EMAIL *</div>
+
             <input
               className="mc-input"
               type="email"
-              placeholder="admin@company.com"
+              placeholder="company@example.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setErr(null);
-              }}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="mc-field">
-            <div className="mc-field__label">PHONE *</div>
+            <div className="mc-field__label">COMPANY PHONE *</div>
+
             <PhoneInput
-              country={"in"}
+              country="in"
               value={phone}
-              onChange={(value) => {
-                setPhone(value);
-                setErr(null);
-              }}
+              onChange={(value) => setPhone(value)}
               enableSearch
               searchPlaceholder="Search country..."
               placeholder="Enter phone number"
+              isValid={(value) => value.replace(/\D/g, "").length >= 10}
               inputStyle={{
                 width: "100%",
                 height: "48px",
@@ -709,186 +636,49 @@ function CompanyModal({
           </div>
 
           <div className="mc-field">
-            <div className="mc-field__label">COMPANY LOGO * </div>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: "50%",
-                  overflow: "hidden",
-                  border: logoInvalid
-                    ? "2px dashed #ef4444"
-                    : "2px dashed var(--mc-border, #333)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  background: "#fff",
-                  fontSize: 20,
-                }}
-              >
-                {logoPreview ? (
-                  <img
-                    src={logoPreview}
-                    alt="Logo preview"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                    }}
-                  />
-                ) : (
-                  "🏢"
-                )}
-              </div>
-              <div>
-                <div
-                  className="mc-input"
-                  style={{
-                    padding: "8px 14px",
-                    cursor: "pointer",
-                    display: "inline-block",
-                    fontSize: 13,
-                  }}
-                >
-                  {logoFile ? logoFile.name : "Choose image…"}
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "var(--mc-muted)",
-                    marginTop: 4,
-                  }}
-                >
-                  PNG, JPG or WEBP — max 2MB
-                </div>
-              </div>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                style={{ display: "none" }}
-                onChange={handleLogoChange}
-              />
-            </label>
-          </div>
+            <div className="mc-field__label">BUSINESS ID *</div>
 
-          {/* Password — Create only */}
-          {!company && (
-            <div className="mc-field">
-              <div className="mc-field__label">PASSWORD *</div>
-
-              <div
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <input
-                  className="mc-input"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Min 8 characters"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setErr(null);
-                  }}
-                  style={{
-                    paddingRight: "45px",
-                  }}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: "absolute",
-                    right: "12px",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#9ca3af",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Credit Balance — both Create and Edit */}
-          <div className="mc-field">
-            <div className="mc-field__label">
-              {company ? "CREDIT BALANCE" : "INITIAL CREDIT BALANCE"}
-            </div>
             <input
               className="mc-input"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={creditBalance}
-              onChange={(e) => {
-                setCreditBalance(e.target.value);
-                setErr(null);
-              }}
+              placeholder="BUSINESS123"
+              value={businessId}
+              onChange={(e) => setBusinessId(e.target.value)}
             />
-            {company && (
-              <div
-                style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}
-              >
-                Current balance: ₹
-                {Number(company.creditBalance || 0).toFixed(2)}. Increasing this
-                value will top up the company's credit.
-              </div>
-            )}
           </div>
 
-          {/* Status — Edit only */}
-          {company && (
-            <div className="mc-field">
-              <div className="mc-field__label">STATUS</div>
-              <select
-                className="mc-select"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as Status)}
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="SUSPENDED">Suspended</option>
-              </select>
-              <div
-                style={{ fontSize: 11, color: "var(--mc-muted)", marginTop: 4 }}
-              >
-                Switching between <strong>Active</strong> and{" "}
-                <strong>Suspended</strong> will immediately call the company's
-                activate/suspend endpoint on save.
-              </div>
-            </div>
-          )}
+          <div className="mc-field">
+            <div className="mc-field__label">REASON *</div>
+
+            <textarea
+              className="mc-input"
+              placeholder="Company profile updated"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              style={{
+                resize: "vertical",
+                minHeight: "100px",
+              }}
+            />
+          </div>
 
           <div className="mc-modal__divider" />
+
           <div className="mc-modal__actions">
             <button
               type="button"
               className="mc-btn mc-btn--primary"
               onClick={handleSubmit}
-              disabled={saving || logoInvalid}
+              disabled={saving}
             >
-              {saving ? "Saving…" : company ? "Save Changes" : "Create Company"}
+              {saving ? "Saving…" : "Save Changes"}
             </button>
-            <button className="mc-btn mc-btn--ghost" onClick={onClose}>
+
+            <button
+              type="button"
+              className="mc-btn mc-btn--ghost"
+              onClick={onClose}
+            >
               Cancel
             </button>
           </div>
@@ -898,7 +688,10 @@ function CompanyModal({
   );
 }
 
-// ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPANY DETAIL MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+
 function CompanyDetailModal({
   company,
   onClose,
@@ -908,7 +701,7 @@ function CompanyDetailModal({
 }: {
   company: Company;
   onClose: () => void;
-  onEdit: (c: Company) => void;
+  onEdit: (company: Company) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
 }) {
@@ -916,30 +709,36 @@ function CompanyDetailModal({
     <div className="mc-modal-overlay">
       <div className="mc-modal mc-detail" onClick={(e) => e.stopPropagation()}>
         <div className="mc-detail__header">
-          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 14,
+              alignItems: "center",
+            }}
+          >
             <div
               className="mc-detail__logo"
-              style={{ background: company.col, width: 52, height: 52 }}
+              style={{
+                background: company.col,
+                width: 52,
+                height: 52,
+              }}
             >
-              {company.logoUrl ? (
-                <img
-                  src={company.logoUrl}
-                  alt={company.name}
-                  className="mc-detail-logo-img"
-                />
-              ) : (
-                company.logo
-              )}
+              {getCompanyInitials(company.name)}
             </div>
+
             <div>
-              <div className="mc-detail__name">{company.name}</div>
+          
+
               <div className="mc-detail__domain">{company.email}</div>
+
               <div style={{ marginTop: 6 }}>
                 <Badge status={company.status} />
               </div>
             </div>
           </div>
-          <button className="mc-modal__close" onClick={onClose}>
+
+          <button type="button" className="mc-modal__close" onClick={onClose}>
             ×
           </button>
         </div>
@@ -951,14 +750,16 @@ function CompanyDetailModal({
             [
               ["Domain", company.domain, "var(--mc-accent2)"],
               ["Phone", company.phone, "var(--mc-success)"],
+              ["Business ID", company.businessId || "—", "var(--mc-accent2)"],
               ["Credit Balance", `₹${company.creditBalance}`, "var(--mc-warn)"],
               ["Member Since", company.createdAt, "var(--mc-accent2)"],
             ] as [string, string, string][]
-          ).map(([l, v, c]) => (
-            <div key={l} className="mc-detail__cell">
-              <div className="mc-detail__cell-key">{l.toUpperCase()}</div>
-              <div className="mc-detail__cell-val" style={{ color: c }}>
-                {v}
+          ).map(([label, value, color]) => (
+            <div key={label} className="mc-detail__cell">
+              <div className="mc-detail__cell-key">{label.toUpperCase()}</div>
+
+              <div className="mc-detail__cell-val" style={{ color }}>
+                {value}
               </div>
             </div>
           ))}
@@ -967,6 +768,7 @@ function CompanyDetailModal({
         {company.apiKey && (
           <div className="mc-quickstat">
             <div className="mc-quickstat__lbl">API KEY</div>
+
             <div
               className="mc-quickstat__row"
               style={{
@@ -983,6 +785,7 @@ function CompanyDetailModal({
 
         <div className="mc-detail__actions">
           <button
+            type="button"
             className="mc-btn mc-btn--primary"
             onClick={() => {
               onClose();
@@ -991,10 +794,17 @@ function CompanyDetailModal({
           >
             ✏️ Edit Company
           </button>
-          <button className="mc-btn mc-btn--ghost" onClick={onClose}>
+
+          <button
+            type="button"
+            className="mc-btn mc-btn--ghost"
+            onClick={onClose}
+          >
             Close
           </button>
+
           <button
+            type="button"
             className="mc-btn mc-btn--danger"
             onClick={() => {
               onDelete(company.id);
@@ -1003,8 +813,10 @@ function CompanyDetailModal({
           >
             🗑️ Delete
           </button>
+
           {company.status !== "SUSPENDED" ? (
             <button
+              type="button"
               className="mc-btn mc-btn--danger"
               onClick={() => {
                 onStatusChange(company.id, "SUSPENDED");
@@ -1015,6 +827,7 @@ function CompanyDetailModal({
             </button>
           ) : (
             <button
+              type="button"
               className="mc-btn mc-btn--ghost"
               onClick={() => {
                 onStatusChange(company.id, "ACTIVE");
@@ -1030,118 +843,10 @@ function CompanyDetailModal({
   );
 }
 
-// ─── COMPANY CARD ─────────────────────────────────────────────────────────────
-function CompanyCard({
-  company,
-  onEdit,
-  onView,
-  onDelete,
-  onStatusChange,
-}: {
-  company: Company;
-  onEdit: (c: Company) => void;
-  onView: (c: Company) => void;
-  onDelete: (id: string) => void;
-  onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
-}) {
-  return (
-    <div className="mc-card">
-      <div className="mc-card__top">
-        <div className="mc-card__left">
-          <div className="mc-card__logo" style={{ background: company.col }}>
-            {company.logoUrl ? (
-              <img
-                src={company.logoUrl}
-                alt={company.name}
-                className="mc-card-logo-img"
-              />
-            ) : (
-              company.logo
-            )}
-          </div>
-          <div>
-            <div className="mc-card__name">{company.name}</div>
-            <div className="mc-card__domain">{company.domain}</div>
-          </div>
-        </div>
-        <Badge status={company.status} />
-      </div>
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD CREDIT MODAL
+// ─────────────────────────────────────────────────────────────────────────────
 
-      <div className="mc-card__div" />
-
-      <div className="mc-card__metrics">
-        {(
-          [
-            ["EMAIL", company.email, "📧"],
-            ["PHONE", company.phone, "📞"],
-            ["CREDIT", `₹${company.creditBalance}`, "💰"],
-            ["JOINED", company.createdAt, "📅"],
-          ] as [string, string, string][]
-        ).map(([label, value, icon]) => (
-          <div key={label} className="mc-metric">
-            <div className="mc-metric__label">
-              {icon} {label}
-            </div>
-            <div className="mc-metric__value">{value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mc-card__actions">
-        <button
-          className="mc-btn mc-btn--ghost mc-btn--small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(company);
-          }}
-        >
-          ✏️ Edit
-        </button>
-        <button
-          className="mc-btn mc-btn--ghost mc-btn--small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onView(company);
-          }}
-        >
-          👁 View
-        </button>
-        <button
-          className="mc-btn mc-btn--danger mc-btn--small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(company.id);
-          }}
-        >
-          🗑️ Delete
-        </button>
-        {company.status !== "SUSPENDED" ? (
-          <button
-            className="mc-btn mc-btn--danger mc-btn--small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onStatusChange(company.id, "SUSPENDED");
-            }}
-          >
-            ⛔ Suspend
-          </button>
-        ) : (
-          <button
-            className="mc-btn mc-btn--ghost mc-btn--small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onStatusChange(company.id, "ACTIVE");
-            }}
-          >
-            ✅ Restore
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── ADD CREDIT MODAL ─────────────────────────────────────────────────────────
 function AddCreditModal({
   company,
   onClose,
@@ -1149,20 +854,20 @@ function AddCreditModal({
 }: {
   company: Company;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: () => Promise<void> | void;
 }) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("Top-up credits");
+
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const handleAddCredit = async () => {
     setErr(null);
 
-    // ── Validation ──────────────────────────────────────────────────────────
     const numAmount = Number(amount);
 
-    if (!amount.trim() || isNaN(numAmount)) {
+    if (!amount.trim() || Number.isNaN(numAmount)) {
       setErr("Please enter a valid amount.");
       return;
     }
@@ -1175,34 +880,34 @@ function AddCreditModal({
     try {
       setLoading(true);
 
-      const adminEmail = localStorage.getItem("email") || "admin@company.com";
+      const requestId = crypto.randomUUID();
 
-      const response = await axiosInstance.post("/v1/admin/credits/add", {
-        company_id: company.id,
-        company_name: company.name,
-        amount: numAmount,
-        description: description.trim() || "Top-up credits",
-        created_by: adminEmail,
-      });
+      const response = await axiosInstance.post(
+        `/v1/super-admin/companies/${company.id}/credits`,
+        {
+          amount: numAmount,
+          request_id: requestId,
+          reason: description.trim() || "Top-up credits",
+        },
+      );
 
       const data = response.data;
 
-      // FIX: check data.success before showing success toast
-      if (!data.success) {
-        setErr(data?.message || "Failed to add credit.");
+      if (!data?.success) {
+        setErr(
+          data?.message || data?.error?.message || "Failed to add credit.",
+        );
         return;
       }
 
       toast.success("Credit added successfully");
-      onSuccess();
+
+      await onSuccess();
       onClose();
     } catch (error: any) {
-      console.error(error);
-      setErr(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to add credit",
-      );
+      console.error("ADD CREDIT ERROR =>", error);
+
+      setErr(getApiError(error, "Failed to add credit"));
     } finally {
       setLoading(false);
     }
@@ -1214,9 +919,11 @@ function AddCreditModal({
         <div className="mc-modal__header">
           <div>
             <div className="mc-modal__title">Add Credit</div>
+
             <div className="mc-modal__sub">Top up {company.name}'s balance</div>
           </div>
-          <button className="mc-modal__close" onClick={onClose}>
+
+          <button type="button" className="mc-modal__close" onClick={onClose}>
             ×
           </button>
         </div>
@@ -1226,11 +933,13 @@ function AddCreditModal({
 
           <div className="mc-field">
             <div className="mc-field__label">COMPANY</div>
+
             <input className="mc-input" value={company.name} disabled />
           </div>
 
           <div className="mc-field">
             <div className="mc-field__label">CURRENT BALANCE</div>
+
             <input
               className="mc-input"
               value={`₹${Number(company.creditBalance || 0).toFixed(2)}`}
@@ -1240,6 +949,7 @@ function AddCreditModal({
 
           <div className="mc-field">
             <div className="mc-field__label">AMOUNT TO ADD *</div>
+
             <input
               className="mc-input"
               type="number"
@@ -1256,12 +966,16 @@ function AddCreditModal({
 
           <div className="mc-field">
             <div className="mc-field__label">DESCRIPTION</div>
+
             <input
               className="mc-input"
               type="text"
               placeholder="e.g. Top-up credits"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setErr(null);
+              }}
             />
           </div>
 
@@ -1276,10 +990,12 @@ function AddCreditModal({
             >
               {loading ? "Adding…" : "Add Credit"}
             </button>
+
             <button
               type="button"
               className="mc-btn mc-btn--ghost"
               onClick={onClose}
+              disabled={loading}
             >
               Cancel
             </button>
@@ -1290,40 +1006,194 @@ function AddCreditModal({
   );
 }
 
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function ManageCompanies() {
   const [search, setSearch] = useState("");
+
   const [filter, setFilter] = useState<"ALL" | Status>("ALL");
+
   const [currentPage, setCurrentPage] = useState(1);
+
   const [showModal, setShowModal] = useState(false);
+
   const [editTarget, setEditTarget] = useState<Company | null>(null);
+
   const [viewTarget, setViewTarget] = useState<Company | null>(null);
+
   const [creditCompany, setCreditCompany] = useState<Company | null>(null);
+
   const [companies, setCompanies] = useState<Company[]>([]);
+
   const [loading, setLoading] = useState(true);
+
   const [fetchError, setFetchError] = useState<string | null>(null);
+
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+
   const [selectAll, setSelectAll] = useState(false);
+
+  const [pagination, setPagination] =
+    useState<CompaniesPagination>(DEFAULT_PAGINATION);
+
+    const router = useRouter();
+  // ─────────────────────────────────────────────────────────────────────────
+  // FETCH COMPANIES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const fetchCompanies = async () => {
+    setLoading(true);
+    setFetchError(null);
+
+    try {
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      };
+
+      if (filter !== "ALL") {
+        params.status = filter.toLowerCase();
+      }
+
+      const companiesRes = await axiosInstance.get(COMPANIES_API, {
+        params,
+      });
+
+      console.log("GET COMPANY RESPONSE =>", companiesRes.data);
+
+      const payload = companiesRes.data?.data;
+
+      const raw: RawCompany[] = Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload)
+        ? payload
+        : [];
+
+      const backendPagination = payload?.pagination ?? {};
+
+      const total = Number(
+        backendPagination.total ??
+          backendPagination.totalCompanies ??
+          backendPagination.count ??
+          0,
+      );
+
+      const page = Number(backendPagination.page ?? currentPage);
+
+      const limit = Number(backendPagination.limit ?? ITEMS_PER_PAGE);
+
+      const totalPages = Number(
+        backendPagination.totalPages ??
+          backendPagination.total_pages ??
+          Math.max(1, Math.ceil(total / limit)),
+      );
+
+      setCompanies(raw.map(enrichCompany));
+
+      setPagination({
+        total,
+        totalPages: Math.max(1, totalPages),
+        page,
+        limit,
+      });
+
+      setSelectedCompanies([]);
+      setSelectAll(false);
+    } catch (error: any) {
+      console.error("FETCH COMPANIES ERROR =>", error);
+
+      setFetchError(getApiError(error, "Failed to load companies"));
+
+      setCompanies([]);
+
+      setPagination({
+        ...DEFAULT_PAGINATION,
+        page: currentPage,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [filter, currentPage]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SEARCH / FILTER
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const FILTERS: ("ALL" | Status)[] = [
+    "ALL",
+    "ACTIVE",
+    "SUSPENDED",
+    "INACTIVE",
+  ];
+
+  const query = search.trim().toLowerCase();
+
+  const filtered = companies.filter((company) => {
+    const emailDomain = company.email.includes("@")
+      ? company.email.split("@").pop() ?? ""
+      : "";
+
+    const searchable = [
+      company.name,
+      company.email,
+      emailDomain,
+      company.domain,
+      company.businessId,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      (filter === "ALL" || company.status === filter) &&
+      (!query || searchable.includes(query))
+    );
+  });
+
+  const totalPages = Math.max(1, pagination.totalPages);
+
+  const safePage = Math.min(currentPage, totalPages);
+
+  // Backend already paginates.
+  const paginatedCompanies = filtered;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SELECTION
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleSelectCompany = (companyId: string) => {
+    setSelectedCompanies((previous) =>
+      previous.includes(companyId)
+        ? previous.filter((id) => id !== companyId)
+        : [...previous, companyId],
+    );
+  };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedCompanies([]);
     } else {
-      setSelectedCompanies(filtered.map((c) => c.id));
+      setSelectedCompanies(filtered.map((company) => company.id));
     }
+
     setSelectAll(!selectAll);
   };
 
-  const handleSelectCompany = (companyId: string) => {
-    setSelectedCompanies((prev) =>
-      prev.includes(companyId)
-        ? prev.filter((id) => id !== companyId)
-        : [...prev, companyId],
-    );
-  };
+  // ─────────────────────────────────────────────────────────────────────────
+  // BULK DELETE
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleBulkDelete = async () => {
-    if (selectedCompanies.length === 0) return;
+    if (selectedCompanies.length === 0) {
+      return;
+    }
 
     const result = await Swal.fire({
       title: "Delete Selected Companies?",
@@ -1335,108 +1205,35 @@ export default function ManageCompanies() {
       confirmButtonText: "Delete",
     });
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) {
+      return;
+    }
 
     try {
       await Promise.all(
         selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/admin/companies/${id}`),
+          axiosInstance.delete(`/v1/super-admin/companies/${id}`),
         ),
       );
 
       setSelectedCompanies([]);
       setSelectAll(false);
+
       toast.success(
         `${selectedCompanies.length} companies deleted successfully`,
       );
-      fetchCompanies();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete selected companies");
+
+      await fetchCompanies();
+    } catch (error: any) {
+      console.error("BULK DELETE ERROR =>", error);
+
+      toast.error(getApiError(error, "Failed to delete selected companies"));
     }
   };
 
-  const fetchCompanies = async () => {
-    setLoading(true);
-    setFetchError(null);
-
-    try {
-      let endpoint = COMPANIES_API;
-      if (filter === "ACTIVE") endpoint = ACTIVE_COMPANIES_API;
-      if (filter === "SUSPENDED") endpoint = SUSPENDED_COMPANIES_API;
-      if (filter === "INACTIVE") endpoint = INACTIVE_COMPANIES_API;
-
-      const companiesRes = await axiosInstance.get(endpoint);
-
-      console.log("GET COMPANY RESPONSE =>", companiesRes.data);
-
-      // API shape: { success, message, data: { data: Company[], pagination: {...} } }
-      // Some endpoints may also return { success, data: Company[] } directly,
-      // so we handle both shapes defensively here.
-      const payload = companiesRes.data?.data;
-      const raw: RawCompany[] = Array.isArray(payload?.data)
-        ? payload.data
-        : Array.isArray(payload)
-        ? payload
-        : [];
-
-      setCompanies(raw.map(enrichCompany));
-    } catch (e) {
-      setFetchError(
-        e instanceof Error ? e.message : "Failed to load companies",
-      );
-      setCompanies([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCompanies();
-  }, [filter]);
-
-  const FILTERS: ("ALL" | Status)[] = [
-    "ALL",
-    "ACTIVE",
-    "SUSPENDED",
-    "INACTIVE",
-  ];
-  const query = search.trim().toLowerCase();
-
-  const filtered = companies.filter((c) => {
-    const emailDomain = c.email.includes("@")
-      ? c.email.split("@").pop() ?? ""
-      : "";
-    const searchable = [c.name, c.email, emailDomain, c.domain]
-      .join(" ")
-      .toLowerCase();
-    return (
-      (filter === "ALL" || c.status === filter) &&
-      (!query || searchable.includes(query))
-    );
-  });
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const safePage = Math.min(currentPage, totalPages);
-  const pageStart = (safePage - 1) * ITEMS_PER_PAGE;
-  const paginatedCompanies = filtered.slice(
-    pageStart,
-    pageStart + ITEMS_PER_PAGE,
-  );
-
-  const openAdd = () => {
-    setEditTarget(null);
-    setShowModal(true);
-  };
-  const openEdit = (c: Company) => {
-    setEditTarget(c);
-    setShowModal(true);
-  };
-  const openView = (c: Company) => setViewTarget(c);
+  // ─────────────────────────────────────────────────────────────────────────
+  // DELETE
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleDelete = async (companyId: string) => {
     const result = await Swal.fire({
@@ -1449,30 +1246,36 @@ export default function ManageCompanies() {
       confirmButtonText: "Delete",
     });
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) {
+      return;
+    }
 
     try {
-      const endpoint = `/v1/admin/companies/${companyId}`;
+      const endpoint = `/v1/super-admin/companies/${companyId}`;
+
       console.log("DELETE URL =>", endpoint);
 
       const { data } = await axiosInstance.delete(endpoint);
+
       console.log("DELETE RESPONSE =>", data);
 
       if (data?.success) {
         toast.success("Company deleted successfully");
+
         await fetchCompanies();
       } else {
         toast.error(data?.message || "Failed to delete company");
       }
     } catch (error: any) {
       console.error("DELETE ERROR =>", error);
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to delete company",
-      );
+
+      toast.error(getApiError(error, "Failed to delete company"));
     }
   };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STATUS
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleStatusChange = async (
     companyId: string,
@@ -1482,26 +1285,35 @@ export default function ManageCompanies() {
 
     const result = await Swal.fire({
       title: isSuspending ? "Suspend Company?" : "Activate Company?",
+
       text: isSuspending
         ? "Company access will be blocked."
         : "Company access will be restored.",
+
       icon: "warning",
+
       showCancelButton: true,
+
       confirmButtonColor: isSuspending ? "#ef4444" : "#10b981",
+
       cancelButtonColor: "#6b7280",
+
       confirmButtonText: isSuspending ? "Suspend" : "Activate",
     });
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) {
+      return;
+    }
 
     try {
-      const endpoint =
-        newStatus === "ACTIVE"
-          ? `/v1/admin/companies/${companyId}/active`
-          : `/v1/admin/companies/${companyId}/suspend`;
+      const endpoint = `/v1/super-admin/companies/${companyId}/status`;
 
-      console.log("STATUS API =>", endpoint);
-      const { data } = await axiosInstance.put(endpoint);
+      const { data } = await axiosInstance.patch(endpoint, {
+        status: newStatus === "ACTIVE" ? "active" : "suspended",
+
+        reason: newStatus === "ACTIVE" ? "Review completed" : "Account review",
+      });
+
       console.log("STATUS RESPONSE =>", data);
 
       if (data?.success) {
@@ -1510,96 +1322,143 @@ export default function ManageCompanies() {
             ? "Company suspended successfully"
             : "Company activated successfully",
         );
+
         await fetchCompanies();
       } else {
         toast.error(data?.message || "Failed to update company status");
       }
     } catch (error: any) {
       console.error("STATUS ERROR =>", error);
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to update company status",
-      );
+
+      toast.error(getApiError(error, "Failed to update company status"));
     }
   };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MODAL HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+
+
+  const openEdit = (company: Company) => {
+    setEditTarget(company);
+    setShowModal(true);
+  };
+
+  const openView = (company: Company) => {
+    setViewTarget(company);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="mc-root">
       {/* HEADER */}
+
       <div className="mc-header">
         <div>
           <h1 className="mc-header__title">Manage Companies</h1>
+
           <p className="mc-header__sub">
             All registered companies and their subscription health.
           </p>
         </div>
-        <button className="mc-btn mc-btn--primary" onClick={openAdd}>
+
+        <button
+          className="mc-btn mc-btn--primary"
+          onClick={() => router.push("/user/manage-companies/create")}
+        >
           Create Company
         </button>
       </div>
 
       {/* KPIs */}
+
       <div className="mc-kpi-grid">
         <KPI
           label="Total Companies"
-          value={String(companies.length)}
+          value={String(pagination.total)}
           icon="🏢"
           color="#6C5CE7"
         />
+
         <KPI
           label="Active"
-          value={String(companies.filter((c) => c.status === "ACTIVE").length)}
+          value={String(
+            companies.filter((company) => company.status === "ACTIVE").length,
+          )}
           icon="✅"
           color="#00CBA4"
         />
+
         <KPI
           label="Suspended"
           value={String(
-            companies.filter((c) => c.status === "SUSPENDED").length,
+            companies.filter((company) => company.status === "SUSPENDED")
+              .length,
           )}
           icon="⛔"
           color="#FF6B6B"
         />
+
         <KPI
           label="On Trial"
-          value={String(companies.filter((c) => c.status === "TRIAL").length)}
+          value={String(
+            companies.filter((company) => company.status === "TRIAL").length,
+          )}
           icon="⏳"
           color="#FDCB6E"
         />
       </div>
 
       {/* FILTER BAR */}
+
       <div className="mc-filter-bar mc-filter-bar-top">
         <div className="mc-search-wrap mc-search-wrap-small">
           <span className="mc-search-icon">🔍</span>
+
           <input
             className="mc-search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email or domain…"
+            placeholder="Search by name, email, domain or business ID…"
             autoComplete="off"
           />
         </div>
+
         <div className="mc-filter-group">
-          {FILTERS.map((f) => (
+          {FILTERS.map((filterValue) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
+              type="button"
+              key={filterValue}
+              onClick={() => {
+                setFilter(filterValue);
+                setCurrentPage(1);
+              }}
               className={`mc-filter-btn ${
-                filter === f ? "mc-filter-btn--active" : ""
+                filter === filterValue ? "mc-filter-btn--active" : ""
               }`}
             >
-              {f === "ALL" ? "All" : f[0] + f.slice(1).toLowerCase()}
+              {filterValue === "ALL"
+                ? "All"
+                : filterValue[0] + filterValue.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
+
         <div className="mc-bulk-actions">
           {selectedCompanies.length > 0 && (
-            <button className="mc-delete-selected" onClick={handleBulkDelete}>
+            <button
+              type="button"
+              className="mc-delete-selected"
+              onClick={handleBulkDelete}
+            >
               Delete Selected ({selectedCompanies.length})
             </button>
           )}
+
           <label className="mc-select-all">
             <input
               type="checkbox"
@@ -1608,11 +1467,13 @@ export default function ManageCompanies() {
             />
             Select All
           </label>
-          <span className="mc-filter-count">{filtered.length} companies</span>
+
+          <span className="mc-filter-count">{pagination.total} companies</span>
         </div>
       </div>
 
       {/* TABLE */}
+
       {loading ? (
         <div className="mc-empty">Loading companies…</div>
       ) : fetchError ? (
@@ -1626,22 +1487,36 @@ export default function ManageCompanies() {
           <table className="mc-table">
             <thead>
               <tr>
-                <th style={{ width: "50px" }}>
+                <th
+                  style={{
+                    width: "50px",
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={selectAll}
                     onChange={handleSelectAll}
                   />
                 </th>
+
                 <th>COMPANY</th>
+
                 <th>EMAIL</th>
+
                 <th>PHONE</th>
+
+                <th>BUSINESS ID</th>
+
                 <th>CREDIT BALANCE</th>
+
                 <th>STATUS</th>
+
                 <th>JOINED</th>
+
                 <th>ACTIONS</th>
               </tr>
             </thead>
+
             <tbody>
               {paginatedCompanies.map((company) => (
                 <tr key={company.id}>
@@ -1652,61 +1527,82 @@ export default function ManageCompanies() {
                       onChange={() => handleSelectCompany(company.id)}
                     />
                   </td>
+
                   <td>
                     <div className="mc-company-cell">
                       <div
                         className="mc-company-avatar"
-                        style={{ background: company.col }}
+                        style={{
+                          background: company.col,
+                        }}
                       >
-                        {company.logoUrl ? (
-                          <img
-                            src={company.logoUrl}
-                            alt={company.name}
-                            className="mc-company-avatar-img"
-                          />
-                        ) : (
-                          company.logo
-                        )}
+                        {company.name.slice(0, 2).toUpperCase()}
                       </div>
-                      <div className="mc-company-name">{company.name}</div>
+
+                      <button
+                        type="button"
+                        className="company-name-link"
+                        onClick={() =>
+                          router.push(`/user/manage-companies/${company.id}`)
+                        }
+                      >
+                        {company.name}
+                      </button>
                     </div>
                   </td>
+
                   <td>{company.email}</td>
+
                   <td>{company.phone}</td>
+
+                  <td>{company.businessId || "—"}</td>
+
                   <td className="mc-credit-cell">
                     ₹{Number(company.creditBalance || 0).toFixed(2)}
                   </td>
+
                   <td>
                     <StatusDropdown
                       company={company}
                       onStatusChange={handleStatusChange}
                     />
                   </td>
+
                   <td>{company.createdAt}</td>
+
                   <td>
                     <div className="mc-actions">
                       <button
+                        type="button"
                         className="mc-action-btn"
-                        onClick={() => openView(company)}
+                        onClick={() =>
+                          router.push(`/user/manage-companies/${company.id}`)
+                        }
                         title="View"
                       >
                         👁
                       </button>
+
                       <button
+                        type="button"
                         className="mc-action-btn"
-                        onClick={() => openEdit(company)}
+                        onClick={() => openView(company)}
                         title="Edit"
                       >
                         ✏️
                       </button>
+
                       <button
+                        type="button"
                         className="mc-action-btn credit"
                         onClick={() => setCreditCompany(company)}
                         title="Add Credit"
                       >
                         💰
                       </button>
+
                       <button
+                        type="button"
                         className="mc-action-btn delete"
                         onClick={() => handleDelete(company.id)}
                         title="Delete"
@@ -1723,18 +1619,20 @@ export default function ManageCompanies() {
       )}
 
       {/* PAGINATION */}
-      {!loading && !fetchError && filtered.length > 0 && (
+
+      {!loading && !fetchError && pagination.total > 0 && (
         <Pagination
           currentPage={safePage}
           totalPages={totalPages}
-          totalItems={filtered.length}
+          totalItems={pagination.total}
           pageSize={ITEMS_PER_PAGE}
           onPageChange={(page) => setCurrentPage(page)}
         />
       )}
 
-      {/* MODALS */}
-      {showModal && (
+      {/* CREATE / EDIT MODAL */}
+
+      {showModal && editTarget && (
         <CompanyModal
           company={editTarget}
           onClose={() => {
@@ -1743,24 +1641,26 @@ export default function ManageCompanies() {
           }}
           onSuccess={async () => {
             await fetchCompanies();
-            setShowModal(false);
-            setEditTarget(null);
           }}
         />
       )}
+
+      {/* DETAIL MODAL */}
 
       {viewTarget && (
         <CompanyDetailModal
           company={viewTarget}
           onClose={() => setViewTarget(null)}
-          onEdit={(c) => {
+          onEdit={(company) => {
             setViewTarget(null);
-            openEdit(c);
+            openEdit(company);
           }}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
         />
       )}
+
+      {/* CREDIT MODAL */}
 
       {creditCompany && (
         <AddCreditModal
@@ -1771,6 +1671,8 @@ export default function ManageCompanies() {
           }}
         />
       )}
+
+      {/* TOAST */}
 
       <ToastContainer
         position="top-right"

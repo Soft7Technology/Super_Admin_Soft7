@@ -765,6 +765,7 @@ export default function SupportTickets() {
 
   const handleStatusChange = async (id: string, status: TicketStatus) => {
     setApiError(null);
+
     try {
       await axiosInstance.patch(`/v1/super-admin/tickets/${id}/status`, {
         status: status.toLowerCase(),
