@@ -44,9 +44,17 @@ interface ReplyActionResult {
 const STATUS_META: Record<TicketStatus, { label: string; dot: string }> = {
   OPEN:        { label: "Open",        dot: "var(--st-status-open-col)" },
   IN_PROGRESS: { label: "In Progress", dot: "var(--st-status-inprog-col)" },
+  WAITING:     { label: "Waiting",     dot: "var(--st-status-waiting-col)" },
   RESOLVED:    { label: "Resolved",    dot: "var(--st-status-resolved-col)" },
   CLOSED:      { label: "Closed",      dot: "var(--st-status-closed-col)" },
-  WAITING:     { label: "Waiting",     dot: "var(--st-status-waiting-col)" },
+};
+
+const STATUS_ORDER: Record<TicketStatus, number> = {
+  OPEN: 1,
+  IN_PROGRESS: 2,
+  WAITING: 3,
+  RESOLVED: 4,
+  CLOSED: 5,
 };
 
 const PRIORITY_META: Record<TicketPriority, { label: string; icon: string }> = {
@@ -125,19 +133,29 @@ function KPI({
 
 
 function StatusBadge({ status }: { status: TicketStatus }) {
+  const label =
+    status === "IN_PROGRESS"
+      ? "In Progress"
+      : status === "WAITING"
+      ? "On Hold"
+      : status === "RESOLVED"
+      ? "Resolved"
+      : status === "CLOSED"
+      ? "Closed"
+      : "Open";
+
   return (
-    <span className={`st-status-badge st-status-badge--${status}`}>
-      <span className="st-status-badge__dot" />
-      {STATUS_META[status].label}
+    <span className={`st-status-pill st-status-pill--${status.toLowerCase()}`}>
+      {label}
     </span>
   );
 }
 
 function PriorityBadge({ priority }: { priority: TicketPriority }) {
-  const meta = PRIORITY_META[priority];
+  const meta = PRIORITY_META[priority] || { label: "Normal", icon: "" };
   return (
     <span className={`st-priority-badge st-priority-badge--${priority}`}>
-      {meta.icon} {meta.label}
+      {meta.icon ? `${meta.icon} ` : ""}{meta.label}
     </span>
   );
 }
@@ -176,32 +194,39 @@ function Pager({
     withDots.push(v);
   });
 
-  const from = total === 0 ? 0 : (page - 1) * size + 1;
-  const to   = Math.min(page * size, total);
-
   return (
     <div className="st-pager">
-      <span className="st-pager__info">{from}–{to} of {total}</span>
-      <div className="st-pager__btns">
-        <button className="st-pager__btn" onClick={() => onChange(1)} disabled={page === 1}>«</button>
-        <button className="st-pager__btn" onClick={() => onChange(page - 1)} disabled={page === 1}>‹</button>
-        {withDots.map((v, i) =>
-          v === "…" ? (
-            <span key={`dots-${i}`} className="st-pager__dots">…</span>
-          ) : (
-            <button
-              key={v}
-              onClick={() => onChange(v as number)}
-              className={`st-pager__btn ${page === v ? "st-pager__btn--active" : ""}`}
-            >
-              {v}
-            </button>
-          )
-        )}
-        <button className="st-pager__btn" onClick={() => onChange(page + 1)} disabled={page === pages}>›</button>
-        <button className="st-pager__btn" onClick={() => onChange(pages)} disabled={page === pages}>»</button>
+      <div className="st-pager__right">
+        <button
+          className="st-pager__text-btn"
+          onClick={() => onChange(page - 1)}
+          disabled={page === 1}
+        >
+          Previous
+        </button>
+        <div className="st-pager__nums">
+          {withDots.map((v, i) =>
+            v === "…" ? (
+              <span key={`dots-${i}`} className="st-pager__dots">…</span>
+            ) : (
+              <button
+                key={v}
+                onClick={() => onChange(v as number)}
+                className={`st-pager__btn ${page === v ? "st-pager__btn--active" : ""}`}
+              >
+                {String(v).padStart(2, "0")}
+              </button>
+            )
+          )}
+        </div>
+        <button
+          className="st-pager__text-btn"
+          onClick={() => onChange(page + 1)}
+          disabled={page === pages}
+        >
+          Next
+        </button>
       </div>
-      <span className="st-pager__info">Page {page} / {pages}</span>
     </div>
   );
 }
@@ -466,113 +491,158 @@ export default function SupportTickets() {
   );
 
   useEffect(() => {
-  if (!selected) return;
-
-  const previousOverflow = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
-
-  return () => {
-    document.body.style.overflow = previousOverflow;
-  };
-}, [selected]);
-useEffect(() => {
-  if (!selected) return;
-
-  const handleEscape = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      setSelectedId(null);
-    }
-  };
-
-  window.addEventListener("keydown", handleEscape);
-
-  return () => {
-    window.removeEventListener("keydown", handleEscape);
-  };
-}, [selected]);
-  // ─ Fetch all tickets ─
- const loadTickets = async () => {
-  try {
-    const { data } = await axiosInstance.get(
-      "/v1/admin/support/tickets/forward"
-    );
-
-    const ticketsData = data?.data ?? data?.tickets ?? [];
-
-    const sortedTickets = (Array.isArray(ticketsData) ? ticketsData : []).sort(
-      (a: any, b: any) =>
-        new Date(b.updated_at).getTime() -
-        new Date(a.updated_at).getTime()
-    );
-
-    const normalised: Ticket[] = sortedTickets.map((t: any) => ({
-      id: String(t.id),
-      subject: t.message || "Support Ticket",
-      company: "Soft7 User",
-      companyLogo: "S",
-      companyCol: "#10b981",
-      user: t.name || "Unknown User",
-      userEmail: t.email || "",
-      status: (t.status || "OPEN").toUpperCase() as TicketStatus,
-      priority: "MEDIUM",
-      category: "Support",
-      created: new Date(t.created_at).toLocaleDateString(),
-      updated: new Date(t.updated_at).toLocaleDateString(),
-      unread: 0,
-      messages: [],
-    }));
-
-   setTickets(prev => {
-  return normalised.map(ticket => {
-    const existing = prev.find(p => p.id === ticket.id);
-
-    return {
-      ...ticket,
-      messages: existing?.messages || [],
+    if (!selected) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSelectedId(null); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
     };
-  });
-});
-  } catch (error) {
-    console.error("Failed to load tickets", error);
-  } finally {
-    setLoading(false);
-  }
-};
-useEffect(() => {
-  loadTickets();
+  }, [selected]);
 
-  const interval = setInterval(() => {
-    if (!selectedId) {
-      loadTickets();
+  // ─ Super-admin ticket APIs ─
+  //
+  // GET  /v1/super-admin/tickets/forward
+  // GET  /v1/super-admin/tickets/:ticketId/conversations
+  // POST /v1/super-admin/tickets/:ticketId/forward/reply
+  // PATCH /v1/super-admin/tickets/:ticketId/status
+
+  const loadTickets = async () => {
+    try {
+      setApiError(null);
+
+      // Fetch tickets and users in parallel to resolve real user names and emails
+      const [ticketsResponse, usersResponse] = await Promise.allSettled([
+        axiosInstance.get("/v1/super-admin/tickets/forward"),
+        axiosInstance.get("/v1/super-admin/users", { params: { page: 1, limit: 100 } }),
+      ]);
+
+      const data = ticketsResponse.status === "fulfilled" ? ticketsResponse.value?.data : null;
+      if (!data && ticketsResponse.status === "rejected") throw ticketsResponse.reason;
+
+      const userMap = new Map<string, { name: string; email: string }>();
+      if (usersResponse.status === "fulfilled") {
+        const u = usersResponse.value?.data;
+        const userList: any[] = u?.data?.data || u?.data?.items || u?.data?.users || u?.data || [];
+        userList.forEach((usr: any) => {
+          const id = usr.id || usr.user_id;
+          const name = usr.name || usr.full_name || [usr.first_name, usr.last_name].filter(Boolean).join(" ");
+          if (id && name) {
+            userMap.set(String(id), { name, email: usr.email || "" });
+            if (typeof window !== "undefined") {
+              localStorage.setItem(`user_name_${id}`, name);
+              if (usr.email) localStorage.setItem(`user_email_${id}`, usr.email);
+            }
+          }
+        });
+      }
+
+      const ticketsData: any[] = Array.isArray(data?.data?.items) ? data.data.items : [];
+      const sortedTickets = [...ticketsData].sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+
+      const normalised: Ticket[] = sortedTickets.map((t: any) => {
+        const uId = t.user_id ? String(t.user_id) : "";
+        const matched = uId ? userMap.get(uId) : null;
+        const cachedUser = typeof window !== "undefined"
+          ? localStorage.getItem(`ticket_user_${t.id}`) || (uId ? localStorage.getItem(`user_name_${uId}`) : null)
+          : null;
+        const cachedEmail = typeof window !== "undefined" && uId ? localStorage.getItem(`user_email_${uId}`) : null;
+
+        const user = t.user_name || t.user?.name || t.name || matched?.name || cachedUser || (uId ? `User ${uId.slice(0, 8)}` : "Unknown User");
+        const userEmail = t.user_email || t.user?.email || t.email || matched?.email || cachedEmail || "";
+
+        return {
+          id: String(t.id),
+          subject: t.subject || t.title || t.message || t.conversations?.[0]?.message || `Support Ticket #${String(t.id).slice(0, 8)}`,
+          company: t.company_name || (t.company_id ? `Company ${String(t.company_id).slice(0, 8)}` : "Unknown Company"),
+          companyLogo: "S",
+          companyCol: "#10b981",
+          user,
+          userEmail,
+          status: (t.status || "OPEN").toUpperCase() as TicketStatus,
+          priority: "MEDIUM",
+          category: t.category || "Support",
+          created: t.created_at ? new Date(t.created_at).toLocaleDateString() : "-",
+          updated: t.created_at ? new Date(t.created_at).toLocaleDateString() : "-",
+          unread: 0,
+          messages: [],
+        };
+      });
+
+      setTickets(prev =>
+        normalised.map(ticket => {
+          const ex = prev.find(p => p.id === ticket.id);
+          if (!ex) return ticket;
+          return {
+            ...ticket,
+            messages: ex.messages || [],
+            subject: ex.subject && !ex.subject.startsWith("Support Ticket #") ? ex.subject : ticket.subject,
+            user: ex.user && !ex.user.startsWith("User ") && ex.user !== "Unknown User" ? ex.user : ticket.user,
+            userEmail: ex.userEmail || ticket.userEmail,
+          };
+        })
+      );
+    } catch (error: any) {
+      console.error("Failed to load super-admin tickets:", error);
+
+      setApiError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to load support tickets."
+      );
+    } finally {
+      setLoading(false);
     }
-  }, 5000);
+  };
 
-  return () => clearInterval(interval);
-}, [selectedId]);
-  // Deselect if ticket disappears
+  useEffect(() => {
+    void loadTickets();
+
+    const interval = setInterval(() => {
+      // Do not refresh the list while the conversation modal is open.
+      if (!selectedId) {
+        void loadTickets();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedId]);
+
+  // Deselect if ticket disappears from the server response.
   useEffect(() => {
     if (selectedId !== null && !tickets.some(t => t.id === selectedId)) {
       setSelectedId(null);
     }
   }, [selectedId, tickets]);
 
-
-
   const filtered = useMemo(
-    () =>
-      tickets.filter(t => {
-        const q = search.toLowerCase();
-        return (
-          (statusF   === "ALL" || t.status   === statusF) &&
-          (
-            t.subject.toLowerCase().includes(q)   ||
-            t.company.toLowerCase().includes(q)   ||
-            t.user.toLowerCase().includes(q)      ||
-            t.userEmail.toLowerCase().includes(q) ||
-            t.category.toLowerCase().includes(q)
-          )
-        );
-      }),
+    () => {
+      const q = search.toLowerCase();
+
+      return tickets
+        .filter(t => {
+          return (
+            (statusF === "ALL" || t.status === statusF) &&
+            (
+              t.subject.toLowerCase().includes(q) ||
+              t.company.toLowerCase().includes(q) ||
+              t.user.toLowerCase().includes(q) ||
+              t.userEmail.toLowerCase().includes(q) ||
+              t.category.toLowerCase().includes(q) ||
+              t.id.toLowerCase().includes(q)
+            )
+          );
+        })
+        .sort((a, b) => {
+          const orderA = STATUS_ORDER[a.status] ?? 99;
+          const orderB = STATUS_ORDER[b.status] ?? 99;
+          return orderA - orderB;
+        });
+    },
     [tickets, search, statusF]
   );
 
@@ -590,111 +660,180 @@ useEffect(() => {
   const loadSingleTicket = async (ticketId: string) => {
     try {
       setApiError(null);
-      const { data } = await axiosInstance.get(`/v1/admin/support/${ticketId}/forward`);
-      const conversations = Array.isArray(data?.data) ? data.data : [];
-      if (conversations.length === 0) { setApiError("No conversation found."); return; }
+
+      const { data } = await axiosInstance.get(
+        `/v1/super-admin/tickets/${ticketId}/conversations`
+      );
+
+      // API response:
+      // {
+      //   success: true,
+      //   data: {
+      //     ticket: {...},
+      //     messages: [...]
+      //   }
+      // }
+      const ticketData = data?.data?.ticket;
+      const conversations = Array.isArray(data?.data?.messages)
+        ? data.data.messages
+        : [];
+
+      if (!ticketData) {
+        setApiError("Ticket details not found.");
+        return;
+      }
+
+      const formattedMessages: Message[] = conversations.map(
+        (msg: any, index: number) => {
+          const name = msg.user_name || "User";
+          const isAdmin = name === "Soft7 Tech";
+
+          return {
+            id: msg.id || String(index),
+            sender: isAdmin ? "ADMIN" : "USER",
+            name,
+            avatar: name
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase(),
+            content: msg.message || "",
+            time: msg.created_at
+              ? new Date(msg.created_at).toLocaleString()
+              : "-",
+            read: true,
+          };
+        }
+      );
 
       const firstMessage = conversations[0];
-      const formattedMessages: Message[] = conversations.map((msg: any, index: number) => ({
-        id:     msg.id || String(index),
-        sender: msg.user_name === "Soft7 Tech" ? "ADMIN" : "USER",
-        name:   msg.user_name || "User",
-        avatar: (msg.user_name || "U").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
-        content: msg.message || "",
-        time:   new Date(msg.created_at).toLocaleString(),
-        read:   true,
-      }));
+      const lastMessage = conversations[conversations.length - 1];
+
+      const resolvedUserName =
+        firstMessage?.user_name ||
+        (ticketData.user_id && typeof window !== "undefined"
+          ? localStorage.getItem(`user_name_${ticketData.user_id}`)
+          : null) ||
+        "Unknown User";
+
+      if (firstMessage?.user_name && typeof window !== "undefined") {
+        localStorage.setItem(`ticket_user_${ticketData.id || ticketId}`, firstMessage.user_name);
+        if (ticketData.user_id) localStorage.setItem(`user_name_${ticketData.user_id}`, firstMessage.user_name);
+      }
 
       const formattedTicket: Ticket = {
-        id:          firstMessage.ticket_id,
-        subject:     firstMessage.message || "Support Ticket",
-        company:     "Soft7 User",
+        id: String(ticketData.id || ticketId),
+        subject: firstMessage?.message || `Support Ticket #${String(ticketData.id || ticketId).slice(0, 8)}`,
+        company: ticketData.company_id ? `Company ${String(ticketData.company_id).slice(0, 8)}` : "Unknown Company",
         companyLogo: "S",
-        companyCol:  "#10b981",
-        user:        firstMessage.user_name || "Unknown User",
-        userEmail:   firstMessage.user_email || "",
-        status:      "OPEN",
-        priority:    "MEDIUM",
-        category:    "Support",
-        created:     new Date(firstMessage.created_at).toLocaleDateString(),
-        updated:     new Date(conversations[conversations.length - 1].created_at).toLocaleDateString(),
-        unread:      0,
-        messages:    formattedMessages,
+        companyCol: "#10b981",
+        user: resolvedUserName,
+        userEmail: "",
+        status: (ticketData.status || "OPEN").toUpperCase() as TicketStatus,
+        priority: "MEDIUM",
+        category: "Support",
+        created: ticketData.created_at ? new Date(ticketData.created_at).toLocaleDateString() : "-",
+        updated: (lastMessage?.created_at || ticketData.created_at)
+          ? new Date(lastMessage?.created_at || ticketData.created_at).toLocaleDateString()
+          : "-",
+        unread: 0,
+        messages: formattedMessages,
       };
 
       setSelectedId(formattedTicket.id);
-      setTickets(prev => prev.map(t => t.id === formattedTicket.id ? formattedTicket : t));
-    } catch {
-      setApiError("Failed to load ticket details.");
-    }
-  };
 
-  const applyServerTicket = (updatedTicket: Ticket) => {
-    setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
-  };
-
-const handleStatusChange = async (id: string, status: TicketStatus) => {
-  setApiError(null);
-
-  try {
-    if (status === "RESOLVED") {
-      await axiosInstance.put(`/v1/admin/support/${id}/resolve`);
-    } else if (status === "CLOSED") {
-      await axiosInstance.put(`/v1/admin/support/${id}/close`);
-    } else {
-      setApiError(`Status "${status}" unable to update.`);
-      return;
-    }
-
-    await loadTickets();
-
-    if (selectedId === id) {
-      await loadSingleTicket(id);
-    }
-  } catch (error: any) {
-    console.error("Status update failed:", error);
-
-    setApiError(
-      error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        "Failed to update ticket status.",
-    );
-  }
-};
-
-  const handleReply = async (id: string, text: string): Promise<ReplyActionResult> => {
-    setApiError(null);
-    try {
-      const selectedTicket = tickets.find(t => t.id === id);
-      const { data } = await axiosInstance.post(`/v1/admin/support/${id}/forward/reply`, {
-        message: text,
-        email:   selectedTicket?.userEmail || "",
-        phone:   "9372597458",
+      setTickets(prev => {
+        const existing = prev.find(t => t.id === formattedTicket.id);
+        const mergedTicket: Ticket = {
+          ...formattedTicket,
+          userEmail: existing?.userEmail || formattedTicket.userEmail,
+        };
+        return existing
+          ? prev.map(t => (t.id === formattedTicket.id ? mergedTicket : t))
+          : [...prev, mergedTicket];
       });
-      console.log("Reply API Response:", data);
+    } catch (error: any) {
+      console.error("Failed to load ticket conversation:", error);
+      setApiError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to load ticket details."
+      );
+    }
+  };
 
+  const handleStatusChange = async (id: string, status: TicketStatus) => {
+    setApiError(null);
+
+    try {
+      await axiosInstance.patch(`/v1/super-admin/tickets/${id}/status`, {
+        status: status.toLowerCase(),
+      });
+      await loadTickets();
+      if (selectedId === id) {
+        await loadSingleTicket(id);
+      }
+    } catch (error: any) {
+      console.error("Status update failed:", error);
+      setApiError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to update ticket status."
+      );
+    }
+  };
+
+  const handleReply = async (
+    id: string,
+    text: string
+  ): Promise<ReplyActionResult> => {
+    setApiError(null);
+
+    try {
+      const { data } = await axiosInstance.post(
+        `/v1/super-admin/tickets/${id}/forward/reply`,
+        { message: text }
+      );
+
+      const responseMessage = data?.data;
       const newMessage: Message = {
-        id:      Date.now().toString(),
-        sender:  "ADMIN",
-        name:    "Soft7 Tech",
-        avatar:  "ST",
-        content: text,
-        time:    new Date().toLocaleString(),
-        read:    true,
+        id: responseMessage?.id || Date.now().toString(),
+        sender: "ADMIN",
+        name: "Soft7 Tech",
+        avatar: "ST",
+        content: responseMessage?.message || text,
+        time: responseMessage?.created_at
+          ? new Date(responseMessage.created_at).toLocaleString()
+          : new Date().toLocaleString(),
+        read: true,
       };
 
       setTickets(prev =>
         prev.map(t =>
           t.id === id
-            ? { ...t, updated: new Date().toLocaleDateString(), messages: [...(t.messages || []), newMessage] }
+            ? {
+                ...t,
+                updated: new Date(responseMessage?.created_at || Date.now()).toLocaleDateString(),
+                messages: [...(t.messages || []), newMessage],
+              }
             : t
         )
       );
+
       return { ok: true };
-    } catch {
-      return { ok: false, error: "Unable to send reply right now." };
+    } catch (error: any) {
+      console.error("Reply API failed:", error);
+      return {
+        ok: false,
+        error:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Unable to send reply right now.",
+      };
     }
   };
+
 
   // ─ Derived counts ─
   const openCount  = tickets.filter(t => t.status === "OPEN").length;
@@ -788,71 +927,81 @@ const handleStatusChange = async (id: string, status: TicketStatus) => {
                 </div>
               </div>
 
-              {/* Ticket rows */}
-              <div className="st-list">
-                {paginated.map(ticket => {
-                  const isActive  = selected?.id === ticket.id;
-                  const msgCount  = safeMessages(ticket).length;
+              {/* Reference Table matching screenshot */}
+              <div className="st-table-wrapper">
+                <table className="st-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "260px" }}>Name</th>
+                      <th style={{ width: "260px" }}>Email</th>
+                      <th style={{ width: "140px", textAlign: "center" }}>Status</th>
+                      <th style={{ width: "130px" }}>Priority</th>
+                      <th style={{ width: "160px" }}>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginated.map(ticket => {
+                      const isActive = selected?.id === ticket.id;
+                      const priorityDisplay =
+                        PRIORITY_META[ticket.priority]?.label ??
+                        (ticket.priority === "MEDIUM"
+                          ? "Normal"
+                          : ticket.priority.charAt(0) + ticket.priority.slice(1).toLowerCase());
 
-                  return (
-                    <div
-                      key={ticket.id}
-                      className={`st-ticket-row ${isActive ? "st-ticket-row--active" : ""}`}
-                      onClick={() => void loadSingleTicket(ticket.id)}
-                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); void loadSingleTicket(ticket.id); } }}
-                      role="button"
-                      tabIndex={0}
-                      aria-current={isActive ? "true" : "false"}
-                    >
-                      <div className="st-ticket-row__top">
-                        <div className="st-ticket-row__left">
-                          <div className="st-company-logo" style={{ background: ticket.companyCol }}>
-                            {ticket.companyLogo}
-                          </div>
-                          <div className="st-ticket-row__info">
-                            <div className="st-ticket-row__subject-row">
-                              <div className="st-ticket-row__subject">{ticket.subject}</div>
-                              {isActive && (
-                                <span className="st-ticket-row__selected-pill">Selected</span>
-                              )}
-                            </div>
-                            <div className="st-ticket-row__meta">
-                              <span>{ticket.user}</span>
-                              {ticket.userEmail && (
-                                <>
-                                  <span className="st-ticket-row__meta-sep">·</span>
-                                  <span style={{ opacity: 0.75 }}>{ticket.userEmail}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="st-ticket-row__right">
-                          {(ticket.unread ?? 0) > 0 && (
-                            <span className="st-unread-dot">{ticket.unread}</span>
-                          )}
-                          <span className="st-ticket-row__time">{ticket.updated}</span>
-                        </div>
-                      </div>
+                      const nameInitial =
+                        (ticket.user?.replace(/^User\s+/, "") || ticket.user || "U")
+                          .trim()
+                          .charAt(0)
+                          .toUpperCase() || "U";
 
-                   <div className="st-ticket-row__badges">
-  <StatusBadge status={ticket.status} />
-  <span className="st-cat-chip">
-    {CAT_ICON[ticket.category] ?? "📋"} {ticket.category}
-  </span>
-  <span className="st-msg-count">💬 {msgCount}</span>
-</div>
-                    </div>
-                  );
-                })}
+                      return (
+                        <tr
+                          key={ticket.id}
+                          className={`st-table-row ${isActive ? "st-table-row--active" : ""}`}
+                        >
+                          <td className="st-td-name">
+                            <button
+                              type="button"
+                              className="st-td-user-btn"
+                              onClick={() => void loadSingleTicket(ticket.id)}
+                              title={`Open chat with ${ticket.user}`}
+                            >
+                              <div
+                                className="st-company-logo"
+                                style={{ background: "#10b981" }}
+                              >
+                                {nameInitial}
+                              </div>
+                              <span className="st-td-user-name">
+                                {ticket.user}
+                              </span>
+                            </button>
+                          </td>
+                          <td className="st-td-email">{ticket.userEmail || "—"}</td>
+                          <td className="st-td-status" style={{ textAlign: "center" }}>
+                            <StatusBadge status={ticket.status} />
+                          </td>
+                          <td className="st-td-priority">
+                            <span className={`st-pri-text st-pri-text--${ticket.priority.toLowerCase()}`}>
+                              {priorityDisplay}
+                            </span>
+                          </td>
+                          <td className="st-td-created">{ticket.created}</td>
+                        </tr>
+                      );
+                    })}
 
-                {filtered.length === 0 && (
-                  <div className="st-empty">
-                    <div style={{ fontSize: 36, marginBottom: 12 }}>🎫</div>
-                    <div className="st-empty__title">No tickets found</div>
-                    <div className="st-empty__desc">Try adjusting your filters or search term.</div>
-                  </div>
-                )}
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="st-table-empty">
+                          <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--st-title)" }}>No tickets found</div>
+                          <div style={{ fontSize: 13, color: "var(--st-muted)" }}>Try adjusting your filters or search term.</div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
               {filtered.length > 0 && (
@@ -882,27 +1031,7 @@ const handleStatusChange = async (id: string, status: TicketStatus) => {
       />
     </div>
   </>
-) : (
-              <div className="st-conv-empty">
-                <div className="st-conv-empty__icon">🎫</div>
-                <div style={{ textAlign: "center" }}>
-                  <div className="st-conv-empty__title">Select a ticket to view</div>
-                  <div className="st-conv-empty__desc">
-                    Click any ticket from the list to read the conversation and send a reply.
-                  </div>
-                </div>
-                <div className="st-conv-empty__chips">
-                  <div className="st-conv-empty__chip">
-                    <span className="st-conv-empty__chip-dot" style={{ background: "var(--st-status-open-col)" }} />
-                    <span className="st-conv-empty__chip-text">{openCount} open</span>
-                  </div>
-                  <div className="st-conv-empty__chip">
-                    <span className="st-conv-empty__chip-dot" style={{ background: "var(--st-pri-urgent-col)" }} />
-                    <span className="st-conv-empty__chip-text">{urgent} urgent</span>
-                  </div>
-                </div>
-              </div>
-            )}
+) : null}
           </div>
         </>
       )}
