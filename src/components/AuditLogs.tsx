@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "../context/ThemeContext";
+import { ChevronRight } from "lucide-react";
 
 export interface LogEntry {
   id:    string;
@@ -108,17 +109,7 @@ export default function AuditLogs({
             gap: "4px",
           }}
         >
-          View All{" "}
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          View All <ChevronRight size={13} strokeWidth={2.5} />
         </span>
       </div>
 

@@ -82,7 +82,15 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
             {/* Identity */}
             <div className="au-panel__identity">
               <div className="au-panel__avatar-wrap">
-                <div className="au-avatar au-avatar--68" style={{ background: user.av }}>
+                <div
+                  className="au-avatar au-avatar--68"
+                  style={{
+                    background:
+                      !user.av || user.av === "#10b981" || user.av === "#00a67d"
+                        ? "var(--crm-primary, #206bc4)"
+                        : user.av,
+                  }}
+                >
                   {user.name
                     .split(" ")
                     .map((n: string) => n[0])

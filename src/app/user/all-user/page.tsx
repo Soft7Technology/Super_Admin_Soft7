@@ -350,7 +350,15 @@ export default function AllUsers() {
                       className="au-user-cell"
                       title={`View profile of ${user.name}`}
                     >
-                      <div className="au-avatar au-avatar--table" style={{ background: user.av }}>
+                      <div
+                        className="au-avatar au-avatar--table"
+                        style={{
+                          background:
+                            !user.av || user.av === "#10b981" || user.av === "#00a67d"
+                              ? "var(--crm-primary, #206bc4)"
+                              : user.av,
+                        }}
+                      >
                         {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <span className="au-user-name">{user.name}</span>

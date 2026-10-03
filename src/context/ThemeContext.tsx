@@ -12,21 +12,24 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sa-theme") as Theme | null;
-      if (saved === "light" || saved === "dark") {
-        setTheme(saved);
-        document.documentElement.setAttribute("data-theme", saved); 
-      } else {
-        document.documentElement.setAttribute("data-theme", "dark");
-      }
+      const initialTheme = (saved === "light" || saved === "dark") ? saved : "dark";
+      setTheme(initialTheme);
+      document.documentElement.setAttribute("data-theme", initialTheme);
+      document.documentElement.classList.toggle("dark", initialTheme === "dark");
+      document.documentElement.classList.toggle("light", initialTheme === "light");
     } catch {
       document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
     }
   }, []);
 
   const toggleTheme = () => setTheme(prev => {
     const next = prev === "dark" ? "light" : "dark";
     try { localStorage.setItem("sa-theme", next); } catch {}
-    document.documentElement.setAttribute("data-theme", next); // ✅ FIX: update <html> on every toggle
+    document.documentElement.setAttribute("data-theme", next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+    document.documentElement.classList.toggle("light", next === "light");
     return next;
   });
 
