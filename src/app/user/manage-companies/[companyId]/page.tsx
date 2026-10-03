@@ -333,8 +333,7 @@ const handleStatusChange = () => {
   const handleEditProfile = () => {
     setShowEditModal(false);
 
-    // TODO:
-    // Replace with PATCH API later.
+   
   };
 
 
@@ -639,7 +638,7 @@ const handleStatusChange = () => {
                   type="button"
                   className="view-more-button"
                   onClick={() => {
-                    // TODO: Navigate to full campaign history
+                    
                   }}
                 >
                   View More →
@@ -668,7 +667,7 @@ const handleStatusChange = () => {
                   type="button"
                   className="view-more-button"
                   onClick={() => {
-                    // TODO: Navigate to full activity history
+                   
                   }}
                 >
                   View More →
