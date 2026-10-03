@@ -42,14 +42,14 @@ export const STATUS_DOT: Record<string, string> = {
 };
 
 const PLAN_COLOR: Record<string, string> = {
-  Enterprise: "#10b981",
-  Pro:        "#6366f1",
-  Basic:      "#f59e0b",
-  Starter:    "#34d399",
+  Enterprise: "#206bc4",
+  Pro:        "#4299e1",
+  Basic:      "#f59f00",
+  Starter:    "#17a2b8",
 };
 
 const ROLE_COLOR: Record<string, string> = {
-  Admin: "#10b981",
+  Admin: "#206bc4",
   User:  "#64748b",
 };
 

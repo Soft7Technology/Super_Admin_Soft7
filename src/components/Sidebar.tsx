@@ -18,7 +18,7 @@ import {
 import { useTheme } from "../context/ThemeContext";
 import Logo from "./Logo";
 
-const BRAND = "#10b981";
+const BRAND = "#206bc4";
 const SIDEBAR_WIDTH = 260;
 
 type NavItem = {
@@ -137,37 +137,33 @@ export default function Sidebar({
           height: 100%;
           flex-direction: column;
           overflow: hidden;
-          border-right: 1px solid
-            ${isDark ? "rgba(99,179,237,0.18)" : "#d1fae5"};
-          background: ${isDark
-            ? "linear-gradient(180deg,#050d1a 0%,#07111f 48%,#040e1a 100%)"
-            : "linear-gradient(180deg,#ffffff 0%,#f0fdf4 52%,#dcfce7 100%)"};
+          border-right: 1px solid ${isDark ? "#233144" : "#e6e8eb"};
+          background: ${isDark ? "#182230" : "#ffffff"};
         }
 
-       
         .admin-sidebar__brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 70px;
-  padding: 4px 8px;
-  border-bottom: 1px solid
-    ${isDark ? "rgba(148,163,184,0.12)" : "#d1fae5"};
-}
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 70px;
+          padding: 4px 8px;
+          border-bottom: 1px solid ${isDark ? "#233144" : "#e6e8eb"};
+          background: ${isDark ? "transparent" : "#ffffff"};
+        }
 
-.admin-sidebar__mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  margin: 0;
-  line-height: 1;
-}
+        .admin-sidebar__mark {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: auto;
+          margin: 0;
+          line-height: 1;
+        }
 
         /* ── Nav ── */
         .admin-sidebar__nav {
           display: grid;
-          gap: 6px;
+          gap: 4px;
           flex: 1;
           align-content: start;
           overflow-y: auto;
@@ -175,53 +171,55 @@ export default function Sidebar({
         }
 
         .admin-sidebar__nav::-webkit-scrollbar {
-          width: 6px;
+          width: 5px;
         }
 
         .admin-sidebar__nav::-webkit-scrollbar-thumb {
           border-radius: 999px;
-          background: rgba(16, 185, 129, 0.45);
+          background: ${isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(32, 107, 196, 0.2)"};
         }
 
         .admin-sidebar__item {
           position: relative;
           display: flex;
           width: 100%;
-          height: 46px;
+          height: 44px;
           align-items: center;
           gap: 12px;
           overflow: hidden;
-          border-radius: 12px;
+          border-radius: 8px;
           border: 0;
           background: transparent;
-          color: ${isDark ? "#cbd5e1" : "#334155"};
-          padding: 0 13px;
-          font-family: "DM Sans", "Segoe UI", sans-serif;
+          color: ${isDark ? "#e2e8f0" : "#334155"};
+          padding: 0 14px;
+          font-family: inherit;
           text-align: left;
-          transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+          transition: background 150ms ease, color 150ms ease, transform 150ms ease;
           cursor: pointer;
         }
 
         .admin-sidebar__item:hover {
-          background: ${isDark ? "rgba(99,179,237,0.12)" : "#dcfce7"};
-          color: ${isDark ? "#ffffff" : "#065f46"};
-          transform: translateX(3px);
+          background: ${isDark ? "rgba(32, 107, 196, 0.16)" : "rgba(32, 107, 196, 0.09)"};
+          color: ${isDark ? "#ffffff" : "#206bc4"};
+          transform: translateX(2px);
         }
 
         .admin-sidebar__item[data-active="true"] {
-        background: #10b981;
-        color: #ffffff;
+          background: #206bc4;
+          color: #ffffff;
+          box-shadow: 0 2px 6px rgba(32, 107, 196, 0.25);
+        }
+
+        .admin-sidebar__item[data-active="true"]:hover {
+          background: #1c5fac;
+          color: #ffffff;
+          transform: none;
         }
 
         /* ── Active bar ── */
-      
-        .admin-sidebar__item[data-active="true"] .admin-sidebar__active-bar {
-          opacity: 1;
-        }
-
         .admin-sidebar__icon {
           display: grid;
-          flex: 0 0 22px;
+          flex: 0 0 20px;
           place-items: center;
           color: currentColor;
         }
@@ -232,7 +230,8 @@ export default function Sidebar({
           text-overflow: ellipsis;
           white-space: nowrap;
           font-size: 0.92rem;
-          font-weight: 750;
+          font-weight: 650;
+          letter-spacing: -0.01em;
         }
 
         /* ── Footer ── */
@@ -240,13 +239,12 @@ export default function Sidebar({
           display: flex;
           align-items: center;
           gap: 10px;
-          min-height: 66px;
-          padding: 14px 18px;
-          border-top: 1px solid
-            ${isDark ? "rgba(148,163,184,0.12)" : "#d1fae5"};
-          color: ${isDark ? "#93c5fd" : "#065f46"};
-          font-size: 0.8rem;
-          font-weight: 800;
+          min-height: 60px;
+          padding: 12px 18px;
+          border-top: 1px solid ${isDark ? "#233144" : "#e6e8eb"};
+          color: ${isDark ? "#f1f5f9" : "#1e293b"};
+          font-size: 0.82rem;
+          font-weight: 700;
         }
 
         .admin-sidebar__footer span:not(.admin-sidebar__status-dot) {
@@ -255,20 +253,18 @@ export default function Sidebar({
         }
 
         .admin-sidebar__footer small {
-          color: ${isDark ? "#60a5fa" : "#047857"};
+          color: ${isDark ? "#94a3b8" : "#64748b"};
           font-size: 0.72rem;
-          font-weight: 700;
+          font-weight: 600;
         }
 
         .admin-sidebar__status-dot {
-          width: 9px;
-          height: 9px;
-          flex: 0 0 9px;
+          width: 8px;
+          height: 8px;
+          flex: 0 0 8px;
           border-radius: 999px;
-          background: #10b981;
-          box-shadow:
-            0 0 0 5px rgba(16, 185, 129, 0.14),
-            0 0 18px rgba(16, 185, 129, 0.9);
+          background: #2fb344;
+          box-shadow: 0 0 0 4px rgba(47, 179, 68, 0.2);
         }
       `}</style>
     </aside>

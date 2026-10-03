@@ -18,7 +18,7 @@ import { FilterBar } from "./components/FilterBar";
 import { DetailPanel } from "./components/DetailPanel";
 import { EditUserModal } from "./components/EditUserModal";
 import { ResetPasswordModal } from "./components/ResetPasswordModal";
-import { Eye, Pencil, KeyRound, ShieldOff, ShieldCheck, Trash2 } from "lucide-react";
+import { Eye, Pencil, KeyRound, ShieldOff, ShieldCheck, Trash2, Users, UserCheck, Shield, Award } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -215,10 +215,10 @@ const handleSuspendToggle = async (user: User) => {
 
       {/* KPIs */}
       <div className="au-kpi-grid">
-        <KPI label="Total Users"   value={stats.totalUsers.toLocaleString()}   icon="👥" color="#2bc386" />
-        <KPI label="Active Users"  value={stats.activeUsers.toLocaleString()}  icon="✅" color="#34d399" />
-        <KPI label="Admin Users"   value={stats.adminUsers.toLocaleString()}   icon="🛡" color="#6366f1" />
-        <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon="⭐" color="#f59e0b" />
+        <KPI label="Total Users"   value={stats.totalUsers.toLocaleString()}   icon={<Users size={20} strokeWidth={2} />} color="#206bc4" />
+        <KPI label="Active Users"  value={stats.activeUsers.toLocaleString()}  icon={<UserCheck size={20} strokeWidth={2} />} color="#2fb344" />
+        <KPI label="Admin Users"   value={stats.adminUsers.toLocaleString()}   icon={<Shield size={20} strokeWidth={2} />} color="#4299e1" />
+        <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon={<Award size={20} strokeWidth={2} />} color="#f59f00" />
       </div>
 
       {/* Filters, with Select All / bulk-delete pinned to the right of the same row */}

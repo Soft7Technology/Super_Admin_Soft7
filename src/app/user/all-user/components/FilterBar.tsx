@@ -1,5 +1,7 @@
 "use client";
 
+import { Search } from "lucide-react";
+
 interface FilterBarProps {
   search: string;
   onSearchChange: (value: string) => void;
@@ -31,7 +33,7 @@ export function FilterBar({
     <div className="au-filter-bar">
       {/* Search */}
       <div className="au-search-wrap">
-        <span className="mc-search-icon">🔍</span>
+        <Search size={14} className="mc-search-icon" />
         <input
           className="au-search-input"
           value={search}
