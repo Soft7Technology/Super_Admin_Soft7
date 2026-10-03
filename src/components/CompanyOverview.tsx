@@ -119,12 +119,13 @@ export default function CompanyOverview({
       ) : (
         /* ─── Table layout for larger screens ─── */
         <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-          <table style={{ width:"100%", minWidth: isSmall ? "440px" : "auto", tableLayout:"fixed", borderCollapse:"collapse", fontSize: bodyFont }}>
+          <table style={{ width:"100%", minWidth: isSmall ? "480px" : "auto", tableLayout:"fixed", borderCollapse:"collapse", fontSize: bodyFont }}>
             <thead>
               <tr style={{ background:t.tableHead }}>
-                {["COMPANY NAME","STATUS","PLAN","USERS"].map(h => (
-                  <th key={h} style={{ padding: cellPadVal, textAlign:"left", fontSize: thFontSize, color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>{h}</th>
-                ))}
+                <th style={{ width: "44%", padding: cellPadVal, textAlign:"left", fontSize: thFontSize, color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>COMPANY NAME</th>
+                <th style={{ width: "22%", padding: cellPadVal, textAlign:"left", fontSize: thFontSize, color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>STATUS</th>
+                <th style={{ width: "18%", padding: cellPadVal, textAlign:"left", fontSize: thFontSize, color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>PLAN</th>
+                <th style={{ width: "16%", padding: cellPadVal, textAlign:"left", fontSize: thFontSize, color:t.textFaint, letterSpacing:"0.08em", fontWeight:800, borderBottom:`2px solid ${t.border}` }}>USERS</th>
               </tr>
             </thead>
             <tbody>
@@ -151,19 +152,19 @@ function Row({ co, last, t, cellPad, avatarSize, avatarFont, nameFont, badgeFont
     <tr onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       onClick={() => onCompanyClick?.(co)}
       style={{ borderBottom:last?"none":`1px solid ${t.border}`, background:hov?t.rowHover:"transparent", transition:"background 0.12s", cursor:"pointer" }}>
-      <td style={{ padding:cellPad }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+      <td style={{ padding:cellPad, overflow:"hidden" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth: 0 }}>
           <div style={{ width:`${avatarSize}px`, height:`${avatarSize}px`, borderRadius:"10px", background:co.col, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize: avatarFont, color:"#fff", flexShrink:0 }}>{co.ini}</div>
-          <span style={{ fontWeight:800, color:t.textSub, fontSize: nameFont }}>{co.name}</span>
+          <span title={co.name} style={{ fontWeight:800, color:t.textSub, fontSize: nameFont, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", minWidth: 0 }}>{co.name}</span>
         </div>
       </td>
       <td style={{ padding:cellPad }}>
-        <span style={{ display:"inline-flex", alignItems:"center", gap:"5px", padding: badgePad, borderRadius:"20px", fontSize: badgeFont, fontWeight:800, background:s.bg, color:s.color, border:"1px solid rgba(16,185,129,0.18)" }}>
+        <span style={{ display:"inline-flex", alignItems:"center", gap:"5px", padding: badgePad, borderRadius:"20px", fontSize: badgeFont, fontWeight:800, background:s.bg, color:s.color, border:"1px solid rgba(16,185,129,0.18)", whiteSpace: "nowrap" }}>
           <span style={{ width:"5px", height:"5px", borderRadius:"50%", background:s.dot }} />{co.status}
         </span>
       </td>
       <td style={{ padding:cellPad }}>
-        <span style={{ fontSize: badgeFont, color:t.textMuted, background:t.surface2, padding: badgePad, borderRadius:"8px", border:`1px solid ${t.border}`, fontWeight:700 }}>{co.plan}</span>
+        <span style={{ fontSize: badgeFont, color:t.textMuted, background:t.surface2, padding: badgePad, borderRadius:"8px", border:`1px solid ${t.border}`, fontWeight:700, whiteSpace: "nowrap" }}>{co.plan}</span>
       </td>
       <td style={{ padding:cellPad, color:t.textSub, fontWeight:800, fontSize: nameFont }}>{co.users}</td>
     </tr>

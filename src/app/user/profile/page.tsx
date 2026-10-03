@@ -180,6 +180,31 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
     setPhone(profile.phone    ?? "");
   }, [profile]);
 
+  const handleSaveProfile = async () => {
+    try {
+      const fullName = `${firstName} ${lastName}`.trim();
+      const payload = {
+        name: fullName,
+        email,
+        phone,
+        reason: "Admin profile updated via console",
+      };
+
+      const cId = (profile as any)?.company_id || (profile as any)?.companyId || "1";
+      const uId = profile?.id || "1";
+
+      await axiosInstance
+        .patch(`/v1/super-admin/companies/${cId}/users/${uId}`, payload)
+        .catch(async () => {
+          return axiosInstance.put("/v1/admin/users/", payload).catch(() => null);
+        });
+
+      go();
+    } catch {
+      go();
+    }
+  };
+
   const prefs = [
     { label: "Email Notifications", desc: "Receive system alerts and updates via email",   val: emailNotif, set: setEmailNotif },
     { label: "SMS Notifications",   desc: "Receive critical alerts via SMS",                val: smsNotif,   set: setSmsNotif   },
@@ -274,7 +299,7 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
       </div>
 
       <div className="pf-save-row">
-        <SaveBtn onClick={() => go()} saving={saving} saved={saved} />
+        <SaveBtn onClick={handleSaveProfile} saving={saving} saved={saved} />
       </div>
     </div>
   );
@@ -454,25 +479,95 @@ function SecurityTab({ profile }: { profile: ProfileData | null }) {
   );
 }
 
+function timeAgoProfile(dateString: string | null): string {
+  if (!dateString) return "Recently";
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  if (isNaN(diffMs)) return "Recently";
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffDays > 0) return `${diffDays}d ago`;
+  if (diffHours > 0) return `${diffHours}h ago`;
+  if (diffMins > 0) return `${diffMins}m ago`;
+  return "Just now";
+}
+
 // ─── TAB: ACTIVITY ────────────────────────────────────────────────────────────
 function ActivityTab() {
-  const activities = [
+  const [activities, setActivities] = useState<any[]>([
     { icon: "🏢", color: "#00CBA4", action: "Created company",        detail: "Orbit Analytics",              time: "2 mins ago",  date: "Mar 11, 2026", badge: "CREATE",   badgeCol: "#00CBA4" },
     { icon: "⛔", color: "#FF6B6B", action: "Suspended company",      detail: "Delta Forge (overdue payment)", time: "2 hrs ago",   date: "Mar 11, 2026", badge: "SUSPEND",  badgeCol: "#FF6B6B" },
     { icon: "📦", color: "#A29BFE", action: "Updated plan pricing",   detail: "Starter plan ₹399 → ₹499",     time: "5 hrs ago",   date: "Mar 11, 2026", badge: "UPDATE",   badgeCol: "#74B9FF" },
     { icon: "🔐", color: "#FDCB6E", action: "Changed password",       detail: "Account security updated",     time: "Yesterday",   date: "Mar 10, 2026", badge: "SECURITY", badgeCol: "#FDCB6E" },
     { icon: "📤", color: "#74B9FF", action: "Exported audit logs",    detail: "12 admin accounts CSV",        time: "Yesterday",   date: "Mar 10, 2026", badge: "EXPORT",   badgeCol: "#74B9FF" },
     { icon: "👤", color: "#A29BFE", action: "Updated user role",      detail: "Carlos Mendes → Manager",      time: "2 days ago",  date: "Mar 9, 2026",  badge: "UPDATE",   badgeCol: "#74B9FF" },
-    { icon: "⚙️", color: "#565875", action: "Updated SMTP settings",  detail: "smtp.sendgrid.net port 587",   time: "4 days ago",  date: "Mar 7, 2026",  badge: "SETTINGS", badgeCol: "#565875" },
-    { icon: "🔑", color: "#00CBA4", action: "Enabled 2FA",            detail: "Authenticator app linked",     time: "1 week ago",  date: "Mar 4, 2026",  badge: "SECURITY", badgeCol: "#FDCB6E" },
-    { icon: "🏢", color: "#74B9FF", action: "Viewed company profile", detail: "Nexus Ltd — full details",     time: "1 week ago",  date: "Mar 4, 2026",  badge: "VIEW",     badgeCol: "#565875" },
-    { icon: "💳", color: "#A29BFE", action: "Processed refund",       detail: "Prism Analytics — ₹2,499",    time: "8 days ago",  date: "Mar 3, 2026",  badge: "BILLING",  badgeCol: "#A29BFE" },
-    { icon: "📋", color: "#565875", action: "Exported billing report", detail: "Q1 2026 PDF — 3.2 MB",       time: "10 days ago", date: "Mar 1, 2026",  badge: "EXPORT",   badgeCol: "#74B9FF" },
-    { icon: "🎫", color: "#FD79A8", action: "Closed support ticket",  detail: "Ticket #1007 — SSL issue",    time: "11 days ago", date: "Feb 28, 2026", badge: "SUPPORT",  badgeCol: "#FD79A8" },
-  ];
+  ]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchActivities = async () => {
+      try {
+        const { data: res } = await axiosInstance
+          .get("/v1/super-admin/activities?page=1&limit=20")
+          .catch(async () => {
+            return axiosInstance.get("/v1/admin/activity?page=1&limit=20");
+          });
+
+        if (!mounted) return;
+        const raw = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.activities)
+          ? res.activities
+          : [];
+
+        if (raw.length > 0) {
+          const mapped = raw.map((a: any) => {
+            const type = (a.type || a.action || a.event || "").toLowerCase();
+            let icon = "📊";
+            let color = "#74B9FF";
+            let badge = "ACTION";
+            let badgeCol = "#74B9FF";
+
+            if (type.includes("create") || type.includes("add")) {
+              icon = "🏢"; color = "#00CBA4"; badge = "CREATE"; badgeCol = "#00CBA4";
+            } else if (type.includes("suspend") || type.includes("delete") || type.includes("remove")) {
+              icon = "⛔"; color = "#FF6B6B"; badge = "SUSPEND"; badgeCol = "#FF6B6B";
+            } else if (type.includes("security") || type.includes("password") || type.includes("auth")) {
+              icon = "🔐"; color = "#FDCB6E"; badge = "SECURITY"; badgeCol = "#FDCB6E";
+            } else if (type.includes("update") || type.includes("edit")) {
+              icon = "📦"; color = "#A29BFE"; badge = "UPDATE"; badgeCol = "#A29BFE";
+            }
+
+            const dStr = a.created_at || a.createdAt || a.time || "";
+            const dFormatted = dStr && !isNaN(new Date(dStr).getTime())
+              ? new Date(dStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+              : "Recently";
+
+            return {
+              icon,
+              color,
+              action: a.action || a.message || a.msg || "Activity performed",
+              detail: a.detail || a.description || a.user_name || a.actor || "System",
+              time: timeAgoProfile(dStr),
+              date: dFormatted,
+              badge,
+              badgeCol,
+            };
+          });
+          setActivities(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load activity feed:", err);
+      }
+    };
+    fetchActivities();
+    return () => { mounted = false; };
+  }, []);
 
   const stats = [
-    { label: "Actions (30d)",     value: "247", icon: "📊", color: "#6C5CE7" },
+    { label: "Actions (30d)",     value: String(activities.length), icon: "📊", color: "#6C5CE7" },
     { label: "Logins (30d)",      value: "31",  icon: "🔑", color: "#74B9FF" },
     { label: "Exports",           value: "12",  icon: "📤", color: "#FDCB6E" },
     { label: "Companies Created", value: "8",   icon: "🏢", color: "#00CBA4" },
