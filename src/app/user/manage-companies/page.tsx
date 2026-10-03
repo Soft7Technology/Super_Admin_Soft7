@@ -1539,7 +1539,15 @@ export default function ManageCompanies() {
                         {company.name.slice(0, 2).toUpperCase()}
                       </div>
 
-                      <div className="mc-company-name">{company.name}</div>
+                      <button
+                        type="button"
+                        className="company-name-link"
+                        onClick={() =>
+                          router.push(`/user/manage-companies/${company.id}`)
+                        }
+                      >
+                        {company.name}
+                      </button>
                     </div>
                   </td>
 
@@ -1567,7 +1575,9 @@ export default function ManageCompanies() {
                       <button
                         type="button"
                         className="mc-action-btn"
-                        onClick={() => openView(company)}
+                        onClick={() =>
+                          router.push(`/user/manage-companies/${company.id}`)
+                        }
                         title="View"
                       >
                         👁
@@ -1576,7 +1586,7 @@ export default function ManageCompanies() {
                       <button
                         type="button"
                         className="mc-action-btn"
-                        onClick={() => openEdit(company)}
+                        onClick={() => openView(company)}
                         title="Edit"
                       >
                         ✏️
@@ -1622,7 +1632,7 @@ export default function ManageCompanies() {
 
       {/* CREATE / EDIT MODAL */}
 
-      {showModal && editTarget &&(
+      {showModal && editTarget && (
         <CompanyModal
           company={editTarget}
           onClose={() => {

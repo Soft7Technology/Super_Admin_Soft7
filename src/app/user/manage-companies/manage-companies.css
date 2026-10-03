@@ -1506,3 +1506,23 @@
   padding: 9px 16px;
   flex: 0 0 auto;
 }
+.company-name-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+
+  color: var(--mc-title);
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.company-name-link:hover {
+  color: var(--mc-accent);
+  text-decoration: underline;
+  
+}
