@@ -73,8 +73,6 @@ interface UsageItem {
 // MOCK DATA
 // -----------------------------------------------------------------------------
 
-
-
 const MOCK_STATS: CompanyStats = {
   totalMessages: 182450,
   failedMessages: 2450,
@@ -223,17 +221,17 @@ export default function CompanyDetailsPage() {
   const companyId = params?.companyId as string;
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
-   const [company, setCompany] = useState<CompanyDetails | null>(null);
+  const [company, setCompany] = useState<CompanyDetails | null>(null);
 
-   const [loading, setLoading] = useState(true);
-   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
 
   const [creditAmount, setCreditAmount] = useState("");
-
+  const [creditSubmitting, setCreditSubmitting] = useState(false);
 
   useEffect(() => {
     if (!companyId) return;
@@ -295,47 +293,103 @@ export default function CompanyDetailsPage() {
       }
     };
 
-    fetchCompany();
+    const loadCompany = async () => {
+      await fetchCompany();
+      await refreshCompanyCredits();
+    };
+
+    loadCompany();
   }, [companyId]);
 
+  const refreshCompanyCredits = async () => {
+    if (!companyId) return;
 
-const handleStatusChange = () => {
-  setCompany((current) => {
-    if (!current) return current;
+    try {
+      const response = await axiosInstance.get(
+        `/v1/super-admin/companies/${companyId}/credits?page=1&limit=25`,
+      );
 
-    return {
-      ...current,
-      status: current.status === "active" ? "suspended" : "active",
-    };
-  });
-};
+      console.log("GET COMPANY CREDITS RESPONSE =>", response.data);
 
-  const handleAddCredits = () => {
-    const amount = Number(creditAmount);
+      const payload = response.data?.data ?? response.data;
+      const items = Array.isArray(payload?.items) ? payload.items : [];
 
-    if (!amount || amount <= 0) {
-      return;
+      // The API returns the newest transaction first.
+      // balance_after on the latest transaction is the current backend balance.
+      if (items.length > 0) {
+        const latestBalance = Number(items[0]?.balance_after);
+
+        if (Number.isFinite(latestBalance)) {
+          setCompany((current) =>
+            current ? { ...current, credits: latestBalance } : current,
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error("GET COMPANY CREDITS ERROR =>", err);
+      throw err;
     }
+  };
 
+  const handleStatusChange = () => {
     setCompany((current) => {
       if (!current) return current;
 
       return {
         ...current,
-        credits: current.credits + amount,
+        status: current.status === "active" ? "suspended" : "active",
       };
     });
+  };
 
-    setCreditAmount("");
-    setShowCreditModal(false);
+  const handleAddCredits = async () => {
+    const amount = Number(creditAmount);
+
+    if (!amount || amount <= 0 || creditSubmitting || !companyId) {
+      return;
+    }
+
+    setCreditSubmitting(true);
+    setError(null);
+
+    try {
+      const requestId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      await axiosInstance.post(
+        `/v1/super-admin/companies/${companyId}/credits`,
+        {
+          amount: amount.toFixed(2),
+          request_id: requestId,
+          reason: "Approved top-up",
+        },
+      );
+
+      // Refresh credits once after the POST succeeds.
+      // The backend credits API is the source of truth.
+      await refreshCompanyCredits();
+
+      setCreditAmount("");
+      setShowCreditModal(false);
+    } catch (err: any) {
+      console.error("ADD CREDITS ERROR =>", err);
+
+      setError(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Failed to add credits.",
+      );
+    } finally {
+      setCreditSubmitting(false);
+    }
   };
 
   const handleEditProfile = () => {
     setShowEditModal(false);
-
-   
   };
-
 
   if (loading) {
     return (
@@ -637,9 +691,7 @@ const handleStatusChange = () => {
                 <button
                   type="button"
                   className="view-more-button"
-                  onClick={() => {
-                    
-                  }}
+                  onClick={() => {}}
                 >
                   View More →
                 </button>
@@ -666,9 +718,7 @@ const handleStatusChange = () => {
                 <button
                   type="button"
                   className="view-more-button"
-                  onClick={() => {
-                   
-                  }}
+                  onClick={() => {}}
                 >
                   View More →
                 </button>
@@ -1009,8 +1059,9 @@ const handleStatusChange = () => {
                 type="button"
                 className="primary-button"
                 onClick={handleAddCredits}
+                disabled={creditSubmitting}
               >
-                Add Credits
+                {creditSubmitting ? "Adding..." : "Add Credits"}
               </button>
             </div>
           </div>
