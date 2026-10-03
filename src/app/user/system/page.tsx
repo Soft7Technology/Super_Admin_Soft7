@@ -2,6 +2,47 @@
 
 import { useState } from "react";
 import "./system.css";
+import {
+  RotateCcw,
+  Download,
+  Save,
+  Check,
+  Loader2,
+  Settings,
+  Mail,
+  MessageSquare,
+  Shield,
+  CreditCard,
+  Bell,
+  Activity,
+  Building2,
+  Sliders,
+  Send,
+  Zap,
+  Link2,
+  Gauge,
+  Lock,
+  Clock,
+  ShieldAlert,
+  FileText,
+  Receipt,
+  Calendar,
+  Radio,
+  BarChart3,
+  Wrench,
+  Box,
+  Ban,
+  Ticket,
+  AlertTriangle,
+  ArrowUpRight,
+  User,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  X,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // ─── REUSABLE PRIMITIVES ──────────────────────────────────────────────────────
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -52,7 +93,7 @@ function Select({ label, value, options, onChange, hint }: {
 }
 
 function SectionCard({ title, desc, children, icon }: {
-  title: string; desc?: string; children: React.ReactNode; icon?: string;
+  title: string; desc?: string; children: React.ReactNode; icon?: React.ReactNode;
 }) {
   return (
     <div className="ss-card">
@@ -69,7 +110,7 @@ function SectionCard({ title, desc, children, icon }: {
 }
 
 function SettingRow({ label, desc, children }: {
-  label: string; desc?: string; children: React.ReactNode;
+  label: React.ReactNode; desc?: string; children: React.ReactNode;
 }) {
   return (
     <div className="ss-row">
@@ -86,9 +127,9 @@ function SaveBtn({ onClick, saving, saved }: { onClick: () => void; saving: bool
   return (
     <button onClick={onClick} className={`ss-btn-save ${saved ? "ss-btn-save--saved" : ""}`}>
       {saving
-        ? <><span className="ss-btn-save__spinner" /> Saving…</>
-        : saved ? <>✓ Saved!</>
-        : <>💾 Save Changes</>
+        ? <><Loader2 size={14} className="ss-spin" /> Saving…</>
+        : saved ? <><Check size={14} /> Saved!</>
+        : <><Save size={14} /> Save Changes</>
       }
     </button>
   );
@@ -129,7 +170,7 @@ function GeneralTab() {
 
   return (
     <>
-      <SectionCard title="Platform Identity" desc="Core branding and identity settings" icon="🏢">
+      <SectionCard title="Platform Identity" desc="Core branding and identity settings" icon={<Building2 size={17} />}>
         <div className="ss-grid-2">
           <Inp label="Platform Name"    value={platform}     onChange={setPlatform}     placeholder="My SaaS Platform" />
           <Inp label="Tagline"          value={tagline}      onChange={setTagline}      placeholder="Your tagline here" />
@@ -156,7 +197,7 @@ function GeneralTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Feature Flags" desc="Toggle platform-wide feature availability" icon="🚀">
+      <SectionCard title="Feature Flags" desc="Toggle platform-wide feature availability" icon={<Sliders size={17} />}>
         <SettingRow label="Maintenance Mode"   desc="Shows a maintenance page to all non-admin users"><Toggle on={maintenance}  onChange={setMaintenance}  /></SettingRow>
         <SettingRow label="Beta Features"      desc="Enable experimental features for all users">      <Toggle on={betaFeatures} onChange={setBetaFeatures} /></SettingRow>
         <SettingRow label="Analytics Tracking" desc="Collect anonymised usage data for product improvements"><Toggle on={analytics}    onChange={setAnalytics}    /></SettingRow>
@@ -191,7 +232,7 @@ function EmailTab() {
 
   return (
     <>
-      <SectionCard title="SMTP Configuration" desc="Configure outgoing mail server settings" icon="📧">
+      <SectionCard title="SMTP Configuration" desc="Configure outgoing mail server settings" icon={<Mail size={17} />}>
         <div className="ss-grid-2">
           <Select label="Email Provider" value={provider} onChange={setProvider} options={[
             { value: "smtp",     label: "Custom SMTP" },
@@ -212,7 +253,7 @@ function EmailTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Sender Identity" desc="Configure how emails appear to recipients" icon="✉️">
+      <SectionCard title="Sender Identity" desc="Configure how emails appear to recipients" icon={<Send size={17} />}>
         <div className="ss-grid-2">
           <Inp label="From Name"  value={fromName}  onChange={setFromName}  placeholder="My Platform" />
           <Inp label="From Email" value={fromEmail} onChange={setFromEmail} type="email" placeholder="no-reply@example.com" />
@@ -220,13 +261,16 @@ function EmailTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Test Connection" desc="Send a test email to verify your SMTP settings" icon="🔌">
+      <SectionCard title="Test Connection" desc="Send a test email to verify your SMTP settings" icon={<Zap size={17} />}>
         <div className="ss-test-row">
           <div className="ss-test-row__input">
             <Inp label="Test Recipient Email" value={testEmail} onChange={setTestEmail} type="email" placeholder="you@example.com" />
           </div>
           <button onClick={sendTest} className={`ss-btn-test ss-btn-test--${testStatus === "sending" ? "idle" : testStatus}`}>
-            {testStatus === "sending" ? "Sending…" : testStatus === "ok" ? "✓ Delivered!" : testStatus === "fail" ? "✕ Failed" : "Send Test"}
+            {testStatus === "sending" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Loader2 size={13} className="ss-spin" /> Sending…</span>
+             : testStatus === "ok" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Check size={13} /> Delivered!</span>
+             : testStatus === "fail" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><X size={13} /> Failed</span>
+             : "Send Test"}
           </button>
         </div>
         {testStatus === "fail" && (
@@ -268,7 +312,9 @@ function WhatsAppTab() {
     <>
       <div className={`ss-banner ${bannerClass}`}>
         <div className="ss-banner__body">
-          <span className="ss-banner__icon">{status === "connected" ? "✅" : status === "error" ? "❌" : "🔄"}</span>
+          <span className="ss-banner__icon">
+            {status === "connected" ? <CheckCircle2 size={18} /> : status === "error" ? <AlertCircle size={18} /> : <RefreshCw size={18} className="ss-spin" />}
+          </span>
           <div>
             <div className={`ss-banner__title ${titleClass}`}>
               {status === "connected" ? "WhatsApp API Connected" : status === "error" ? "Connection Error" : "Checking connection…"}
@@ -278,10 +324,12 @@ function WhatsAppTab() {
             </div>
           </div>
         </div>
-        <button className="ss-btn-retest" onClick={checkConnection}>↻ Re-test</button>
+        <button className="ss-btn-retest" onClick={checkConnection}>
+          <RefreshCw size={13} /> Re-test
+        </button>
       </div>
 
-      <SectionCard title="API Configuration" desc="Meta Graph API connection settings" icon="🔗">
+      <SectionCard title="API Configuration" desc="Meta Graph API connection settings" icon={<Link2 size={17} />}>
         <div className="ss-grid-2">
           <Select label="API Version" value={apiVersion} onChange={setApiVersion} options={[
             { value: "v20.0", label: "v20.0 (Latest)" },
@@ -294,7 +342,7 @@ function WhatsAppTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Rate Limiting & Retry" desc="Control message delivery behaviour" icon="⚡">
+      <SectionCard title="Rate Limiting & Retry" desc="Control message delivery behaviour" icon={<Gauge size={17} />}>
         <div className="ss-grid-3" style={{ marginBottom: 16 }}>
           <Inp label="Rate Limit"  value={rateLimit}  onChange={setRateLimit}  suffix="msg/min" hint="Per phone number" />
           <Inp label="Max Retries" value={maxRetries} onChange={setMaxRetries} suffix="times"   hint="On delivery failure" />
@@ -329,7 +377,7 @@ function SecurityTab() {
 
   return (
     <>
-      <SectionCard title="Authentication" desc="Control how users log in and access the platform" icon="🔐">
+      <SectionCard title="Authentication" desc="Control how users log in and access the platform" icon={<Lock size={17} />}>
         <SettingRow label="Enforce 2FA for All Admins" desc="Require two-factor authentication for all admin and super-admin accounts"><Toggle on={enforce2FA}  onChange={setEnforce2FA}  /></SettingRow>
         <SettingRow label="Single Sign-On (SSO)"       desc="Allow users to log in with Google Workspace or Microsoft Entra ID">      <Toggle on={ssoEnabled}  onChange={setSsoEnabled}  /></SettingRow>
         <SettingRow label="IP Whitelist Enforcement"   desc="Restrict admin access to specific IP addresses only">                     <Toggle on={ipWhitelist} onChange={setIpWhitelist} /></SettingRow>
@@ -342,14 +390,14 @@ function SecurityTab() {
         )}
       </SectionCard>
 
-      <SectionCard title="Session & Token Policy" desc="Configure session duration and token expiry" icon="⏱">
+      <SectionCard title="Session & Token Policy" desc="Configure session duration and token expiry" icon={<Clock size={17} />}>
         <div className="ss-grid-2">
           <Inp label="Session Timeout" value={sessionTimeout} onChange={setSessionTimeout} suffix="mins"  hint="Inactive sessions are logged out" />
           <Inp label="JWT Expiry"      value={jwtExpiry}      onChange={setJwtExpiry}      suffix="hours" hint="API token lifetime" />
         </div>
       </SectionCard>
 
-      <SectionCard title="Login Security" desc="Brute-force protection and lockout policy" icon="🛡">
+      <SectionCard title="Login Security" desc="Brute-force protection and lockout policy" icon={<ShieldAlert size={17} />}>
         <div className="ss-grid-2" style={{ marginBottom: 16 }}>
           <Inp label="Max Login Attempts"  value={maxLoginAttempts} onChange={setMaxLoginAttempts} suffix="tries" hint="Before account lockout" />
           <Inp label="Lockout Duration"    value={lockoutDuration}  onChange={setLockoutDuration}  suffix="mins"  hint="After exceeding attempts" />
@@ -360,7 +408,7 @@ function SecurityTab() {
         </SettingRow>
       </SectionCard>
 
-      <SectionCard title="Audit & Compliance" desc="Data retention and audit trail settings" icon="📋">
+      <SectionCard title="Audit & Compliance" desc="Data retention and audit trail settings" icon={<FileText size={17} />}>
         <div className="ss-grid-2">
           <Inp label="Audit Log Retention" value={auditRetention} onChange={setAuditRetention} suffix="days" hint="Logs older than this are archived" />
         </div>
@@ -392,7 +440,7 @@ function BillingTab() {
     <>
       {testMode && (
         <div className="ss-billing-warn">
-          <span className="ss-billing-warn__icon">⚠️</span>
+          <span className="ss-billing-warn__icon"><AlertTriangle size={18} /></span>
           <div>
             <div className="ss-billing-warn__title">Test Mode Active</div>
             <div className="ss-billing-warn__sub">No real transactions will be processed. Disable before going live.</div>
@@ -400,7 +448,7 @@ function BillingTab() {
         </div>
       )}
 
-      <SectionCard title="Payment Gateway" desc="Configure your payment processor" icon="💳">
+      <SectionCard title="Payment Gateway" desc="Configure your payment processor" icon={<CreditCard size={17} />}>
         <div className="ss-grid-2">
           <Select label="Gateway" value={gateway} onChange={setGateway} options={[
             { value: "razorpay", label: "Razorpay" },
@@ -427,7 +475,7 @@ function BillingTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Tax & Invoicing" desc="Configure tax rates and invoice settings" icon="🧾">
+      <SectionCard title="Tax & Invoicing" desc="Configure tax rates and invoice settings" icon={<Receipt size={17} />}>
         <div className="ss-grid-2" style={{ marginBottom: 16 }}>
           <Inp label="Tax Name" value={taxName} onChange={setTaxName} placeholder="GST / VAT / Sales Tax" />
           <Inp label="Tax Rate" value={taxRate} onChange={setTaxRate} suffix="%" hint="Applied to all subscription invoices" />
@@ -437,7 +485,7 @@ function BillingTab() {
         <SettingRow label="Proration on Plan Changes" desc="Charge or credit the difference when customers upgrade or downgrade mid-cycle"><Toggle on={prorations} onChange={setProrations} /></SettingRow>
       </SectionCard>
 
-      <SectionCard title="Trial & Grace Period" desc="Configure free trial and overdue grace windows" icon="⏳">
+      <SectionCard title="Trial & Grace Period" desc="Configure free trial and overdue grace windows" icon={<Calendar size={17} />}>
         <div className="ss-grid-2">
           <Inp label="Free Trial Duration"  value={trialDays}   onChange={setTrialDays}   suffix="days" hint="Applied to all new company signups" />
           <Inp label="Payment Grace Period" value={gracePeriod} onChange={setGracePeriod} suffix="days" hint="Before account is suspended on overdue payment" />
@@ -464,19 +512,19 @@ function NotificationsTab() {
   const toggle = (key: keyof typeof events) => setEvents(prev => ({ ...prev, [key]: !prev[key] }));
 
   const EVENT_LABELS = [
-    { key: "newCompany"     as const, label: "New Company Signup",   desc: "When a new company registers",               icon: "🏢" },
-    { key: "suspendCompany" as const, label: "Company Suspended",    desc: "When a company is suspended",                icon: "⛔" },
-    { key: "newTicket"      as const, label: "New Support Ticket",   desc: "When a customer opens a ticket",             icon: "🎫" },
-    { key: "criticalLog"    as const, label: "Critical Audit Event", desc: "When a CRITICAL severity event is logged",   icon: "🔴" },
-    { key: "paymentFail"    as const, label: "Payment Failure",      desc: "When a subscription payment fails",          icon: "💳" },
-    { key: "planUpgrade"    as const, label: "Plan Upgrade",         desc: "When a company upgrades their plan",         icon: "⬆️" },
-    { key: "userSignup"     as const, label: "New User Signup",      desc: "When any user registers",                    icon: "👤" },
-    { key: "exportRequest"  as const, label: "Data Export Request",  desc: "When a user requests a data export",         icon: "📤" },
+    { key: "newCompany"     as const, label: "New Company Signup",   desc: "When a new company registers",               icon: Building2 },
+    { key: "suspendCompany" as const, label: "Company Suspended",    desc: "When a company is suspended",                icon: Ban },
+    { key: "newTicket"      as const, label: "New Support Ticket",   desc: "When a customer opens a ticket",             icon: Ticket },
+    { key: "criticalLog"    as const, label: "Critical Audit Event", desc: "When a CRITICAL severity event is logged",   icon: AlertTriangle },
+    { key: "paymentFail"    as const, label: "Payment Failure",      desc: "When a subscription payment fails",          icon: CreditCard },
+    { key: "planUpgrade"    as const, label: "Plan Upgrade",         desc: "When a company upgrades their plan",         icon: ArrowUpRight },
+    { key: "userSignup"     as const, label: "New User Signup",      desc: "When any user registers",                    icon: User },
+    { key: "exportRequest"  as const, label: "Data Export Request",  desc: "When a user requests a data export",         icon: Upload },
   ];
 
   return (
     <>
-      <SectionCard title="Alert Channels" desc="Configure where system alerts are delivered" icon="🔔">
+      <SectionCard title="Alert Channels" desc="Configure where system alerts are delivered" icon={<Bell size={17} />}>
         <SettingRow label="Email Alerts"        desc="Send system alerts to the support email address">      <Toggle on={emailAlerts}    onChange={setEmailAlerts}    /></SettingRow>
         <SettingRow label="Slack Notifications" desc="Post alerts to a Slack channel via webhook">          <Toggle on={slackAlerts}    onChange={setSlackAlerts}    /></SettingRow>
         {slackAlerts && <div style={{ marginTop: 12 }}><Inp label="Slack Webhook URL" value={slackWebhook} onChange={setSlackWebhook} placeholder="https://hooks.slack.com/services/…" hint="Create a webhook in your Slack App settings" /></div>}
@@ -484,9 +532,18 @@ function NotificationsTab() {
         {webhookEnabled && <div style={{ marginTop: 12 }}><Inp label="Webhook Endpoint URL" value={webhookUrl} onChange={setWebhookUrl} placeholder="https://yourapp.com/webhooks/system" hint="Must return 200 OK to acknowledge receipt" /></div>}
       </SectionCard>
 
-      <SectionCard title="Event Subscriptions" desc="Choose which events trigger notifications" icon="📡">
-        {EVENT_LABELS.map(({ key, label, desc, icon }) => (
-          <SettingRow key={key} label={`${icon} ${label}`} desc={desc}>
+      <SectionCard title="Event Subscriptions" desc="Choose which events trigger notifications" icon={<Radio size={17} />}>
+        {EVENT_LABELS.map(({ key, label, desc, icon: EventIcon }) => (
+          <SettingRow
+            key={key}
+            label={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                <EventIcon size={15} style={{ opacity: 0.8 }} />
+                {label}
+              </span>
+            }
+            desc={desc}
+          >
             <Toggle on={events[key]} onChange={() => toggle(key)} />
           </SettingRow>
         ))}
@@ -532,7 +589,7 @@ function HealthTab() {
 
   return (
     <>
-      <SectionCard title="System Resources" desc="Real-time server resource utilisation" icon="📊">
+      <SectionCard title="System Resources" desc="Real-time server resource utilisation" icon={<BarChart3 size={17} />}>
         <div className="ss-metrics-grid">
           {metrics.map(m => (
             <div key={m.label}>
@@ -548,7 +605,7 @@ function HealthTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Service Status" desc="Health of all connected platform services" icon="🩺">
+      <SectionCard title="Service Status" desc="Health of all connected platform services" icon={<Activity size={17} />}>
         <div className="ss-services">
           <div className="ss-services__head">
             {["Service","Status","Latency","Uptime","Region"].map(h => (
@@ -567,7 +624,7 @@ function HealthTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Maintenance Actions" desc="System cache and data management tools" icon="🔧">
+      <SectionCard title="Maintenance Actions" desc="System cache and data management tools" icon={<Wrench size={17} />}>
         <div className="ss-actions-grid">
           {actions.map(btn => (
             <button key={btn.label} onClick={btn.action}
@@ -575,7 +632,17 @@ function HealthTab() {
               onMouseEnter={e => (e.currentTarget.style.borderColor = btn.col)}
               onMouseLeave={e => (e.currentTarget.style.borderColor = btn.done ? "var(--ss-action-done-br)" : "var(--ss-border)")}>
               <div className={`ss-action-btn__title ${btn.done ? "ss-action-btn__title--done" : ""}`}>
-                {btn.loading ? "Running…" : btn.done ? "✓ Done!" : btn.label}
+                {btn.loading ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Loader2 size={13} className="ss-spin" /> Running…
+                  </span>
+                ) : btn.done ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Check size={13} /> Done!
+                  </span>
+                ) : (
+                  btn.label
+                )}
               </div>
               <div className="ss-action-btn__sub">{btn.sub}</div>
             </button>
@@ -583,7 +650,7 @@ function HealthTab() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Build Information" desc="Current deployment details" icon="📦">
+      <SectionCard title="Build Information" desc="Current deployment details" icon={<Box size={17} />}>
         <div className="ss-build-grid">
           {[
             ["App Version",  "v3.14.2"],
@@ -605,14 +672,21 @@ function HealthTab() {
 }
 
 // ─── TAB DEFINITIONS ──────────────────────────────────────────────────────────
-const TABS = [
-  { id: "general",       label: "General",      icon: "⚙️",  comp: GeneralTab       },
-  { id: "email",         label: "Email / SMTP", icon: "📧",  comp: EmailTab         },
-  { id: "whatsapp",      label: "WhatsApp",      icon: "💬",  comp: WhatsAppTab      },
-  { id: "security",      label: "Security",      icon: "🔐",  comp: SecurityTab      },
-  { id: "billing",       label: "Billing",       icon: "💳",  comp: BillingTab       },
-  { id: "notifications", label: "Notifications", icon: "🔔",  comp: NotificationsTab },
-  { id: "health",        label: "System Health", icon: "🩺",  comp: HealthTab        },
+interface TabItem {
+  id: "general" | "email" | "whatsapp" | "security" | "billing" | "notifications" | "health";
+  label: string;
+  icon: LucideIcon;
+  comp: React.ComponentType;
+}
+
+const TABS: readonly TabItem[] = [
+  { id: "general",       label: "General",       icon: Settings,      comp: GeneralTab       },
+  { id: "email",         label: "Email / SMTP",  icon: Mail,          comp: EmailTab         },
+  { id: "whatsapp",      label: "WhatsApp",       icon: MessageSquare, comp: WhatsAppTab      },
+  { id: "security",      label: "Security",       icon: Shield,        comp: SecurityTab      },
+  { id: "billing",       label: "Billing",        icon: CreditCard,    comp: BillingTab       },
+  { id: "notifications", label: "Notifications",  icon: Bell,          comp: NotificationsTab },
+  { id: "health",        label: "System Health",  icon: Activity,      comp: HealthTab        },
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
@@ -633,8 +707,8 @@ export default function SystemSettings() {
           <p className="ss-header__sub">Configure platform behaviour, integrations, and security policies.</p>
         </div>
         <div className="ss-header__actions">
-          <button className="ss-btn-reset">↺ Reset Defaults</button>
-          <button className="ss-btn-export">⬇ Export Config</button>
+          <button className="ss-btn-reset"><RotateCcw size={14} /> Reset Defaults</button>
+          <button className="ss-btn-export"><Download size={14} /> Export Config</button>
         </div>
       </div>
 
@@ -643,12 +717,13 @@ export default function SystemSettings() {
 
         {/* Sidebar */}
         <div className="ss-sidebar">
-          {TABS.map((tab, i) => {
+          {TABS.map((tab) => {
             const active = activeTab === tab.id;
+            const TabIcon = tab.icon;
             return (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`ss-sidebar__btn ${active ? "ss-sidebar__btn--active" : ""}`}>
-                <span className="ss-sidebar__icon">{tab.icon}</span>
+                <span className="ss-sidebar__icon"><TabIcon size={16} /></span>
                 <span>{tab.label}</span>
                 {active && <span className="ss-sidebar__dot" />}
               </button>
@@ -661,7 +736,17 @@ export default function SystemSettings() {
           <div className="ss-breadcrumb">
             <span className="ss-breadcrumb__root">Settings</span>
             <span className="ss-breadcrumb__sep">›</span>
-            <span className="ss-breadcrumb__active">{current.icon} {current.label}</span>
+            <span className="ss-breadcrumb__active">
+              {(() => {
+                const CurrentIcon = current.icon;
+                return (
+                  <>
+                    <CurrentIcon size={16} />
+                    <span>{current.label}</span>
+                  </>
+                );
+              })()}
+            </span>
           </div>
           <Comp />
         </div>

@@ -1,24 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTheme, tokens } from "../context/ThemeContext";
+import { useState } from "react";
+import { useTheme } from "../context/ThemeContext";
 
-function useWindowWidth() {
-  const [width, setWidth] = useState<number>(1024);
-  useEffect(() => {
-    const handleResize = () => setWidth(window.innerWidth);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  return width;
-}
-
-// ── Public types ──────────────────────────────────────────────────────────
-// One bar/point per period returned by the API. `label` is whatever the
-// backend gives us for that period (e.g. "Feb 2026", "Feb", "Week 3"...),
-// so the x-axis always reflects the real date range instead of a fixed
-// Jan–Jun window.
 export interface GrowthPoint {
   label: string;
   value: number;
@@ -30,22 +14,18 @@ interface PlatformGrowthChartProps {
   error?: string | null;
 }
 
-const COLOR_CYCLE = ["#10b981", "#14b8a6", "#059669", "#0d9488", "#34d399", "#2dd4bf"];
+const SVG_W = 500;
+const SVG_H = 205;
+const PAD_LEFT = 32;
+const PAD_RIGHT = 14;
+const PAD_TOP = 28;
+const PAD_BOTTOM = 26;
+const PLOT_W = SVG_W - PAD_LEFT - PAD_RIGHT;
+const PLOT_H = SVG_H - PAD_TOP - PAD_BOTTOM;
+const MAX_BAR_W = 38;
 
-// SVG coordinate system — all math lives here, no DOM measurements needed
-const SVG_W = 420;
-const SVG_H = 180;
-const PAD_LEFT = 28;
-const PAD_BOTTOM = 24;
-const PLOT_W = SVG_W - PAD_LEFT;
-const PLOT_H = SVG_H - PAD_BOTTOM;
-const MAX_BAR_W = 28;
-
-// Rounds a max value up to a "nice" number so grid ticks look clean
-// (e.g. 83 -> 100, 340 -> 400, 7 -> 10). Only used for larger scales;
-// see computeGridTicks below for how small-scale counts are handled.
 function niceMax(rawMax: number): number {
-  if (rawMax <= 0) return 10;
+  if (rawMax <= 0) return 5;
   const magnitude = Math.pow(10, Math.floor(Math.log10(rawMax)));
   const normalized = rawMax / magnitude;
   let niceNormalized;
@@ -56,50 +36,29 @@ function niceMax(rawMax: number): number {
   return niceNormalized * magnitude;
 }
 
-// Builds the Y-axis scale + grid ticks. Fixed "max * 0.25/0.5/0.75/1"
-// quarter-division breaks down on small integer counts (e.g. max = 2
-// produced ticks 0.5/1/1.5/2, which round to 1/1/2/2 — visibly duplicated
-// labels). This instead picks as many ticks as the scale can support
-// without repeating a rounded value, and always includes the true max as
-// the top tick.
 function computeGridTicks(rawMax: number): { max: number; ticks: number[] } {
-  if (rawMax <= 0) return { max: 1, ticks: [1] };
+  if (rawMax <= 0) return { max: 6, ticks: [2, 4, 6] };
 
-  // Small counts (e.g. companies created per month) stay as whole numbers
-  // scaled to the smallest count that still fits the data cleanly.
-  const max = rawMax <= 10 ? Math.max(1, Math.ceil(rawMax)) : niceMax(rawMax);
-  const tickCount = Math.min(4, max);
+  // Provide headroom so bars and line markers don't awkwardly hit the top ceiling
+  const max = rawMax <= 5 ? 6 : rawMax <= 10 ? 12 : niceMax(rawMax * 1.15);
+  const tickCount = max <= 6 ? 3 : 4;
   const step = max / tickCount;
 
   const rounded = Array.from({ length: tickCount }, (_, i) => Math.round(step * (i + 1)));
   const unique = Array.from(new Set(rounded)).sort((a, b) => a - b);
 
-  // Rounding can occasionally leave the top tick short of the true max —
-  // snap it back so bars never render above the topmost gridline.
   if (unique[unique.length - 1] !== max) unique[unique.length - 1] = max;
 
   return { max, ticks: unique };
 }
 
-// ── Component ────────────────────────────────────────────────────────────
-// NOTE: This component renders ONLY the chart body (legend + SVG chart).
-// The card shell, title, and badge live in the parent (DashboardPage).
-// Data now comes entirely from props — the parent is responsible for
-// fetching it from the real API and normalizing it into GrowthPoint[].
 export default function PlatformGrowthChart({
   data,
   loading = false,
   error = null,
 }: PlatformGrowthChartProps) {
   const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
   const [hovered, setHovered] = useState<number | null>(null);
-  const width = useWindowWidth();
-  const isSmall = width <= 1000;
-  const isMedium = width <= 1300;
-  const legendFont = isSmall ? "0.72rem" : isMedium ? "0.8rem" : "0.9rem";
-  const legendGap = isSmall ? "8px" : isMedium ? "10px" : "12px";
-  const legendMb = isSmall ? "10px" : isMedium ? "12px" : "16px";
 
   const chartData = data ?? [];
   const N = chartData.length;
@@ -108,11 +67,11 @@ export default function PlatformGrowthChart({
     return (
       <div
         style={{
-          height: SVG_H + 40,
+          height: SVG_H + 30,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: isDark ? t.textMuted : "#94a3b8",
+          color: "var(--crm-muted, #94a3b8)",
           fontSize: "0.85rem",
         }}
       >
@@ -125,11 +84,11 @@ export default function PlatformGrowthChart({
     return (
       <div
         style={{
-          height: SVG_H + 40,
+          height: SVG_H + 30,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#ef4444",
+          color: "var(--crm-red, #ef4444)",
           fontSize: "0.85rem",
           textAlign: "center",
           padding: "0 12px",
@@ -144,11 +103,11 @@ export default function PlatformGrowthChart({
     return (
       <div
         style={{
-          height: SVG_H + 40,
+          height: SVG_H + 30,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: isDark ? t.textMuted : "#94a3b8",
+          color: "var(--crm-muted, #94a3b8)",
           fontSize: "0.85rem",
         }}
       >
@@ -161,11 +120,12 @@ export default function PlatformGrowthChart({
   const { max: MAX_VALUE, ticks: gridTicks } = computeGridTicks(Math.max(...values, 0));
 
   const SLOT_W = PLOT_W / N;
-  const BAR_W = Math.min(MAX_BAR_W, SLOT_W * 0.6);
+  const BAR_W = Math.min(MAX_BAR_W, SLOT_W * 0.54);
 
+  const baselineY = PAD_TOP + PLOT_H;
   const barX = (i: number) => PAD_LEFT + i * SLOT_W + (SLOT_W - BAR_W) / 2;
   const barCx = (i: number) => PAD_LEFT + i * SLOT_W + SLOT_W / 2;
-  const barTopY = (value: number) => PLOT_H - (value / MAX_VALUE) * PLOT_H;
+  const barTopY = (value: number) => PAD_TOP + PLOT_H - (value / MAX_VALUE) * PLOT_H;
   const barH = (value: number) => (value / MAX_VALUE) * PLOT_H;
 
   const linePath = chartData
@@ -173,11 +133,10 @@ export default function PlatformGrowthChart({
     .join(" ");
 
   const areaPath =
-    `M ${barCx(0)} ${PLOT_H} ` +
+    `M ${barCx(0)} ${baselineY} ` +
     chartData.map((d, i) => `L ${barCx(i)} ${barTopY(d.value)}`).join(" ") +
-    ` L ${barCx(N - 1)} ${PLOT_H} Z`;
+    ` L ${barCx(N - 1)} ${baselineY} Z`;
 
-  const colorFor = (i: number) => COLOR_CYCLE[i % COLOR_CYCLE.length];
   const formatTick = (tick: number) =>
     tick >= 1000 ? `${(tick / 1000).toFixed(tick % 1000 === 0 ? 0 : 1)}k` : Math.round(tick).toString();
 
@@ -187,59 +146,68 @@ export default function PlatformGrowthChart({
       <div
         style={{
           display: "flex",
-          gap: legendGap,
-          flexWrap: "wrap",
-          marginBottom: legendMb,
+          alignItems: "center",
+          gap: "18px",
+          marginBottom: "16px",
         }}
       >
-        {chartData.map((d, i) => (
-          <div
-            key={`${d.label}-${i}`}
-            style={{ display: "flex", alignItems: "center", gap: "5px" }}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "2px",
+              background: "#2563eb",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "12.5px",
+              color: "var(--crm-text, #1e293b)",
+              fontWeight: 600,
+            }}
           >
-            <div
-              style={{
-                width: "7px",
-                height: "7px",
-                borderRadius: "50%",
-                background: colorFor(i),
-                boxShadow: `0 0 5px ${colorFor(i)}90`,
-              }}
-            />
-            <span
-              style={{
-                fontSize: legendFont,
-                color: isDark ? t.textMuted : "#111827",
-                fontWeight: 800,
-              }}
-            >
-              {d.label}
-            </span>
-          </div>
-        ))}
+            New Companies
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span
+            style={{
+              width: "16px",
+              height: "2px",
+              background: "#3b82f6",
+              borderRadius: "1px",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "12.5px",
+              color: "var(--crm-muted, #64748b)",
+              fontWeight: 500,
+            }}
+          >
+            Growth Trend
+          </span>
+        </div>
       </div>
 
-      {/* SVG chart — bars + grid + trend line all in one coordinate space */}
+      {/* SVG Bar Chart with Dashed Trend Line */}
       <svg
         width="100%"
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
         style={{ overflow: "visible", display: "block" }}
         aria-label="Platform growth bar chart"
+        onMouseLeave={() => setHovered(null)}
       >
         <defs>
-          <linearGradient id="pgAreaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#10b981" stopOpacity={isDark ? "0.2" : "0.12"} />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+          {/* Subtle area gradient under trend line */}
+          <linearGradient id="crmGrowthAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity={isDark ? "0.16" : "0.10"} />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
           </linearGradient>
-          {chartData.map((d, i) => (
-            <linearGradient key={i} id={`pgBar${i}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colorFor(i)} stopOpacity={hovered === i ? "1" : "0.85"} />
-              <stop offset="100%" stopColor={colorFor(i)} stopOpacity={hovered === i ? "0.75" : "0.55"} />
-            </linearGradient>
-          ))}
         </defs>
 
-        {/* Y-axis grid lines + labels */}
+        {/* Horizontal grid lines + Y-axis labels */}
         {gridTicks.map((tick, idx) => {
           const y = barTopY(tick);
           return (
@@ -247,18 +215,18 @@ export default function PlatformGrowthChart({
               <line
                 x1={PAD_LEFT}
                 y1={y}
-                x2={SVG_W}
+                x2={SVG_W - PAD_RIGHT}
                 y2={y}
-                stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}
+                stroke={isDark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0"}
                 strokeWidth="1"
-                strokeDasharray="3 3"
               />
               <text
-                x={PAD_LEFT - 6}
-                y={y + 4}
+                x={PAD_LEFT - 8}
+                y={y + 3.5}
                 textAnchor="end"
-                fontSize="9"
-                fill={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
+                fontSize="10"
+                fontWeight="500"
+                fill="var(--crm-muted, #64748b)"
               >
                 {formatTick(tick)}
               </text>
@@ -266,106 +234,50 @@ export default function PlatformGrowthChart({
           );
         })}
 
-        {/* Area fill under trend line */}
-        <path d={areaPath} fill="url(#pgAreaGrad)" />
-
-        {/* Trend line */}
-        <path
-          d={linePath}
-          fill="none"
-          stroke={isDark ? "rgba(16,185,129,0.55)" : "rgba(16,185,129,0.48)"}
-          strokeWidth="1.5"
-          strokeDasharray="4 3"
-          strokeLinecap="round"
+        {/* Baseline Axis Line */}
+        <line
+          x1={PAD_LEFT}
+          y1={baselineY}
+          x2={SVG_W - PAD_RIGHT}
+          y2={baselineY}
+          stroke={isDark ? "rgba(255, 255, 255, 0.12)" : "#cbd5e1"}
+          strokeWidth="1"
         />
 
-        {/* Bars */}
+        {/* Subtle area fill under trend line */}
+        <path d={areaPath} fill="url(#crmGrowthAreaGrad)" pointerEvents="none" />
+
+        {/* Clear Solid Blue Bars with rounded top corners */}
         {chartData.map((d, i) => {
           const x = barX(i);
           const bH = barH(d.value);
-          const y = PLOT_H - bH;
-          const isHov = hovered === i;
-          const color = colorFor(i);
+          const y = baselineY - bH;
+          const r = Math.min(5, bH);
+
+          // Path with flat bottom and cleanly rounded top corners
+          const barPath =
+            bH > 0
+              ? `M ${x} ${baselineY} L ${x} ${y + r} Q ${x} ${y} ${x + r} ${y} L ${x + BAR_W - r} ${y} Q ${x + BAR_W} ${y} ${x + BAR_W} ${y + r} L ${x + BAR_W} ${baselineY} Z`
+              : "";
 
           return (
-            <g key={i}>
-              {/* Hover hit area (full column height) */}
-              <rect
-                x={PAD_LEFT + i * SLOT_W}
-                y={0}
-                width={SLOT_W}
-                height={PLOT_H}
-                fill="transparent"
-                style={{ cursor: "pointer" }}
-                onMouseEnter={() => setHovered(i)}
-                onMouseLeave={() => setHovered(null)}
-              />
-
-              {/* Bar */}
-              <rect
-                x={x}
-                y={y}
-                width={BAR_W}
-                height={bH}
-                rx={6}
-                ry={6}
-                fill={`url(#pgBar${i})`}
-                style={{
-                  filter: isHov
-                    ? `drop-shadow(0 -3px 8px ${color}70)`
-                    : `drop-shadow(0 -2px 4px ${color}30)`,
-                  transition: "filter 0.2s",
-                  transform: isHov ? `scaleX(1.08)` : "scaleX(1)",
-                  transformOrigin: `${x + BAR_W / 2}px ${y + bH}px`,
-                }}
-              />
-
-              {/* Shimmer on bar top */}
-              <rect
-                x={x + 3}
-                y={y + 2}
-                width={Math.max(BAR_W - 6, 0)}
-                height={Math.min(bH * 0.35, 20)}
-                rx={4}
-                fill="rgba(255,255,255,0.18)"
-                style={{ pointerEvents: "none" }}
-              />
-
-              {/* Tooltip on hover */}
-              {isHov && (
-                <g>
-                  <rect
-                    x={barCx(i) - 20}
-                    y={y - 26}
-                    width={40}
-                    height={20}
-                    rx={5}
-                    fill={isDark ? "#1f2937" : "#0f172a"}
-                    stroke={color}
-                    strokeWidth="0.8"
-                  />
-                  <text
-                    x={barCx(i)}
-                    y={y - 12}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fontWeight="700"
-                    fill="#fff"
-                  >
-                    {d.value}
-                  </text>
-                </g>
+            <g key={i} pointerEvents="none">
+              {/* Clear Solid Bar */}
+              {bH > 0 && (
+                <path
+                  d={barPath}
+                  fill="#2563eb"
+                />
               )}
 
-              {/* Period label */}
+              {/* Month label */}
               <text
                 x={barCx(i)}
-                y={SVG_H - 4}
+                y={SVG_H - 6}
                 textAnchor="middle"
-                fontSize="10"
-                fontWeight="600"
-                fill={isHov ? color : isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)"}
-                style={{ transition: "fill 0.2s" }}
+                fontSize="11"
+                fontWeight="500"
+                fill="var(--crm-muted, #64748b)"
               >
                 {d.label}
               </text>
@@ -373,19 +285,78 @@ export default function PlatformGrowthChart({
           );
         })}
 
-        {/* Trend line dots */}
-        {chartData.map((d, i) => (
-          <circle
-            key={i}
-            cx={barCx(i)}
-            cy={barTopY(d.value)}
-            r={hovered === i ? 5 : 3}
-            fill={colorFor(i)}
-            stroke={isDark ? "#111827" : "#fff"}
-            strokeWidth="2"
-            style={{ transition: "r 0.15s", pointerEvents: "none" }}
+        {/* Dashed Trend line */}
+        <path
+          d={linePath}
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth="1.8"
+          strokeDasharray="4 3"
+          strokeLinecap="round"
+          pointerEvents="none"
+        />
+
+        {/* Trend Dots on the dashed line */}
+        {chartData.map((d, i) => {
+          const cx = barCx(i);
+          const cy = barTopY(d.value);
+          const hasValue = d.value > 0;
+
+          return (
+            <circle
+              key={i}
+              cx={cx}
+              cy={cy}
+              r={hasValue ? 4 : 2.5}
+              fill={hasValue ? (isDark ? "#0f172a" : "#ffffff") : "#3b82f6"}
+              stroke="#3b82f6"
+              strokeWidth={hasValue ? 2 : 1}
+              pointerEvents="none"
+            />
+          );
+        })}
+
+        {/* Hit testing columns across each bar */}
+        {chartData.map((_, i) => (
+          <rect
+            key={`hit-${i}`}
+            x={PAD_LEFT + i * SLOT_W}
+            y={0}
+            width={SLOT_W}
+            height={SVG_H}
+            fill="transparent"
+            style={{ cursor: "pointer", pointerEvents: "all" }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseMove={() => setHovered(i)}
           />
         ))}
+
+        {/* Floating Number Badge on Hover (No Carets, No Column Overlays) */}
+        {hovered !== null && chartData[hovered] && (
+          <g pointerEvents="none">
+            <rect
+              x={barCx(hovered) - 16}
+              y={Math.max(barTopY(chartData[hovered].value) - 24, 4)}
+              width={32}
+              height={19}
+              rx={4}
+              fill={isDark ? "#1e293b" : "#0f172a"}
+              stroke={isDark ? "rgba(255, 255, 255, 0.18)" : "#334155"}
+              strokeWidth="1"
+              style={{ filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35))" }}
+            />
+            <text
+              x={barCx(hovered)}
+              y={Math.max(barTopY(chartData[hovered].value) - 10, 18)}
+              textAnchor="middle"
+              fontSize="11"
+              fontWeight="700"
+              fill="#ffffff"
+            >
+              {chartData[hovered].value}
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   );

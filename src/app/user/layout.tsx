@@ -30,7 +30,7 @@ function getNavFromPath(pathname: string | null): string {
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [activeNav, setActiveNav] = useState("Dashboard");
+  const [activeNav, setActiveNav] = useState(() => getNavFromPath(pathname));
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -60,6 +60,7 @@ React.useEffect(() => {
  return (
    <div
      data-theme={isDark ? "dark" : "light"}
+     className={isDark ? "dark" : "light"}
      style={{ minHeight: "100vh", background: t.bg }}
    >
      <Toaster

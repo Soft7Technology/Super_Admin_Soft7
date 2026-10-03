@@ -1,22 +1,16 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme, tokens } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
+import { ChevronRight } from "lucide-react";
 
-interface LogEntry {
+export interface LogEntry {
   id:    string;
   msg:   string;
   actor: string;
   time:  string;
   sev:   string;
 }
-
-const SEV: Record<string, { bg: string; color: string; icon: string }> = {
-  success: { bg:"rgba(16,185,129,0.14)", color:"#059669", icon:"v" },
-  warn:    { bg:"rgba(251,191,36,0.1)",  color:"#d97706", icon:"!" },
-  danger:  { bg:"rgba(239,68,68,0.1)",   color:"#dc2626", icon:"x" },
-  info:    { bg:"rgba(16,185,129,0.12)", color:"#10b981", icon:"i" },
-};
 
 function useWindowWidth() {
   const [width, setWidth] = useState<number>(1024);
@@ -31,12 +25,13 @@ function useWindowWidth() {
 
 // Helper to get initials
 function getInitials(name: string) {
-  if (!name) return "U";
-  const parts = name.split(" ");
+  if (!name) return "TB";
+  const clean = name.replace(/^@/, "").trim();
+  const parts = clean.split(" ");
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
-  return name.substring(0, 2).toUpperCase();
+  return clean.substring(0, 2).toUpperCase();
 }
 
 export default function AuditLogs({
@@ -50,145 +45,191 @@ export default function AuditLogs({
 }) {
   const router = useRouter();
   const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
   const width = useWindowWidth();
   const isSmall  = width <= 1000;
   const isMedium = width <= 1300;
 
-  // Responsive sizes
-  const titleSize   = isSmall ? "0.92rem" : isMedium ? "1rem"   : "1.18rem";
-  const viewAllSize = isSmall ? "0.78rem" : isMedium ? "0.85rem" : "0.95rem";
-  const headerPad   = isSmall ? "14px 16px 12px" : isMedium ? "18px 20px 16px" : "24px 26px 20px";
-  const msgFont     = isSmall ? "0.82rem" : isMedium ? "0.88rem" : "0.95rem";
-  const metaFont    = isSmall ? "0.72rem" : isMedium ? "0.78rem" : "0.82rem";
-  const avatarSize  = isSmall ? 32 : isMedium ? 36 : 40;
-  const dotSize     = isSmall ? 10 : 12;
+  // Responsive typography
+  const titleSize   = isSmall ? "0.92rem" : isMedium ? "1rem"   : "1.05rem";
+  const viewAllSize = isSmall ? "0.78rem" : isMedium ? "0.82rem" : "0.88rem";
+  const headerPad   = isSmall ? "14px 16px 12px" : "16px 20px";
+  const msgFont     = isSmall ? "0.82rem" : isMedium ? "0.86rem" : "0.9rem";
+  const metaFont    = isSmall ? "0.72rem" : "0.76rem";
+  const avatarSize  = isSmall ? 30 : 34;
+  const dotSize     = isSmall ? 9 : 10;
 
-  // Green theme color
-  const themeGreen = "#10b981";
+  // Group logs (This Week / Today)
+  const todayLogs = logs.filter(l => l.time.includes("min") || l.time.includes("hour") || l.time.includes("Today"));
+  const earlierLogs = logs.filter(l => !l.time.includes("min") && !l.time.includes("hour") && !l.time.includes("Today"));
 
-  // Group logs artificially for the timeline view demonstration
-  const todayLogs = logs.filter(l => l.time.includes("min") || l.time.includes("hour"));
-  const earlierLogs = logs.filter(l => !l.time.includes("min") && !l.time.includes("hour"));
-
-  const groups = [];
+  const groups: { title: string; items: LogEntry[] }[] = [];
   if (todayLogs.length > 0) groups.push({ title: "Today", items: todayLogs });
   if (earlierLogs.length > 0) groups.push({ title: "This Week", items: earlierLogs });
-  if (groups.length === 0 && logs.length > 0) groups.push({ title: "Today", items: logs });
+  if (groups.length === 0 && logs.length > 0) groups.push({ title: "This Week", items: logs });
 
   return (
-    <div style={{ background:t.surface, border:`2px solid ${t.border}`, borderRadius: isSmall ? "12px" : "16px", overflow:"hidden", boxShadow:"0 8px 24px rgba(16,185,129,0.08)", transition:"background 0.3s,border-color 0.3s" }}>
-      <div style={{ padding: headerPad, borderBottom:`2px solid ${t.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontWeight:800, fontSize: titleSize, color:t.text }}>Audit Logs</span>
-       <span
-  onClick={() => router.push("/user/audit-logs")}
-  style={{
-    fontSize: viewAllSize,
-    color: themeGreen,
-    cursor: "pointer",
-    fontWeight: 800,
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-  }}
->
-  View All
-
-  <svg
-    width={isSmall ? "12" : "14"}
-    height={isSmall ? "12" : "14"}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-  >
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-</span>
+    <div
+      style={{
+        background: "var(--crm-card-bg, #ffffff)",
+        border: "1px solid var(--crm-border, #e2e8f0)",
+        borderRadius: "8px",
+        overflow: "hidden",
+        boxShadow: "var(--crm-shadow, 0 1px 3px rgba(0,0,0,0.04))",
+        transition: "background 0.2s, border-color 0.2s",
+      }}
+    >
+      {/* ─── Header ─── */}
+      <div
+        style={{
+          padding: headerPad,
+          borderBottom: "1px solid var(--crm-border, #e2e8f0)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span
+          style={{
+            fontWeight: 700,
+            fontSize: titleSize,
+            color: "var(--crm-title, #0f172a)",
+          }}
+        >
+          Audit Logs
+        </span>
+        <span
+          onClick={() => router.push("/user/audit-logs")}
+          style={{
+            fontSize: viewAllSize,
+            color: "var(--crm-primary, #206bc4)",
+            cursor: "pointer",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+          }}
+        >
+          View All <ChevronRight size={13} strokeWidth={2.5} />
+        </span>
       </div>
-      
+
       {loading ? (
-        <div style={{ padding:"30px", textAlign:"center", color:t.textFaint, fontSize: msgFont }}>Loading activity...</div>
+        <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: msgFont }}>
+          Loading audit logs...
+        </div>
       ) : error ? (
-        <div style={{ padding:"30px", textAlign:"center", color:t.textFaint, fontSize: msgFont }}>{error}</div>
+        <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-red, #ef4444)", fontSize: msgFont }}>
+          {error}
+        </div>
       ) : (
-        <div style={{ padding: isSmall ? "16px 20px" : "20px 28px" }}>
+        <div style={{ padding: isSmall ? "16px 18px" : "18px 22px" }}>
           {logs.length === 0 ? (
-            <div style={{ padding:"20px", textAlign:"center", color:t.textFaint, fontSize: msgFont }}>No activity found</div>
+            <div style={{ padding: "20px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: msgFont }}>
+              No audit logs found
+            </div>
           ) : (
             groups.map((group, groupIdx) => (
-              <div key={group.title} style={{ marginBottom: groupIdx === groups.length - 1 ? "0" : "24px" }}>
-                <h3 style={{ 
-                  fontSize: isSmall ? "0.9rem" : "1rem", 
-                  fontWeight: 700, 
-                  color: t.text, 
-                  marginBottom: "16px",
-                  marginTop: "0" 
-                }}>
+              <div key={group.title} style={{ marginBottom: groupIdx === groups.length - 1 ? "0" : "20px" }}>
+                <h3
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    color: "var(--crm-title, #0f172a)",
+                    marginBottom: "16px",
+                    marginTop: "0",
+                  }}
+                >
                   {group.title}
                 </h3>
-                
+
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {group.items.map((log, i) => {
                     const isLastInGroup = i === group.items.length - 1;
                     const isLastOverall = groupIdx === groups.length - 1 && isLastInGroup;
-                    const s = SEV[log.sev] ?? SEV["info"];
-                    
-                    return (
-                      <div key={log.id} style={{ position: "relative", paddingLeft: isSmall ? "24px" : "32px", paddingBottom: isLastInGroup ? "0" : "24px" }}>
-                        {/* Vertical Line */}
-                        {!isLastOverall && (
-                          <div style={{
-                            position: "absolute",
-                            left: isSmall ? "4px" : "5px",
-                            top: `${dotSize + 4}px`,
-                            bottom: isLastInGroup ? "-24px" : "-4px",
-                            width: "2px",
-                            background: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
-                            zIndex: 1
-                          }} />
-                        )}
-                        
-                        {/* Dot */}
-                        <div style={{
-                          position: "absolute",
-                          left: "0",
-                          top: "4px",
-                          width: `${dotSize}px`,
-                          height: `${dotSize}px`,
-                          borderRadius: "50%",
-                          background: themeGreen,
-                          border: `2px solid ${t.surface}`,
-                          zIndex: 2,
-                          boxShadow: `0 0 0 2px ${isDark ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.1)'}`
-                        }} />
 
-                        {/* Content */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                          {/* Avatar */}
-                          <div style={{
-                            width: `${avatarSize}px`, 
-                            height: `${avatarSize}px`, 
+                    return (
+                      <div
+                        key={log.id}
+                        style={{
+                          position: "relative",
+                          paddingLeft: isSmall ? "24px" : "28px",
+                          paddingBottom: isLastInGroup ? "4px" : "20px",
+                        }}
+                      >
+                        {/* Vertical Connecting Line */}
+                        {!isLastOverall && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: isSmall ? "4px" : "4.5px",
+                              top: `${dotSize + 4}px`,
+                              bottom: isLastInGroup ? "-20px" : "-4px",
+                              width: "2px",
+                              background: "var(--crm-border, #e2e8f0)",
+                              zIndex: 1,
+                            }}
+                          />
+                        )}
+
+                        {/* Timeline Marker Dot */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: "0",
+                            top: "5px",
+                            width: `${dotSize}px`,
+                            height: `${dotSize}px`,
                             borderRadius: "50%",
-                            background: s.bg, 
-                            color: s.color,
-                            display: "flex", 
-                            alignItems: "center", 
-                            justifyContent: "center",
-                            fontSize: isSmall ? "11px" : "13px",
-                            fontWeight: 800,
-                            flexShrink: 0,
-                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`
-                          }}>
+                            background: "var(--crm-primary, #206bc4)",
+                            border: "2px solid var(--crm-card-bg, #ffffff)",
+                            zIndex: 2,
+                            boxShadow: "0 0 0 2px rgba(32, 107, 196, 0.2)",
+                          }}
+                        />
+
+                        {/* Log Item Content */}
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                          {/* Round Initial Avatar */}
+                          <div
+                            style={{
+                              width: `${avatarSize}px`,
+                              height: `${avatarSize}px`,
+                              borderRadius: "50%",
+                              background: "var(--crm-primary-lt, rgba(32, 107, 196, 0.12))",
+                              color: "var(--crm-primary, #206bc4)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: isSmall ? "11px" : "12px",
+                              fontWeight: 700,
+                              flexShrink: 0,
+                              border: "1px solid var(--crm-border, #e2e8f0)",
+                            }}
+                          >
                             {getInitials(log.actor)}
                           </div>
-                          
-                          {/* Text */}
-                          <div style={{ flex: 1, marginTop: "-2px" }}>
-                            <div style={{ fontSize: msgFont, color: t.textSub, fontWeight: 600, lineHeight: 1.4 }}>
+
+                          {/* Message & Timestamp */}
+                          <div style={{ flex: 1, minWidth: 0, marginTop: "-1px" }}>
+                            <div
+                              style={{
+                                fontSize: msgFont,
+                                color: "var(--crm-title, #0f172a)",
+                                fontWeight: 600,
+                                lineHeight: 1.4,
+                                wordBreak: "break-word",
+                              }}
+                            >
                               {log.msg}
                             </div>
-                            <div style={{ fontSize: metaFont, color: t.textFaint, marginTop: "4px", fontWeight: 500 }}>
+                            <div
+                              style={{
+                                fontSize: metaFont,
+                                color: "var(--crm-muted, #64748b)",
+                                marginTop: "3px",
+                                fontWeight: 400,
+                              }}
+                            >
                               {log.time}
                             </div>
                           </div>
@@ -205,4 +246,3 @@ export default function AuditLogs({
     </div>
   );
 }
-

@@ -5,6 +5,7 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import { User } from "../types";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Eye, EyeOff } from "lucide-react";
 
 interface ResetPasswordModalProps {
   user: User;
@@ -73,8 +74,9 @@ export function ResetPasswordModal({ user, onClose }: ResetPasswordModalProps) {
                 type="button"
                 className="au-password-toggle"
                 onClick={() => setShowNew(!showNew)}
+                title={showNew ? "Hide password" : "Show password"}
               >
-                👁
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>

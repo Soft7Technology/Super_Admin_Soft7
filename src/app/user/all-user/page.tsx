@@ -20,6 +20,10 @@ import {
   ShieldOff,
   ShieldCheck,
   Trash2,
+  Users,
+  UserCheck,
+  Shield,
+  Award,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -222,26 +226,26 @@ export default function AllUsers() {
         <KPI
           label="Total Users"
           value={stats.totalUsers.toLocaleString()}
-          icon="👥"
-          color="#2bc386"
+          icon={<Users size={20} strokeWidth={2} />}
+          color="#206bc4"
         />
         <KPI
           label="Active Users"
           value={stats.activeUsers.toLocaleString()}
-          icon="✅"
-          color="#34d399"
+          icon={<UserCheck size={20} strokeWidth={2} />}
+          color="#2fb344"
         />
         <KPI
           label="Admin Users"
           value={stats.adminUsers.toLocaleString()}
-          icon="🛡"
-          color="#6366f1"
+          icon={<Shield size={20} strokeWidth={2} />}
+          color="#4299e1"
         />
         <KPI
           label="Premium Users"
           value={stats.premiumUsers.toLocaleString()}
-          icon="⭐"
-          color="#f59e0b"
+          icon={<Award size={20} strokeWidth={2} />}
+          color="#f59f00"
         />
       </div>
 
@@ -346,7 +350,15 @@ export default function AllUsers() {
                       className="au-user-cell"
                       title={`View profile of ${user.name}`}
                     >
-                      <div className="au-avatar au-avatar--table" style={{ background: user.av }}>
+                      <div
+                        className="au-avatar au-avatar--table"
+                        style={{
+                          background:
+                            !user.av || user.av === "#10b981" || user.av === "#00a67d"
+                              ? "var(--crm-primary, #206bc4)"
+                              : user.av,
+                        }}
+                      >
                         {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <span className="au-user-name">{user.name}</span>
