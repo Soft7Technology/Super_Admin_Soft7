@@ -202,6 +202,14 @@ const STATUS_COLORS: Record<Status, string> = {
   TRIAL: "#f59e0b",
 };
 
+
+const STATUS_DOT_COLORS: Record<Status, string> = {
+  ACTIVE: "#10b981", // green
+  SUSPENDED: "#ef4444", // red
+  INACTIVE: "#3b82f6", // blue
+  TRIAL: "#f59e0b", // amber
+};
+
 function Badge({ status }: { status: Status }) {
   return (
     <span className={`mc-badge mc-badge--${status}`}>
@@ -219,7 +227,7 @@ function StatusDropdown({
   company: Company;
   onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
 }) {
-  const color = STATUS_COLORS[company.status];
+  const dotColor = STATUS_DOT_COLORS[company.status];
 
   const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as Status;
@@ -236,29 +244,24 @@ function StatusDropdown({
   };
 
   return (
-    <select
-      className="mc-status-dropdown"
-      value={company.status}
-      onChange={handleChange}
-      onClick={(e) => e.stopPropagation()}
-      title="Change status"
-      style={{
-        background: `${color}18`,
-        color,
-        border: `1px solid ${color}55`,
-        borderRadius: 999,
-        padding: "4px 10px 4px 12px",
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: "pointer",
-        outline: "none",
-        appearance: "none",
-        WebkitAppearance: "none",
-      }}
-    >
-      <option value="ACTIVE">● Active</option>
-      <option value="SUSPENDED">● Suspended</option>
-    </select>
+    <span className="mc-status-inline">
+      <span
+        className="mc-status-dot"
+        style={{ background: dotColor }}
+        aria-hidden="true"
+      />
+
+      <select
+        className="mc-status-dropdown"
+        value={company.status}
+        onChange={handleChange}
+        onClick={(e) => e.stopPropagation()}
+        title="Change status"
+      >
+        <option value="ACTIVE">Active</option>
+        <option value="SUSPENDED">Suspended</option>
+      </select>
+    </span>
   );
 }
 
@@ -458,10 +461,9 @@ function CompanyModal({
 }) {
   const [name, setName] = useState(company.name || "");
   const [email, setEmail] = useState(company.email || "");
- const [phone, setPhone] = useState(
-   company.phone === "—" ? "" : company.phone || "",
- );
-
+  const [phone, setPhone] = useState(
+    company.phone === "—" ? "" : company.phone || "",
+  );
 
   const [businessId, setBusinessId] = useState(company.businessId || "");
   const [reason, setReason] = useState("");
@@ -488,15 +490,15 @@ function CompanyModal({
       return;
     }
 
-  if (!phone.trim()) {
-    setErr("Company phone is required.");
-    return;
-  }
+    if (!phone.trim()) {
+      setErr("Company phone is required.");
+      return;
+    }
 
-if (phone.replace(/\D/g, "").length < 10) {
-  setErr("Please enter a valid company phone number.");
-  return;
-}
+    if (phone.replace(/\D/g, "").length < 10) {
+      setErr("Please enter a valid company phone number.");
+      return;
+    }
 
     if (!businessId.trim()) {
       setErr("Business ID is required.");
@@ -728,8 +730,6 @@ function CompanyDetailModal({
             </div>
 
             <div>
-          
-
               <div className="mc-detail__domain">{company.email}</div>
 
               <div style={{ marginTop: 6 }}>
@@ -1038,7 +1038,7 @@ export default function ManageCompanies() {
   const [pagination, setPagination] =
     useState<CompaniesPagination>(DEFAULT_PAGINATION);
 
-    const router = useRouter();
+  const router = useRouter();
   // ─────────────────────────────────────────────────────────────────────────
   // FETCH COMPANIES
   // ─────────────────────────────────────────────────────────────────────────
@@ -1161,7 +1161,6 @@ export default function ManageCompanies() {
 
   const safePage = Math.min(currentPage, totalPages);
 
-  // Backend already paginates.
   const paginatedCompanies = filtered;
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1338,8 +1337,6 @@ export default function ManageCompanies() {
   // MODAL HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
-
-
   const openEdit = (company: Company) => {
     setEditTarget(company);
     setShowModal(true);
@@ -1487,11 +1484,7 @@ export default function ManageCompanies() {
           <table className="mc-table">
             <thead>
               <tr>
-                <th
-                  style={{
-                    width: "50px",
-                  }}
-                >
+                <th className="mc-th-check">
                   <input
                     type="checkbox"
                     checked={selectAll}
@@ -1507,12 +1500,6 @@ export default function ManageCompanies() {
 
                 <th>BUSINESS ID</th>
 
-                <th>CREDIT BALANCE</th>
-
-                <th>STATUS</th>
-
-                <th>JOINED</th>
-
                 <th>ACTIONS</th>
               </tr>
             </thead>
@@ -1520,7 +1507,7 @@ export default function ManageCompanies() {
             <tbody>
               {paginatedCompanies.map((company) => (
                 <tr key={company.id}>
-                  <td>
+                  <td className="mc-td-check">
                     <input
                       type="checkbox"
                       checked={selectedCompanies.includes(company.id)}
@@ -1539,36 +1526,33 @@ export default function ManageCompanies() {
                         {company.name.slice(0, 2).toUpperCase()}
                       </div>
 
-                      <button
-                        type="button"
-                        className="company-name-link"
-                        onClick={() =>
-                          router.push(`/user/manage-companies/${company.id}`)
-                        }
-                      >
-                        {company.name}
-                      </button>
+                      <div className="mc-company-info">
+                        <button
+                          type="button"
+                          className="company-name-link"
+                          title={company.name}
+                          onClick={() =>
+                            router.push(`/user/manage-companies/${company.id}`)
+                          }
+                        >
+                          {company.name}
+                        </button>
+
+                        <div className="mc-company-status">
+                          <StatusDropdown
+                            company={company}
+                            onStatusChange={handleStatusChange}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </td>
 
-                  <td>{company.email}</td>
+                  <td title={company.email}>{company.email}</td>
 
                   <td>{company.phone}</td>
 
                   <td>{company.businessId || "—"}</td>
-
-                  <td className="mc-credit-cell">
-                    ₹{Number(company.creditBalance || 0).toFixed(2)}
-                  </td>
-
-                  <td>
-                    <StatusDropdown
-                      company={company}
-                      onStatusChange={handleStatusChange}
-                    />
-                  </td>
-
-                  <td>{company.createdAt}</td>
 
                   <td>
                     <div className="mc-actions">
