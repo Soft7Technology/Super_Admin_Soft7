@@ -184,7 +184,7 @@
 }
 
 /* ─── Card Basics ───────────────────────────────────────────── */
-.crm-card {
+.crm-dashboard .crm-card {
   background: var(--crm-card-bg);
   border: 1px solid var(--crm-border);
   border-radius: 8px;
@@ -193,7 +193,7 @@
   flex-direction: column;
 }
 
-.crm-card__header {
+.crm-dashboard .crm-card__header {
   padding: 16px 20px;
   border-bottom: 1px solid var(--crm-border);
   display: flex;
@@ -202,27 +202,27 @@
   gap: 12px;
 }
 
-.crm-card__title {
+.crm-dashboard .crm-card__title {
   font-size: 15px;
   font-weight: 700;
   color: var(--crm-title);
   margin: 0;
 }
 
-.crm-card__subtitle {
+.crm-dashboard .crm-card__subtitle {
   font-size: 12px;
   color: var(--crm-muted);
   font-weight: 400;
   margin-top: 2px;
 }
 
-.crm-card__actions {
+.crm-dashboard .crm-card__actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.crm-card__body {
+.crm-dashboard .crm-card__body {
   padding: 20px;
 }
 
@@ -508,7 +508,7 @@
 .crm-activity-list {
   display: flex;
   flex-direction: column;
-  divide-y: 1px solid var(--crm-border);
+  border-top: 1px solid var(--crm-border);
 }
 
 .crm-activity-item {
@@ -723,3 +723,62 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  .crm-dashboard {
+    padding: 16px 12px 36px;
+  }
+  .crm-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .crm-time-range-wrap {
+    align-items: flex-start !important;
+    width: 100%;
+  }
+  .crm-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+  .crm-table {
+    min-width: 600px;
+  }
+  .crm-dashboard .crm-card__header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .crm-dashboard .crm-card__body {
+    padding: 14px 12px;
+  }
+  .crm-chart-stat__val {
+    font-size: 22px;
+  }
+  .crm-funnel-label {
+    width: 75px;
+    font-size: 12px;
+  }
+  .crm-funnel-val {
+    width: 45px;
+    font-size: 12px;
+  }
+  .crm-task-item,
+  .crm-leader-item,
+  .crm-churn-item {
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .crm-dashboard {
+    padding: 12px 10px 32px;
+  }
+  .crm-header__title {
+    font-size: 20px;
+  }
+  .crm-stat-card {
+    padding: 14px 12px;
+  }
+}
+

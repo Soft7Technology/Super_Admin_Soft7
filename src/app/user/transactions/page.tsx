@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import "@/app/globals.css";
 import styles from "./transactions.module.css";
 
 /* ── Types ─────────────────────────────────────────────────── */

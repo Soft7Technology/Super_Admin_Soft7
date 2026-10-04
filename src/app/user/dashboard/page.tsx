@@ -197,18 +197,25 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
         flexDirection: "column",
         alignItems: "flex-end",
         gap: "5px",
+        maxWidth: "100%",
       }}
+      className="crm-time-range-wrap"
     >
       <div
         style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: "center",
           padding: "3px 4px",
           borderRadius: "9999px",
           background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
           border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0"}`,
           boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.04)",
+          maxWidth: "100%",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          whiteSpace: "nowrap",
         }}
+        className="no-scrollbar"
       >
         {options.map((opt) => {
           const isActive = selected === opt;
@@ -237,6 +244,7 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
                   ? "0 2px 8px rgba(32, 107, 196, 0.35)"
                   : "none",
                 transition: "all 0.2s ease",
+                flexShrink: 0,
               }}
             >
               {opt}
@@ -252,6 +260,7 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
           color: isDark ? "rgba(255, 255, 255, 0.4)" : "#64748b",
           paddingRight: "6px",
         }}
+        suppressHydrationWarning
       >
         Last updated: {lastUpdated || "—"}
       </span>

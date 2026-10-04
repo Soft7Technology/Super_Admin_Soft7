@@ -1322,10 +1322,11 @@
 
 .mc-credit-input input[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 .mc-search-wrap-small {
   max-width: 420px;
-  flex: 0 0 420px;
+  width: 100%;
 }
 .mc-filter-bar-top {
   margin-bottom: 24px;
@@ -1524,5 +1525,66 @@
 .company-name-link:hover {
   color: var(--mc-accent);
   text-decoration: underline;
-  
+}
+
+@media (max-width: 768px) {
+  .mc-root {
+    padding: 16px 12px 40px;
+  }
+
+  .mc-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .mc-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .mc-filter-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .mc-search-wrap {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .mc-sort-select {
+    width: 100%;
+  }
+
+  .mc-filter-bar {
+    gap: 10px;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mc-filter-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .mc-table-wrap,
+  .mc-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mc-table {
+    min-width: 700px;
+  }
+
+  .mc-modal-box {
+    width: calc(100% - 24px);
+    margin: 12px;
+    max-width: 100%;
+  }
 }

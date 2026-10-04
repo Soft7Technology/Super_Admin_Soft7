@@ -3,6 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import "./support-tickets.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import {
+  Ticket as TicketIcon,
+  Clock,
+  CheckCircle2,
+  Zap,
+  Search,
+  Calendar,
+  MessageSquare,
+  Tag,
+  ChevronDown,
+  X,
+  Check,
+  Send,
+  RefreshCw,
+  AlertCircle,
+  Loader2,
+  Eye,
+} from "lucide-react";
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "WAITING";
 type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -103,6 +121,20 @@ const safeMessages = (ticket: Ticket): Message[] =>
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
+const AVATAR_GRADIENTS = [
+  "linear-gradient(135deg, #206bc4, #4299e1)",
+  "linear-gradient(135deg, #2fb344, #48bb78)",
+  "linear-gradient(135deg, #f59f00, #ed8936)",
+  "linear-gradient(135deg, #ae3ec9, #9f7aea)",
+  "linear-gradient(135deg, #17a2b8, #38b2ac)",
+];
+
+const getAvatarBg = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+};
+
 function KPI({
   label,
   value,
@@ -113,20 +145,24 @@ function KPI({
   label: string;
   value: string;
   sub: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
 }) {
   return (
     <div className="st-kpi">
-      <div className="st-kpi__orb" style={{ background: `${color}14` }} />
-      <div className="st-kpi__top">
-        <span className="st-kpi__label">{label}</span>
-        <div className="st-kpi__icon" style={{ background: `${color}1A` }}>
+      <div className="st-kpi__left">
+        <span className="st-kpi__icon" style={{ background: `${color}18`, color }}>
           {icon}
+        </span>
+        <div className="st-kpi__info">
+          <div className="st-kpi__label">{label.toUpperCase()}</div>
+          <div className="st-kpi__value">{value}</div>
+          <div className="st-kpi__accent-bar" style={{ background: color }} />
         </div>
       </div>
-      <div className="st-kpi__value">{value}</div>
-      <div className="st-kpi__sub">{sub}</div>
+      <span className="st-kpi__sub">
+        {sub}
+      </span>
     </div>
   );
 }
@@ -154,18 +190,31 @@ function StatusBadge({ status }: { status: TicketStatus }) {
 function PriorityBadge({ priority }: { priority: TicketPriority }) {
   const meta = PRIORITY_META[priority] || { label: "Normal", icon: "" };
   return (
-    <span className={`st-priority-badge st-priority-badge--${priority}`}>
-      {meta.icon ? `${meta.icon} ` : ""}{meta.label}
+    <span className={`st-priority-badge st-priority-badge--${priority.toLowerCase()}`}>
+      <span className="st-priority-badge__dot" />
+      {meta.label}
     </span>
   );
 }
 
 function Ava({ init, size = 34, col }: { init: string; size?: number; col?: string }) {
-  const bg = col ?? AVATAR_COLORS[init] ?? "#6C5CE7";
+  const bg = col ?? getAvatarBg(init);
   return (
     <div
       className="st-ava"
-      style={{ width: size, height: size, background: bg, fontSize: size * 0.3 }}
+      style={{
+        width: size,
+        height: size,
+        background: bg,
+        fontSize: Math.max(10, Math.round(size * 0.36)),
+        fontWeight: 700,
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#ffffff",
+        flexShrink: 0,
+      }}
     >
       {init}
     </div>
@@ -280,9 +329,9 @@ function ConvPanel({
   };
 
   const metaItems = [
-    { key: "🗓 Created",   val: ticket.created },
-    { key: "🕐 Updated",   val: ticket.updated },
-    { key: "💬 Messages",  val: String(messages.length) },
+    { label: "Created",  icon: <Calendar size={13} />, val: ticket.created },
+    { label: "Updated",  icon: <Clock size={13} />,    val: ticket.updated },
+    { label: "Messages", icon: <MessageSquare size={13} />, val: String(messages.length) },
   ];
 
   return (
@@ -292,14 +341,18 @@ function ConvPanel({
         <div className="st-conv__header-top">
           <div className="st-conv__header-left">
             <div className="st-conv__header-badges">
-              <span className="st-conv__ticket-num">#{ticket.id}</span>
-              <StatusBadge status={ticket.status} />
+              <span className="st-conv__ticket-num" title={`#${ticket.id}`}>
+                #{ticket.id.length > 10 ? ticket.id.slice(0, 8) : ticket.id}
+              </span>
               <PriorityBadge priority={ticket.priority} />
             </div>
             <div className="st-conv__subject">{ticket.subject}</div>
             <div className="st-conv__meta-row">
-              <div className="st-conv__company-logo" style={{ background: ticket.companyCol }}>
-                {ticket.companyLogo}
+              <div
+                className="st-conv__company-logo"
+                style={{ background: getAvatarBg(ticket.company || ticket.user || "C") }}
+              >
+                {ticket.companyLogo || (ticket.company ? ticket.company[0].toUpperCase() : "C")}
               </div>
               <span className="st-conv__meta-text">{ticket.company}</span>
               <span className="st-conv__meta-sep">·</span>
@@ -311,7 +364,10 @@ function ConvPanel({
                 </>
               )}
               <span className="st-conv__meta-sep">·</span>
-              <span className="st-conv__meta-text">{CAT_ICON[ticket.category] ?? "📋"} {ticket.category}</span>
+              <span className="st-conv__meta-text st-conv__meta-cat">
+                <Tag size={12} />
+                <span>{ticket.category}</span>
+              </span>
             </div>
           </div>
 
@@ -319,6 +375,7 @@ function ConvPanel({
             {/* Status dropdown */}
             <div className="st-status-dd">
               <button
+                type="button"
                 className={`st-status-dd__trigger st-status-badge--${ticket.status}`}
                 style={{ borderColor: `${STATUS_META[ticket.status].dot}35` }}
                 onClick={() => setShowStatus(v => !v)}
@@ -327,7 +384,11 @@ function ConvPanel({
                   className="st-status-dd__trigger-dot"
                   style={{ background: STATUS_META[ticket.status].dot }}
                 />
-                {STATUS_META[ticket.status].label} ▾
+                <span>{STATUS_META[ticket.status].label}</span>
+                <ChevronDown
+                  size={13}
+                  className={`st-status-dd__chevron ${showStatus ? "st-status-dd__chevron--open" : ""}`}
+                />
               </button>
 
               {showStatus && (
@@ -336,6 +397,7 @@ function ConvPanel({
                     ([key, meta]) => (
                       <button
                         key={key}
+                        type="button"
                         className="st-status-dd__option"
                         style={{
                           background:  ticket.status === key ? `${meta.dot}14` : "transparent",
@@ -345,8 +407,8 @@ function ConvPanel({
                         onClick={() => { void onStatusChange(ticket.id, key); setShowStatus(false); }}
                       >
                         <span className="st-status-dd__option-dot" style={{ background: meta.dot }} />
-                        {meta.label}
-                        {ticket.status === key && <span className="st-status-dd__check">✓</span>}
+                        <span>{meta.label}</span>
+                        {ticket.status === key && <Check size={14} className="st-status-dd__check" />}
                       </button>
                     )
                   )}
@@ -354,15 +416,26 @@ function ConvPanel({
               )}
             </div>
 
-            <button className="st-btn-close" onClick={onClose} title="Close panel">×</button>
+            <button
+              type="button"
+              className="st-btn-close"
+              onClick={onClose}
+              title="Close panel"
+              aria-label="Close panel"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
 
         {/* Meta strip */}
         <div className="st-conv__meta-strip">
-          {metaItems.map(({ key, val }) => (
-            <div key={key} className="st-conv__meta-item">
-              <span className="st-conv__meta-key">{key}</span>
+          {metaItems.map(({ label, icon, val }) => (
+            <div key={label} className="st-conv__meta-item">
+              <span className="st-conv__meta-key">
+                {icon}
+                <span>{label}</span>
+              </span>
               <span className="st-conv__meta-val">{val}</span>
             </div>
           ))}
@@ -372,8 +445,14 @@ function ConvPanel({
       {/* Messages */}
       <div className="st-messages">
         {messages.length === 0 && (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "var(--st-muted)", fontSize: 14 }}>
-            No messages yet.
+          <div className="st-messages-empty">
+            <div className="st-messages-empty__icon">
+              <MessageSquare size={26} />
+            </div>
+            <div className="st-messages-empty__title">No messages yet</div>
+            <div className="st-messages-empty__desc">
+              Write a reply below to start the conversation with {ticket.user || "the customer"}.
+            </div>
           </div>
         )}
 
@@ -419,43 +498,54 @@ function ConvPanel({
             onChange={e => setReply(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void send(); }}
             placeholder="Write your reply… (Ctrl+Enter to send)"
-            rows={3}
+            rows={1}
           />
 
           {feedback && (
             <div className={`st-reply__feedback st-reply__feedback--${feedback.type}`}>
-              {feedback.type === "success" && "✓ "}
-              {feedback.type === "error" && "✕ "}
-              {feedback.type === "warning" && "⚠ "}
-              {feedback.text}
+              {feedback.type === "success" && <Check size={14} />}
+              {feedback.type === "error" && <AlertCircle size={14} />}
+              {feedback.type === "warning" && <AlertCircle size={14} />}
+              <span>{feedback.text}</span>
             </div>
           )}
 
           <div className="st-reply__actions">
             <div className="st-reply__left">
               <button
+                type="button"
                 className="st-btn-resolve"
                 onClick={() => void onStatusChange(ticket.id, "RESOLVED")}
               >
-                ✓ Mark Resolved
+                <Check size={14} />
+                <span>Mark Resolved</span>
               </button>
               <button
+                type="button"
                 className="st-btn-close-ticket"
                 onClick={() => void onStatusChange(ticket.id, "CLOSED")}
               >
-                ✕ Close Ticket
+                <X size={14} />
+                <span>Close Ticket</span>
               </button>
             </div>
 
             <button
+              type="button"
               className={`st-btn-send ${reply.trim() ? "st-btn-send--active" : "st-btn-send--inactive"}`}
               onClick={() => void send()}
               disabled={sending || !reply.trim()}
             >
               {sending ? (
-                <><span className="st-btn-send__spinner" /> Sending…</>
+                <>
+                  <Loader2 size={14} className="st-btn-send__spinner" />
+                  <span>Sending…</span>
+                </>
               ) : (
-                <>Send Reply →</>
+                <>
+                  <Send size={13} />
+                  <span>Send Reply</span>
+                </>
               )}
             </button>
           </div>
@@ -463,8 +553,13 @@ function ConvPanel({
       ) : (
         <div className="st-conv__closed-footer">
           <div className="st-conv__closed-text">This ticket has been closed.</div>
-          <button className="st-btn-reopen" onClick={() => void onStatusChange(ticket.id, "OPEN")}>
-            ↺ Reopen Ticket
+          <button
+            type="button"
+            className="st-btn-reopen"
+            onClick={() => void onStatusChange(ticket.id, "OPEN")}
+          >
+            <RefreshCw size={13} />
+            <span>Reopen Ticket</span>
           </button>
         </div>
       )}
@@ -872,10 +967,10 @@ export default function SupportTickets() {
 
           {/* KPI grid */}
           <div className="st-kpi-grid">
-            <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon="🎫" color="#34d399" />
-            <KPI label="In Progress"    value={String(inProgress)} sub="being handled"              icon="⚙️" color="#FBBF24" />
-            <KPI label="Resolved (7d)"  value={String(resolved)}   sub="closed this week"           icon="✅" color="#818CF8" />
-            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon="⚡" color="#34d399" />
+            <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon={<TicketIcon size={20} />}    color="#4299e1" />
+            <KPI label="In Progress"    value={String(inProgress)} sub="being handled"              icon={<Clock size={20} />}         color="#f59f00" />
+            <KPI label="Resolved (7d)"  value={String(resolved)}   sub="closed this week"           icon={<CheckCircle2 size={20} />}  color="#2fb344" />
+            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon={<Zap size={20} />}           color="#206bc4" />
           </div>
 
           {/* Main grid */}
@@ -886,7 +981,7 @@ export default function SupportTickets() {
               <div className="st-filters st-filters-row">
                 {/* Search */}
                 <div className="st-search-wrap">
-                  <span className="st-search-icon">🔍</span>
+                  <span className="st-search-icon"><Search size={15} /></span>
                   <input
                     className="st-search-input"
                     value={search}
@@ -895,40 +990,32 @@ export default function SupportTickets() {
                   />
                 </div>
 
-                {/* Status pills */}
-                <div className="st-group st-status-group">
-                  {(["ALL", "OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"] as const).map(s => (
-                    <button
-                      key={s}
-                      onClick={() => { setStatusF(s); setPage(1); }}
-                      className={`st-pill ${statusF === s ? "st-pill--active" : ""}`}
-                      style={
-                        statusF === s && s !== "ALL"
-                          ? {
-                              background: `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-bg)`,
-                              color:      `var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
-                              borderColor:`var(--st-status-${s === "IN_PROGRESS" ? "inprog" : s.toLowerCase()}-col)`,
-                            }
-                          : statusF === s
-                          ? { background: "var(--st-surf3)", color: "var(--st-accent2)", borderColor: "rgba(16,185,129,0.35)" }
-                          : {}
-                      }
-                    >
-                      {s === "ALL" ? "All Status" : STATUS_META[s]?.label}
-                    </button>
-                  ))}
-                </div>
+                {/* Status Segmented Tab Switcher */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                  <div className="st-tab-switcher">
+                    {(["ALL", "OPEN", "IN_PROGRESS", "WAITING", "RESOLVED", "CLOSED"] as const).map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => { setStatusF(s); setPage(1); }}
+                        className={`st-tab-btn ${statusF === s ? "st-tab-btn--active" : ""}`}
+                      >
+                        {s === "ALL" ? "All" : STATUS_META[s]?.label}
+                      </button>
+                    ))}
+                  </div>
 
-                {/* Count */}
-                <div className="st-count-group">
-                  <span className="st-filter-count">
-                    {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
-                  </span>
+                  {/* Count */}
+                  <div className="st-count-group">
+                    <span className="st-filter-count">
+                      {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Reference Table matching screenshot */}
-              <div className="st-table-wrapper">
+              {/* Reference Table matching screenshot (desktop) */}
+              <div className="st-table-wrapper crm-desktop-table">
                 <table className="st-table">
                   <thead>
                     <tr>
@@ -968,7 +1055,7 @@ export default function SupportTickets() {
                             >
                               <div
                                 className="st-company-logo"
-                                style={{ background: "#10b981" }}
+                                style={{ background: getAvatarBg(ticket.user || "User") }}
                               >
                                 {nameInitial}
                               </div>
@@ -994,7 +1081,7 @@ export default function SupportTickets() {
                     {filtered.length === 0 && (
                       <tr>
                         <td colSpan={5} className="st-table-empty">
-                          <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+                          <Search size={36} color="var(--st-muted)" style={{ opacity: 0.5, marginBottom: 8 }} />
                           <div style={{ fontWeight: 700, fontSize: 15, color: "var(--st-title)" }}>No tickets found</div>
                           <div style={{ fontSize: 13, color: "var(--st-muted)" }}>Try adjusting your filters or search term.</div>
                         </td>
@@ -1002,6 +1089,121 @@ export default function SupportTickets() {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Cards (<= 768px) using the shared global crm-card system */}
+              <div className="crm-mobile-cards">
+                {paginated.map(ticket => {
+                  const priorityDisplay =
+                    PRIORITY_META[ticket.priority]?.label ??
+                    (ticket.priority === "MEDIUM"
+                      ? "Normal"
+                      : ticket.priority.charAt(0) + ticket.priority.slice(1).toLowerCase());
+
+                  const nameInitial =
+                    (ticket.user?.replace(/^User\s+/, "") || ticket.user || "U")
+                      .trim()
+                      .charAt(0)
+                      .toUpperCase() || "U";
+
+                  const priorityColor =
+                    ticket.priority === "URGENT"
+                      ? { bg: "rgba(214, 57, 57, 0.15)", col: "var(--danger)" }
+                      : ticket.priority === "HIGH"
+                      ? { bg: "rgba(245, 159, 0, 0.15)", col: "var(--warn)" }
+                      : ticket.priority === "MEDIUM"
+                      ? { bg: "rgba(32, 107, 196, 0.15)", col: "var(--accent)" }
+                      : { bg: "rgba(100, 116, 139, 0.15)", col: "var(--muted)" };
+
+                  return (
+                    <div
+                      key={ticket.id}
+                      className="crm-card"
+                      onClick={() => void loadSingleTicket(ticket.id)}
+                    >
+                      {/* Header row: Avatar, Name & Email, Status Badge */}
+                      <div className="crm-card__header">
+                        <div className="crm-card__identity">
+                          <div
+                            className="crm-card__avatar"
+                            style={{ background: getAvatarBg(ticket.user || "User") }}
+                          >
+                            {nameInitial}
+                          </div>
+                          <div className="crm-card__text">
+                            <span className="crm-card__title">{ticket.user}</span>
+                            <span className="crm-card__sub">{ticket.userEmail || "—"}</span>
+                          </div>
+                        </div>
+                        <div className="crm-card__badge">
+                          <StatusBadge status={ticket.status} />
+                        </div>
+                      </div>
+
+                      {/* Meta details: Ticket, Priority, Created, Subject */}
+                      <div className="crm-card__details">
+                        <div className="crm-card__detail-row">
+                          <span className="crm-card__detail-label">Ticket ID</span>
+                          <span className="crm-card__detail-val" style={{ fontFamily: "monospace", fontSize: "11px" }}>
+                            #{ticket.id.slice(0, 8)}
+                          </span>
+                        </div>
+
+                        <div className="crm-card__detail-row">
+                          <span className="crm-card__detail-label">Priority</span>
+                          <span
+                            className="au-chip"
+                            style={{
+                              background: priorityColor.bg,
+                              color: priorityColor.col,
+                              fontSize: "11px",
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {priorityDisplay}
+                          </span>
+                        </div>
+
+                        <div className="crm-card__detail-row">
+                          <span className="crm-card__detail-label">Created</span>
+                          <span className="crm-card__detail-val">{ticket.created}</span>
+                        </div>
+
+                        <div className="crm-card__detail-row">
+                          <span className="crm-card__detail-label">Subject</span>
+                          <span className="crm-card__detail-val" title={ticket.subject}>
+                            {ticket.subject && ticket.subject.toLowerCase() !== ticket.user?.toLowerCase()
+                              ? ticket.subject
+                              : "Support Inquiry"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Bottom Actions Toolbar */}
+                      <div className="crm-card__actions" style={{ gridTemplateColumns: "1fr" }}>
+                        <button
+                          type="button"
+                          className="crm-card__action-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void loadSingleTicket(ticket.id);
+                          }}
+                        >
+                          <Eye size={15} />
+                          <span>View Ticket & Chat</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {filtered.length === 0 && (
+                  <div className="crm-card--empty">
+                    No tickets found matching your filters.
+                  </div>
+                )}
               </div>
 
               {filtered.length > 0 && (

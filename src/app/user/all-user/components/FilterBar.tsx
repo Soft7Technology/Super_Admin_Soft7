@@ -33,7 +33,7 @@ export function FilterBar({
     <div className="au-filter-bar">
       {/* Search */}
       <div className="au-search-wrap">
-        <Search size={14} className="mc-search-icon" />
+        <Search size={14} className="au-search-icon mc-search-icon" />
         <input
           className="au-search-input"
           value={search}

@@ -13,6 +13,7 @@ import {
   Users,
   Receipt,
   ShieldCheck,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
@@ -49,10 +50,12 @@ export default function Sidebar({
   activeItem,
   onNavigate,
   onWidthChange,
+  onClose,
 }: {
   activeItem?: string;
   onNavigate?: (label: string) => void;
   onWidthChange?: (width: number) => void;
+  onClose?: () => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -87,6 +90,16 @@ export default function Sidebar({
           <span className="admin-sidebar__mark">
             <Logo />
           </span>
+          {onClose && (
+            <button
+              type="button"
+              className="admin-sidebar__close-btn"
+              onClick={onClose}
+              aria-label="Close sidebar"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         {/* ── Navigation ── */}

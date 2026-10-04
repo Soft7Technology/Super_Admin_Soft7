@@ -38,7 +38,7 @@ export default function Topbar({
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
-  const [winWidth, setWinWidth] = useState(1024);
+  const [winWidth, setWinWidth] = useState(1440);
 
   const [cleanupOpen, setCleanupOpen] = useState(false);
   const [confirmRange, setConfirmRange] = useState<string | null>(null);
@@ -180,16 +180,16 @@ useEffect(() => {
         // was a fixed 78px height — on narrow screens the row of icons
         // wouldn't fit and overflowed on top of the page content below.
         // minHeight + flexWrap lets the header grow instead of overlapping.
-        minHeight: "78px",
+        minHeight: isMobile ? "64px" : "78px",
         height: isStacked ? "auto" : "78px",
         background: t.surface,
         borderBottom: `1px solid ${t.border}`,
         display: "flex",
         flexWrap: isStacked ? "wrap" : "nowrap",
         alignItems: "center",
-        rowGap: "10px",
-        padding: isStacked ? "12px 16px" : "0 24px",
-        gap: "16px",
+        rowGap: "8px",
+        padding: isMobile ? "8px 12px" : isStacked ? "10px 16px" : "0 24px",
+        gap: isMobile ? "8px" : "16px",
         position: "sticky",
         top: 0,
         zIndex: 50,
@@ -244,7 +244,16 @@ useEffect(() => {
           order: isStacked ? 3 : 0,
         }}
       >
-        <div
+        <form
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (searchResults.length > 0) {
+              router.push(searchResults[0].route);
+              setSearch("");
+              setSf(false);
+            }
+          }}
           style={{
             background: t.inputBg,
             border: `1px solid ${sf ? t.accent : t.border}`,
@@ -259,7 +268,9 @@ useEffect(() => {
           <Search size={16} strokeWidth={2} color={t.textFaint} style={{ flexShrink: 0 }} />
 
           <input
-            type="text"
+            type="search"
+            name="q"
+            autoComplete="off"
             value={search}
             placeholder="Search users, companies, email, phone..."
             onFocus={() => setSf(true)}
@@ -273,7 +284,7 @@ useEffect(() => {
               }
             }}
             style={{
-              background: "none",
+              background: "transparent",
               border: "none",
               outline: "none",
               color: t.textSub,
@@ -281,7 +292,7 @@ useEffect(() => {
               width: "100%",
             }}
           />
-        </div>
+        </form>
 
         {sf && search.trim() !== "" && (
           <div
@@ -355,13 +366,12 @@ useEffect(() => {
           on stacked layouts instead of overlapping page content. */}
       <div
         style={{
-          marginLeft: isStacked ? 0 : "auto",
+          marginLeft: "auto",
           display: "flex",
           alignItems: "center",
-          flexWrap: "wrap",
-          gap: "8px",
+          gap: isMobile ? "6px" : "8px",
           order: isStacked ? 2 : 0,
-          flex: isStacked ? "0 0 auto" : undefined,
+          flexShrink: 0,
         }}
       >
         {/* Data Cleanup Dropdown */}
@@ -373,14 +383,14 @@ useEffect(() => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: "40px",
-              height: "40px",
-              borderRadius: "10px",
+              width: isMobile ? "34px" : "40px",
+              height: isMobile ? "34px" : "40px",
+              borderRadius: isMobile ? "8px" : "10px",
               background: t.iconBox,
               border: `1px solid ${t.border}`,
               cursor: "pointer",
               color: "#ef4444",
-              transition: "all 0.2s ease",
+              transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "scale(1.05)";
@@ -469,17 +479,18 @@ useEffect(() => {
   style={{
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    padding: "0 12px",
-    height: "40px",
-    borderRadius: "10px",
+    gap: "6px",
+    padding: isMobile ? "0 8px" : "0 12px",
+    height: isMobile ? "34px" : "40px",
+    minWidth: isMobile ? "auto" : "105px",
+    borderRadius: isMobile ? "8px" : "10px",
     background: t.iconBox,
     border: `1px solid ${t.border}`,
     color: t.text,
     fontWeight: 600,
-    fontSize: "0.9rem",
+    fontSize: isMobile ? "0.8rem" : "0.9rem",
     cursor: "pointer",
-    transition: "all 0.2s ease",
+    transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
     whiteSpace: "nowrap",
   }}
   onMouseEnter={(e) => {
@@ -489,17 +500,17 @@ useEffect(() => {
     e.currentTarget.style.transform = "none";
   }}
 >
-  <Wallet size={18} color="#206bc4" />
-  <span>₹{creditBalance}</span>
+  <Wallet size={isMobile ? 15 : 18} color="#206bc4" />
+  <span suppressHydrationWarning>₹{creditBalance}</span>
 </button>
 
         <button
           onClick={toggleTheme}
           title={isDark ? "Switch to light mode" : "Switch to dark mode"}
           style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "10px",
+            width: isMobile ? "34px" : "40px",
+            height: isMobile ? "34px" : "40px",
+            borderRadius: isMobile ? "8px" : "10px",
             background: t.iconBox,
             border: `1px solid ${t.border}`,
             display: "flex",
@@ -507,14 +518,14 @@ useEffect(() => {
             justifyContent: "center",
             cursor: "pointer",
             flexShrink: 0,
-            transition: "all 0.2s ease",
+            transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
             color: t.text,
           }}
         >
           {isDark ? (
-            <Sun size={18} strokeWidth={2} color="#f59f00" />
+            <Sun size={isMobile ? 15 : 18} strokeWidth={2} color="#f59f00" />
           ) : (
-            <Moon size={18} strokeWidth={2} color="#206bc4" />
+            <Moon size={isMobile ? 15 : 18} strokeWidth={2} color="#206bc4" />
           )}
         </button>
 
@@ -523,9 +534,9 @@ useEffect(() => {
             onClick={() => setNotificationOpen(!notificationOpen)}
             title="Notifications"
             style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "8px",
+              width: isMobile ? "32px" : "36px",
+              height: isMobile ? "32px" : "36px",
+              borderRadius: isMobile ? "6px" : "8px",
               background: t.iconBox,
               border: `1px solid ${t.border}`,
               display: "flex",
@@ -533,7 +544,7 @@ useEffect(() => {
               justifyContent: "center",
               cursor: "pointer",
               color: t.textSub,
-              transition: "all 0.2s ease",
+              transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
             }}
           >
             <Bell size={17} strokeWidth={2} />
@@ -564,7 +575,7 @@ useEffect(() => {
               borderRadius: isCompact ? "8px" : "10px",
               background: t.iconBox,
               border: `1px solid ${t.border}`,
-              transition: "all 0.15s",
+              transition: "background 0.15s ease, border-color 0.15s ease",
             }}
           >
             <div

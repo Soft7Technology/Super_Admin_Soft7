@@ -301,7 +301,7 @@ export default function AllUsers() {
           detail ? "au-main-grid--panel" : "au-main-grid--full"
         }`}
       >
-        <div className="au-table-wrapper">
+        <div className="au-table-wrapper au-desktop-only">
           <table className="au-table">
             <thead>
               <tr>
@@ -338,32 +338,32 @@ export default function AllUsers() {
                       />
                     </td>
 
-                  <td>
-                    <Link
-                      href={`/user/all-user/${user.id}`}
-                      onClick={() => {
-                        try {
-                          sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
-                          sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
-                        } catch {}
-                      }}
-                      className="au-user-cell"
-                      title={`View profile of ${user.name}`}
-                    >
-                      <div
-                        className="au-avatar au-avatar--table"
-                        style={{
-                          background:
-                            !user.av || user.av === "#10b981" || user.av === "#00a67d"
-                              ? "var(--crm-primary, #206bc4)"
-                              : user.av,
+                    <td>
+                      <Link
+                        href={`/user/all-user/${user.id}`}
+                        onClick={() => {
+                          try {
+                            sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
+                            sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
+                          } catch {}
                         }}
+                        className="au-user-cell"
+                        title={`View profile of ${user.name}`}
                       >
-                        {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </div>
-                      <span className="au-user-name">{user.name}</span>
-                    </Link>
-                  </td>
+                        <div
+                          className="au-avatar au-avatar--table"
+                          style={{
+                            background:
+                              !user.av || user.av === "#10b981" || user.av === "#00a67d"
+                                ? "var(--crm-primary, #206bc4)"
+                                : user.av,
+                          }}
+                        >
+                          {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="au-user-name">{user.name}</span>
+                      </Link>
+                    </td>
 
                     <td>{user.email}</td>
                     <td>{user.phone || "-"}</td>
@@ -401,7 +401,6 @@ export default function AllUsers() {
                     {/* ── ACTION BUTTONS COLUMN ── */}
                     <td>
                       <div className="au-action-group">
-                        {/* View Details */}
                         <button
                           className="au-action-btn"
                           title="View Details"
@@ -410,7 +409,6 @@ export default function AllUsers() {
                           <Eye size={15} />
                         </button>
 
-                        {/* Edit User */}
                         <button
                           className="au-action-btn au-action-btn--edit"
                           title="Edit User"
@@ -419,7 +417,6 @@ export default function AllUsers() {
                           <Pencil size={15} />
                         </button>
 
-                        {/* Reset Password */}
                         <button
                           className="au-action-btn au-action-btn--key"
                           title="Reset Password"
@@ -428,7 +425,6 @@ export default function AllUsers() {
                           <KeyRound size={15} />
                         </button>
 
-                        {/* Suspend / Restore */}
                         {user.status === "SUSPENDED" ? (
                           <button
                             className="au-action-btn au-action-btn--restore"
@@ -449,7 +445,6 @@ export default function AllUsers() {
                           </button>
                         )}
 
-                        {/* Delete */}
                         <button
                           className="au-action-btn au-action-btn--delete"
                           title="Delete User"
@@ -480,6 +475,166 @@ export default function AllUsers() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View (<= 768px) */}
+        <div className="au-mobile-cards">
+          {sortedUsers.length > 0 ? (
+            sortedUsers.map((user) => (
+              <div key={user.id} className="au-user-card">
+                {/* Header row: Checkbox, Avatar, Name & Email, Status Badge */}
+                <div className="au-user-card__header">
+                  <div className="au-user-card__identity">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.includes(user.id)}
+                      onChange={() => handleSelectUser(user.id)}
+                      className="au-user-card__checkbox"
+                    />
+                    <Link
+                      href={`/user/all-user/${user.id}`}
+                      onClick={() => {
+                        try {
+                          sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
+                          sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
+                        } catch {}
+                      }}
+                      className="au-user-card__link"
+                    >
+                      <div
+                        className="au-avatar au-avatar--table"
+                        style={{
+                          background:
+                            !user.av || user.av === "#10b981" || user.av === "#00a67d"
+                              ? "var(--crm-primary, #206bc4)"
+                              : user.av,
+                        }}
+                      >
+                        {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="au-user-card__name-wrap">
+                        <span className="au-user-card__name">{user.name}</span>
+                        <span className="au-user-card__email">{user.email}</span>
+                      </div>
+                    </Link>
+                  </div>
+
+                  <div className="au-user-card__status">
+                    <Badge status={user.status} />
+                  </div>
+                </div>
+
+                {/* Meta details: Phone, Role, Plan, Joined */}
+                <div className="au-user-card__details">
+                  <div className="au-user-card__detail-row">
+                    <span className="au-user-card__detail-label">Phone</span>
+                    <span className="au-user-card__detail-val">{user.phone || "—"}</span>
+                  </div>
+
+                  <div className="au-user-card__detail-row">
+                    <span className="au-user-card__detail-label">Role</span>
+                    <span
+                      className="au-chip"
+                      style={{
+                        background: `${roleColor(user.role)}15`,
+                        color: roleColor(user.role),
+                        fontSize: "11px",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      {user.role}
+                    </span>
+                  </div>
+
+                  <div className="au-user-card__detail-row">
+                    <span className="au-user-card__detail-label">Plan</span>
+                    <span
+                      className="au-chip"
+                      style={{
+                        background: `${planColor(user.plan)}15`,
+                        color: planColor(user.plan),
+                        fontSize: "11px",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      {user.plan}
+                    </span>
+                  </div>
+
+                  <div className="au-user-card__detail-row">
+                    <span className="au-user-card__detail-label">Joined</span>
+                    <span className="au-user-card__detail-val">{user.joined}</span>
+                  </div>
+                </div>
+
+                {/* Bottom Actions Toolbar */}
+                <div className="au-user-card__actions">
+                  <button
+                    className="au-user-card__action-btn"
+                    title="View Details"
+                    onClick={() => setDetail(user)}
+                  >
+                    <Eye size={14} />
+                    <span>View</span>
+                  </button>
+
+                  <button
+                    className="au-user-card__action-btn"
+                    title="Edit User"
+                    onClick={() => setEditUser(user)}
+                  >
+                    <Pencil size={14} />
+                    <span>Edit</span>
+                  </button>
+
+                  <button
+                    className="au-user-card__action-btn"
+                    title="Reset Password"
+                    onClick={() => setPasswordUser(user)}
+                  >
+                    <KeyRound size={14} />
+                    <span>Pass</span>
+                  </button>
+
+                  {user.status === "SUSPENDED" ? (
+                    <button
+                      className="au-user-card__action-btn au-user-card__action-btn--restore"
+                      title="Restore Account"
+                      disabled={suspendingId === user.id}
+                      onClick={() => handleSuspendToggle(user)}
+                    >
+                      <ShieldCheck size={14} />
+                      <span>Active</span>
+                    </button>
+                  ) : (
+                    <button
+                      className="au-user-card__action-btn au-user-card__action-btn--suspend"
+                      title="Suspend User"
+                      disabled={suspendingId === user.id}
+                      onClick={() => handleSuspendToggle(user)}
+                    >
+                      <ShieldOff size={14} />
+                      <span>Suspend</span>
+                    </button>
+                  )}
+
+                  <button
+                    className="au-user-card__action-btn au-user-card__action-btn--delete"
+                    title="Delete User"
+                    disabled={deletingId === user.id}
+                    onClick={() => handleDeleteUser(user)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="au-user-card--empty">
+              {loading ? "Loading users..." : "No users match your filters"}
+            </div>
+          )}
+        </div>
 
           {/* Pagination */}
           <div className="au-pagination">
@@ -499,7 +654,6 @@ export default function AllUsers() {
               Next
             </button>
           </div>
-        </div>
 
         {/* Detail panel (view only — no action buttons) */}
         {detail && (
