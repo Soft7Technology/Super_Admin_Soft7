@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import "../manage-companies.css";
+import Spinner from "@/components/ui/Spinner";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -646,7 +647,11 @@ export default function CreateCompanyPage() {
                     flex: "0 0 auto",
                   }}
                 >
-                  {saving ? "Creating…" : "Create Company"}
+                  {saving ? (
+                    <Spinner size="sm" text="Creating…" color="white" />
+                  ) : (
+                    "Create Company"
+                  )}
                 </button>
               </div>
             </div>

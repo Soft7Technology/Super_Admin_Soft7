@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { Users } from "lucide-react";
+import Spinner from "./ui/Spinner";
 
 interface Company {
   id:     string;
@@ -129,9 +130,7 @@ export default function CompanyOverview({
       </div>
 
       {loading ? (
-        <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: bodyFont }}>
-          Loading...
-        </div>
+        <Spinner variant="center" size="md" color="primary" text="Loading companies..." />
       ) : error ? (
         <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: bodyFont }}>
           {error}

@@ -129,30 +129,11 @@
   font-family: inherit;
   background: var(--st-bg);
   min-height: 100vh;
-  padding: 32px 88px 60px;
   color: var(--st-text);
   font-size: 14px;
   line-height: 1.5;
   transition: background 0.3s, color 0.3s;
   box-sizing: border-box;
-}
-
-@media (max-width: 1400px) {
-  .st-root {
-    padding: 28px 52px 50px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .st-root {
-    padding: 24px 36px 40px;
-  }
-}
-
-@media (max-width: 900px) {
-  .st-root {
-    padding: 20px 16px 40px;
-  }
 }
 
 /* ─── PAGE HEADER ────────────────────────────────────────── */

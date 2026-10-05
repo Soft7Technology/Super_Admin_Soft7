@@ -7,18 +7,14 @@
 .tx-page {
   font-family: inherit;
   background: var(--bg);
+  min-height: 100vh;
   width: 100%;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 24px 32px 60px;
+  max-width: 100%;
+  margin: 0;
   color: var(--text);
+  transition: background 0.3s ease, color 0.3s ease;
   box-sizing: border-box;
-}
-
-@media (max-width: 900px) {
-  .tx-page {
-    padding: 20px 16px 40px;
-  }
+  overflow-x: hidden;
 }
 
 /* ── Header ────────────────────────────────────────────────── */

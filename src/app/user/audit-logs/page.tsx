@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import "./audit-logs.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import Spinner from "@/components/ui/Spinner";
 import {
   Download,
   Trash2,
@@ -12,7 +13,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
@@ -652,10 +652,7 @@ export default function AuditLogs() {
             }`}
           >
             {exporting ? (
-              <>
-                <Loader2 size={14} className="al-btn-spinner-icon" />
-                <span>Exporting…</span>
-              </>
+              <Spinner size="sm" text="Exporting…" />
             ) : exportDone ? (
               <>
                 <Check size={14} />
@@ -674,10 +671,7 @@ export default function AuditLogs() {
             className="al-btn-clear"
           >
             {clearing ? (
-              <>
-                <Loader2 size={14} className="al-btn-spinner-icon" />
-                <span>Clearing…</span>
-              </>
+              <Spinner size="sm" text="Clearing…" />
             ) : (
               <>
                 <Trash2 size={14} />
@@ -901,10 +895,7 @@ export default function AuditLogs() {
 
         {loading ? (
           <div className="al-empty">
-            <div className="al-empty__icon">
-              <Loader2 size={36} className="al-spin-icon" />
-            </div>
-            <div className="al-empty__title">Loading activity logs…</div>
+            <Spinner variant="center" size="lg" color="primary" text="Loading activity logs…" />
           </div>
         ) : fetchError ? (
           <div className="al-empty">

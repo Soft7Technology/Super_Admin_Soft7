@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
+import Spinner from "./ui/Spinner";
 
 export interface DbUser {
   id:     string;
@@ -130,9 +131,7 @@ export default function UserManagement({
       </div>
 
       {loading ? (
-        <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: bodyFont }}>
-          Loading...
-        </div>
+        <Spinner variant="center" size="md" color="primary" text="Loading users..." />
       ) : error ? (
         <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: bodyFont }}>
           {error}
