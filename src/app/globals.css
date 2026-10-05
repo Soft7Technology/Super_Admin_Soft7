@@ -254,7 +254,7 @@ html {
   font-family: 'DM Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 15px;
   overflow-x: hidden;
-  max-width: 100vw;
+  max-width: 100%;
 }
 
 body {
@@ -264,7 +264,7 @@ body {
   font-family: 'DM Sans', 'Segoe UI', sans-serif;
   font-size: 15px;
   overflow-x: hidden;
-  max-width: 100vw;
+  max-width: 100%;
   transition:
     background 0.3s ease,
     color 0.3s ease;
@@ -546,7 +546,7 @@ a:hover {
   .user-main-layout {
     margin-left: 0 !important;
     width: 100% !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
     overflow-x: hidden !important;
   }
 }
