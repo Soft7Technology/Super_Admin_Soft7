@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
 import "./company-details.css";
@@ -23,16 +23,29 @@ interface CompanyDetails {
   logo?: string;
 }
 
-interface CompanyStats {
-  totalMessages: number;
+interface OverviewStats {
+  users: number;
+  contacts: number;
+  totalCampaigns: number;
+  completedCampaigns: number;
+  failedCampaigns: number;
+  templates: number;
   failedMessages: number;
   deliveredMessages: number;
   receivedMessages: number;
-  inProgressMessages: number;
-  totalCampaigns: number;
-  templates: number;
-  messageTemplates: number;
 }
+
+const EMPTY_STATS: OverviewStats = {
+  users: 0,
+  contacts: 0,
+  totalCampaigns: 0,
+  completedCampaigns: 0,
+  failedCampaigns: 0,
+  templates: 0, 
+  failedMessages: 0, 
+  deliveredMessages: 0, 
+  receivedMessages: 0,
+};
 
 interface Campaign {
   id: string;
@@ -47,122 +60,37 @@ interface Campaign {
 
 interface Activity {
   id: string;
-  title: string;
+  company_id: string;
+  user_id: string | null;
+  action: string;
+  entity_type: string;
   description: string;
-  date: string;
-  type: "campaign" | "plan" | "credit" | "profile" | "status";
+  status: string;
+  created_at: string;
+}
+
+interface ActivePlan {
+  plan_name?: string;
+  price?: string;
+  active?: boolean;
 }
 
 
-// -----------------------------------------------------------------------------
-// MOCK DATA
-// -----------------------------------------------------------------------------
+function buildActivePlanLabel(plans: ActivePlan[]): string {
+  const active = plans.filter((p) => p?.plan_name && p.active !== false);
+  if (active.length === 0) return "—";
 
-const MOCK_STATS: CompanyStats = {
-  totalMessages: 182450,
-  failedMessages: 2450,
-  deliveredMessages: 175820,
-  receivedMessages: 32640,
-  inProgressMessages: 4180,
-  totalCampaigns: 48,
-  templates: 24,
-  messageTemplates: 18,
-};
+  const sorted = [...active].sort(
+    (a, b) => Number(b.price ?? 0) - Number(a.price ?? 0),
+  );
+  const uniqueNames = Array.from(
+    new Set(sorted.map((p) => p.plan_name as string)),
+  );
 
-const MOCK_CAMPAIGNS: Campaign[] = [
-  {
-    id: "CMP-001",
-    title: "Diwali Promotional Campaign",
-    createdDate: "20 Sep 2026",
-    contacts: 12500,
-    messages: 12500,
-    delivered: 12140,
-    failed: 360,
-    status: "Completed",
-  },
-  {
-    id: "CMP-002",
-    title: "Customer Feedback Campaign",
-    createdDate: "18 Sep 2026",
-    contacts: 8200,
-    messages: 8200,
-    delivered: 7980,
-    failed: 220,
-    status: "Completed",
-  },
-  {
-    id: "CMP-003",
-    title: "New Product Launch",
-    createdDate: "28 Sep 2026",
-    contacts: 15000,
-    messages: 15000,
-    delivered: 13840,
-    failed: 310,
-    status: "Running",
-  },
-  {
-    id: "CMP-004",
-    title: "October Customer Updates",
-    createdDate: "30 Sep 2026",
-    contacts: 5600,
-    messages: 0,
-    delivered: 0,
-    failed: 0,
-    status: "Scheduled",
-  },
-  {
-    id: "CMP-005",
-    title: "Inactive Customer Reminder",
-    createdDate: "02 Oct 2026",
-    contacts: 4300,
-    messages: 4300,
-    delivered: 3970,
-    failed: 330,
-    status: "Completed",
-  },
-];
-
-const MOCK_ACTIVITIES: Activity[] = [
-  {
-    id: "ACT-001",
-    title: "Campaign created",
-    description: "New Product Launch campaign was created.",
-    date: "Today, 10:20 AM",
-    type: "campaign",
-  },
-  {
-    id: "ACT-002",
-    title: "Credits added",
-    description: "5,000 credits were added to the company account.",
-    date: "Yesterday, 04:35 PM",
-    type: "credit",
-  },
-  {
-    id: "ACT-003",
-    title: "Plan updated",
-    description: "Company plan was changed to Professional.",
-    date: "28 Sep 2026, 11:15 AM",
-    type: "plan",
-  },
-  {
-    id: "ACT-004",
-    title: "Profile updated",
-    description: "Company profile information was updated.",
-    date: "25 Sep 2026, 02:45 PM",
-    type: "profile",
-  },
-  {
-    id: "ACT-005",
-    title: "Company activated",
-    description: "Company account was activated.",
-    date: "12 Jan 2026, 09:30 AM",
-    type: "status",
-  },
-];
-
-// -----------------------------------------------------------------------------
-// COMPONENT
-// -----------------------------------------------------------------------------
+  return uniqueNames.length > 1
+    ? `${uniqueNames[0]} +${uniqueNames.length - 1}`
+    : uniqueNames[0];
+}
 
 export default function CompanyDetailsPage() {
   const params = useParams();
@@ -172,6 +100,8 @@ export default function CompanyDetailsPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [company, setCompany] = useState<CompanyDetails | null>(null);
+  const [stats, setStats] = useState<OverviewStats>(EMPTY_STATS);
+  const [activePlanLabel, setActivePlanLabel] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +112,10 @@ export default function CompanyDetailsPage() {
 
   const [creditAmount, setCreditAmount] = useState("");
   const [creditSubmitting, setCreditSubmitting] = useState(false);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
   const { showToast } = useToast();
   useEffect(() => {
     if (!companyId) return;
@@ -229,6 +163,31 @@ export default function CompanyDetailsPage() {
         };
 
         setCompany(mappedCompany);
+
+        // ---- KPI stats from "Get company by ID" ----
+        const campaignGroups: { status: string; count: string | number }[] =
+          Array.isArray(payload?.campaigns) ? payload.campaigns : [];
+
+        const campaignCount = (status: string) =>
+          Number(
+            campaignGroups.find(
+              (g) => String(g.status).toLowerCase() === status,
+            )?.count ?? 0,
+          );
+
+        const totalCampaigns = campaignGroups.reduce(
+          (sum, g) => sum + Number(g.count ?? 0),
+          0,
+        );
+
+        setStats((current) => ({
+          ...current,
+          users: Number(payload?.counts?.users ?? 0),
+          contacts: Number(payload?.counts?.contacts ?? 0),
+          totalCampaigns,
+          completedCampaigns: campaignCount("completed"),
+          failedCampaigns: campaignCount("failed"),
+        }));
       } catch (err: any) {
         console.error("GET COMPANY DETAILS ERROR =>", err);
 
@@ -251,6 +210,27 @@ export default function CompanyDetailsPage() {
     loadCompany();
   }, [companyId]);
 
+  // Active plan(s) — "Get active plan by ID"
+  useEffect(() => {
+    if (!companyId) return;
+
+    const fetchActivePlans = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `/v1/super-admin/companies/${companyId}/active-plans`,
+          { params: { page: 1, limit: 25 } },
+        );
+
+        const items = response.data?.data?.items ?? [];
+        setActivePlanLabel(buildActivePlanLabel(items));
+      } catch (err) {
+        console.error("GET ACTIVE PLANS ERROR =>", err);
+      }
+    };
+
+    fetchActivePlans();
+  }, [companyId]);
+
   const refreshCompanyCredits = async () => {
     if (!companyId) return;
 
@@ -259,11 +239,8 @@ export default function CompanyDetailsPage() {
         `/v1/super-admin/companies/${companyId}/credits?page=1&limit=25`,
       );
 
-      // console.log("GET COMPANY CREDITS RESPONSE =>", response.data);
-
       const payload = response.data?.data ?? response.data;
       const items = Array.isArray(payload?.items) ? payload.items : [];
-
 
       if (items.length > 0) {
         const latestBalance = Number(items[0]?.balance_after);
@@ -328,7 +305,6 @@ export default function CompanyDetailsPage() {
 
       setCreditAmount("");
       setShowCreditModal(false);
-
     } catch (err: any) {
       console.error("ADD CREDITS ERROR =>", err);
 
@@ -346,6 +322,87 @@ export default function CompanyDetailsPage() {
   const handleEditProfile = () => {
     setShowEditModal(false);
   };
+  const fetchCampaignsPreview = async () => {
+    if (!companyId) return;
+
+    try {
+      setCampaignsLoading(true);
+
+      const response = await axiosInstance.get(
+        `/v1/super-admin/companies/${companyId}/campaign`,
+        {
+          params: {
+            page: 1,
+            limit: 5,
+          },
+        },
+      );
+
+      const items = response.data?.data?.items ?? [];
+
+      const mappedCampaigns: Campaign[] = items.map((campaign: any) => ({
+        id: String(campaign.id),
+        title: campaign.name || "—",
+        createdDate: campaign.created_at
+          ? new Date(campaign.created_at).toLocaleDateString()
+          : "—",
+        contacts: Number(campaign.total_recipients ?? 0),
+        messages: Number(campaign.sent_count ?? 0),
+        delivered: Number(campaign.delivered_count ?? 0),
+        failed: Number(campaign.failed_count ?? 0),
+        status:
+          String(campaign.status).toLowerCase() === "completed"
+            ? "Completed"
+            : String(campaign.status).toLowerCase() === "failed"
+            ? "Failed"
+            : String(campaign.status).toLowerCase() === "scheduled"
+            ? "Scheduled"
+            : "Running",
+      }));
+
+      setCampaigns(mappedCampaigns);
+    } catch (error) {
+      console.error("Failed to fetch campaigns", error);
+    } finally {
+      setCampaignsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (companyId) {
+      fetchCampaignsPreview();
+    }
+  }, [companyId]);
+
+  const fetchActivitiesPreview = async () => {
+    if (!companyId) return;
+
+    try {
+      setActivitiesLoading(true);
+
+      const response = await axiosInstance.get(
+        `/v1/super-admin/companies/${companyId}/activity`,
+        {
+          params: {
+            page: 1,
+            limit: 5,
+          },
+        },
+      );
+
+      setActivities(response.data?.data?.items ?? []);
+    } catch (error) {
+      console.error("Failed to fetch activities", error);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (companyId) {
+      fetchActivitiesPreview();
+    }
+  }, [companyId]);
 
   if (loading) {
     return (
@@ -375,6 +432,10 @@ export default function CompanyDetailsPage() {
       </div>
     );
   }
+
+  const displayPlan =
+    activePlanLabel && activePlanLabel !== "—" ? activePlanLabel : company.plan;
+
   return (
     <div className="company-details-page">
       {/* Header */}
@@ -477,8 +538,6 @@ export default function CompanyDetailsPage() {
 
             <div className="company-contact-row">
               <span>{company.phone}</span>
-              <span className="separator">•</span>
-              <span>Business ID: {company.businessId}</span>
             </div>
 
             {/* Profile metadata — 2 x 2 */}
@@ -495,7 +554,7 @@ export default function CompanyDetailsPage() {
 
               <div>
                 <span>Plan</span>
-                <strong>{company.plan}</strong>
+                <strong>{displayPlan}</strong>
               </div>
 
               <div>
@@ -602,16 +661,6 @@ export default function CompanyDetailsPage() {
           >
             Activity
           </button>
-
-          {/* <button
-            type="button"
-            className={
-              activeTab === "plan" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("plan")}
-          >
-            Plan & Usage
-          </button> */}
         </div>
 
         <div className="tab-content">
@@ -628,43 +677,52 @@ export default function CompanyDetailsPage() {
                 </div>
               </div>
 
-              <div className="kpi-grid">
-                <KpiCard
-                  title="Total Messages"
-                  value={MOCK_STATS.totalMessages}
-                />
+              {/* Account totals */}
+              <div className="kpi-grid kpi-grid-4">
+                <KpiCard title="Users" value={stats.users} />
+                <KpiCard title="Contacts" value={stats.contacts} />
+                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} />
+                <KpiCard title="Total Templates" value={stats.templates} />
+              </div>
 
-                <KpiCard
-                  title="Delivered Messages"
-                  value={MOCK_STATS.deliveredMessages}
-                />
+              {/* Campaigns */}
+              <div className="kpi-section-heading">
+                <h4>Campaigns</h4>
+                <p>Campaign outcomes across this company.</p>
+              </div>
 
+              <div className="kpi-grid kpi-grid-3">
+                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} />
                 <KpiCard
-                  title="Failed Messages"
-                  value={MOCK_STATS.failedMessages}
+                  title="Completed"
+                  value={stats.completedCampaigns}
+                  tone="success"
                 />
-
                 <KpiCard
-                  title="Received Messages"
-                  value={MOCK_STATS.receivedMessages}
+                  title="Failed"
+                  value={stats.failedCampaigns}
+                  tone="danger"
                 />
+              </div>
 
+              {/* Messages */}
+              <div className="kpi-section-heading">
+                <h4>Messages</h4>
+                <p>Message delivery status.</p>
+              </div>
+
+              <div className="kpi-grid kpi-grid-3">
                 <KpiCard
-                  title="In Progress"
-                  value={MOCK_STATS.inProgressMessages}
+                  title="Failed"
+                  value={stats.failedMessages}
+                  tone="danger"
                 />
-
                 <KpiCard
-                  title="Total Campaigns"
-                  value={MOCK_STATS.totalCampaigns}
+                  title="Delivered"
+                  value={stats.deliveredMessages}
+                  tone="success"
                 />
-
-                <KpiCard title="Templates" value={MOCK_STATS.templates} />
-
-                <KpiCard
-                  title="Message Templates"
-                  value={MOCK_STATS.messageTemplates}
-                />
+                <KpiCard title="Received" value={stats.receivedMessages} />
               </div>
             </div>
           )}
@@ -684,13 +742,19 @@ export default function CompanyDetailsPage() {
                 <button
                   type="button"
                   className="view-more-button"
-                  onClick={() => {}}
+                  onClick={() =>
+                    router.push(`/user/manage-companies/${companyId}/campaigns`)
+                  }
                 >
                   View More →
                 </button>
               </div>
 
-              <CampaignTable campaigns={MOCK_CAMPAIGNS} />
+              {campaignsLoading ? (
+                <p>Loading campaigns...</p>
+              ) : (
+                <CampaignTable campaigns={campaigns} />
+              )}
             </div>
           )}
 
@@ -711,29 +775,40 @@ export default function CompanyDetailsPage() {
                 <button
                   type="button"
                   className="view-more-button"
-                  onClick={() => {}}
+                  onClick={() =>
+                    router.push(`/user/manage-companies/${companyId}/activity`)
+                  }
                 >
                   View More →
                 </button>
               </div>
 
               <div className="activity-timeline">
-                {MOCK_ACTIVITIES.map((activity) => (
-                  <div className="activity-item" key={activity.id}>
-                    <div className={`activity-icon ${activity.type}`}>
-                      {getActivityIcon(activity.type)}
-                    </div>
+                {activitiesLoading ? (
+                  <p>Loading activity...</p>
+                ) : (
+                  <div className="activity-timeline">
+                    {activities.map((activity) => (
+                      <div className="activity-item" key={activity.id}>
+                        <div className="activity-icon profile">•</div>
 
-                    <div className="activity-content">
-                      <div className="activity-title-row">
-                        <strong>{activity.title}</strong>
-                        <span>{activity.date}</span>
+                        <div className="activity-content">
+                          <div className="activity-title-row">
+                            <strong>
+                              {activity.action} {activity.entity_type}
+                            </strong>
+
+                            <span>
+                              {new Date(activity.created_at).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <p>{activity.description}</p>
+                        </div>
                       </div>
-
-                      <p>{activity.description}</p>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
@@ -805,10 +880,6 @@ export default function CompanyDetailsPage() {
                 />
               </label>
 
-              <label>
-                Business ID
-                <input type="text" value={company.businessId} disabled />
-              </label>
             </div>
 
             <div className="modal-actions">
@@ -950,9 +1021,17 @@ export default function CompanyDetailsPage() {
 // KPI CARD
 // -----------------------------------------------------------------------------
 
-function KpiCard({ title, value }: { title: string; value: number }) {
+function KpiCard({
+  title,
+  value,
+  tone,
+}: {
+  title: string;
+  value: number;
+  tone?: "success" | "danger";
+}) {
   return (
-    <div className="kpi-card">
+    <div className={tone ? `kpi-card kpi-${tone}` : "kpi-card"}>
       <span>{title}</span>
       <strong>{value.toLocaleString("en-IN")}</strong>
     </div>
@@ -1013,30 +1092,4 @@ function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
       </div>
     </div>
   );
-}
-
-// -----------------------------------------------------------------------------
-// ACTIVITY ICON
-// -----------------------------------------------------------------------------
-
-function getActivityIcon(type: Activity["type"]) {
-  switch (type) {
-    case "campaign":
-      return "↗";
-
-    case "plan":
-      return "◆";
-
-    case "credit":
-      return "+";
-
-    case "profile":
-      return "✎";
-
-    case "status":
-      return "✓";
-
-    default:
-      return "•";
-  }
 }

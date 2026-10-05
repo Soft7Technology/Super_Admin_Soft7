@@ -1473,7 +1473,7 @@ export default function ManageCompanies() {
                       <button
                         type="button"
                         className="mc-action-btn"
-                        onClick={() => openView(company)}
+                        onClick={() => openEdit(company)}
                         title="Edit"
                         aria-label="Edit company"
                       >
