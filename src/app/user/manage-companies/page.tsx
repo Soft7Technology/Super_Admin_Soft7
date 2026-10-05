@@ -59,7 +59,7 @@ interface RawCompany {
   deleted_at: string | null;
 }
 
-type Status = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "TRIAL";
+type Status = "ACTIVE" | "SUSPENDED";
 
 type Plan = "Starter" | "Basic" | "Pro" | "Enterprise";
 
@@ -109,10 +109,8 @@ function avatarColor(id: string) {
 function normaliseStatus(raw: string): Status {
   const map: Record<string, Status> = {
     active: "ACTIVE",
-    inactive: "INACTIVE",
     suspend: "SUSPENDED",
     suspended: "SUSPENDED",
-    trial: "TRIAL",
   };
 
   return map[raw?.toLowerCase()] ?? "ACTIVE";
@@ -198,16 +196,12 @@ function ErrorBanner({
 const STATUS_COLORS: Record<Status, string> = {
   ACTIVE: "#10b981",
   SUSPENDED: "#ef4444",
-  INACTIVE: "#6b7280",
-  TRIAL: "#f59e0b",
 };
-
 
 const STATUS_DOT_COLORS: Record<Status, string> = {
   ACTIVE: "#10b981", // green
   SUSPENDED: "#ef4444", // red
-  INACTIVE: "#3b82f6", // blue
-  TRIAL: "#f59e0b", // amber
+
 };
 
 function Badge({ status }: { status: Status }) {
@@ -1012,6 +1006,7 @@ function AddCreditModal({
 
 export default function ManageCompanies() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [filter, setFilter] = useState<"ALL" | Status>("ALL");
 
@@ -1039,6 +1034,15 @@ export default function ManageCompanies() {
     useState<CompaniesPagination>(DEFAULT_PAGINATION);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setCurrentPage(1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [search]);
   // ─────────────────────────────────────────────────────────────────────────
   // FETCH COMPANIES
   // ─────────────────────────────────────────────────────────────────────────
@@ -1055,6 +1059,10 @@ export default function ManageCompanies() {
 
       if (filter !== "ALL") {
         params.status = filter.toLowerCase();
+      }
+
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
       }
 
       const companiesRes = await axiosInstance.get(COMPANIES_API, {
@@ -1121,47 +1129,19 @@ export default function ManageCompanies() {
 
   useEffect(() => {
     fetchCompanies();
-  }, [filter, currentPage]);
+  }, [filter, currentPage, debouncedSearch]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // SEARCH / FILTER
   // ─────────────────────────────────────────────────────────────────────────
 
-  const FILTERS: ("ALL" | Status)[] = [
-    "ALL",
-    "ACTIVE",
-    "SUSPENDED",
-    "INACTIVE",
-  ];
-
-  const query = search.trim().toLowerCase();
-
-  const filtered = companies.filter((company) => {
-    const emailDomain = company.email.includes("@")
-      ? company.email.split("@").pop() ?? ""
-      : "";
-
-    const searchable = [
-      company.name,
-      company.email,
-      emailDomain,
-      company.domain,
-      company.businessId,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return (
-      (filter === "ALL" || company.status === filter) &&
-      (!query || searchable.includes(query))
-    );
-  });
+  const FILTERS: ("ALL" | Status)[] = ["ALL", "ACTIVE", "SUSPENDED"];
 
   const totalPages = Math.max(1, pagination.totalPages);
 
   const safePage = Math.min(currentPage, totalPages);
 
-  const paginatedCompanies = filtered;
+  const paginatedCompanies = companies;
 
   // ─────────────────────────────────────────────────────────────────────────
   // SELECTION
@@ -1179,7 +1159,7 @@ export default function ManageCompanies() {
     if (selectAll) {
       setSelectedCompanies([]);
     } else {
-      setSelectedCompanies(filtered.map((company) => company.id));
+      setSelectedCompanies(companies.map((company) => company.id));
     }
 
     setSelectAll(!selectAll);
@@ -1399,15 +1379,6 @@ export default function ManageCompanies() {
           icon="⛔"
           color="#FF6B6B"
         />
-
-        <KPI
-          label="On Trial"
-          value={String(
-            companies.filter((company) => company.status === "TRIAL").length,
-          )}
-          icon="⏳"
-          color="#FDCB6E"
-        />
       </div>
 
       {/* FILTER BAR */}
@@ -1475,7 +1446,7 @@ export default function ManageCompanies() {
         <div className="mc-empty">Loading companies…</div>
       ) : fetchError ? (
         <div className="mc-empty">⚠️ {fetchError}</div>
-      ) : filtered.length === 0 ? (
+      ) : companies.length === 0 ? (
         <div className="mc-empty">
           No companies found. Start by adding one 🚀
         </div>
