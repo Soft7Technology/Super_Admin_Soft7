@@ -17,6 +17,7 @@ interface UseUsersParams {
   status?: string;
   role?: string;
   search?: string;
+  companyId?: string;
 }
 
 interface UseUsersReturn {
@@ -201,6 +202,7 @@ function toApiRole(role: string): string {
 export function useUsers({
   page = 1,
   limit = 25,
+  companyId,
 }: UseUsersParams = {}): UseUsersReturn {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
@@ -239,7 +241,11 @@ export function useUsers({
       setError(null);
 
       try {
-        const { data: resJson } = await axiosInstance.get(EXTERNAL_USERS_API, {
+        const endpoint = companyId
+          ? `/v1/super-admin/companies/${encodeURIComponent(companyId)}/users`
+          : EXTERNAL_USERS_API;
+
+        const { data: resJson } = await axiosInstance.get(endpoint, {
           params: {
             page,
             limit,
@@ -290,7 +296,7 @@ export function useUsers({
     return () => {
       cancelled = true;
     };
-  }, [page, limit, tick]);
+  }, [page, limit, companyId, tick]);
 
   return {
     users,

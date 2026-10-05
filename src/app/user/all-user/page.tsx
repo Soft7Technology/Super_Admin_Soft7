@@ -4,12 +4,14 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
-import { User, UserStats, roleColor, planColor } from "./types";
+import { User, roleColor, planColor } from "./types";
 
 import { Badge } from "./components/Badge";
 import { useUsers } from "./hooks/useUsers";
 import { KPI } from "./components/KPI";
 import { FilterBar } from "./components/FilterBar";
+import { CompanyDropdown } from "./components/CompanyDropdown";
+import { useCompanies } from "./hooks/useCompanies";
 import { DetailPanel } from "./components/DetailPanel";
 import { EditUserModal } from "./components/EditUserModal";
 import { ResetPasswordModal } from "./components/ResetPasswordModal";
@@ -22,7 +24,6 @@ import {
   Trash2,
   Users,
   UserCheck,
-  Shield,
   Award,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -37,12 +38,19 @@ export default function AllUsers() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 25;
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
   // Inline action states
   const [editUser, setEditUser] = useState<User | null>(null);
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [suspendingId, setSuspendingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const {
+    companies,
+    loading: companiesLoading,
+    error: companiesError,
+  } = useCompanies();
 
   const {
     users,
@@ -55,6 +63,7 @@ export default function AllUsers() {
   } = useUsers({
     page: currentPage,
     limit: rowsPerPage,
+    companyId: selectedCompanyId || undefined,
   });
 
   // Filter users by status, role, and search query
@@ -106,6 +115,15 @@ export default function AllUsers() {
     pagination?.totalPages ??
       Math.ceil((pagination?.total ?? users.length) / rowsPerPage),
   );
+
+  const handleCompanyChange = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+    setCurrentPage(1);
+    setSelectedUsers([]);
+    setDetail(null);
+  };
+
+  const selectedCompany = companies.find((company) => company.id === selectedCompanyId);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
@@ -216,9 +234,19 @@ export default function AllUsers() {
         <div>
           <h1 className="au-header__title">All Users</h1>
           <p className="au-header__subtitle">
-            All platform users across every company
+            {selectedCompany
+              ? `Users of ${selectedCompany.name}`
+              : "All platform users across every company"}
           </p>
         </div>
+
+        <CompanyDropdown
+          companies={companies}
+          value={selectedCompanyId}
+          onChange={handleCompanyChange}
+          loading={companiesLoading}
+          error={companiesError}
+        />
       </div>
 
       {/* KPIs */}
@@ -234,12 +262,6 @@ export default function AllUsers() {
           value={stats.activeUsers.toLocaleString()}
           icon={<UserCheck size={20} strokeWidth={2} />}
           color="#2fb344"
-        />
-        <KPI
-          label="Admin Users"
-          value={stats.adminUsers.toLocaleString()}
-          icon={<Shield size={20} strokeWidth={2} />}
-          color="#4299e1"
         />
         <KPI
           label="Premium Users"
@@ -321,7 +343,6 @@ export default function AllUsers() {
                 <th style={{ width: "100px" }}>ROLE</th>
                 <th style={{ width: "120px" }}>PLAN</th>
                 <th style={{ width: "120px" }}>STATUS</th>
-                <th style={{ width: "120px" }}>JOINED</th>
                 <th style={{ width: "260px", minWidth: "260px" }}>ACTIONS</th>
               </tr>
             </thead>
@@ -396,8 +417,6 @@ export default function AllUsers() {
                       <Badge status={user.status} />
                     </td>
 
-                    <td>{user.joined}</td>
-
                     {/* ── ACTION BUTTONS COLUMN ── */}
                     <td>
                       <div className="au-action-group">
@@ -460,7 +479,7 @@ export default function AllUsers() {
               ) : (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={8}
                     style={{
                       textAlign: "center",
                       padding: "32px 0",
@@ -561,10 +580,6 @@ export default function AllUsers() {
                     </span>
                   </div>
 
-                  <div className="au-user-card__detail-row">
-                    <span className="au-user-card__detail-label">Joined</span>
-                    <span className="au-user-card__detail-val">{user.joined}</span>
-                  </div>
                 </div>
 
                 {/* Bottom Actions Toolbar */}
