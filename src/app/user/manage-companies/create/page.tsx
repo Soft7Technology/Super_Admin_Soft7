@@ -66,7 +66,6 @@ const INITIAL_FORM: FormState = {
   password: "",
 };
 
-
 const FIELD_ORDER: FieldKey[] = [
   "name",
   "email",
@@ -104,7 +103,6 @@ function validatePhone(value: string, dialCode: string, label: string) {
   if (!national) return `${label} phone is required.`;
   if (!hasDial) return "Select a country code and enter the number after it.";
 
-  
   if (dialCode === "91") {
     if (!/^[6-9]\d{9}$/.test(national))
       return "Enter a valid 10-digit Indian mobile number (starts with 6–9, no leading 0).";
@@ -183,7 +181,6 @@ export default function CreateCompanyPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
-
   const [serverErr, setServerErr] = useState<string | null>(null);
 
   /* ---------- helpers ---------- */
@@ -195,7 +192,6 @@ export default function CreateCompanyPage() {
       else delete next[key];
       return next;
     });
-
 
   const setField = (
     key: FieldKey,
@@ -215,14 +211,13 @@ export default function CreateCompanyPage() {
     const el = document.getElementById(`field-${key}`);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
-   
+
     setTimeout(() => (el as HTMLElement).focus({ preventScroll: true }), 250);
   };
 
   const inputClass = (key: FieldKey) =>
     `mc-input${errors[key] ? " mc-input--error" : ""}`;
 
- 
   const formRef = useRef(form);
   formRef.current = form;
 
@@ -234,7 +229,7 @@ export default function CreateCompanyPage() {
     value: form[key],
     onChange: (value: string, country: any) =>
       setField(key, value, { [dialKey]: country?.dialCode ?? form[dialKey] }),
-    
+
     countryCodeEditable: false,
     enableSearch: true,
     disableSearchIcon: true,
@@ -246,7 +241,7 @@ export default function CreateCompanyPage() {
     dropdownClass: "mc-phone__dropdown",
     searchClass: "mc-phone__search",
     inputProps: { id: `field-${key}`, autoComplete: "off" },
-   
+
     onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
       const container = e.currentTarget.closest(".react-tel-input");
       setTimeout(() => {
@@ -265,7 +260,6 @@ export default function CreateCompanyPage() {
     if (saving || !passwordValid) return;
     setServerErr(null);
 
-   
     const nextErrors: Errors = {};
     FIELD_ORDER.forEach((key) => {
       const msg = validateField(key, form);
@@ -336,351 +330,307 @@ export default function CreateCompanyPage() {
 
   return (
     <div className="mc-root">
-      {/* HEADER */}
-      <div className="mc-header">
-        <div>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "transparent",
-              border: "none",
-              color: "var(--mc-muted)",
-              cursor: "pointer",
-              padding: 0,
-              marginBottom: 10,
-              fontSize: 13,
-            }}
-          >
-            <ArrowLeft size={16} />
-            Back to Companies
-          </button>
-
-          <h1 className="mc-header__title">Create Company</h1>
-
-          <p className="mc-header__sub">
-            Create a new company and its administrator.
-          </p>
-        </div>
-      </div>
-
-      <form
-        noValidate
-        onSubmit={handleSubmit}
-        style={{ maxWidth: 1000, margin: "0 auto" }}
-      >
-        {/* COMPANY DETAILS */}
-        <div className="mc-modal" style={{ width: "100%", maxWidth: "none" }}>
-          <div className="mc-modal__header">
-            <div>
-              <div className="mc-modal__title">Company Details</div>
-              <div className="mc-modal__sub">
-                Enter the basic company information.
-              </div>
-            </div>
-          </div>
-
-          <div className="mc-modal__body">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: 18,
-              }}
+      <div className="mc-create-page">
+        {/* HEADER */}
+        <div className="mc-create-header">
+          <div>
+            <button
+              type="button"
+              className="mc-create-back"
+              onClick={() => router.back()}
             >
-              <div className="mc-field">
-                <label htmlFor="field-name" className="mc-field__label">
-                  COMPANY NAME *
-                </label>
-                <input
-                  id="field-name"
-                  className={inputClass("name")}
-                  placeholder="Example Company"
-                  autoComplete="organization"
-                  value={form.name}
-                  onChange={(e) => setField("name", e.target.value)}
-                  onBlur={() => handleBlur("name")}
-                  aria-invalid={!!errors.name}
-                  aria-describedby={errors.name ? "err-name" : undefined}
-                />
-                <FieldError id="name" message={errors.name} />
-              </div>
+              <ArrowLeft size={16} />
+              Back to Companies
+            </button>
 
-              <div className="mc-field">
-                <label htmlFor="field-email" className="mc-field__label">
-                  COMPANY EMAIL *
-                </label>
-                <input
-                  id="field-email"
-                  className={inputClass("email")}
-                  type="email"
-                  placeholder="company@example.com"
-                  autoComplete="off"
-                  value={form.email}
-                  onChange={(e) => setField("email", e.target.value)}
-                  onBlur={() => handleBlur("email")}
-                  aria-invalid={!!errors.email}
-                  aria-describedby={errors.email ? "err-email" : undefined}
-                />
-                <FieldError id="email" message={errors.email} />
-              </div>
+            <h1 className="mc-create-title">Create Company</h1>
 
-              <div className="mc-field">
-                <label htmlFor="field-phone" className="mc-field__label">
-                  COMPANY PHONE *
-                </label>
-                <PhoneInput {...phoneProps("phone", "phoneDial")} />
-                <FieldError id="phone" message={errors.phone} />
-              </div>
-
-              <div className="mc-field">
-                <label htmlFor="field-businessId" className="mc-field__label">
-                  BUSINESS ID *
-                </label>
-                <input
-                  id="field-businessId"
-                  className={inputClass("businessId")}
-                  placeholder="BUSINESS123"
-                  autoComplete="off"
-                  value={form.businessId}
-                  onChange={(e) => setField("businessId", e.target.value)}
-                  onBlur={() => handleBlur("businessId")}
-                  aria-invalid={!!errors.businessId}
-                  aria-describedby={
-                    errors.businessId ? "err-businessId" : undefined
-                  }
-                />
-                <FieldError id="businessId" message={errors.businessId} />
-              </div>
-            </div>
-
-            <div className="mc-field" style={{ marginTop: 18 }}>
-              <label htmlFor="field-reason" className="mc-field__label">
-                REASON *
-              </label>
-              <textarea
-                id="field-reason"
-                className={inputClass("reason")}
-                placeholder="Approved company onboarding"
-                value={form.reason}
-                onChange={(e) => setField("reason", e.target.value)}
-                onBlur={() => handleBlur("reason")}
-                rows={4}
-                style={{ resize: "vertical", minHeight: 100 }}
-                aria-invalid={!!errors.reason}
-                aria-describedby={errors.reason ? "err-reason" : undefined}
-              />
-              <FieldError id="reason" message={errors.reason} />
-            </div>
+            <p className="mc-create-subtitle">
+              Create a new company and its administrator.
+            </p>
           </div>
         </div>
 
-        {/* COMPANY ADMIN */}
-        <div
-          className="mc-modal"
-          style={{ width: "100%", maxWidth: "none", marginTop: 20 }}
-        >
-          <div className="mc-modal__header">
-            <div>
-              <div className="mc-modal__title">Company Admin</div>
-              <div className="mc-modal__sub">
-                Create the administrator account for this company.
+        <form noValidate onSubmit={handleSubmit}>
+          {/* COMPANY DETAILS */}
+          <section className="mc-create-card">
+            <div className="mc-create-card__header">
+              <div>
+                <div className="mc-create-card__title">Company Details</div>
+                <div className="mc-create-card__subtitle">
+                  Enter the basic company information.
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="mc-modal__body">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: 18,
-              }}
-            >
-              <div className="mc-field">
-                <label htmlFor="field-adminName" className="mc-field__label">
-                  ADMIN NAME *
-                </label>
-                <input
-                  id="field-adminName"
-                  className={inputClass("adminName")}
-                  placeholder="Company Admin"
-                  autoComplete="off"
-                  value={form.adminName}
-                  onChange={(e) => setField("adminName", e.target.value)}
-                  onBlur={() => handleBlur("adminName")}
-                  aria-invalid={!!errors.adminName}
-                  aria-describedby={
-                    errors.adminName ? "err-adminName" : undefined
-                  }
-                />
-                <FieldError id="adminName" message={errors.adminName} />
-              </div>
-
-              <div className="mc-field">
-                <label htmlFor="field-adminEmail" className="mc-field__label">
-                  ADMIN EMAIL *
-                </label>
-                <input
-                  id="field-adminEmail"
-                  className={inputClass("adminEmail")}
-                  type="email"
-                  placeholder="admin@example.com"
-                  autoComplete="off"
-                  value={form.adminEmail}
-                  onChange={(e) => setField("adminEmail", e.target.value)}
-                  onBlur={() => handleBlur("adminEmail")}
-                  aria-invalid={!!errors.adminEmail}
-                  aria-describedby={
-                    errors.adminEmail ? "err-adminEmail" : undefined
-                  }
-                />
-                <FieldError id="adminEmail" message={errors.adminEmail} />
-              </div>
-
-              <div className="mc-field">
-                <label htmlFor="field-adminPhone" className="mc-field__label">
-                  ADMIN PHONE *
-                </label>
-                <PhoneInput {...phoneProps("adminPhone", "adminPhoneDial")} />
-                <FieldError id="adminPhone" message={errors.adminPhone} />
-              </div>
-
-              <div className="mc-field">
-                <label htmlFor="field-password" className="mc-field__label">
-                  PASSWORD *
-                </label>
-
-                <div style={{ position: "relative" }}>
+            <div className="mc-create-card__body">
+              <div className="mc-create-grid">
+                <div className="mc-field">
+                  <label htmlFor="field-name" className="mc-field__label">
+                    COMPANY NAME *
+                  </label>
                   <input
-                    id="field-password"
-                    className={inputClass("password")}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min 8 characters"
-                    autoComplete="new-password"
-                    value={form.password}
-                    onChange={(e) => setField("password", e.target.value)}
-                    onBlur={() => handleBlur("password")}
-                    style={{ paddingRight: 48 }}
-                    aria-invalid={!!errors.password}
-                    aria-describedby={
-                      errors.password ? "err-password" : undefined
-                    }
+                    id="field-name"
+                    className={inputClass("name")}
+                    placeholder="Example Company"
+                    autoComplete="organization"
+                    value={form.name}
+                    onChange={(e) => setField("name", e.target.value)}
+                    onBlur={() => handleBlur("name")}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "err-name" : undefined}
                   />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      border: "none",
-                      background: "transparent",
-                      color: "#9ca3af",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-                  </button>
+                  <FieldError id="name" message={errors.name} />
                 </div>
 
-                <FieldError id="password" message={errors.password} />
+                <div className="mc-field">
+                  <label htmlFor="field-email" className="mc-field__label">
+                    COMPANY EMAIL *
+                  </label>
+                  <input
+                    id="field-email"
+                    className={inputClass("email")}
+                    type="email"
+                    placeholder="company@example.com"
+                    autoComplete="off"
+                    value={form.email}
+                    onChange={(e) => setField("email", e.target.value)}
+                    onBlur={() => handleBlur("email")}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "err-email" : undefined}
+                  />
+                  <FieldError id="email" message={errors.email} />
+                </div>
 
-                {/* Live checklist: users see what's missing as they type */}
-                <ul className="mc-pw-rules">
-                  {PASSWORD_RULES.map((rule) => {
-                    const ok = rule.test(form.password);
-                    return (
-                      <li
-                        key={rule.label}
-                        className={ok ? "mc-pw-rules__ok" : ""}
-                      >
-                        {ok ? <Check size={13} /> : <Circle size={13} />}
-                        {rule.label}
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="mc-field">
+                  <label htmlFor="field-phone" className="mc-field__label">
+                    COMPANY PHONE *
+                  </label>
+                  <PhoneInput {...phoneProps("phone", "phoneDial")} />
+                  <FieldError id="phone" message={errors.phone} />
+                </div>
+
+                <div className="mc-field">
+                  <label htmlFor="field-businessId" className="mc-field__label">
+                    BUSINESS ID *
+                  </label>
+                  <input
+                    id="field-businessId"
+                    className={inputClass("businessId")}
+                    placeholder="BUSINESS123"
+                    autoComplete="off"
+                    value={form.businessId}
+                    onChange={(e) => setField("businessId", e.target.value)}
+                    onBlur={() => handleBlur("businessId")}
+                    aria-invalid={!!errors.businessId}
+                    aria-describedby={
+                      errors.businessId ? "err-businessId" : undefined
+                    }
+                  />
+                  <FieldError id="businessId" message={errors.businessId} />
+                </div>
+              </div>
+
+              <div className="mc-field mc-create-field--full">
+                <label htmlFor="field-reason" className="mc-field__label">
+                  REASON *
+                </label>
+                <textarea
+                  id="field-reason"
+                  className={inputClass("reason")}
+                  placeholder="Approved company onboarding"
+                  value={form.reason}
+                  onChange={(e) => setField("reason", e.target.value)}
+                  onBlur={() => handleBlur("reason")}
+                  rows={4}
+                  style={{ resize: "vertical", minHeight: 100 }}
+                  aria-invalid={!!errors.reason}
+                  aria-describedby={errors.reason ? "err-reason" : undefined}
+                />
+                <FieldError id="reason" message={errors.reason} />
+              </div>
+            </div>
+          </section>
+
+          {/* COMPANY ADMIN */}
+          <section className="mc-create-card">
+            <div className="mc-create-card__header">
+              <div>
+                <div className="mc-create-card__title">Company Admin</div>
+                <div className="mc-create-card__subtitle">
+                  Create the administrator account for this company.
+                </div>
               </div>
             </div>
 
-            <div className="mc-modal__divider" />
+            <div className="mc-create-card__body">
+              <div className="mc-create-grid">
+                <div className="mc-field">
+                  <label htmlFor="field-adminName" className="mc-field__label">
+                    ADMIN NAME *
+                  </label>
+                  <input
+                    id="field-adminName"
+                    className={inputClass("adminName")}
+                    placeholder="Company Admin"
+                    autoComplete="off"
+                    value={form.adminName}
+                    onChange={(e) => setField("adminName", e.target.value)}
+                    onBlur={() => handleBlur("adminName")}
+                    aria-invalid={!!errors.adminName}
+                    aria-describedby={
+                      errors.adminName ? "err-adminName" : undefined
+                    }
+                  />
+                  <FieldError id="adminName" message={errors.adminName} />
+                </div>
 
-            {/* Server-side errors appear right here, next to the button the user just pressed */}
-            {serverErr && (
-              <div
-                className="mc-error-banner"
-                role="alert"
-                style={{ marginBottom: 16 }}
-              >
-                <AlertCircle size={18} className="mc-error-banner__icon" />
-                <span className="mc-error-banner__text">{serverErr}</span>
-                <button
-                  type="button"
-                  className="mc-error-banner__close"
-                  onClick={() => setServerErr(null)}
-                  aria-label="Dismiss error"
-                >
-                  ×
-                </button>
+                <div className="mc-field">
+                  <label htmlFor="field-adminEmail" className="mc-field__label">
+                    ADMIN EMAIL *
+                  </label>
+                  <input
+                    id="field-adminEmail"
+                    className={inputClass("adminEmail")}
+                    type="email"
+                    placeholder="admin@example.com"
+                    autoComplete="off"
+                    value={form.adminEmail}
+                    onChange={(e) => setField("adminEmail", e.target.value)}
+                    onBlur={() => handleBlur("adminEmail")}
+                    aria-invalid={!!errors.adminEmail}
+                    aria-describedby={
+                      errors.adminEmail ? "err-adminEmail" : undefined
+                    }
+                  />
+                  <FieldError id="adminEmail" message={errors.adminEmail} />
+                </div>
+
+                <div className="mc-field">
+                  <label htmlFor="field-adminPhone" className="mc-field__label">
+                    ADMIN PHONE *
+                  </label>
+                  <PhoneInput {...phoneProps("adminPhone", "adminPhoneDial")} />
+                  <FieldError id="adminPhone" message={errors.adminPhone} />
+                </div>
+
+                <div className="mc-field mc-create-field--full">
+                  <label htmlFor="field-password" className="mc-field__label">
+                    PASSWORD *
+                  </label>
+
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="field-password"
+                      className={inputClass("password")}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Min 8 characters"
+                      autoComplete="new-password"
+                      value={form.password}
+                      onChange={(e) => setField("password", e.target.value)}
+                      onBlur={() => handleBlur("password")}
+                      style={{ paddingRight: 48 }}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={
+                        errors.password ? "err-password" : undefined
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        border: "none",
+                        background: "transparent",
+                        color: "#9ca3af",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                    </button>
+                  </div>
+
+                  <FieldError id="password" message={errors.password} />
+
+                  {/* Live checklist: users see what's missing as they type */}
+                  <ul className="mc-pw-rules">
+                    {PASSWORD_RULES.map((rule) => {
+                      const ok = rule.test(form.password);
+                      return (
+                        <li
+                          key={rule.label}
+                          className={ok ? "mc-pw-rules__ok" : ""}
+                        >
+                          {ok ? <Check size={13} /> : <Circle size={13} />}
+                          {rule.label}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               </div>
-            )}
 
-            <div
-              className="mc-modal__actions"
-              style={{ justifyContent: "flex-end", alignItems: "center" }}
-            >
-              {errorCount > 0 && (
-                <span className="mc-actions__hint">
-                  {errorCount}{" "}
-                  {errorCount === 1 ? "field needs" : "fields need"} attention
-                </span>
+              <div className="mc-create-divider" />
+
+              {serverErr && (
+                <div
+                  className="mc-error-banner"
+                  role="alert"
+                  style={{ marginBottom: 12 }}
+                >
+                  <AlertCircle size={18} className="mc-error-banner__icon" />
+                  <span className="mc-error-banner__text">{serverErr}</span>
+                  <button
+                    type="button"
+                    className="mc-error-banner__close"
+                    onClick={() => setServerErr(null)}
+                    aria-label="Dismiss error"
+                  >
+                    ×
+                  </button>
+                </div>
               )}
 
-              <button
-                type="button"
-                className="mc-btn mc-btn--ghost"
-                onClick={() => router.back()}
-                style={{
-                  width: "auto",
-                  minWidth: 100,
-                  padding: "9px 16px",
-                  flex: "0 0 auto",
-                }}
-              >
-                Cancel
-              </button>
+              <div className="mc-create-actions">
+                {errorCount > 0 && (
+                  <span className="mc-actions__hint">
+                    {errorCount}{" "}
+                    {errorCount === 1 ? "field needs" : "fields need"} attention
+                  </span>
+                )}
 
-              <button
-                type="submit"
-                className="mc-btn mc-btn--primary"
-                disabled={saving || !passwordValid}
-                title={
-                  passwordValid
-                    ? undefined
-                    : "Password must meet all the listed requirements"
-                }
-                style={{
-                  width: "auto",
-                  minWidth: 130,
-                  padding: "9px 16px",
-                  flex: "0 0 auto",
-                }}
-              >
-                {saving ? "Creating…" : "Create Company"}
-              </button>
+                <button
+                  type="button"
+                  className="mc-btn mc-btn--ghost"
+                  onClick={() => router.back()}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="mc-btn mc-btn--primary"
+                  disabled={saving || !passwordValid}
+                  title={
+                    passwordValid
+                      ? undefined
+                      : "Password must meet all the listed requirements"
+                  }
+                >
+                  {saving ? "Creating…" : "Create Company"}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      </form>
+          </section>
+        </form>
+      </div>
 
       <ToastContainer
         position="top-right"

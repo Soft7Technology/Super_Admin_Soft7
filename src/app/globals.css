@@ -137,3 +137,58 @@ a:hover {
   background: var(--primary);
   color: white;
 }
+.global-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.global-toast {
+  min-width: 280px;
+  max-width: 420px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #dce8e3;
+  box-shadow: 0 10px 30px rgba(15, 35, 30, 0.12);
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #172b26;
+}
+
+.global-toast-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.global-toast.success .global-toast-icon {
+  background: #e5f6ee;
+  color: #269568;
+}
+
+.global-toast.error .global-toast-icon {
+  background: #fdecec;
+  color: #d64545;
+}
+
+.global-toast.info .global-toast-icon {
+  background: #eaf3f1;
+  color: #278b69;
+}

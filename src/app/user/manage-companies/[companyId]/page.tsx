@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
 import "./company-details.css";
-
+import { useToast } from "@/components/ui/ToastProvider";
 type CompanyStatus = "active" | "suspended";
 
-type Tab = "overview" | "campaigns" | "activity" | "plan";
+type Tab = "overview" | "campaigns" | "activity";
 
 interface CompanyDetails {
   id: string;
@@ -53,21 +53,6 @@ interface Activity {
   type: "campaign" | "plan" | "credit" | "profile" | "status";
 }
 
-interface PlanDetails {
-  name: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  status: "Active" | "Inactive";
-  startDate: string;
-  endDate: string;
-  features: string[];
-}
-
-interface UsageItem {
-  label: string;
-  used: number;
-  limit: number;
-}
 
 // -----------------------------------------------------------------------------
 // MOCK DATA
@@ -175,41 +160,6 @@ const MOCK_ACTIVITIES: Activity[] = [
   },
 ];
 
-const MOCK_PLAN: PlanDetails = {
-  name: "Professional",
-  monthlyPrice: 4999,
-  yearlyPrice: 49990,
-  status: "Active",
-  startDate: "28 Sep 2026",
-  endDate: "28 Sep 2027",
-  features: [
-    "Unlimited campaign creation",
-    "Advanced campaign analytics",
-    "Priority support",
-    "Message templates",
-    "Contact management",
-    "API access",
-  ],
-};
-
-const MOCK_USAGE: UsageItem[] = [
-  {
-    label: "Contacts",
-    used: 18500,
-    limit: 50000,
-  },
-  {
-    label: "Campaigns",
-    used: 48,
-    limit: 100,
-  },
-  {
-    label: "Messages",
-    used: 182450,
-    limit: 500000,
-  },
-];
-
 // -----------------------------------------------------------------------------
 // COMPONENT
 // -----------------------------------------------------------------------------
@@ -232,7 +182,7 @@ export default function CompanyDetailsPage() {
 
   const [creditAmount, setCreditAmount] = useState("");
   const [creditSubmitting, setCreditSubmitting] = useState(false);
-
+  const { showToast } = useToast();
   useEffect(() => {
     if (!companyId) return;
 
@@ -309,13 +259,12 @@ export default function CompanyDetailsPage() {
         `/v1/super-admin/companies/${companyId}/credits?page=1&limit=25`,
       );
 
-      console.log("GET COMPANY CREDITS RESPONSE =>", response.data);
+      // console.log("GET COMPANY CREDITS RESPONSE =>", response.data);
 
       const payload = response.data?.data ?? response.data;
       const items = Array.isArray(payload?.items) ? payload.items : [];
 
-      // The API returns the newest transaction first.
-      // balance_after on the latest transaction is the current backend balance.
+
       if (items.length > 0) {
         const latestBalance = Number(items[0]?.balance_after);
 
@@ -367,12 +316,19 @@ export default function CompanyDetailsPage() {
         },
       );
 
-      // Refresh credits once after the POST succeeds.
-      // The backend credits API is the source of truth.
       await refreshCompanyCredits();
 
       setCreditAmount("");
       setShowCreditModal(false);
+
+      showToast(
+        `${amount.toLocaleString("en-IN")} credits added successfully.`,
+        "success",
+      );
+
+      setCreditAmount("");
+      setShowCreditModal(false);
+
     } catch (err: any) {
       console.error("ADD CREDITS ERROR =>", err);
 
@@ -433,10 +389,7 @@ export default function CompanyDetailsPage() {
           </button>
 
           <h1>Company Details</h1>
-          <p>
-            View and manage company information, campaigns, activity and plan
-            usage.
-          </p>
+          <p>View and manage company information, campaigns and activity.</p>
         </div>
       </div>
 
@@ -453,11 +406,71 @@ export default function CompanyDetailsPage() {
 
           <div className="company-profile-info">
             <div className="company-name-row">
-              <h2>{company.name}</h2>
+              <div className="company-name-actions">
+                <h2>{company.name}</h2>
 
-              <span className={`status-badge ${company.status}`}>
-                {company.status === "active" ? "Active" : "Suspended"}
-              </span>
+                <span className={`status-badge ${company.status}`}>
+                  {company.status === "active" ? "Active" : "Suspended"}
+                </span>
+
+                <div className="company-icon-actions">
+                  <div className="company-icon-actions">
+                    {/* Edit */}
+                    <button
+                      type="button"
+                      className="company-icon-button"
+                      onClick={() => setShowEditModal(true)}
+                      aria-label="Edit Profile"
+                    >
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                      </svg>
+
+                      <span className="tooltip">Edit Profile</span>
+                    </button>
+
+                    {/* Share */}
+                    <button
+                      type="button"
+                      className="company-icon-button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(window.location.href);
+                        showToast("Profile link copied.", "success");
+                      }}
+                      aria-label="Share Profile"
+                    >
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <path d="m8.6 13.5 6.8 4" />
+                        <path d="m15.4 6.5-6.8 4" />
+                      </svg>
+
+                      <span className="tooltip">Share Profile</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <p className="company-email">{company.email}</p>
@@ -497,26 +510,6 @@ export default function CompanyDetailsPage() {
 
         {/* RIGHT — Profile buttons + Quick Actions */}
         <div className="company-profile-right">
-          <div className="profile-top-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setShowEditModal(true)}
-            >
-              Edit Profile
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                navigator.clipboard?.writeText(window.location.href);
-              }}
-            >
-              Share Profile
-            </button>
-          </div>
-
           <div className="company-quick-actions">
             <span className="quick-actions-label">QUICK ACTIONS</span>
 
@@ -610,7 +603,7 @@ export default function CompanyDetailsPage() {
             Activity
           </button>
 
-          <button
+          {/* <button
             type="button"
             className={
               activeTab === "plan" ? "tab-button active" : "tab-button"
@@ -618,7 +611,7 @@ export default function CompanyDetailsPage() {
             onClick={() => setActiveTab("plan")}
           >
             Plan & Usage
-          </button>
+          </button> */}
         </div>
 
         <div className="tab-content">
@@ -741,124 +734,6 @@ export default function CompanyDetailsPage() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* PLAN & USAGE */}
-          {/* ========================================================= */}
-
-          {activeTab === "plan" && (
-            <div>
-              <div className="overview-header">
-                <div>
-                  <h3>Plan & Usage</h3>
-                  <p>Current subscription and resource usage.</p>
-                </div>
-
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => setShowPlanModal(true)}
-                >
-                  Change Plan
-                </button>
-              </div>
-
-              <div className="plan-layout">
-                <div className="plan-card">
-                  <div className="plan-card-header">
-                    <div>
-                      <span className="small-label">Current Plan</span>
-
-                      <h3>{MOCK_PLAN.name}</h3>
-                    </div>
-
-                    <span className="status-badge active">
-                      {MOCK_PLAN.status}
-                    </span>
-                  </div>
-
-                  <div className="plan-pricing">
-                    <div>
-                      <span>Monthly</span>
-                      <strong>
-                        ₹{MOCK_PLAN.monthlyPrice.toLocaleString("en-IN")}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>Yearly</span>
-                      <strong>
-                        ₹{MOCK_PLAN.yearlyPrice.toLocaleString("en-IN")}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="plan-dates">
-                    <div>
-                      <span>Start Date</span>
-                      <strong>{MOCK_PLAN.startDate}</strong>
-                    </div>
-
-                    <div>
-                      <span>End Date</span>
-                      <strong>{MOCK_PLAN.endDate}</strong>
-                    </div>
-                  </div>
-
-                  <div className="plan-features">
-                    <h4>Plan Features</h4>
-
-                    {MOCK_PLAN.features.map((feature) => (
-                      <div className="feature-item" key={feature}>
-                        <span>✓</span>
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="usage-card">
-                  <div className="usage-card-header">
-                    <h3>Usage</h3>
-                    <span>Current billing period</span>
-                  </div>
-
-                  {MOCK_USAGE.map((item) => {
-                    const percentage = Math.min(
-                      (item.used / item.limit) * 100,
-                      100,
-                    );
-
-                    return (
-                      <div className="usage-item" key={item.label}>
-                        <div className="usage-label-row">
-                          <span>{item.label}</span>
-
-                          <strong>
-                            {item.used.toLocaleString("en-IN")} /{" "}
-                            {item.limit.toLocaleString("en-IN")}
-                          </strong>
-                        </div>
-
-                        <div className="usage-progress">
-                          <div
-                            className="usage-progress-bar"
-                            style={{
-                              width: `${percentage}%`,
-                            }}
-                          />
-                        </div>
-
-                        <span className="usage-percentage">
-                          {Math.round(percentage)}% used
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             </div>
           )}

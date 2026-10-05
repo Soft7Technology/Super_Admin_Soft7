@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { ChangeEvent, CSSProperties } from "react";
+import type { ChangeEvent, CSSProperties, ReactNode } from "react";
 import "./manage-companies.css";
-
+import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import Swal from "sweetalert2";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  AlertCircle,
+  Ban,
+  Building2,
+  CheckCircle2,
+  Eye,
+  Pencil,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,7 +76,6 @@ interface Company {
   phone: string;
   domain: string;
   businessId: string;
-  col: string;
   status: Status;
   plan: Plan;
   users: number;
@@ -85,26 +90,8 @@ interface Company {
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AVATAR_COLORS = [
-  "#6C5CE7",
-  "#0d9462",
-  "#f59e0b",
-  "#3b82f6",
-  "#ec4899",
-  "#14b871",
-  "#8b5cf6",
-  "#ef4444",
-];
 
-function avatarColor(id: string) {
-  let hash = 0;
 
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 function normaliseStatus(raw: string): Status {
   const map: Record<string, Status> = {
@@ -136,7 +123,6 @@ function enrichCompany(raw: RawCompany): Company {
     phone: raw.phone || "—",
     domain: raw.domain || email.split("@")[1] || "—",
     businessId: raw.business_id || "",
-    col: avatarColor(String(raw.id)),
     status: normaliseStatus(raw.status),
     plan: "Starter",
     users: 0,
@@ -214,50 +200,7 @@ function Badge({ status }: { status: Status }) {
   );
 }
 
-function StatusDropdown({
-  company,
-  onStatusChange,
-}: {
-  company: Company;
-  onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
-}) {
-  const dotColor = STATUS_DOT_COLORS[company.status];
 
-  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value as Status;
-
-    if (newStatus === company.status) return;
-
-    if (newStatus === "ACTIVE" || newStatus === "SUSPENDED") {
-      onStatusChange(company.id, newStatus);
-    } else {
-      toast.info("Switching directly to Inactive/Trial isn't supported here.");
-    }
-
-    e.target.value = company.status;
-  };
-
-  return (
-    <span className="mc-status-inline">
-      <span
-        className="mc-status-dot"
-        style={{ background: dotColor }}
-        aria-hidden="true"
-      />
-
-      <select
-        className="mc-status-dropdown"
-        value={company.status}
-        onChange={handleChange}
-        onClick={(e) => e.stopPropagation()}
-        title="Change status"
-      >
-        <option value="ACTIVE">Active</option>
-        <option value="SUSPENDED">Suspended</option>
-      </select>
-    </span>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGINATION
@@ -393,22 +336,22 @@ function KPI({
 }: {
   label: string;
   value: string;
-  icon: string;
+  icon: ReactNode;
   color: string;
 }) {
   return (
-    <div className="mc-kpi">
-      <div className="mc-kpi__orb" style={{ background: `${color}10` }} />
-
-      <div className="mc-kpi__top">
-        <span className="mc-kpi__label">{label}</span>
-
-        <div className="mc-kpi__icon" style={{ background: `${color}18` }}>
-          {icon}
-        </div>
+    <div className="mc-stat">
+      <div
+        className="mc-stat__icon"
+        style={{ background: `${color}1f`, color }}
+      >
+        {icon}
       </div>
 
-      <div className="mc-kpi__value">{value}</div>
+      <div className="mc-stat__body">
+        <span className="mc-stat__label">{label}</span>
+        <span className="mc-stat__value">{value}</span>
+      </div>
     </div>
   );
 }
@@ -715,7 +658,8 @@ function CompanyDetailModal({
             <div
               className="mc-detail__logo"
               style={{
-                background: company.col,
+                background: "#e8f5ef",
+                color: "#278b67",
                 width: 52,
                 height: 52,
               }}
@@ -1351,33 +1295,33 @@ export default function ManageCompanies() {
         </button>
       </div>
 
-      {/* KPIs */}
+      {/* STATS */}
 
-      <div className="mc-kpi-grid">
+      <div className="mc-stats">
         <KPI
           label="Total Companies"
           value={String(pagination.total)}
-          icon="🏢"
-          color="#6C5CE7"
+          icon={<Building2 size={18} />}
+          color="#0891b2"
         />
 
         <KPI
-          label="Active"
+          label="Active Companies"
           value={String(
             companies.filter((company) => company.status === "ACTIVE").length,
           )}
-          icon="✅"
-          color="#00CBA4"
+          icon={<CheckCircle2 size={18} />}
+          color="#10b981"
         />
 
         <KPI
-          label="Suspended"
+          label="Suspended Companies"
           value={String(
             companies.filter((company) => company.status === "SUSPENDED")
               .length,
           )}
-          icon="⛔"
-          color="#FF6B6B"
+          icon={<Ban size={18} />}
+          color="#ef4444"
         />
       </div>
 
@@ -1469,8 +1413,6 @@ export default function ManageCompanies() {
 
                 <th>PHONE</th>
 
-                <th>BUSINESS ID</th>
-
                 <th>ACTIONS</th>
               </tr>
             </thead>
@@ -1488,15 +1430,9 @@ export default function ManageCompanies() {
 
                   <td>
                     <div className="mc-company-cell">
-                      <div
-                        className="mc-company-avatar"
-                        style={{
-                          background: company.col,
-                        }}
-                      >
+                      <div className="mc-company-avatar">
                         {company.name.slice(0, 2).toUpperCase()}
                       </div>
-
                       <div className="mc-company-info">
                         <button
                           type="button"
@@ -1510,10 +1446,7 @@ export default function ManageCompanies() {
                         </button>
 
                         <div className="mc-company-status">
-                          <StatusDropdown
-                            company={company}
-                            onStatusChange={handleStatusChange}
-                          />
+                          <Badge status={company.status} />
                         </div>
                       </div>
                     </div>
@@ -1522,8 +1455,6 @@ export default function ManageCompanies() {
                   <td title={company.email}>{company.email}</td>
 
                   <td>{company.phone}</td>
-
-                  <td>{company.businessId || "—"}</td>
 
                   <td>
                     <div className="mc-actions">
@@ -1534,8 +1465,9 @@ export default function ManageCompanies() {
                           router.push(`/user/manage-companies/${company.id}`)
                         }
                         title="View"
+                        aria-label="View company"
                       >
-                        👁
+                        <Eye />
                       </button>
 
                       <button
@@ -1543,8 +1475,9 @@ export default function ManageCompanies() {
                         className="mc-action-btn"
                         onClick={() => openView(company)}
                         title="Edit"
+                        aria-label="Edit company"
                       >
-                        ✏️
+                        <Pencil />
                       </button>
 
                       <button
@@ -1552,8 +1485,9 @@ export default function ManageCompanies() {
                         className="mc-action-btn credit"
                         onClick={() => setCreditCompany(company)}
                         title="Add Credit"
+                        aria-label="Add credit"
                       >
-                        💰
+                        <Wallet />
                       </button>
 
                       <button
@@ -1561,8 +1495,9 @@ export default function ManageCompanies() {
                         className="mc-action-btn delete"
                         onClick={() => handleDelete(company.id)}
                         title="Delete"
+                        aria-label="Delete company"
                       >
-                        🗑️
+                        <Trash2 />
                       </button>
                     </div>
                   </td>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
-
+import { ToastProvider } from "@/components/ui/ToastProvider";
 export const metadata: Metadata = {
   title: "Soft7 Super Admin ",
   description: "Soft7 Super Admin Panel",
@@ -33,7 +33,9 @@ export default function RootLayout({
           fontSize: "15px",
         }}
       >
-        <Providers>{children}</Providers>
+        <ToastProvider>
+          <Providers>{children}</Providers>
+        </ToastProvider>
       </body>
     </html>
   );
