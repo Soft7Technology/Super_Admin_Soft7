@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTheme } from "../../../../context/ThemeContext";
 import "./user-profile.css";
+import Spinner from "@/components/ui/Spinner";
 import {
   Activity,
   AlertCircle,
@@ -437,10 +438,7 @@ export default function UserProfilePage() {
       </div>
 
       {loading ? (
-        <div className="up-loader-box">
-          <div className="up-spinner" />
-          <p>Loading user details...</p>
-        </div>
+        <Spinner variant="center" size="lg" color="primary" text="Loading user details..." />
       ) : error || !user ? (
         <div className="up-hero-card" style={{ textAlign: "center", padding: "48px 24px" }}>
           <AlertCircle size={44} style={{ color: "#ef4444", margin: "0 auto 12px" }} />

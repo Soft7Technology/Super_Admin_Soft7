@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
+import Spinner from "@/components/ui/Spinner";
 import { User, UserStats, roleColor, planColor } from "./types";
 
 import { Badge } from "./components/Badge";
@@ -467,9 +468,16 @@ export default function AllUsers() {
                       color: "#6b7280",
                     }}
                   >
-                    {loading
-                      ? "Loading users..."
-                      : "No users match your filters"}
+                    {loading ? (
+                      <Spinner
+                        variant="center"
+                        size="lg"
+                        color="primary"
+                        text="Loading users..."
+                      />
+                    ) : (
+                      "No users match your filters"
+                    )}
                   </td>
                 </tr>
               )}
@@ -631,7 +639,16 @@ export default function AllUsers() {
             ))
           ) : (
             <div className="au-user-card--empty">
-              {loading ? "Loading users..." : "No users match your filters"}
+              {loading ? (
+                <Spinner
+                  variant="center"
+                  size="md"
+                  color="primary"
+                  text="Loading users..."
+                />
+              ) : (
+                "No users match your filters"
+              )}
             </div>
           )}
         </div>

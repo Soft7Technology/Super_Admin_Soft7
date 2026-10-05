@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import "./manage-companies.css";
+import Spinner from "@/components/ui/Spinner";
 
 import { axiosInstance } from "@/lib/axiosInstance";
 import PhoneInput from "react-phone-input-2";
@@ -1450,7 +1451,14 @@ export default function ManageCompanies() {
       {/* TABLE */}
 
       {loading ? (
-        <div className="mc-empty">Loading companies…</div>
+        <div className="mc-empty" style={{ padding: "60px 0" }}>
+          <Spinner
+            variant="center"
+            size="lg"
+            color="primary"
+            text="Loading companies…"
+          />
+        </div>
       ) : fetchError ? (
         <div className="mc-empty" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
           <AlertCircle size={16} style={{ color: "var(--danger)" }} />

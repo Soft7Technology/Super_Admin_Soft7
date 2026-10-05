@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./support-tickets.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import Spinner from "@/components/ui/Spinner";
 import {
   Ticket as TicketIcon,
   Clock,
@@ -18,7 +19,6 @@ import {
   Send,
   RefreshCw,
   AlertCircle,
-  Loader2,
   Eye,
 } from "lucide-react";
 
@@ -537,10 +537,7 @@ function ConvPanel({
               disabled={sending || !reply.trim()}
             >
               {sending ? (
-                <>
-                  <Loader2 size={14} className="st-btn-send__spinner" />
-                  <span>Sending…</span>
-                </>
+                <Spinner size="sm" text="Sending…" />
               ) : (
                 <>
                   <Send size={13} />
@@ -940,8 +937,13 @@ export default function SupportTickets() {
   return (
     <div className="st-root">
       {loading && (
-        <div style={{ padding: "80px 0", textAlign: "center", color: "var(--st-muted)", fontSize: 15 }}>
-          Loading tickets…
+        <div style={{ padding: "80px 0" }}>
+          <Spinner
+            variant="center"
+            size="lg"
+            color="primary"
+            text="Loading support tickets…"
+          />
         </div>
       )}
 

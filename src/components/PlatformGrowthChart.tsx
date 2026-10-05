@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
+import Spinner from "./ui/Spinner";
 
 export interface GrowthPoint {
   label: string;
@@ -240,11 +241,9 @@ export default function PlatformGrowthChart({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "var(--crm-muted, #94a3b8)",
-          fontSize: "0.85rem",
         }}
       >
-        Loading chart…
+        <Spinner variant="center" size="lg" color="primary" text="Loading growth chart…" />
       </div>
     );
   }

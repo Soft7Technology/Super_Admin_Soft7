@@ -5,6 +5,7 @@ import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "@/app/globals.css";
 import styles from "./transactions.module.css";
+import Spinner from "@/components/ui/Spinner";
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Transaction {
@@ -277,9 +278,9 @@ useEffect(() => {
             Current Wallet Balance
           </span>
           {balanceLoading ? (
-            <span
-              className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-            />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", height: "26px" }}>
+              <Spinner size="xs" color="primary" />
+            </span>
           ) : (
             <span className={styles["tx-balance-card__amount"]}>
               ₹{walletBalance !== null ? formatCurrency(walletBalance) : "—"}
@@ -346,47 +347,19 @@ useEffect(() => {
             </tr>
           </thead>
           <tbody>
-            {/* Loading skeletons */}
-            {loading &&
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={`skeleton-${i}`}>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--lg"]}`}
-                    />
-                  </td>
-                </tr>
-              ))}
+            {/* Loading Modern Ring Spinner */}
+            {loading && (
+              <tr>
+                <td colSpan={7} style={{ padding: "40px 0" }}>
+                  <Spinner
+                    variant="center"
+                    size="lg"
+                    color="primary"
+                    text="Loading transactions..."
+                  />
+                </td>
+              </tr>
+            )}
 
             {/* Error */}
             {!loading && error && (

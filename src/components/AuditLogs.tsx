@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "../context/ThemeContext";
 import { ChevronRight } from "lucide-react";
+import Spinner from "./ui/Spinner";
 
 export interface LogEntry {
   id:    string;
@@ -117,9 +118,7 @@ export default function AuditLogs({
       </div>
 
       {loading ? (
-        <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: msgFont }}>
-          Loading audit logs...
-        </div>
+        <Spinner variant="center" size="md" color="primary" text="Loading audit logs..." />
       ) : error ? (
         <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-red, #ef4444)", fontSize: msgFont }}>
           {error}
