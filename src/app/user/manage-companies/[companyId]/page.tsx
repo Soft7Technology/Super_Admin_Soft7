@@ -164,7 +164,7 @@ export default function CompanyDetailsPage() {
 
         setCompany(mappedCompany);
 
-        // ---- KPI stats from "Get company by ID" ----
+       
         const campaignGroups: { status: string; count: string | number }[] =
           Array.isArray(payload?.campaigns) ? payload.campaigns : [];
 
@@ -210,7 +210,7 @@ export default function CompanyDetailsPage() {
     loadCompany();
   }, [companyId]);
 
-  // Active plan(s) — "Get active plan by ID"
+
   useEffect(() => {
     if (!companyId) return;
 
@@ -397,7 +397,37 @@ export default function CompanyDetailsPage() {
       setActivitiesLoading(false);
     }
   };
+useEffect(() => {
+  if (!companyId) return;
 
+  const fetchMessageStats = async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/v1/super-admin/companies/${companyId}/messages`,
+        {
+          params: {
+            page: 1,
+            limit: 1,
+          },
+        },
+      );
+
+      const totalMessages = Number(response.data?.data?.pagination?.total ?? 0);
+
+      console.log("TOTAL MESSAGES =>", totalMessages);
+
+      setStats((current) => ({
+        ...current,
+       
+      }));
+    } catch (error) {
+      console.error("Failed to fetch messages", error);
+    }
+  };
+
+  fetchMessageStats();
+}, [companyId]);
+  
   useEffect(() => {
     if (companyId) {
       fetchActivitiesPreview();
