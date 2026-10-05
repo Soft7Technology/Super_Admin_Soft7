@@ -141,14 +141,15 @@
   white-space: nowrap;
 }
 
-.tx-segment__btn:hover {
+.tx-segment__btn:hover:not(.tx-segment__btn--active) {
   color: var(--text);
+  background: var(--surf3);
 }
 
 .tx-segment__btn--active {
-  background: var(--surf) !important;
-  color: var(--title-color) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--crm-primary, #206bc4) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
 }
 
 .tx-segment__dot {
@@ -156,6 +157,7 @@
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
 .tx-segment__dot--credit {
@@ -164,6 +166,10 @@
 
 .tx-segment__dot--debit {
   background: #d63939;
+}
+
+.tx-segment__btn--active .tx-segment__dot {
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7);
 }
 
 /* ── Table Wrapper ─────────────────────────────────────────── */
@@ -469,9 +475,15 @@
   cursor: not-allowed;
 }
 
+/* ── Mobile Cards (<= 768px) ── */
+.tx-mobile-cards {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .tx-page {
     padding: 16px 12px 40px;
+    overflow-x: hidden;
   }
 
   .tx-balance-card {
@@ -504,13 +516,98 @@
   }
 
   .tx-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    display: none !important;
   }
 
-  .tx-table {
-    min-width: 650px;
-    table-layout: auto;
+  .tx-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .tx-card {
+    background: var(--surf);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .tx-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .tx-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tx-card__title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .tx-card__company {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--title-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tx-card__date {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .tx-card__badge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .tx-card__amount {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tx-card__details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tx-card__detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12.5px;
+  }
+
+  .tx-card__label {
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .tx-card__val {
+    font-weight: 600;
+    color: var(--text);
+    text-align: right;
   }
 
   .tx-pagination {

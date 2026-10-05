@@ -8,6 +8,7 @@ import CompanyOverview from "@/components/CompanyOverview";
 import PlatformGrowthChart, { GrowthPoint } from "@/components/PlatformGrowthChart";
 import UserManagement, { DbUser } from "@/components/UserManagement";
 import AuditLogs, { LogEntry } from "@/components/AuditLogs";
+import RecentTransactionsFeed from "@/components/RecentTransactionsFeed";
 import { Building2, Users, Globe, CreditCard, ArrowUpRight } from "lucide-react";
 import "./dashboard.css";
 
@@ -170,15 +171,15 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
   }, []);
 
   const options = [
-    "Last 7 Days",
-    "Last Month",
-    "Last 6 Months",
-    "Last Year",
-    "All Time",
+    { id: "Last 7 Days", label: "7 Days", short: "7D" },
+    { id: "Last Month", label: "1 Month", short: "1M" },
+    { id: "Last 6 Months", label: "6 Months", short: "6M" },
+    { id: "Last Year", label: "1 Year", short: "1Y" },
+    { id: "All Time", label: "All Time", short: "All" },
   ];
 
-  const handleSelect = (opt: string) => {
-    setSelected(opt);
+  const handleSelect = (optId: string) => {
+    setSelected(optId);
     const now = new Date();
     setLastUpdated(
       now.toLocaleTimeString("en-US", {
@@ -191,77 +192,25 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-end",
-        gap: "5px",
-        maxWidth: "100%",
-      }}
-      className="crm-time-range-wrap"
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "3px 4px",
-          borderRadius: "9999px",
-          background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
-          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0"}`,
-          boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.04)",
-          maxWidth: "100%",
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch",
-          whiteSpace: "nowrap",
-        }}
-        className="no-scrollbar"
-      >
+    <div className="crm-time-range-wrap">
+      <div className="crm-time-pills" role="tablist">
         {options.map((opt) => {
-          const isActive = selected === opt;
+          const isActive = selected === opt.id;
           return (
             <button
-              key={opt}
+              key={opt.id}
               type="button"
-              onClick={() => handleSelect(opt)}
-              style={{
-                border: "none",
-                outline: "none",
-                cursor: "pointer",
-                padding: "6px 14px",
-                borderRadius: "9999px",
-                fontSize: "0.8rem",
-                fontWeight: isActive ? 600 : 500,
-                color: isActive
-                  ? "#ffffff"
-                  : isDark
-                  ? "rgba(255, 255, 255, 0.6)"
-                  : "#64748b",
-                background: isActive
-                  ? "var(--crm-primary, #206bc4)"
-                  : "transparent",
-                boxShadow: isActive
-                  ? "0 2px 8px rgba(32, 107, 196, 0.35)"
-                  : "none",
-                transition: "all 0.2s ease",
-                flexShrink: 0,
-              }}
+              onClick={() => handleSelect(opt.id)}
+              className={`crm-time-pill ${isActive ? "crm-time-pill--active" : ""}`}
             >
-              {opt}
+              <span className="crm-time-pill-full">{opt.label}</span>
+              <span className="crm-time-pill-short">{opt.short}</span>
             </button>
           );
         })}
       </div>
 
-      <span
-        style={{
-          fontSize: "0.74rem",
-          fontWeight: 500,
-          color: isDark ? "rgba(255, 255, 255, 0.4)" : "#64748b",
-          paddingRight: "6px",
-        }}
-        suppressHydrationWarning
-      >
+      <span className="crm-time-last-updated" suppressHydrationWarning>
         Last updated: {lastUpdated || "—"}
       </span>
     </div>
@@ -682,6 +631,9 @@ export default function DashboardPage() {
             onViewAll={() => router.push("/user/manage-companies")}
             onCompanyClick={() => router.push("/user/manage-companies")}
           />
+
+          {/* Card: Recent Transactions Feed */}
+          <RecentTransactionsFeed limit={5} />
         </div>
 
         {/* Right Column */}

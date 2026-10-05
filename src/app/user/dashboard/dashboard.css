@@ -724,6 +724,72 @@
   }
 }
 
+/* ─── TIME RANGE PILLS ──────────────────────────────────── */
+.crm-time-range-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  max-width: 100%;
+}
+
+.crm-time-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.crm-time-pill {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crm-time-pill:hover:not(.crm-time-pill--active) {
+  color: var(--title-color);
+  background: var(--surf3);
+}
+
+.crm-time-pill--active {
+  background: var(--crm-primary, #206bc4) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
+}
+
+.crm-time-pill-short {
+  display: none;
+}
+
+.crm-time-pill-full {
+  display: inline;
+}
+
+.crm-time-last-updated {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding-right: 6px;
+}
+
 @media (max-width: 768px) {
   .crm-dashboard {
     padding: 16px 12px 36px;
@@ -737,6 +803,7 @@
     align-items: flex-start !important;
     width: 100%;
   }
+
   .crm-table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -770,15 +837,153 @@
   }
 }
 
-@media (max-width: 480px) {
-  .crm-dashboard {
-    padding: 12px 10px 32px;
+@media (max-width: 600px) {
+  .crm-time-pills {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    padding: 3px;
   }
-  .crm-header__title {
-    font-size: 20px;
+  .crm-time-pill {
+    padding: 6px 2px;
+    font-size: 11.5px;
+    width: 100%;
   }
-  .crm-stat-card {
-    padding: 14px 12px;
+  .crm-time-pill-full {
+    display: none;
+  }
+  .crm-time-pill-short {
+    display: inline;
   }
 }
 
+/* ─── Recent Transactions Feed ──────────────────────────────── */
+.crm-tx-feed-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 20px;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid var(--crm-border, #e2e8f0);
+}
+
+.crm-tx-feed-item:last-child {
+  border-bottom: none;
+}
+
+.crm-tx-feed-item:hover {
+  background: var(--crm-card-hover, rgba(0, 0, 0, 0.02));
+}
+
+.crm-tx-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.crm-tx-icon--credit {
+  background: rgba(47, 179, 68, 0.12);
+  color: var(--crm-green, #2fb344);
+}
+
+.crm-tx-icon--debit {
+  background: rgba(214, 57, 57, 0.12);
+  color: var(--crm-red, #d63939);
+}
+
+.crm-tx-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crm-tx-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--crm-title, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-tx-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--crm-muted, #64748b);
+  margin-top: 1px;
+}
+
+.crm-tx-desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.crm-tx-amount-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.crm-tx-amount {
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+}
+
+.crm-tx-amount--credit {
+  color: var(--crm-green, #2fb344);
+}
+
+.crm-tx-amount--debit {
+  color: var(--crm-red, #d63939);
+}
+
+.crm-tx-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.crm-tx-badge--credit {
+  background: rgba(47, 179, 68, 0.1);
+  color: var(--crm-green, #2fb344);
+}
+
+.crm-tx-badge--debit {
+  background: rgba(214, 57, 57, 0.1);
+  color: var(--crm-red, #d63939);
+}
+
+.crm-tx-footer {
+  padding: 10px 20px;
+  background: var(--surf2, #f8fafc);
+  border-top: 1px solid var(--crm-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--crm-muted, #64748b);
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.crm-tx-footer:hover {
+  background: var(--crm-card-hover, rgba(0, 0, 0, 0.04));
+}

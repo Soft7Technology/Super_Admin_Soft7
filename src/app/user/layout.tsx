@@ -61,7 +61,7 @@ React.useEffect(() => {
    <div
      data-theme={isDark ? "dark" : "light"}
      className={isDark ? "dark" : "light"}
-     style={{ minHeight: "100vh", background: t.bg }}
+     style={{ minHeight: "100vh", background: "var(--crm-bg, var(--bg, #f4f6fa))" }}
    >
      <Toaster
        position="top-center"

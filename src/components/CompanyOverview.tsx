@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
+import { Users } from "lucide-react";
 
 interface Company {
   id:     string;
@@ -207,8 +208,9 @@ export default function CompanyOverview({
                   <span style={{ fontSize: "0.75rem", color: "var(--crm-muted, #64748b)", fontWeight: 500, whiteSpace: "nowrap" }}>
                     {co.plan}
                   </span>
-                  <span style={{ fontSize: "0.75rem", color: "var(--crm-title, #0f172a)", fontWeight: 600, marginLeft: "auto", whiteSpace: "nowrap" }}>
-                    👥 {co.users}
+                  <span style={{ fontSize: "0.75rem", color: "var(--crm-title, #0f172a)", fontWeight: 600, marginLeft: "auto", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                    <Users size={13} style={{ color: "var(--crm-muted, #64748b)" }} />
+                    {co.users}
                   </span>
                 </div>
               </div>

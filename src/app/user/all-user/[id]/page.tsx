@@ -5,21 +5,24 @@ import { useParams, useRouter } from "next/navigation";
 import { useTheme } from "../../../../context/ThemeContext";
 import "./user-profile.css";
 import {
-  ArrowLeft,
-  Mail,
-  Phone,
-  Pencil,
-  Share2,
-  KeyRound,
-  Folder,
-  Users,
-  Send,
-  MessageSquare,
+  Activity,
   AlertCircle,
-  UserCheck,
-  TrendingUp,
-  Zap,
+  ArrowLeft,
   CheckCircle2,
+  CreditCard,
+  Folder,
+  KeyRound,
+  Layers,
+  Mail,
+  MessageSquare,
+  Pencil,
+  Phone,
+  Send,
+  Share2,
+  TrendingUp,
+  UserCheck,
+  Users,
+  Zap,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -592,16 +595,26 @@ export default function UserProfilePage() {
 
             {/* Right Column: Tab Navigation & Content */}
             <div className="up-right-col">
-              <div className="up-tabs-bar">
-                {(["Overview", "Activity Log", "Campaigns", "Plan"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    className={`up-tab-pill ${activeTab === tab ? "up-tab-pill--active" : ""}`}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="up-tabs-bar" role="tablist">
+                {[
+                  { id: "Overview", label: "Overview", shortLabel: "Overview", icon: Layers },
+                  { id: "Activity Log", label: "Activity Log", shortLabel: "Activity", icon: Activity },
+                  { id: "Campaigns", label: "Campaigns", shortLabel: "Campaigns", icon: Share2 },
+                  { id: "Plan", label: "Plan", shortLabel: "Plan", icon: CreditCard },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      className={`up-tab-pill ${activeTab === tab.id ? "up-tab-pill--active" : ""}`}
+                      onClick={() => setActiveTab(tab.id as any)}
+                    >
+                      <Icon size={14} />
+                      <span className="up-tab-label-full">{tab.label}</span>
+                      <span className="up-tab-label-short">{tab.shortLabel}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Tab 1: Overview Grid (9 Metric Cards) */}

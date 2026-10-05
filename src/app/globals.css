@@ -551,24 +551,62 @@ a:hover {
   }
 }
 
+/* ─── Global Back Button Utility ─────────────────────────── */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surf2, #f1f5f9);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  padding: 6px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--title-color, var(--text, #1e293b));
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+
+.back-button:hover {
+  background: var(--surf, #ffffff);
+  border-color: var(--primary, #206bc4);
+  color: var(--primary, #206bc4);
+  transform: translateX(-3px);
+  box-shadow: 0 2px 8px rgba(32, 107, 196, 0.15);
+}
+
+.back-button svg {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.back-button:hover svg {
+  transform: translateX(-2px);
+}
+
 /* ============================================================
    CRM UNIFIED MOBILE CARD & DESKTOP TABLE SYSTEM
    Shared across all pages: All Users, Support Tickets, etc.
    ============================================================ */
 
 /* Desktop vs Mobile Toggle */
+.app-desktop-only,
 .crm-desktop-table,
 .au-desktop-only {
   display: block;
   width: 100%;
 }
 
+.app-mobile-cards,
 .crm-mobile-cards,
 .au-mobile-cards {
   display: none;
 }
 
 @media (max-width: 768px) {
+  .app-desktop-only,
   .crm-desktop-table,
   .au-desktop-only {
     display: none !important;
@@ -579,6 +617,7 @@ a:hover {
     padding: 0 !important;
   }
 
+  .app-mobile-cards,
   .crm-mobile-cards,
   .au-mobile-cards {
     display: flex !important;
@@ -882,5 +921,163 @@ a:hover {
   }
 }
 
+/* Phone Input (react-phone-input-2) */
+.react-tel-input .form-control {
+  width: 100% !important;
+  height: 44px !important;
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 9px !important;
+  font-size: 13.5px !important;
+  padding-left: 48px !important;
+}
 
+.react-tel-input .form-control:focus,
+.react-tel-input .country-list .search-box:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.12) !important;
+}
 
+.react-tel-input .flag-dropdown {
+  background: var(--surf2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 9px 0 0 9px !important;
+}
+
+.react-tel-input .flag-dropdown:hover,
+.react-tel-input .flag-dropdown.open,
+.react-tel-input .flag-dropdown.open .selected-flag {
+  background: var(--surf3) !important;
+  border-color: var(--accent) !important;
+}
+
+.react-tel-input .selected-flag {
+  background: transparent !important;
+}
+
+.react-tel-input .selected-flag .arrow {
+  border-top-color: var(--muted) !important;
+}
+
+.react-tel-input .selected-flag .arrow.up {
+  border-bottom-color: var(--muted) !important;
+}
+
+.react-tel-input .country-list {
+  background: var(--surf) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-modal) !important;
+}
+
+.react-tel-input .country-list .search {
+  background: var(--surf2) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 8px 10px !important;
+}
+
+.react-tel-input .country-list .search-box {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 7px !important;
+  padding: 7px 10px !important;
+  outline: none !important;
+}
+
+.react-tel-input .country-list .country {
+  padding: 8px 12px !important;
+  color: var(--text) !important;
+}
+
+.react-tel-input .country-list .country:hover,
+.react-tel-input .country-list .country.highlight {
+  background: var(--crm-primary-lt) !important;
+}
+
+.react-tel-input .country-list .country .dial-code {
+  color: var(--muted) !important;
+}
+
+/* ─── REUSABLE GENERIC MOBILE CARD (src/components/MobileCard.tsx) ── */
+@media (max-width: 768px) {
+  .app-card {
+    background: var(--surf);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .app-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .app-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .app-card__identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .app-card__status {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .app-card__details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .app-card__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12.5px;
+  }
+
+  .app-card__label {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .app-card__val {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 12.5px;
+    text-align: right;
+  }
+
+  .app-card__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+}

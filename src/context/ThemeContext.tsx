@@ -4,23 +4,25 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 type Theme = "dark" | "light";
 interface ThemeContextType { theme: Theme; toggleTheme: () => void; isDark: boolean; }
 
-const ThemeContext = createContext<ThemeContextType>({ theme: "dark", toggleTheme: () => {}, isDark: true });
+const ThemeContext = createContext<ThemeContextType>({ theme: "light", toggleTheme: () => {}, isDark: false });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sa-theme") as Theme | null;
-      const initialTheme = (saved === "light" || saved === "dark") ? saved : "dark";
+      const initialTheme = (saved === "light" || saved === "dark")
+        ? saved
+        : (document.documentElement.getAttribute("data-theme") as Theme | null) || "light";
       setTheme(initialTheme);
       document.documentElement.setAttribute("data-theme", initialTheme);
       document.documentElement.classList.toggle("dark", initialTheme === "dark");
       document.documentElement.classList.toggle("light", initialTheme === "light");
     } catch {
-      document.documentElement.setAttribute("data-theme", "dark");
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
+      document.documentElement.setAttribute("data-theme", "light");
+      document.documentElement.classList.add("light");
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 
