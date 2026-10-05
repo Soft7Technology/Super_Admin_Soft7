@@ -3,6 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  Ban,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CreditCard,
+  Layers,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  Share2,
+  TrendingUp,
+  User,
+  X,
+} from "lucide-react";
 import "./company-details.css";
 
 type CompanyStatus = "active" | "suspended";
@@ -429,7 +449,8 @@ export default function CompanyDetailsPage() {
             className="back-button"
             onClick={() => router.push("/user/manage-companies")}
           >
-            ← Back to Companies
+            <ArrowLeft size={16} />
+            <span>Back to Companies</span>
           </button>
 
           <h1>Company Details</h1>
@@ -456,7 +477,15 @@ export default function CompanyDetailsPage() {
               <h2>{company.name}</h2>
 
               <span className={`status-badge ${company.status}`}>
-                {company.status === "active" ? "Active" : "Suspended"}
+                {company.status === "active" ? (
+                  <>
+                    <CheckCircle2 size={12} /> Active
+                  </>
+                ) : (
+                  <>
+                    <Ban size={12} /> Suspended
+                  </>
+                )}
               </span>
             </div>
 
@@ -503,17 +532,22 @@ export default function CompanyDetailsPage() {
               className="secondary-button"
               onClick={() => setShowEditModal(true)}
             >
-              Edit Profile
+              <Pencil size={13} />
+              <span>Edit Profile</span>
             </button>
 
             <button
               type="button"
               className="secondary-button"
               onClick={() => {
-                navigator.clipboard?.writeText(window.location.href);
+                if (typeof window !== "undefined") {
+                  navigator.clipboard?.writeText(window.location.href);
+                  toast.success("Profile link copied!");
+                }
               }}
             >
-              Share Profile
+              <Share2 size={13} />
+              <span>Share Profile</span>
             </button>
           </div>
 
@@ -531,7 +565,11 @@ export default function CompanyDetailsPage() {
                 onClick={handleStatusChange}
               >
                 <span className="quick-action-icon">
-                  {company.status === "active" ? "⏸" : "✓"}
+                  {company.status === "active" ? (
+                    <Pause size={14} />
+                  ) : (
+                    <Play size={14} />
+                  )}
                 </span>
 
                 <span className="quick-action-text">
@@ -542,7 +580,9 @@ export default function CompanyDetailsPage() {
                   </strong>
                 </span>
 
-                <span className="quick-action-arrow">→</span>
+                <span className="quick-action-arrow">
+                  <ChevronRight size={14} />
+                </span>
               </button>
 
               <button
@@ -550,13 +590,17 @@ export default function CompanyDetailsPage() {
                 className="quick-action-item"
                 onClick={() => setShowPlanModal(true)}
               >
-                <span className="quick-action-icon">◆</span>
+                <span className="quick-action-icon">
+                  <Layers size={14} />
+                </span>
 
                 <span className="quick-action-text">
                   <strong>Change Plan</strong>
                 </span>
 
-                <span className="quick-action-arrow">→</span>
+                <span className="quick-action-arrow">
+                  <ChevronRight size={14} />
+                </span>
               </button>
 
               <button
@@ -564,13 +608,17 @@ export default function CompanyDetailsPage() {
                 className="quick-action-item"
                 onClick={() => setShowCreditModal(true)}
               >
-                <span className="quick-action-icon">＋</span>
+                <span className="quick-action-icon">
+                  <Plus size={14} />
+                </span>
 
                 <span className="quick-action-text">
                   <strong>Add Credits</strong>
                 </span>
 
-                <span className="quick-action-arrow">→</span>
+                <span className="quick-action-arrow">
+                  <ChevronRight size={14} />
+                </span>
               </button>
             </div>
           </div>
@@ -578,49 +626,53 @@ export default function CompanyDetailsPage() {
       </section>
 
       {/* Tabs */}
+      <div className="company-tabs" role="tablist">
+        <button
+          type="button"
+          className={
+            activeTab === "overview" ? "tab-button active" : "tab-button"
+          }
+          onClick={() => setActiveTab("overview")}
+        >
+          <Layers size={14} />
+          <span>Overview</span>
+        </button>
+
+        <button
+          type="button"
+          className={
+            activeTab === "campaigns" ? "tab-button active" : "tab-button"
+          }
+          onClick={() => setActiveTab("campaigns")}
+        >
+          <Share2 size={14} />
+          <span>Campaigns</span>
+        </button>
+
+        <button
+          type="button"
+          className={
+            activeTab === "activity" ? "tab-button active" : "tab-button"
+          }
+          onClick={() => setActiveTab("activity")}
+        >
+          <Activity size={14} />
+          <span>Activity</span>
+        </button>
+
+        <button
+          type="button"
+          className={
+            activeTab === "plan" ? "tab-button active" : "tab-button"
+          }
+          onClick={() => setActiveTab("plan")}
+        >
+          <CreditCard size={14} />
+          <span>Plan & Usage</span>
+        </button>
+      </div>
+
       <section className="company-content-card">
-        <div className="company-tabs">
-          <button
-            type="button"
-            className={
-              activeTab === "overview" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("overview")}
-          >
-            Overview
-          </button>
-
-          <button
-            type="button"
-            className={
-              activeTab === "campaigns" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("campaigns")}
-          >
-            Campaigns
-          </button>
-
-          <button
-            type="button"
-            className={
-              activeTab === "activity" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("activity")}
-          >
-            Activity
-          </button>
-
-          <button
-            type="button"
-            className={
-              activeTab === "plan" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("plan")}
-          >
-            Plan & Usage
-          </button>
-        </div>
-
         <div className="tab-content">
           {/* ========================================================= */}
           {/* OVERVIEW */}
@@ -693,7 +745,7 @@ export default function CompanyDetailsPage() {
                   className="view-more-button"
                   onClick={() => {}}
                 >
-                  View More →
+                  <span>View More</span> <ArrowRight size={13} />
                 </button>
               </div>
 
@@ -720,7 +772,7 @@ export default function CompanyDetailsPage() {
                   className="view-more-button"
                   onClick={() => {}}
                 >
-                  View More →
+                  <span>View More</span> <ArrowRight size={13} />
                 </button>
               </div>
 
@@ -813,7 +865,7 @@ export default function CompanyDetailsPage() {
 
                     {MOCK_PLAN.features.map((feature) => (
                       <div className="feature-item" key={feature}>
-                        <span>✓</span>
+                        <Check size={14} />
                         {feature}
                       </div>
                     ))}
@@ -883,7 +935,7 @@ export default function CompanyDetailsPage() {
                 className="modal-close"
                 onClick={() => setShowEditModal(false)}
               >
-                ×
+                <X size={16} />
               </button>
             </div>
 
@@ -975,7 +1027,7 @@ export default function CompanyDetailsPage() {
                 className="modal-close"
                 onClick={() => setShowPlanModal(false)}
               >
-                ×
+                <X size={16} />
               </button>
             </div>
 
@@ -1026,7 +1078,7 @@ export default function CompanyDetailsPage() {
                 className="modal-close"
                 onClick={() => setShowCreditModal(false)}
               >
-                ×
+                <X size={16} />
               </button>
             </div>
 
@@ -1147,21 +1199,21 @@ function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
 function getActivityIcon(type: Activity["type"]) {
   switch (type) {
     case "campaign":
-      return "↗";
+      return <TrendingUp size={14} />;
 
     case "plan":
-      return "◆";
+      return <Layers size={14} />;
 
     case "credit":
-      return "+";
+      return <CreditCard size={14} />;
 
     case "profile":
-      return "✎";
+      return <User size={14} />;
 
     case "status":
-      return "✓";
+      return <CheckCircle2 size={14} />;
 
     default:
-      return "•";
+      return <Check size={14} />;
   }
 }

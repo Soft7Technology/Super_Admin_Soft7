@@ -818,11 +818,18 @@ export default function AuditLogs() {
             }}
           >
             <option value="">All Users</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name} ({user.email})
-              </option>
-            ))}
+            {users.map((user) => {
+              const fullName = user.name || "";
+              const email = user.email || "";
+              const label = fullName ? `${fullName} (${email})` : email;
+              const display =
+                label.length > 38 ? `${label.slice(0, 36)}…` : label;
+              return (
+                <option key={user.id} value={user.id} title={label}>
+                  {display}
+                </option>
+              );
+            })}
           </select>
           <ChevronDown size={14} className="al-dropdown-arrow" />
         </div>

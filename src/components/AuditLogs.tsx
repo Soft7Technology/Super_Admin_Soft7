@@ -76,6 +76,9 @@ export default function AuditLogs({
         overflow: "hidden",
         boxShadow: "var(--crm-shadow, 0 1px 3px rgba(0,0,0,0.04))",
         transition: "background 0.2s, border-color 0.2s",
+        minWidth: 0,
+        maxWidth: "100%",
+        boxSizing: "border-box",
       }}
     >
       {/* ─── Header ─── */}

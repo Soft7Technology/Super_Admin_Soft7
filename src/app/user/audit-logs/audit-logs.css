@@ -267,6 +267,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  max-width: 100%;
 }
 
 .al-dropdown {
@@ -282,6 +283,10 @@
   cursor: pointer;
   outline: none;
   min-width: 130px;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -586,18 +591,60 @@
 }
 @media (max-width: 800px) {
   .al-header { flex-direction: column; gap: 12px; }
-  .al-filter-bar { flex-direction: column; align-items: stretch; }
-  .al-search-wrap { max-width: none; }
+  .al-header__right { width: 100%; display: flex; gap: 8px; }
+  .al-btn-export,
+  .al-btn-clear { flex: 1; justify-content: center; }
+  .al-filter-bar { flex-direction: column; align-items: stretch; gap: 10px; width: 100%; }
+  .al-search-wrap { max-width: 100%; width: 100%; }
+  .al-dropdown-inner { width: 100%; max-width: 100%; }
+  .al-dropdown { width: 100%; max-width: 100%; }
+  .al-dropdowns-group { display: flex; flex-direction: column; gap: 8px; width: 100%; }
   .al-table__head { display: none; }
   .al-log-row__main {
     display: grid;
     grid-template-columns: 30px 1fr;
     gap: 6px 12px;
-    padding: 14px;
+    padding: 14px 12px;
   }
   .al-log-row__icon     { grid-row: 1 / 3; }
   .al-log-row__activity { grid-column: 2; }
   .al-log-row__user-col { grid-column: 2; }
   .al-log-row__ip       { grid-column: 2; display: block !important; }
   .al-log-row__time-col { grid-column: 2; text-align: left; display: flex; gap: 8px; }
+}
+
+@media (max-width: 768px) {
+  .al-root {
+    padding: 16px 12px 36px;
+  }
+  .al-toast-stack {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .al-root {
+    padding: 12px 10px 32px;
+  }
+  .al-header__title {
+    font-size: 20px;
+  }
+  .al-stat {
+    padding: 12px 14px;
+  }
+  .al-stat__value {
+    font-size: 20px;
+  }
+  .al-pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .al-pagination__btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
