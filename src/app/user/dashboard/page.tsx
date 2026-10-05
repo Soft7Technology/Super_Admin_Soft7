@@ -9,6 +9,7 @@ import PlatformGrowthChart, { GrowthPoint } from "@/components/PlatformGrowthCha
 import UserManagement, { DbUser } from "@/components/UserManagement";
 import AuditLogs, { LogEntry } from "@/components/AuditLogs";
 import RecentTransactionsFeed from "@/components/RecentTransactionsFeed";
+import QuickAdminActions from "@/components/QuickAdminActions";
 import { Building2, Users, Globe, CreditCard, ArrowUpRight } from "lucide-react";
 import "./dashboard.css";
 
@@ -330,7 +331,7 @@ export default function DashboardPage() {
         }
 
         setUsers(
-          usersData.slice(0, 5).map((user: any, index: number) => ({
+          usersData.slice(0, 6).map((user: any, index: number) => ({
             id: String(user.id || user._id || index),
             un: user.name || user.username || user.email || "Unknown User",
             role: user.role
@@ -345,7 +346,7 @@ export default function DashboardPage() {
               .join("")
               .toUpperCase()
               .slice(0, 2),
-            col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1"][index % 5],
+            col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
           }))
         );
 
@@ -604,25 +605,31 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* ─── Top Cards Row (Equal Height: Platform Growth & Quick Actions) ─── */}
+      <div className="crm-row-top">
+        {/* Card: Platform Growth */}
+        <div className="crm-card">
+          <div className="crm-card__header">
+            <div>
+              <h2 className="crm-card__title">Platform Growth</h2>
+              <div className="crm-card__subtitle">
+                Monthly platform activity and engagement overview
+              </div>
+            </div>
+          </div>
+          <div className="crm-card__body">
+            <PlatformGrowthChart data={growth} loading={loading} error={error} />
+          </div>
+        </div>
+
+        {/* Card: Quick Admin Actions */}
+        <QuickAdminActions />
+      </div>
+
       {/* ─── Two-Column Middle Section (Dashboard Theme) ────── */}
       <div className="crm-row-middle">
         {/* Left Column */}
         <div className="crm-col-stack">
-          {/* Card: Platform Growth */}
-          <div className="crm-card">
-            <div className="crm-card__header">
-              <div>
-                <h2 className="crm-card__title">Platform Growth</h2>
-                <div className="crm-card__subtitle">
-                  Monthly platform activity and engagement overview
-                </div>
-              </div>
-            </div>
-            <div className="crm-card__body">
-              <PlatformGrowthChart data={growth} loading={loading} error={error} />
-            </div>
-          </div>
-
           {/* Card: Company Overview */}
           <CompanyOverview
             companies={companies}

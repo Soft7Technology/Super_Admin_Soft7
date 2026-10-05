@@ -77,28 +77,9 @@
   font-family: inherit;
   background: var(--bg);
   min-height: 100vh;
-  padding: 32px 88px 60px;
   color: var(--text);
   transition: background 0.3s ease, color 0.3s ease;
   box-sizing: border-box;
-}
-
-@media (max-width: 1400px) {
-  .ss-root {
-    padding: 28px 52px 50px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .ss-root {
-    padding: 24px 36px 40px;
-  }
-}
-
-@media (max-width: 900px) {
-  .ss-root {
-    padding: 20px 16px 40px;
-  }
 }
 
 /* ─── HEADER ─────────────────────────────────────────────── */

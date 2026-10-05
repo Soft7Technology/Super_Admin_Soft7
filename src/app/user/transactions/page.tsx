@@ -258,7 +258,7 @@ useEffect(() => {
 
   /* ── Render ──────────────────────────────────────────────── */
   return (
-    <div className={styles["tx-page"]}>
+    <div className={`${styles["tx-page"]} tx-page`}>
      {/* Header */}
       <div className={styles["tx-page__header"]}>
         <h1 className={styles["tx-page__title"]}>Transaction History</h1>

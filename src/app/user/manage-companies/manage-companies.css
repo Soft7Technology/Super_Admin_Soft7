@@ -81,15 +81,10 @@
   font-family: 'DM Sans', 'Segoe UI', sans-serif;
   background: var(--mc-bg);
   min-height: 100vh;
-  padding: 32px 88px 60px;
   color: var(--mc-text);
   transition: background 0.3s, color 0.3s;
   box-sizing: border-box;
 }
-@media (max-width: 1400px) { .mc-root { padding: 28px 52px 50px; } }
-@media (max-width: 1200px) { .mc-root { padding: 24px 36px 40px; } }
-@media (max-width: 900px)  { .mc-root { padding: 20px 16px 40px; } }
-@media (max-width: 600px)  { .mc-root { padding: 16px 12px 32px; } }
 
 /* ─── PAGE HEADER ────────────────────────────────────────── */
 .mc-header {

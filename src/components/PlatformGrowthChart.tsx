@@ -34,28 +34,59 @@ const SAMPLE_DATA: GrowthPoint[] = [
 ];
 
 /**
- * Catmull-Rom spline to cubic Bézier path generator
- * Produces organic, continuous curves without sharp angles
+ * Monotone cubic spline (Fritsch-Carlson) to cubic Bézier path generator.
+ * Prevents spline overshoot / undershoot (e.g. dipping below 0 or arching above max).
  */
 function getSplinePath(points: { x: number; y: number }[]): string {
-  if (points.length < 2) return "";
-  if (points.length === 2) {
+  const n = points.length;
+  if (n < 2) return "";
+  if (n === 2) {
     return `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)} L ${points[1].x.toFixed(1)} ${points[1].y.toFixed(1)}`;
   }
 
+  // Calculate segment differences and secant slopes
+  const dx: number[] = [];
+  const dy: number[] = [];
+  const slopes: number[] = [];
+
+  for (let i = 0; i < n - 1; i++) {
+    const deltaX = points[i + 1].x - points[i].x;
+    const deltaY = points[i + 1].y - points[i].y;
+    dx.push(deltaX);
+    dy.push(deltaY);
+    slopes.push(deltaX === 0 ? 0 : deltaY / deltaX);
+  }
+
+  // Calculate tangents (m) using Fritsch-Carlson monotonicity conditions
+  const m: number[] = new Array(n).fill(0);
+  m[0] = slopes[0];
+  m[n - 1] = slopes[n - 2];
+
+  for (let i = 1; i < n - 1; i++) {
+    const s0 = slopes[i - 1];
+    const s1 = slopes[i];
+    if (s0 * s1 <= 0) {
+      // Local extremum or flat plateau: tangent must be 0 to prevent overshoot
+      m[i] = 0;
+    } else {
+      // Harmonic mean of slopes ensures smooth monotone transition
+      m[i] = (2 * s0 * s1) / (s0 + s1);
+    }
+  }
+
+  // Build SVG cubic Bézier path
   let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i === 0 ? 0 : i - 1];
+  for (let i = 0; i < n - 1; i++) {
     const p1 = points[i];
     const p2 = points[i + 1];
-    const p3 = points[i + 2 < points.length ? i + 2 : points.length - 1];
+    const segDx = dx[i] / 3;
 
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp1x = p1.x + segDx;
+    const cp1y = p1.y + m[i] * segDx;
 
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    const cp2x = p2.x - segDx;
+    const cp2y = p2.y - m[i + 1] * segDx;
 
     d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
   }
