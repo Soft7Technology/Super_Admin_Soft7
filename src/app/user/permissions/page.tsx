@@ -3,7 +3,6 @@
 import {
   Check,
   CircleAlert,
-  Loader2,
   RefreshCw,
   ShieldCheck,
   ShieldAlert,
@@ -18,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "@/app/globals.css";
+import Spinner from "@/components/ui/Spinner";
 import "./permissions.css";
 
 /* ============================================================
@@ -439,10 +439,13 @@ export default function PermissionsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={5}>
-                    <div className="pm-empty">
-                      <div className="pm-spinner" />
-                      <p className="pm-empty__title">Loading domain requests…</p>
-                      <p className="pm-empty__desc">Connecting to domain service</p>
+                    <div className="pm-empty" style={{ padding: "40px 0" }}>
+                      <Spinner
+                        variant="center"
+                        size="lg"
+                        color="primary"
+                        text="Loading domain requests…"
+                      />
                     </div>
                   </td>
                 </tr>
@@ -512,7 +515,7 @@ export default function PermissionsPage() {
                           aria-label="Approve domain"
                         >
                           {processingDomain === item.domain_name ? (
-                            <Loader2 size={15} className="animate-spin" />
+                            <Spinner size="xs" />
                           ) : (
                             <Check size={15} />
                           )}
@@ -622,10 +625,7 @@ export default function PermissionsPage() {
                 }`}
               >
                 {processingDomain === confirmState.request.domain_name ? (
-                  <>
-                    <Loader2 size={15} className="animate-spin" />
-                    <span>Processing…</span>
-                  </>
+                  <Spinner size="sm" text="Processing…" />
                 ) : confirmState.action === "approve" ? (
                   <>
                     <ShieldCheck size={15} />

@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import "./system.css";
+import Spinner from "@/components/ui/Spinner";
 import {
   RotateCcw,
   Download,
   Save,
   Check,
-  Loader2,
   Settings,
   Mail,
   MessageSquare,
@@ -127,7 +127,7 @@ function SaveBtn({ onClick, saving, saved }: { onClick: () => void; saving: bool
   return (
     <button onClick={onClick} className={`ss-btn-save ${saved ? "ss-btn-save--saved" : ""}`}>
       {saving
-        ? <><Loader2 size={14} className="ss-spin" /> Saving…</>
+        ? <Spinner size="sm" text="Saving…" />
         : saved ? <><Check size={14} /> Saved!</>
         : <><Save size={14} /> Save Changes</>
       }
@@ -267,7 +267,7 @@ function EmailTab() {
             <Inp label="Test Recipient Email" value={testEmail} onChange={setTestEmail} type="email" placeholder="you@example.com" />
           </div>
           <button onClick={sendTest} className={`ss-btn-test ss-btn-test--${testStatus === "sending" ? "idle" : testStatus}`}>
-            {testStatus === "sending" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Loader2 size={13} className="ss-spin" /> Sending…</span>
+            {testStatus === "sending" ? <Spinner size="sm" text="Sending…" />
              : testStatus === "ok" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Check size={13} /> Delivered!</span>
              : testStatus === "fail" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><X size={13} /> Failed</span>
              : "Send Test"}
@@ -633,9 +633,7 @@ function HealthTab() {
               onMouseLeave={e => (e.currentTarget.style.borderColor = btn.done ? "var(--ss-action-done-br)" : "var(--ss-border)")}>
               <div className={`ss-action-btn__title ${btn.done ? "ss-action-btn__title--done" : ""}`}>
                 {btn.loading ? (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <Loader2 size={13} className="ss-spin" /> Running…
-                  </span>
+                  <Spinner size="xs" text="Running…" />
                 ) : btn.done ? (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                     <Check size={13} /> Done!

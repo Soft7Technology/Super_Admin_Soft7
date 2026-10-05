@@ -85,6 +85,12 @@
   --tx-accent: #206bc4;
   --pm-accent: #206bc4;
   --pm-accent2: #4299e1;
+
+  /* Global Page Layout & Padding Tokens */
+  --page-padding: 28px 24px 50px;
+  --page-padding-top: 28px;
+  --page-padding-x: 24px;
+  --page-padding-bottom: 50px;
 }
 
 [data-theme="light"],
@@ -549,6 +555,60 @@ a:hover {
     max-width: 100% !important;
     overflow-x: hidden !important;
   }
+}
+
+/* ─── Global Page Padding Responsive Breakpoints ──────────── */
+@media (max-width: 1400px) {
+  :root {
+    --page-padding: 26px 20px 48px;
+    --page-padding-top: 26px;
+    --page-padding-x: 20px;
+    --page-padding-bottom: 48px;
+  }
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --page-padding: 24px 18px 40px;
+    --page-padding-top: 24px;
+    --page-padding-x: 18px;
+    --page-padding-bottom: 40px;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --page-padding: 20px 16px 40px;
+    --page-padding-top: 20px;
+    --page-padding-x: 16px;
+    --page-padding-bottom: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --page-padding: 16px 12px 32px;
+    --page-padding-top: 16px;
+    --page-padding-x: 12px;
+    --page-padding-bottom: 32px;
+  }
+}
+
+/* ─── Global Page Container Standard ──────────────────────── */
+.crm-dashboard,
+.mc-root,
+.cd-root,
+.company-details-page,
+.au-root,
+.up-container,
+.st-root,
+.ss-root,
+.al-root,
+.pf-root,
+.pm-root,
+.tx-page,
+.page-container {
+  padding: var(--page-padding) !important;
 }
 
 /* ─── Global Back Button Utility ─────────────────────────── */
@@ -1081,3 +1141,14 @@ a:hover {
     border-top: 1px solid var(--border);
   }
 }
+
+/* ── Unified Modern Minimalist Ring Spinner Animation ── */
+@keyframes modern-ring-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+

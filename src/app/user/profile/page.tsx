@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./profile.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import Spinner from "@/components/ui/Spinner";
 import {
   User,
   ShieldCheck,
@@ -14,7 +15,6 @@ import {
   Camera,
   Save,
   Check,
-  Loader2,
   Lock,
   Building2,
   AlertTriangle,
@@ -79,7 +79,7 @@ function useSave() {
 function SaveBtn({ onClick, saving, saved }: { onClick: () => void; saving: boolean; saved: boolean }) {
   return (
     <button onClick={onClick} className={`pf-btn-save ${saved ? "pf-btn-save--saved" : ""}`}>
-      {saving ? <><Loader2 size={14} className="pf-spin" /> Saving…</> : saved ? <><Check size={14} /> Saved!</> : <><Save size={14} /> Save Changes</>}
+      {saving ? <Spinner size="sm" text="Saving…" /> : saved ? <><Check size={14} /> Saved!</> : <><Save size={14} /> Save Changes</>}
     </button>
   );
 }
@@ -136,7 +136,7 @@ function HeroCard({
         <div className="pf-hero__top-row">
           <div className="pf-avatar-wrap">
             <div className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}>
-              {uploading ? <Loader2 size={24} className="pf-spin" /> : (avatarEmoji ?? initials)}
+              {uploading ? <Spinner size="md" color="white" /> : (avatarEmoji ?? initials)}
             </div>
             <div className="pf-avatar__online" />
             <div className="pf-avatar__upload-overlay" onClick={onUpload} title="Upload photo">
@@ -484,7 +484,7 @@ function SecurityTab({ profile }: { profile: ProfileData | null }) {
             {pwdErr && <div className="pf-pwd-err">{pwdErr}</div>}
             <div className="pf-btn-row">
               <button type="submit" className={`pf-btn-pwd ${pwdSaved ? "pf-btn-pwd--saved" : ""}`}>
-                {pwdSaving ? <><Loader2 size={14} className="pf-spin" /> Updating…</> : pwdSaved ? <><Check size={14} /> Updated!</> : <><Lock size={14} /> Update Password</>}
+                {pwdSaving ? <Spinner size="sm" text="Updating…" /> : pwdSaved ? <><Check size={14} /> Updated!</> : <><Lock size={14} /> Update Password</>}
               </button>
             </div>
           </form>

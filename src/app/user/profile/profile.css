@@ -95,28 +95,9 @@
   font-family: inherit;
   background: var(--pf-bg);
   min-height: 100vh;
-  padding: 36px 110px 60px;
   color: var(--pf-text);
   transition: background 0.3s ease, color 0.3s ease;
   box-sizing: border-box;
-}
-
-@media (max-width: 1400px) {
-  .pf-root {
-    padding: 30px 64px 50px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .pf-root {
-    padding: 26px 40px 40px;
-  }
-}
-
-@media (max-width: 900px) {
-  .pf-root {
-    padding: 20px 20px 40px;
-  }
 }
 
 /* ─── PAGE HEADER ────────────────────────────────────────── */

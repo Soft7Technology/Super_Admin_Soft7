@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import Spinner from "@/components/ui/Spinner";
 import {
   Activity,
   ArrowLeft,
@@ -414,8 +415,13 @@ export default function CompanyDetailsPage() {
   if (loading) {
     return (
       <div className="company-details-page">
-        <div className="company-details-loading">
-          Loading company details...
+        <div style={{ padding: "80px 0" }}>
+          <Spinner
+            variant="center"
+            size="lg"
+            color="primary"
+            text="Loading company details..."
+          />
         </div>
       </div>
     );
