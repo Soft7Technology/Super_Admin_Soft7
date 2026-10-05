@@ -1,1047 +1,485 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import "./audit-logs.css";
-import { axiosInstance } from "@/lib/axiosInstance";
-import {
-  Download,
-  Trash2,
-  Check,
-  Search,
-  X,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle2,
-  Info,
-  RotateCw,
-  Activity,
-  Plus,
-  Pencil,
-  LogIn,
-  Send,
-  CheckCircle,
-  Ban,
-  Sparkles,
-  CreditCard,
-  FileText,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
-// ─── TYPES ────────────────────────────────────────────────────────────────────
-type ActionType =
-  | "LOGIN"
-  | "SEND"
-  | "UPDATE"
-  | "ACTIVATE"
-  | "CREATE"
-  | "SUSPEND"
-  | "SUBSCRIBE";
-type SeverityType = "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
-type TypeFilter =
-  | "USER"
-  | "AUTH"
-  | "MESSAGE"
-  | "SUBSCRIBE"
-  | "CAMPAIGN"
-  | "WALLET"
-  | "CONTACT"
-  | "CHATBOT"
-  | "WABA";
-type TimeFrame = "today" | "7days" | "30days" | "90days" | "1year";
+const U = [
+  { n: "Rupesh Giri", e: "rupesh@soft7.in", id: "ccc9d3d5-4e2a-41b0-9c1f-8a77d2c8" },
+  { n: "Priya Sharma", e: "priya@acme.co", id: "ae6ff5f9-1b3c-4d2e-8f90-6a4d" },
+  { n: "Admin", e: "admin@soft7.in", id: "e0b6333a-77c1-4a5b-b3d2-067b" },
+  { n: "Aman Verma", e: "aman@zenith.io", id: "1e8c0729-5d4f-4e6a-a1c3-fed1" },
+  { n: "Neha Singh", e: "neha@bright.in", id: "b673e9ea-2c9d-4f10-8e5a-078e" }
+];
 
-interface LogEntry {
-  id: number | string;
-  action: string;
-  userId: string;
-  entityType: string;
-  resource: string;
-  detail: string;
-  ip: string;
-  time: string;
-  date: string;
-  severity: SeverityType;
-  company: string;
-  changes: Record<string, string>;
-}
-
-interface RawLog {
-  id: number | string;
-  action?: string;
-  event?: string;
-  user_id?: string;
-  user?: string;
-  actor?: string;
-  actor_name?: string;
-  role?: string;
-  actor_role?: string;
-  resource?: string;
-  type?: string;
-  entity_type?: string;
-  entity_id?: string;
-  description?: string;
-  detail?: string;
-  message?: string;
-  ip?: string;
-  ip_address?: string;
-  created_at?: string;
-  timestamp?: string;
-  severity?: string;
-  level?: string;
-  status?: string;
-  company?: string;
-  company_name?: string;
-  metadata?: Record<string, string>;
-  changes?: Record<string, string>;
-  new_data?: Record<string, string>;
-  old_data?: Record<string, string>;
-}
-
-interface UserOption {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface ActionMeta {
-  icon: LucideIcon;
-  label: string;
-}
-
-// ─── LOOKUP MAPS (with Lucide icons) ──────────────────────────────────────────
-const ACTION_META: Record<string, ActionMeta> = {
-  CREATE: { icon: Plus, label: "Create" },
-  UPDATE: { icon: Pencil, label: "Update" },
-  DELETE: { icon: Trash2, label: "Delete" },
-  LOGIN: { icon: LogIn, label: "Login" },
-  SEND: { icon: Send, label: "Send" },
-  ACTIVATE: { icon: CheckCircle, label: "Activate" },
-  SUSPEND: { icon: Ban, label: "Suspend" },
-  SUBSCRIBE: { icon: Sparkles, label: "Subscribe" },
-  EXPORT: { icon: Download, label: "Export" },
-  CREDIT: { icon: CreditCard, label: "Credit" },
+const AC: Record<string, [string, string]> = {
+  CREATE: ["+", "var(--a-create)"],
+  UPDATE: ["✎", "var(--a-update)"],
+  LOGIN: ["→", "var(--a-login)"],
+  SEND: ["➤", "var(--a-send)"],
+  DELETE: ["×", "var(--a-delete)"]
 };
 
-const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
-  { value: "USER", label: "User" },
-  { value: "AUTH", label: "Auth" },
-  { value: "MESSAGE", label: "Message" },
-  { value: "SUBSCRIBE", label: "Subscribe" },
-  { value: "CAMPAIGN", label: "Campaign" },
-  { value: "WALLET", label: "Wallet" },
-  { value: "CONTACT", label: "Contact" },
-  { value: "CHATBOT", label: "Chatbot" },
-  { value: "WABA", label: "WABA" },
+const SV: Record<string, [string, string]> = {
+  info: ["var(--in)", "var(--ins)"],
+  success: ["var(--ok)", "var(--oks)"],
+  warning: ["var(--wa)", "var(--was)"],
+  error: ["var(--er)", "var(--ers)"]
+};
+
+const TPL: [string, string, string, string, string, string, number][] = [
+  ["CREATE", "CAMPAIGN", "success", "Previewed campaign recipients", "POST", "/v1/admin/campaigns/preview-recipients", 2],
+  ["LOGIN", "AUTH", "info", "Logged in successfully", "POST", "/v1/auth/login", 0],
+  ["SEND", "MESSAGE", "success", "Sent template message to +917490953955", "POST", "/v1/messages/template", 1],
+  ["SEND", "MESSAGE", "warning", "Text message to +918755070003 delayed", "POST", "/v1/messages/text", 1],
+  ["UPDATE", "CONTACT", "info", "Updated contact", "PUT", "/v1/admin/contacts/", 3],
+  ["CREATE", "TEMPLATE", "success", "Synced templates", "POST", "/v1/admin/templates/sync", 4],
+  ["DELETE", "CONTACT", "warning", "Deleted contact", "DELETE", "/v1/admin/contacts/", 3]
 ];
 
-const ACTION_OPTIONS: { value: ActionType; label: string }[] = [
-  { value: "LOGIN", label: "Login" },
-  { value: "SEND", label: "Send" },
-  { value: "UPDATE", label: "Update" },
-  { value: "ACTIVATE", label: "Activate" },
-  { value: "CREATE", label: "Create" },
-  { value: "SUSPEND", label: "Suspend" },
-  { value: "SUBSCRIBE", label: "Subscribe" },
-];
+// Generate dummy data exact same way
+const rnd = (s => () => (s = (s * 9301 + 49297) % 233280) / 233280)(7);
+const hex = (n: number) => [...Array(n)].map(() => Math.floor(rnd() * 16).toString(16)).join("");
 
-const TIME_FRAME_OPTIONS: { value: TimeFrame; label: string }[] = [
-  { value: "today", label: "Today" },
-  { value: "7days", label: "Last 7 Days" },
-  { value: "30days", label: "Last 30 Days" },
-  { value: "90days", label: "Last 90 Days" },
-  { value: "1year", label: "Last 1 Year" },
-];
-
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-function normaliseSeverity(raw?: string): SeverityType {
-  const map: Record<string, SeverityType> = {
-    info: "INFO",
-    warning: "WARNING",
-    warn: "WARNING",
-    critical: "CRITICAL",
-    error: "CRITICAL",
-    success: "SUCCESS",
-    ok: "SUCCESS",
-  };
-  return map[raw?.toLowerCase() ?? ""] ?? "INFO";
+interface LogEntry {
+  id: number;
+  act: string;
+  type: string;
+  sev: string;
+  text: string;
+  m: string;
+  path: string;
+  u: { n: string, e: string, id: string };
+  min: number;
+  st: number;
+  ip: string;
+  ms: number;
 }
 
-function formatDate(raw?: string): string {
-  if (!raw) return "—";
-  try {
-    return new Date(raw).toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+const generateData = () => {
+  let L: LogEntry[] = [];
+  let t = 1;
+  for (let i = 0; i < 120; i++) {
+    const burst = i >= 8 && i < 60;
+    const k = burst ? (i % 6 < 4 ? 4 : 5) : Math.floor(rnd() * 4);
+    const T = TPL[k];
+    const u = U[T[6]];
+    t += burst ? (i % 12 === 0 ? 9 : 0) : Math.floor(rnd() * 6) + 1;
+    const p = T[5].endsWith("/") ? T[5] + hex(8) + "-" + hex(4) + "-" + hex(4) + "-" + hex(12) : T[5];
+    
+    L.push({
+      id: i, act: T[0], type: T[1], sev: T[2], text: T[3], m: T[4], path: p, u, min: t,
+      st: T[2] === "warning" ? 429 : 200,
+      ip: "49.36." + Math.floor(rnd() * 255) + "." + Math.floor(rnd() * 255),
+      ms: Math.floor(rnd() * 400) + 40
     });
-  } catch {
-    return raw;
   }
-}
+  L.push({ id: 200, act: "UPDATE", type: "CONTACT", sev: "info", text: "Updated contact", m: "PUT", path: "/v1/admin/contacts/old", u: U[3], min: 60 * 30, st: 200, ip: "49.36.1.9", ms: 90 });
+  return L;
+};
 
-function timeAgo(raw?: string): string {
-  if (!raw) return "—";
-  try {
-    const diff = Date.now() - new Date(raw).getTime();
-    const mins = Math.floor(diff / 60000);
-    const hours = Math.floor(mins / 60);
-    const days = Math.floor(hours / 24);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins} min${mins > 1 ? "s" : ""} ago`;
-    if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
-    return `${days} day${days > 1 ? "s" : ""} ago`;
-  } catch {
-    return "—";
-  }
-}
+const ago = (m: number) => m < 1 ? "just now" : m < 60 ? m + " mins ago" : m < 1440 ? Math.floor(m / 60) + " hrs ago" : Math.floor(m / 1440) + " days ago";
+const getDayStr = (m: number) => m < 1440 ? "Today" : m < 2880 ? "Yesterday" : "Earlier";
 
-// Shortens a UUID-style id for compact display
-function shortenId(id?: string): string {
-  if (!id) return "—";
-  if (id.length <= 14) return id;
-  return `${id.slice(0, 8)}…${id.slice(-4)}`;
-}
-
-function enrichLog(raw: RawLog): LogEntry {
-  const action = (raw.action || raw.event || "").toUpperCase();
-  return {
-    id: raw.id,
-    action,
-    userId: raw.user_id || raw.actor || raw.user || "—",
-    entityType: raw.entity_type || raw.type || raw.resource || "—",
-    resource: raw.resource || raw.type || raw.entity_type || "—",
-    detail: raw.description || raw.detail || raw.message || "—",
-    ip: raw.ip || raw.ip_address || "—",
-    time: timeAgo(raw.created_at || raw.timestamp),
-    date: formatDate(raw.created_at || raw.timestamp),
-    severity: normaliseSeverity(raw.severity || raw.level || raw.status),
-    company: raw.company_name || raw.company || "—",
-    changes: raw.metadata || raw.changes || raw.new_data || {},
-  };
-}
-
-// severity -> the 4 visual buckets used by the stat cards / row icons
-function severityBucket(
-  s: SeverityType,
-): "info" | "success" | "warning" | "error" {
-  if (s === "CRITICAL") return "error";
-  if (s === "WARNING") return "warning";
-  if (s === "SUCCESS") return "success";
-  return "info";
-}
-
-// ─── ACTIVITY BUCKET (Colors action & icon strictly by activity type) ────────
-function getActivityBucket(
-  action?: string,
-  severity?: SeverityType,
-): "info" | "success" | "warning" | "error" {
-  const act = (action || "").toUpperCase().trim();
-
-  // If backend explicitly marked CRITICAL error
-  if (severity === "CRITICAL") return "error";
-
-  // 1. Red / Danger actions (DELETE, REMOVE, SUSPEND, BAN, BLOCK, REVOKE, FAIL)
-  if (
-    act.includes("DELETE") ||
-    act.includes("REMOVE") ||
-    act.includes("SUSPEND") ||
-    act.includes("BAN") ||
-    act.includes("BLOCK") ||
-    act.includes("REVOKE") ||
-    act.includes("FAIL") ||
-    act.includes("DROP") ||
-    act.includes("TERMINAT")
-  ) {
-    return "error";
-  }
-
-  // 2. Green / Success actions (CREATE, ADD, ACTIVATE, REGISTER, INSERT, VERIFY)
-  if (
-    act.includes("CREATE") ||
-    act.includes("ACTIVATE") ||
-    act.includes("ADD") ||
-    act.includes("REGISTER") ||
-    act.includes("INSERT") ||
-    act.includes("ENABLE") ||
-    act.includes("VERIF")
-  ) {
-    return "success";
-  }
-
-  // 3. Amber / Warning actions (UPDATE, EDIT, MODIFY, CHANGE, PATCH, RESET)
-  if (
-    act.includes("UPDATE") ||
-    act.includes("EDIT") ||
-    act.includes("MODIFY") ||
-    act.includes("CHANGE") ||
-    act.includes("PATCH") ||
-    act.includes("RESET")
-  ) {
-    return "warning";
-  }
-
-  // 4. Blue / Info actions (LOGIN, LOGOUT, AUTH, SEND, EXPORT, DOWNLOAD, SUBSCRIBE, CREDIT, VIEW)
-  if (
-    act.includes("LOGIN") ||
-    act.includes("LOGOUT") ||
-    act.includes("AUTH") ||
-    act.includes("SEND") ||
-    act.includes("EXPORT") ||
-    act.includes("DOWNLOAD") ||
-    act.includes("SUBSCRIBE") ||
-    act.includes("CREDIT") ||
-    act.includes("VIEW")
-  ) {
-    return "info";
-  }
-
-  // 5. Fallback based on severity if provided, else "info"
-  if (severity) {
-    return severityBucket(severity);
-  }
-  return "info";
-}
-
-function getActionMeta(action?: string): ActionMeta {
-  const act = (action || "").toUpperCase().trim();
-  if (ACTION_META[act]) return ACTION_META[act];
-  if (act.includes("DELETE") || act.includes("REMOVE")) return { icon: Trash2, label: action || "Delete" };
-  if (act.includes("CREATE") || act.includes("ADD")) return { icon: Plus, label: action || "Create" };
-  if (act.includes("UPDATE") || act.includes("EDIT") || act.includes("PATCH")) return { icon: Pencil, label: action || "Update" };
-  if (act.includes("SUSPEND") || act.includes("BAN") || act.includes("BLOCK")) return { icon: Ban, label: action || "Suspend" };
-  if (act.includes("ACTIVATE") || act.includes("ENABLE")) return { icon: CheckCircle, label: action || "Activate" };
-  if (act.includes("LOGIN") || act.includes("AUTH")) return { icon: LogIn, label: action || "Login" };
-  if (act.includes("SEND")) return { icon: Send, label: action || "Send" };
-  if (act.includes("EXPORT") || act.includes("DOWNLOAD")) return { icon: Download, label: action || "Export" };
-  if (act.includes("CREDIT") || act.includes("PAY")) return { icon: CreditCard, label: action || "Credit" };
-  return { icon: Activity, label: action || "Activity" };
-}
-
-// ─── ACTION ICON COMPONENT (Lucide Icon colored by activity) ──────────────────
-function ActionIcon({
-  action,
-  bucket,
-}: {
-  action: string;
-  bucket: "info" | "success" | "warning" | "error";
-}) {
-  const meta = getActionMeta(action);
-  const IconComponent = meta.icon;
-  return (
-    <div className={`al-log-row__icon al-log-row__icon--${bucket}`}>
-      <IconComponent size={14} strokeWidth={2.2} />
-    </div>
-  );
-}
-
-// ─── CSV EXPORT ───────────────────────────────────────────────────────────────
-function exportToCSV(logs: LogEntry[]) {
-  const allChangeKeys = Array.from(
-    new Set(logs.flatMap((l) => Object.keys(l.changes))),
-  );
-  const allHeaders = [
-    "ID",
-    "Date",
-    "Action",
-    "Severity",
-    "User ID",
-    "Type",
-    "Company",
-    "Detail",
-    "IP Address",
-    "Time",
-    ...allChangeKeys,
-  ];
-  const escape = (val: string) => `"${String(val ?? "").replace(/"/g, '""')}"`;
-  const rows = logs.map((l) =>
-    [
-      l.id,
-      l.date,
-      l.action,
-      l.severity,
-      l.userId,
-      l.entityType,
-      l.company,
-      l.detail,
-      l.ip,
-      l.time,
-      ...allChangeKeys.map((k) => l.changes[k] ?? ""),
-    ]
-      .map((v) => escape(String(v)))
-      .join(","),
-  );
-  const csv = [allHeaders.map((h) => escape(h)).join(","), ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function AuditLogs() {
-  const [typeFilter, setTypeFilter] = useState<TypeFilter | "ALL">("ALL");
-  const [actionFilter, setActionFilter] = useState<ActionType | "ALL">("ALL");
-  const [timeFrame, setTimeFrame] = useState<TimeFrame>("7days");
-  const [exporting, setExporting] = useState(false);
-  const [exportDone, setExportDone] = useState(false);
-  const [clearing, setClearing] = useState(false);
-
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [L, setL] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
 
-  const [search, setSearch] = useState("");
-  const [userSuggestions, setUserSuggestions] = useState<UserOption[]>([]);
-  const [suggestLoading, setSuggestLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchWrapRef = useRef<HTMLDivElement>(null);
-  const [users, setUsers] = useState<UserOption[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
-
-  type Toast = {
-    id: number;
-    kind: "info" | "success" | "error" | "confirm";
-    message: string;
-    onConfirm?: () => void;
-  };
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const pushToast = (
-    kind: Toast["kind"],
-    message: string,
-    onConfirm?: () => void,
-  ) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, kind, message, onConfirm }]);
-    if (kind !== "confirm") {
-      setTimeout(() => dismissToast(id), 3000);
-    }
-    return id;
-  };
-  const dismissToast = (id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const LIMIT = 10;
-
-  // ── Fetch activity logs ───────────────────────────────────────────────────
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    setFetchError(null);
-
-    try {
-      const params = new URLSearchParams();
-      params.append("page", String(currentPage));
-      params.append("limit", "25");
-
-      if (typeFilter !== "ALL") params.append("type", typeFilter);
-      if (actionFilter !== "ALL") params.append("action", actionFilter);
-      if (selectedUserId) params.append("user_id", selectedUserId);
-
-      const endpoint = `/v1/super-admin/activities?${params.toString()}`;
-      const res = await axiosInstance.get(endpoint);
-
-      const raw: RawLog[] = Array.isArray(res.data?.data?.data)
-        ? res.data.data.data
-        : Array.isArray(res.data?.data?.items)
-        ? res.data.data.items
-        : Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data?.logs)
-        ? res.data.logs
-        : [];
-
-      const total =
-        res.data?.data?.pagination?.total ??
-        res.data?.data?.total ??
-        res.data?.total ??
-        raw.length;
-
-      setLogs(raw.map(enrichLog));
-      setTotalItems(Number(total) || 0);
-    } catch (error) {
-      console.error("AUDIT LOGS ERROR =>", error);
-      setFetchError(
-        error instanceof Error ? error.message : "Failed to load audit logs",
-      );
-      setLogs([]);
-      setTotalItems(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, timeFrame, typeFilter, actionFilter, selectedUserId]);
+  // States
+  const [q, setQ] = useState("");
+  const [uFilter, setUFilter] = useState("");
+  const [tFilter, setTFilter] = useState("");
+  const [aFilter, setAFilter] = useState("");
+  const [dFilter, setDFilter] = useState(7);
+  const [sevFilter, setSevFilter] = useState("");
+  
+  const [pg, setPg] = useState(1);
+  const [pp, setPp] = useState(10);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [menuOpen, setMenuOpen] = useState(false);
+  
+  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
+  const [showRawDiff, setShowRawDiff] = useState(false);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearInput, setClearInput] = useState("");
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [typeFilter, actionFilter, timeFrame, search, selectedUserId]);
-
-  // ── Client-side search filter ─────────────────────────────────────────────
-  const filtered = logs.filter((l) => {
-    if (selectedUserId) return true;
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      l.userId.toLowerCase().includes(q) ||
-      l.detail.toLowerCase().includes(q) ||
-      l.entityType.toLowerCase().includes(q) ||
-      l.company.toLowerCase().includes(q) ||
-      l.action.toLowerCase().includes(q)
-    );
-  });
-
-  const totalPages = Math.max(1, Math.ceil(totalItems / LIMIT));
-
-  // ── Export CSV ────────────────────────────────────────────────────────────
-  const handleExportCSV = () => {
-    setExporting(true);
+    // simulate load
     setTimeout(() => {
-      exportToCSV(filtered);
-      setExporting(false);
-      setExportDone(true);
-      setTimeout(() => setExportDone(false), 2500);
-    }, 400);
+      setL(generateData());
+      setLoading(false);
+    }, 500);
+    
+    const clickHandler = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('.menu')) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", clickHandler);
+    return () => document.removeEventListener("click", clickHandler);
+  }, []);
+
+  const base = useMemo(() => {
+    const qLower = q.toLowerCase();
+    return L.filter(l => 
+      l.min <= dFilter * 1440 &&
+      (!uFilter || l.u.id === uFilter) &&
+      (!tFilter || l.type === tFilter) &&
+      (!aFilter || l.act === aFilter) &&
+      (!qLower || (l.text + l.path + l.u.e + l.u.n).toLowerCase().includes(qLower))
+    );
+  }, [L, dFilter, uFilter, tFilter, aFilter, q]);
+
+  const counts = useMemo(() => {
+    const c = { info: 0, success: 0, warning: 0, error: 0 };
+    base.forEach(l => {
+      c[l.sev as keyof typeof c]++;
+    });
+    return c;
+  }, [base]);
+
+  const filteredBySev = useMemo(() => {
+    return sevFilter ? base.filter(l => l.sev === sevFilter) : base;
+  }, [base, sevFilter]);
+
+  const groups = useMemo(() => {
+    const out: { k: LogEntry, items: LogEntry[] }[] = [];
+    filteredBySev.forEach(r => {
+      const g = out[out.length - 1];
+      if (g && g.k.u.id === r.u.id && g.k.act === r.act && g.k.type === r.type && r.act === "UPDATE" && Math.abs(g.k.min - r.min) <= 2) {
+        g.items.push(r);
+      } else {
+        out.push({ k: r, items: [r] });
+      }
+    });
+    return out;
+  }, [filteredBySev]);
+
+  const pages = Math.max(1, Math.ceil(groups.length / pp));
+  useEffect(() => { if (pg > pages) setPg(pages); }, [pages, pg]);
+  
+  const pagedGroups = groups.slice((pg - 1) * pp, pg * pp);
+
+  const pgBtns = [];
+  for (let i = 1; i <= pages; i++) {
+    if (i === 1 || i === pages || Math.abs(i - pg) <= 1) pgBtns.push(i);
+    else if (pgBtns[pgBtns.length - 1] !== "…") pgBtns.push("…");
+  }
+
+  const exportCSV = () => {
+    const b = base.map(l => [l.act, l.type, l.u.e, l.path, ago(l.min)].join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = "data:text/csv," + encodeURIComponent("action,type,user,path,time\n" + b);
+    a.download = "audit-logs.csv";
+    a.click();
   };
 
-  // ── Clear logs ────────────────────────────────────────────────────────────
-  const handleClearLogs = () => {
-    pushToast(
-      "confirm",
-      "This will permanently delete all audit log entries. This action cannot be undone.",
-      async () => {
-        setClearing(true);
-        try {
-          await axiosInstance.delete("/v1/super-admin/activities");
-          await fetchLogs();
-          pushToast("success", "All audit logs were cleared.");
-        } catch (e) {
-          console.error("CLEAR LOGS ERROR =>", e);
-          const msg = e instanceof Error ? e.message : "Failed to clear logs";
-          setFetchError(msg);
-          pushToast("error", msg);
-        } finally {
-          setClearing(false);
-        }
-      },
+  const handleClear = () => {
+    setL([]);
+    setClearModalOpen(false);
+  };
+
+  const uniqueUsers = Array.from(new Set(L.map(l => l.u.id))).map(id => L.find(l => l.u.id === id)!.u);
+  const uniqueTypes = Array.from(new Set(L.map(l => l.type))).map(x => [x, x[0] + x.slice(1).toLowerCase()]);
+  const uniqueActions = Object.keys(AC).map(x => [x, x[0] + x.slice(1).toLowerCase()]);
+
+  const renderRow = (l: LogEntry, isChild = false, extra?: React.ReactNode) => {
+    const [ic, co] = AC[l.act] || ["?", "#000"];
+    return (
+      <div 
+        key={l.id} 
+        className={`row ${isChild ? "child" : ""}`} 
+        onClick={(e) => {
+          if ((e.target as Element).closest('.grp')) return;
+          setSelectedLog(l);
+          setShowRawDiff(false);
+        }}
+      >
+        <div className="act">
+          <div className="ico" style={{ background: `color-mix(in srgb, ${co} 14%, transparent)`, color: co }}>{ic}</div>
+          <div style={{ minWidth: 0 }}>
+            <div className="t1">
+              <span className="dot" style={{ background: SV[l.sev][0] }} title={l.sev}></span>
+              {extra || l.text}
+            </div>
+          </div>
+        </div>
+        <div className="usr">
+          <div className="av">{l.u.n[0]}</div>
+          <div style={{ minWidth: 0 }}>
+            <div className="un">{l.u.n}</div>
+            <div className="ue" title={l.u.id}>{l.u.e}</div>
+          </div>
+        </div>
+        <div>
+          <span className="badge" style={{ background: co }}>{l.act[0] + l.act.slice(1).toLowerCase()}</span>
+        </div>
+        <div className="time" title={new Date(Date.now() - l.min * 60000).toLocaleString()}>
+          {ago(l.min)}
+        </div>
+      </div>
     );
   };
 
-  // ── Stat counts ───────────────────────────────────────────────────────────
-  const infoCount = logs.filter(
-    (l) => getActivityBucket(l.action, l.severity) === "info",
-  ).length;
-  const successCount = logs.filter(
-    (l) => getActivityBucket(l.action, l.severity) === "success",
-  ).length;
-  const warningCount = logs.filter(
-    (l) => getActivityBucket(l.action, l.severity) === "warning",
-  ).length;
-  const errorCount = logs.filter(
-    (l) => getActivityBucket(l.action, l.severity) === "error",
-  ).length;
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await axiosInstance.get("/v1/super-admin/users", {
-          params: {
-            page: 1,
-            limit: 25,
-          },
-        });
-
-        const raw =
-          (Array.isArray(res.data?.data?.data) ? res.data.data.data : null) ||
-          (Array.isArray(res.data?.data?.items) ? res.data.data.items : null) ||
-          (Array.isArray(res.data?.data?.users) ? res.data.data.users : null) ||
-          (Array.isArray(res.data?.data) ? res.data.data : null) ||
-          [];
-
-        setUsers(
-          raw.map((u: any) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-          })),
-        );
-      } catch (err) {
-        console.error("Failed to fetch users", err);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    if (selectedUser || search.trim().length < 2) {
-      setUserSuggestions([]);
-      return;
-    }
-    const handle = setTimeout(async () => {
-      setSuggestLoading(true);
-      try {
-        const res = await axiosInstance.get("/v1/super-admin/users", {
-          params: { search, limit: 8 },
-        });
-        const raw = Array.isArray(res.data?.data?.data)
-          ? res.data.data.data
-          : Array.isArray(res.data?.data)
-            ? res.data.data
-            : [];
-        setUserSuggestions(
-          raw.map((u: any) => ({ id: u.id, name: u.name, email: u.email })),
-        );
-        setShowSuggestions(true);
-      } catch (e) {
-        console.error("USER SEARCH ERROR =>", e);
-        setUserSuggestions([]);
-      } finally {
-        setSuggestLoading(false);
-      }
-    }, 350);
-    return () => clearTimeout(handle);
-  }, [search, selectedUser]);
-
-  // Close suggestion dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (
-        searchWrapRef.current &&
-        !searchWrapRef.current.contains(e.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  const metaData: Record<string, [string, string]> = {
+    info: ["i", "Info"],
+    success: ["✓", "Success"],
+    warning: ["!", "Warnings"],
+    error: ["!", "Errors"]
+  };
 
   return (
-    <div className="al-root">
-      {/* HEADER */}
-      <div className="al-header">
-        <div>
-          <h1 className="al-header__title">Activity Logs</h1>
-          <p className="al-header__sub">
-            Monitor all system activities and user actions
-          </p>
+    <div className="al-page">
+      <div className="wrap">
+        <div className="head">
+          <div>
+            <h1>Activity logs</h1>
+            <div className="sub">Monitor all system activities and user actions</div>
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button className="btn" onClick={exportCSV}>Export CSV</button>
+            <div className="menu">
+              <button className="btn" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
+              <div className={`pop ${menuOpen ? "open" : ""}`}>
+                <button className="red" onClick={() => { setMenuOpen(false); setClearModalOpen(true); }}>Clear logs…</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="al-header__right">
-          <button
-            onClick={handleExportCSV}
-            disabled={exporting || filtered.length === 0}
-            className={`al-btn-export ${
-              exportDone ? "al-btn-export--done" : ""
-            }`}
-          >
-            {exporting ? (
-              <>
-                <Loader2 size={14} className="al-btn-spinner-icon" />
-                <span>Exporting…</span>
-              </>
-            ) : exportDone ? (
-              <>
-                <Check size={14} />
-                <span>Downloaded</span>
-              </>
-            ) : (
-              <>
-                <Download size={14} />
-                <span>Export</span>
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleClearLogs}
-            disabled={clearing || logs.length === 0}
-            className="al-btn-clear"
-          >
-            {clearing ? (
-              <>
-                <Loader2 size={14} className="al-btn-spinner-icon" />
-                <span>Clearing…</span>
-              </>
-            ) : (
-              <>
-                <Trash2 size={14} />
-                <span>Clear Logs</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
 
-      {/* STAT CARDS — Lucide Icons & consistent Dashboard tokens */}
-      <div className="al-stat-grid">
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--info">
-            <Info size={20} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="al-stat__value">{infoCount}</div>
-            <div className="al-stat__label">Info</div>
-          </div>
-        </div>
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--success">
-            <CheckCircle2 size={20} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="al-stat__value">{successCount}</div>
-            <div className="al-stat__label">Success</div>
-          </div>
-        </div>
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--warning">
-            <AlertTriangle size={20} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="al-stat__value">{warningCount}</div>
-            <div className="al-stat__label">Warnings</div>
-          </div>
-        </div>
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--error">
-            <AlertCircle size={20} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="al-stat__value">{errorCount}</div>
-            <div className="al-stat__label">Errors</div>
-          </div>
-        </div>
-      </div>
-
-      {/* FILTER BAR */}
-      <div className="al-filter-bar">
-        <div
-          className="al-search-wrap"
-          ref={searchWrapRef}
-        >
-          <Search size={15} className="al-search-icon" />
-          <input
-            className="al-search-input"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              if (selectedUser) {
-                setSelectedUser(null);
-                setSelectedUserId("");
-              }
-            }}
-            onFocus={() =>
-              userSuggestions.length > 0 && setShowSuggestions(true)
-            }
-            placeholder="Search activities, or type an email to filter by user…"
-            autoComplete="off"
-          />
-          {selectedUser && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedUser(null);
-                setSelectedUserId("");
-                setSearch("");
-              }}
-              className="al-search-clear-btn"
-              aria-label="Clear user filter"
-              title={`Filtering by ${selectedUser.email}`}
+        <div className="stats">
+          {(["info", "success", "warning", "error"] as const).map(k => (
+            <button 
+              key={k} 
+              className={`stat ${sevFilter === k ? "sel" : ""}`} 
+              onClick={() => { setSevFilter(sevFilter === k ? "" : k); setPg(1); }}
             >
-              <X size={14} />
+              <i style={{ background: SV[k][1], color: SV[k][0] }}>{metaData[k][0]}</i>
+              <div>
+                <b>{counts[k]}</b>
+                <span>{metaData[k][1]}</span>
+              </div>
             </button>
-          )}
+          ))}
+        </div>
 
-          {showSuggestions && !selectedUser && (
-            <div className="al-search-suggestions">
-              {suggestLoading ? (
-                <div style={{ padding: "10px 14px", fontSize: 13, color: "var(--al-muted)" }}>
-                  Searching users…
-                </div>
-              ) : userSuggestions.length === 0 ? (
-                <div style={{ padding: "10px 14px", fontSize: 13, color: "var(--al-muted)" }}>
-                  No matching users
-                </div>
-              ) : (
-                userSuggestions.map((u) => (
-                  <div
-                    key={u.id}
-                    className="al-search-suggestion-item"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setSelectedUser(u);
-                      setSelectedUserId(u.id);
-                      setSearch(u.email);
-                      setUserSuggestions([]);
-                      setShowSuggestions(false);
-                    }}
-                  >
-                    <div style={{ fontWeight: 600, color: "var(--al-title)" }}>{u.name}</div>
-                    <div style={{ color: "var(--al-muted)", fontSize: 12 }}>{u.email}</div>
+        <div className="bar">
+          <input 
+            placeholder="Search activity, path or user email…" 
+            value={q} 
+            onChange={e => { setQ(e.target.value); setPg(1); }} 
+          />
+          <select value={uFilter} onChange={e => { setUFilter(e.target.value); setPg(1); }}>
+            <option value="">All users</option>
+            {uniqueUsers.map(u => <option key={u.id} value={u.id}>{u.n}</option>)}
+          </select>
+          <select value={tFilter} onChange={e => { setTFilter(e.target.value); setPg(1); }}>
+            <option value="">All types</option>
+            {uniqueTypes.map(t => <option key={t[0]} value={t[0]}>{t[1]}</option>)}
+          </select>
+          <select value={aFilter} onChange={e => { setAFilter(e.target.value); setPg(1); }}>
+            <option value="">All actions</option>
+            {uniqueActions.map(a => <option key={a[0]} value={a[0]}>{a[1]}</option>)}
+          </select>
+          <select value={dFilter} onChange={e => { setDFilter(Number(e.target.value)); setPg(1); }}>
+            <option value={7}>Last 7 days</option>
+            <option value={1}>Last 24 hours</option>
+            <option value={30}>Last 30 days</option>
+          </select>
+          <button 
+            className="reset" 
+            onClick={() => { setQ(""); setUFilter(""); setTFilter(""); setAFilter(""); setDFilter(7); setSevFilter(""); setPg(1); }}
+          >
+            Reset
+          </button>
+        </div>
+
+        <div className="tbl">
+          <div className="scroll">
+            <div className="th">
+              <div>Activity</div>
+              <div>User</div>
+              <div>Action</div>
+              <div style={{ textAlign: "right" }}>Time</div>
+            </div>
+            <div>
+              {loading ? (
+                [...Array(6)].map((_, i) => (
+                  <div className="row" key={i}>
+                    <div className="sk" /><div className="sk" /><div className="sk" /><div className="sk" />
                   </div>
                 ))
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="al-dropdown-inner">
-          <select
-            className="al-dropdown"
-            value={selectedUserId}
-            onChange={(e) => {
-              const id = e.target.value;
-              setSelectedUserId(id);
-              if (id === "") {
-                setSelectedUser(null);
-                setSearch("");
-              } else {
-                const u = users.find((usr) => usr.id === id) || null;
-                setSelectedUser(u);
-                setSearch(u?.email || "");
-              }
-            }}
-          >
-            <option value="">All Users</option>
-            {users.map((user) => {
-              const fullName = user.name || "";
-              const email = user.email || "";
-              const label = fullName ? `${fullName} (${email})` : email;
-              const display =
-                label.length > 38 ? `${label.slice(0, 36)}…` : label;
-              return (
-                <option key={user.id} value={user.id} title={label}>
-                  {display}
-                </option>
-              );
-            })}
-          </select>
-          <ChevronDown size={14} className="al-dropdown-arrow" />
-        </div>
-
-        <div className="al-dropdowns-group">
-          <div className="al-dropdown-inner">
-            <select
-              className="al-dropdown"
-              value={typeFilter}
-              onChange={(e) =>
-                setTypeFilter(e.target.value as TypeFilter | "ALL")
-              }
-            >
-              <option value="ALL">All Types</option>
-              {TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="al-dropdown-arrow" />
-          </div>
-
-          <div className="al-dropdown-inner">
-            <select
-              className="al-dropdown"
-              value={actionFilter}
-              onChange={(e) =>
-                setActionFilter(e.target.value as ActionType | "ALL")
-              }
-            >
-              <option value="ALL">All Actions</option>
-              {ACTION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="al-dropdown-arrow" />
-          </div>
-
-          <div className="al-dropdown-inner">
-            <select
-              className="al-dropdown"
-              value={timeFrame}
-              onChange={(e) => setTimeFrame(e.target.value as TimeFrame)}
-            >
-              {TIME_FRAME_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="al-dropdown-arrow" />
-          </div>
-        </div>
-      </div>
-
-      {/* TABLE */}
-      <div className="al-table">
-        <div className="al-table__head">
-          <div className="al-table__head-cell" />
-          <div className="al-table__head-cell">ACTIVITY</div>
-          <div className="al-table__head-cell">USER ID</div>
-          <div className="al-table__head-cell">TYPE</div>
-          <div className="al-table__head-cell">ACTION</div>
-          <div className="al-table__head-cell">TIME</div>
-        </div>
-
-        {loading ? (
-          <div className="al-empty">
-            <div className="al-empty__icon">
-              <Loader2 size={36} className="al-spin-icon" />
-            </div>
-            <div className="al-empty__title">Loading activity logs…</div>
-          </div>
-        ) : fetchError ? (
-          <div className="al-empty">
-            <div className="al-empty__icon al-empty__icon--error">
-              <AlertCircle size={36} />
-            </div>
-            <div className="al-empty__title">Failed to load logs</div>
-            <div className="al-empty__desc">{fetchError}</div>
-            <button onClick={fetchLogs} className="al-empty__retry">
-              <RotateCw size={14} />
-              <span>Retry</span>
-            </button>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="al-empty">
-            <div className="al-empty__icon">
-              <FileText size={36} />
-            </div>
-            <div className="al-empty__title">No activity found</div>
-            <div className="al-empty__desc">
-              Try adjusting your search or filters.
-            </div>
-          </div>
-        ) : (
-          filtered.map((log) => {
-            const m = getActionMeta(log.action);
-            const bucket = getActivityBucket(log.action, log.severity);
-
-            return (
-              <div key={log.id} className="al-log-row">
-                <div className="al-log-row__main">
-                  <ActionIcon action={log.action} bucket={bucket} />
-
-                  <div className="al-log-row__activity">
-                    <div
-                      className={`al-log-row__name al-log-row__name--${bucket}`}
-                    >
-                      {m.label.toUpperCase()}
-                    </div>
-                    <div className="al-log-row__detail">{log.detail}</div>
-                  </div>
-
-                  <div className="al-log-row__user-col">
-                    <div className="al-log-row__user" title={log.userId}>
-                      {shortenId(log.userId)}
-                    </div>
-                  </div>
-
-                  <div className="al-log-row__ip">{log.entityType}</div>
-
-                  <div className="al-log-row__ip">{log.action || "—"}</div>
-
-                  <div className="al-log-row__time-col">
-                    <div className="al-log-row__time-rel">{log.time}</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* PAGINATION */}
-      {!loading && !fetchError && totalPages > 1 && (
-        <div className="al-pagination">
-          <div className="al-pagination__info">
-            Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>{" "}
-            · {totalItems} total events
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="al-pagination__btn"
-            >
-              <ChevronLeft size={14} />
-              <span>Prev</span>
-            </button>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="al-pagination__btn"
-            >
-              <span>Next</span>
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* TOASTS */}
-      <div className="al-toast-stack">
-        {toasts.map((t) => {
-          const ToastIcon =
-            t.kind === "success"
-              ? CheckCircle2
-              : t.kind === "error"
-              ? AlertCircle
-              : t.kind === "confirm"
-              ? AlertTriangle
-              : Info;
-          return (
-            <div key={t.id} className={`al-toast al-toast--${t.kind}`}>
-              <div className="al-toast__left">
-                <ToastIcon size={16} className={`al-toast__icon--${t.kind}`} />
-                <span className="al-toast__msg">{t.message}</span>
-              </div>
-              {t.kind === "confirm" ? (
-                <div className="al-toast__actions">
-                  <button
-                    className="al-toast__btn al-toast__btn--confirm"
-                    onClick={() => {
-                      t.onConfirm?.();
-                      dismissToast(t.id);
-                    }}
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    className="al-toast__btn al-toast__btn--cancel"
-                    onClick={() => dismissToast(t.id)}
-                  >
-                    Cancel
-                  </button>
+              ) : pagedGroups.length === 0 ? (
+                <div className="empty">
+                  <b>No activity matches these filters</b><br/>
+                  Try a wider date range or reset the filters.
                 </div>
               ) : (
-                <button
-                  className="al-toast__close"
-                  onClick={() => dismissToast(t.id)}
-                  aria-label="Dismiss toast"
-                >
-                  <X size={14} />
-                </button>
+                pagedGroups.map((g, gi) => {
+                  const dStr = getDayStr(g.k.min);
+                  const prevDStr = gi > 0 ? getDayStr(pagedGroups[gi - 1].k.min) : null;
+                  const isGroup = g.items.length > 1;
+                  const isOpen = openGroups[g.k.id];
+
+                  return (
+                    <div key={g.k.id}>
+                      {dStr !== prevDStr && <div className="day">{dStr}</div>}
+                      {renderRow(
+                        g.k, 
+                        false, 
+                        isGroup ? (
+                          <>
+                            Updated {g.items.length} contacts
+                            <button 
+                              className="grp" 
+                              style={{ marginLeft: 8 }}
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setOpenGroups(p => ({ ...p, [g.k.id]: !p[g.k.id] })); 
+                              }}
+                            >
+                              {isOpen ? "Hide" : "Show all"}
+                            </button>
+                          </>
+                        ) : undefined
+                      )}
+                      {isGroup && isOpen && g.items.map(i => renderRow(i, true))}
+                    </div>
+                  );
+                })
               )}
             </div>
+          </div>
+        </div>
+
+        <div className="foot">
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div>
+              Rows per page <select className="ib" style={{ padding: "4px 8px", marginLeft: "4px", outline: "none", border: "none", background: "transparent", fontWeight: 500 }} value={pp} onChange={e => { setPp(Number(e.target.value)); setPg(1); }}>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+            <div>
+              Showing <b>{Math.min((pg - 1) * pp + 1, filteredBySev.length)}-{Math.min(pg * pp, filteredBySev.length)}</b> of <b>{filteredBySev.length}</b> activities
+            </div>
+          </div>
+          <div className="pg">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginRight: "16px" }}>
+              Go to page <input type="number" min={1} max={pages} className="ib" style={{ width: "50px", padding: "4px 8px", outline: "none" }} onKeyDown={e => {
+                if (e.key === "Enter") {
+                  let v = Number((e.target as HTMLInputElement).value);
+                  if (v >= 1 && v <= pages) setPg(v);
+                }
+              }} />
+            </div>
+            <button className="text-btn" disabled={pg <= 1} onClick={() => setPg(pg - 1)}>‹ Prev</button>
+            {pgBtns.map((p, i) => (
+              p === "…" ? <span key={`ell-${i}`}>…</span> : 
+              <button key={p} className={`num-btn ${p === pg ? "on" : ""}`} onClick={() => setPg(p as number)}>{p}</button>
+            ))}
+            <button className="text-btn" disabled={pg >= pages} onClick={() => setPg(pg + 1)}>Next ›</button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`ov ${selectedLog || clearModalOpen ? "open" : ""}`} onClick={() => { setSelectedLog(null); setClearModalOpen(false); }} />
+      
+      <aside className={`dr ${selectedLog ? "open" : ""}`}>
+        {selectedLog && (() => {
+          const l = selectedLog;
+          const [ic, co] = AC[l.act] || ["?", "#000"];
+          return (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="badge" style={{ background: co }}>{l.act}</span>
+                <button className="btn" onClick={() => setSelectedLog(null)}>Close</button>
+              </div>
+              <h3 style={{ margin: "16px 0 4px" }}>{l.text}</h3>
+              <div className="sub">{new Date(Date.now() - l.min * 60000).toLocaleString()}</div>
+              
+              <div className="kv">
+                <span>User</span><div>{l.u.n} · {l.u.e}</div>
+                <span>User ID</span>
+                <div>
+                  <code>{l.u.id}</code> 
+                  <button className="reset" onClick={() => navigator.clipboard.writeText(l.u.id)}>Copy</button>
+                </div>
+                <span>Type</span><div>{l.type}</div>
+                <span>Severity</span>
+                <div><span className="dot" style={{ background: SV[l.sev][0], display: "inline-block" }} /> {l.sev}</div>
+                <span>Status</span><div>{l.st}</div>
+                <span>Duration</span><div>{l.ms} ms</div>
+                <span>IP address</span><div>{l.ip}</div>
+              </div>
+              
+              {l.act === "UPDATE" && (
+                <div style={{ marginTop: 24 }}>
+                  <b style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    Changes <span style={{ fontSize: 11, color: "var(--mu)", fontWeight: 500 }}>2 fields</span>
+                  </b>
+                  
+                  <div className="diff-card">
+                    <div className="diff-card-title">STATUS</div>
+                    <div className="diff-cols">
+                      <div className="diff-box old">
+                        <div className="diff-lbl">BEFORE</div>
+                        <div className="diff-val">inactive</div>
+                      </div>
+                      <div className="diff-arr">→</div>
+                      <div className="diff-box new">
+                        <div className="diff-lbl">AFTER</div>
+                        <div className="diff-val">active</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="diff-card">
+                    <div className="diff-card-title">TAGS</div>
+                    <div className="diff-cols">
+                      <div className="diff-box old">
+                        <div className="diff-lbl">BEFORE</div>
+                        <div className="diff-val diff-empty">empty</div>
+                      </div>
+                      <div className="diff-arr">→</div>
+                      <div className="diff-box new">
+                        <div className="diff-lbl">AFTER</div>
+                        <div className="diff-val">vip</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button className="diff-tog" onClick={() => setShowRawDiff(!showRawDiff)}>
+                    <span style={{ fontSize: 10 }}>{showRawDiff ? "▼" : "▶"}</span> View raw diff
+                  </button>
+
+                  {showRawDiff && (
+                    <pre className="diff">
+                      <span className="o">- status: "inactive"</span>{"\n"}
+                      <span className="n">+ status: "active"</span>{"\n"}
+                      <span className="o">- tags: []</span>{"\n"}
+                      <span className="n">+ tags: ["vip"]</span>
+                    </pre>
+                  )}
+                </div>
+              )}
+            </>
           );
-        })}
+        })()}
+      </aside>
+
+      <div className={`modal ${clearModalOpen ? "open" : ""}`}>
+        <h3 style={{ margin: "0 0 8px" }}>Clear all logs?</h3>
+        <div className="sub">This permanently deletes all events and can't be undone. Type <b>CLEAR</b> to confirm.</div>
+        <input 
+          placeholder="CLEAR" 
+          value={clearInput}
+          onChange={e => setClearInput(e.target.value)}
+        />
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          <button className="btn" onClick={() => setClearModalOpen(false)}>Cancel</button>
+          <button className="btn dg" disabled={clearInput !== "CLEAR"} onClick={handleClear}>Clear logs</button>
+        </div>
       </div>
     </div>
   );
