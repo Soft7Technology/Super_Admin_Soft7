@@ -1,0 +1,632 @@
+import PDFDocument from "pdfkit";
+
+export interface ExportTransactionRecord {
+  id: string;
+  createdAt: string;
+  createdAtFormattedUtc: string;
+  createdAtFormattedLocal: string;
+  companyName: string;
+  companyId: string;
+  userId: string;
+  userEmail: string;
+  type: "CREDIT" | "DEBIT";
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  paymentMethod: string;
+  status: string;
+  referenceId: string;
+  referenceType: string;
+  description: string;
+  createdBy: string;
+}
+
+/**
+ * Normalizes raw/enriched transaction data into a standardized structure for export.
+ */
+export function normalizeTransactionForExport(tx: any): ExportTransactionRecord {
+  const rawDate = tx.created_at || tx.createdAt || new Date().toISOString();
+  const dateObj = new Date(rawDate);
+  const isValidDate = !isNaN(dateObj.getTime());
+
+  const utcFormatted = isValidDate
+    ? dateObj.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC")
+    : String(rawDate);
+
+  const localFormatted = isValidDate
+    ? dateObj.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+    : String(rawDate);
+
+  const rawType = String(tx.type || "credit").trim().toUpperCase();
+  const type: "CREDIT" | "DEBIT" = rawType.includes("DEBIT") ? "DEBIT" : "CREDIT";
+
+  const amount = Math.abs(Number(tx.amount || 0));
+  const balanceBefore = Number(tx.balance_before ?? tx.balanceBefore ?? 0);
+  const balanceAfter = Number(tx.balance_after ?? tx.balanceAfter ?? 0);
+
+  // Derive payment method / source
+  let paymentMethod = "System / Ledger";
+  const refType = String(tx.reference_type || tx.referenceType || "").toLowerCase();
+  const desc = String(tx.description || "").toLowerCase();
+
+  if (refType.includes("razorpay") || desc.includes("razorpay")) {
+    paymentMethod = "Razorpay Gateway";
+  } else if (refType.includes("stripe") || desc.includes("stripe")) {
+    paymentMethod = "Stripe Gateway";
+  } else if (refType.includes("commission") || desc.includes("commission")) {
+    paymentMethod = "Subscription Commission";
+  } else if (refType.includes("transfer") || desc.includes("transfer")) {
+    paymentMethod = "Wallet Transfer";
+  } else if (refType.includes("adjustment") || refType.includes("manual") || desc.includes("adjustment") || desc.includes("manual")) {
+    paymentMethod = "Admin Adjustment";
+  } else if (tx.reference_type || tx.referenceType) {
+    paymentMethod = String(tx.reference_type || tx.referenceType)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  // Derive status
+  const rawStatus = String(tx.status || "").trim().toUpperCase();
+  const status = rawStatus || "COMPLETED";
+
+  // Company Name & ID
+  const companyName =
+    tx.company_name ||
+    tx.company?.name ||
+    (tx.company_id ? `Company (${String(tx.company_id).slice(0, 8)}…)` : "—");
+
+  const companyId = String(tx.company_id || tx.companyId || tx.company?.id || "—");
+  const userId = String(tx.user_id || tx.userId || tx.created_by || "—");
+  const userEmail = String(tx.email || tx.user?.email || "—");
+  const referenceId = String(tx.reference_id || tx.referenceId || "—");
+  const referenceType = String(tx.reference_type || tx.referenceType || "—");
+  const description = String(tx.description || "—");
+  const createdBy = String(tx.created_by || tx.createdBy || "System");
+
+  return {
+    id: String(tx.id || tx._id || "—"),
+    createdAt: rawDate,
+    createdAtFormattedUtc: utcFormatted,
+    createdAtFormattedLocal: localFormatted,
+    companyName,
+    companyId,
+    userId,
+    userEmail,
+    type,
+    amount,
+    balanceBefore,
+    balanceAfter,
+    paymentMethod,
+    status,
+    referenceId,
+    referenceType,
+    description,
+    createdBy,
+  };
+}
+
+/**
+ * Escapes a single CSV value according to RFC 4180 rules.
+ */
+function escapeCsvCell(val: unknown): string {
+  if (val === null || val === undefined) return '""';
+  const str = String(val);
+  if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return `"${str}"`;
+}
+
+/**
+ * Generates an RFC 4180-compliant CSV string with UTF-8 BOM for Excel / Bookkeeping.
+ */
+export function generateTransactionsCsv(
+  transactions: ExportTransactionRecord[],
+  metadata?: {
+    generatedBy?: string;
+    generatedAt?: string;
+    filterSummary?: string;
+  }
+): string {
+  const lines: string[] = [];
+
+  // Optional audit header comments for financial records
+  if (metadata?.generatedAt || metadata?.generatedBy || metadata?.filterSummary) {
+    lines.push(`# Soft7 Super Admin - Financial Transactions Export`);
+    if (metadata.generatedAt) lines.push(`# Generated At: ${metadata.generatedAt}`);
+    if (metadata.generatedBy) lines.push(`# Generated By: ${metadata.generatedBy}`);
+    if (metadata.filterSummary) lines.push(`# Filters: ${metadata.filterSummary}`);
+    lines.push(`# Total Records: ${transactions.length}`);
+    lines.push("");
+  }
+
+  // Header row
+  const headers = [
+    "Transaction ID",
+    "Date & Time (UTC)",
+    "Date & Time (Local)",
+    "Company / Customer",
+    "Company ID",
+    "User ID",
+    "User Email",
+    "Type",
+    "Amount (INR)",
+    "Balance Before (INR)",
+    "Balance After (INR)",
+    "Payment Method / Source",
+    "Transaction Status",
+    "Reference ID",
+    "Reference Type",
+    "Description",
+    "Created By",
+  ];
+  lines.push(headers.map(escapeCsvCell).join(","));
+
+  // Data rows
+  for (const tx of transactions) {
+    const row = [
+      tx.id,
+      tx.createdAtFormattedUtc,
+      tx.createdAtFormattedLocal,
+      tx.companyName,
+      tx.companyId,
+      tx.userId,
+      tx.userEmail,
+      tx.type,
+      tx.amount.toFixed(2),
+      tx.balanceBefore.toFixed(2),
+      tx.balanceAfter.toFixed(2),
+      tx.paymentMethod,
+      tx.status,
+      tx.referenceId,
+      tx.referenceType,
+      tx.description,
+      tx.createdBy,
+    ];
+    lines.push(row.map(escapeCsvCell).join(","));
+  }
+
+  // Prepend UTF-8 Byte Order Mark (BOM) so Excel opens UTF-8 text cleanly
+  return "\uFEFF" + lines.join("\r\n");
+}
+
+/**
+ * Generates an elegant, high-clarity PDF financial statement using PDFKit.
+ */
+export function generateTransactionsPdf(
+  transactions: ExportTransactionRecord[],
+  options?: {
+    generatedBy?: string;
+    generatedAt?: string;
+    filterSummary?: string;
+    dateRangeLabel?: string;
+    typeLabel?: string;
+    statusLabel?: string;
+  }
+): Promise<Buffer> {
+  return new Promise<Buffer>((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: "A4",
+        layout: "landscape",
+        margin: 28,
+        bufferPages: true,
+        info: {
+          Title: "Financial Transactions Audit Statement",
+          Author: "Soft7 Super Admin",
+          Subject: "Transaction Export",
+          CreationDate: new Date(),
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", (err: Error) => reject(err));
+
+      const pageWidth = 841.89;
+      const pageHeight = 595.28;
+      const marginLeft = 28;
+      const marginRight = 28;
+      const contentWidth = pageWidth - marginLeft - marginRight; // ~785.89 pt
+
+      // Calculate Summary Metrics
+      let totalCreditSum = 0;
+      let totalCreditCount = 0;
+      let totalDebitSum = 0;
+      let totalDebitCount = 0;
+
+      for (const t of transactions) {
+        if (t.type === "CREDIT") {
+          totalCreditSum += t.amount;
+          totalCreditCount++;
+        } else {
+          totalDebitSum += t.amount;
+          totalDebitCount++;
+        }
+      }
+
+      const netVolume = totalCreditSum - totalDebitSum;
+
+      const formatInr = (n: number) =>
+        n.toLocaleString("en-IN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+      // ── Helper: Draw Document Header ──────────────────────────────────────
+      const drawReportHeader = () => {
+        // Top Banner Bar
+        doc.rect(marginLeft, 24, contentWidth, 38).fill("#0f766e");
+
+        // Platform Brand Text
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(14)
+          .fillColor("#ffffff")
+          .text("SOFT7 SUPER ADMIN", marginLeft + 14, 30);
+
+        doc
+          .font("Helvetica")
+          .fontSize(8.5)
+          .fillColor("#ccfbf1")
+          .text("FINANCIAL TRANSACTIONS AUDIT STATEMENT", marginLeft + 14, 46);
+
+        // Right side: Generation stamp
+        const nowStr = options?.generatedAt || new Date().toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(8.5)
+          .fillColor("#ffffff")
+          .text(`CONFIDENTIAL REPORT`, marginLeft, 32, {
+            width: contentWidth - 14,
+            align: "right",
+          });
+
+        doc
+          .font("Helvetica")
+          .fontSize(7.5)
+          .fillColor("#ccfbf1")
+          .text(`Generated: ${nowStr}`, marginLeft, 46, {
+            width: contentWidth - 14,
+            align: "right",
+          });
+
+        // Metadata & Filter Badges
+        doc.y = 68;
+        doc
+          .rect(marginLeft, 68, contentWidth, 24)
+          .fillAndStroke("#f8fafc", "#e2e8f0");
+
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(8)
+          .fillColor("#334155")
+          .text("AUDIT METADATA: ", marginLeft + 10, 75, { continued: true })
+          .font("Helvetica")
+          .fillColor("#64748b")
+          .text(
+            `Admin: ${options?.generatedBy || "superadmin"}  |  Date Range: ${
+              options?.dateRangeLabel || "All Time"
+            }  |  Type: ${options?.typeLabel || "All"}  |  Status: ${
+              options?.statusLabel || "All"
+            }  |  Total Records: ${transactions.length}`
+          );
+
+        // 4 KPI Stat Summary Cards
+        const cardY = 98;
+        const cardHeight = 36;
+        const cardGap = 8;
+        const cardWidth = (contentWidth - cardGap * 3) / 4;
+
+        const kpis = [
+          {
+            label: "TOTAL TRANSACTIONS",
+            value: `${transactions.length} Records`,
+            sub: `${totalCreditCount} credits · ${totalDebitCount} debits`,
+            color: "#0284c7",
+            bg: "#f0f9ff",
+            border: "#bae6fd",
+          },
+          {
+            label: "TOTAL CREDITS",
+            value: `+INR ${formatInr(totalCreditSum)}`,
+            sub: `${totalCreditCount} transactions`,
+            color: "#059669",
+            bg: "#f0fdf4",
+            border: "#bbf7d0",
+          },
+          {
+            label: "TOTAL DEBITS",
+            value: `-INR ${formatInr(totalDebitSum)}`,
+            sub: `${totalDebitCount} transactions`,
+            color: "#dc2626",
+            bg: "#fef2f2",
+            border: "#fecaca",
+          },
+          {
+            label: "NET VOLUME",
+            value: `${netVolume >= 0 ? "+" : "-"}INR ${formatInr(Math.abs(netVolume))}`,
+            sub: "Credits minus Debits",
+            color: netVolume >= 0 ? "#0f766e" : "#b91c1c",
+            bg: "#f8fafc",
+            border: "#cbd5e1",
+          },
+        ];
+
+        kpis.forEach((kpi, idx) => {
+          const cx = marginLeft + idx * (cardWidth + cardGap);
+          doc.rect(cx, cardY, cardWidth, cardHeight).fillAndStroke(kpi.bg, kpi.border);
+
+          doc
+            .font("Helvetica-Bold")
+            .fontSize(6.5)
+            .fillColor("#64748b")
+            .text(kpi.label, cx + 8, cardY + 5);
+
+          doc
+            .font("Helvetica-Bold")
+            .fontSize(10)
+            .fillColor(kpi.color)
+            .text(kpi.value, cx + 8, cardY + 14);
+
+          doc
+            .font("Helvetica")
+            .fontSize(6.5)
+            .fillColor("#94a3b8")
+            .text(kpi.sub, cx + 8, cardY + 26);
+        });
+
+        doc.y = cardY + cardHeight + 10;
+      };
+
+      // ── Table Column Definition ──────────────────────────────────────────
+      const columns = [
+        { key: "idx", label: "#", width: 25, align: "left" as const },
+        { key: "date", label: "Date & Time", width: 90, align: "left" as const },
+        { key: "company", label: "Company / Customer", width: 130, align: "left" as const },
+        { key: "type", label: "Type", width: 48, align: "center" as const },
+        { key: "amount", label: "Amount (INR)", width: 85, align: "right" as const },
+        { key: "balance", label: "Balance After", width: 85, align: "right" as const },
+        { key: "method", label: "Method / Source", width: 95, align: "left" as const },
+        { key: "status", label: "Status", width: 55, align: "center" as const },
+        { key: "desc", label: "Reference / Description", width: 172, align: "left" as const },
+      ];
+
+      const drawTableHeader = (y: number) => {
+        doc.rect(marginLeft, y, contentWidth, 18).fill("#1e293b");
+
+        let curX = marginLeft;
+        for (const col of columns) {
+          doc
+            .font("Helvetica-Bold")
+            .fontSize(7.2)
+            .fillColor("#ffffff")
+            .text(col.label, curX + 4, y + 5, {
+              width: col.width - 8,
+              align: col.align,
+            });
+          curX += col.width;
+        }
+
+        return y + 18;
+      };
+
+      // Draw initial page header & table header
+      drawReportHeader();
+      let tableY = doc.y;
+      tableY = drawTableHeader(tableY);
+
+      // ── Draw Data Rows ───────────────────────────────────────────────────
+      const rowHeight = 17;
+      const maxY = pageHeight - 40;
+
+      transactions.forEach((tx, index) => {
+        // If row would overflow page bottom, start new page
+        if (tableY + rowHeight > maxY) {
+          doc.addPage();
+          // Compact header on subsequent pages
+          doc.rect(marginLeft, 20, contentWidth, 22).fill("#0f766e");
+          doc
+            .font("Helvetica-Bold")
+            .fontSize(10)
+            .fillColor("#ffffff")
+            .text("SOFT7 FINANCIAL TRANSACTIONS REPORT (CONTINUED)", marginLeft + 10, 26);
+
+          tableY = drawTableHeader(48);
+        }
+
+        // Alternating row background
+        const isEven = index % 2 === 0;
+        doc
+          .rect(marginLeft, tableY, contentWidth, rowHeight)
+          .fill(isEven ? "#ffffff" : "#f8fafc");
+
+        // Bottom border
+        doc
+          .moveTo(marginLeft, tableY + rowHeight)
+          .lineTo(marginLeft + contentWidth, tableY + rowHeight)
+          .strokeColor("#e2e8f0")
+          .lineWidth(0.5)
+          .stroke();
+
+        let curX = marginLeft;
+
+        // 1. Index
+        doc
+          .font("Helvetica")
+          .fontSize(6.8)
+          .fillColor("#64748b")
+          .text(String(index + 1), curX + 3, tableY + 5, {
+            width: columns[0].width - 6,
+            align: "left",
+          });
+        curX += columns[0].width;
+
+        // 2. Date
+        doc
+          .font("Helvetica")
+          .fontSize(6.8)
+          .fillColor("#1e293b")
+          .text(tx.createdAtFormattedLocal, curX + 3, tableY + 5, {
+            width: columns[1].width - 6,
+            align: "left",
+          });
+        curX += columns[1].width;
+
+        // 3. Company / Customer
+        const compDisplay =
+          tx.companyName.length > 28
+            ? tx.companyName.slice(0, 26) + "…"
+            : tx.companyName;
+
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(6.8)
+          .fillColor("#0f172a")
+          .text(compDisplay, curX + 3, tableY + 5, {
+            width: columns[2].width - 6,
+            align: "left",
+          });
+        curX += columns[2].width;
+
+        // 4. Type (Pill with color)
+        const isCredit = tx.type === "CREDIT";
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(6.5)
+          .fillColor(isCredit ? "#059669" : "#dc2626")
+          .text(tx.type, curX + 2, tableY + 5, {
+            width: columns[3].width - 4,
+            align: "center",
+          });
+        curX += columns[3].width;
+
+        // 5. Amount
+        const sign = isCredit ? "+" : "-";
+        const amtText = `${sign}INR ${formatInr(tx.amount)}`;
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(6.8)
+          .fillColor(isCredit ? "#059669" : "#dc2626")
+          .text(amtText, curX + 2, tableY + 5, {
+            width: columns[4].width - 6,
+            align: "right",
+          });
+        curX += columns[4].width;
+
+        // 6. Balance After
+        doc
+          .font("Helvetica")
+          .fontSize(6.8)
+          .fillColor("#475569")
+          .text(`INR ${formatInr(tx.balanceAfter)}`, curX + 2, tableY + 5, {
+            width: columns[5].width - 6,
+            align: "right",
+          });
+        curX += columns[5].width;
+
+        // 7. Method
+        const methodShort =
+          tx.paymentMethod.length > 20
+            ? tx.paymentMethod.slice(0, 18) + "…"
+            : tx.paymentMethod;
+        doc
+          .font("Helvetica")
+          .fontSize(6.8)
+          .fillColor("#334155")
+          .text(methodShort, curX + 3, tableY + 5, {
+            width: columns[6].width - 6,
+            align: "left",
+          });
+        curX += columns[6].width;
+
+        // 8. Status
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(6.2)
+          .fillColor(tx.status === "FAILED" ? "#dc2626" : "#0f766e")
+          .text(tx.status, curX + 2, tableY + 5, {
+            width: columns[7].width - 4,
+            align: "center",
+          });
+        curX += columns[7].width;
+
+        // 9. Description / Ref
+        const descText =
+          tx.description && tx.description !== "—"
+            ? tx.description
+            : tx.referenceId && tx.referenceId !== "—"
+            ? `Ref: ${tx.referenceId}`
+            : "—";
+
+        const truncatedDesc =
+          descText.length > 45 ? descText.slice(0, 42) + "…" : descText;
+
+        doc
+          .font("Helvetica")
+          .fontSize(6.5)
+          .fillColor("#64748b")
+          .text(truncatedDesc, curX + 3, tableY + 5, {
+            width: columns[8].width - 6,
+            align: "left",
+          });
+
+        tableY += rowHeight;
+      });
+
+      // ── Page Footers on all pages ─────────────────────────────────────────
+      const range = doc.bufferedPageRange();
+      for (let i = range.start; i < range.start + range.count; i++) {
+        doc.switchToPage(i);
+
+        // Footer dividing line
+        doc
+          .moveTo(marginLeft, pageHeight - 26)
+          .lineTo(marginLeft + contentWidth, pageHeight - 26)
+          .strokeColor("#cbd5e1")
+          .lineWidth(0.5)
+          .stroke();
+
+        // Footer disclaimer & page numbering
+        doc
+          .font("Helvetica")
+          .fontSize(7)
+          .fillColor("#94a3b8")
+          .text(
+            "Soft7 Platform Financial Export • Confidential • Generated for bookkeeping & audit purposes",
+            marginLeft,
+            pageHeight - 20,
+            { align: "left" }
+          );
+
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(7)
+          .fillColor("#64748b")
+          .text(
+            `Page ${i + 1} of ${range.count}`,
+            marginLeft,
+            pageHeight - 20,
+            { width: contentWidth, align: "right" }
+          );
+      }
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}

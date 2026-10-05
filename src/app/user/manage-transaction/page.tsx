@@ -6,7 +6,16 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import { getAuthToken, redirectToLogin, getAuthHeaders } from "@/lib/auth-client";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { RefreshCw, Calendar } from "lucide-react";
+import {
+  RefreshCw,
+  Calendar,
+  Receipt,
+  TrendingUp,
+  TrendingDown,
+  Building2,
+  Search,
+  AlertCircle,
+} from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
 import {
   DateRangeOption,
@@ -121,7 +130,7 @@ function KPI({
 }: {
   label: string;
   value: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
 }) {
   return (
@@ -380,18 +389,35 @@ export default function ManageTransactions() {
         <KPI
           label="Transactions"
           value={String(filtered.length)}
-          icon="📒"
+          icon={<Receipt size={18} />}
           color="#10B981"
         />
-        <KPI label="Total Credited" value={`₹${money(totalCredit)}`} icon="⬆️" color="#00CBA4" />
-        <KPI label="Total Debited" value={`₹${money(totalDebit)}`} icon="⬇️" color="#FF6B6B" />
-        <KPI label="Companies" value={String(companyCount)} icon="🏢" color="#FDCB6E" />
+        <KPI
+          label="Total Credited"
+          value={`₹${money(totalCredit)}`}
+          icon={<TrendingUp size={18} />}
+          color="#00CBA4"
+        />
+        <KPI
+          label="Total Debited"
+          value={`₹${money(totalDebit)}`}
+          icon={<TrendingDown size={18} />}
+          color="#FF6B6B"
+        />
+        <KPI
+          label="Companies"
+          value={String(companyCount)}
+          icon={<Building2 size={18} />}
+          color="#FDCB6E"
+        />
       </div>
 
       {/* FILTER BAR */}
       <div className="tx-filter-bar">
         <div className="tx-search-wrap">
-          <span className="tx-search-icon">🔍</span>
+          <span className="tx-search-icon">
+            <Search size={14} />
+          </span>
           <input
             className="tx-search-input"
             value={search}
@@ -443,7 +469,10 @@ export default function ManageTransactions() {
 
       {/* TABLE */}
       {fetchError ? (
-        <div className="tx-empty">⚠️ {fetchError}</div>
+        <div className="tx-empty">
+          <AlertCircle size={16} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "6px" }} />
+          {fetchError}
+        </div>
       ) : (
         <div className="tx-table-wrapper">
           <table className="tx-table">

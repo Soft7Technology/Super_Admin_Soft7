@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet, Calendar } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Wallet,
+  Calendar,
+  FileSpreadsheet,
+  FileText,
+} from "lucide-react";
+import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { getAuthToken, redirectToLogin, getAuthHeaders } from "@/lib/auth-client";
 import { fetchWalletBalance, getCachedWalletBalance } from "@/lib/wallet";
@@ -11,7 +20,7 @@ import {
   isWithinDateRange,
   resolveTransactionCompanyNames,
 } from "@/lib/transaction-utils";
-import styles from "./transactions.module.css";
+import "./transactions.css";
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Transaction {
@@ -184,6 +193,92 @@ export default function TransactionsPage() {
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
 
+  /* ── Export State & Handler ──────────────────────────────── */
+  const [exportScope, setExportScope] = useState<"all" | "current_page">("all");
+  const [exportingFormat, setExportingFormat] = useState<"csv" | "pdf" | null>(null);
+
+  const handleExport = async (format: "csv" | "pdf") => {
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("Session expired or missing authentication. Please log in.");
+      redirectToLogin("missing_token");
+      return;
+    }
+
+    setExportingFormat(format);
+    try {
+      const params = new URLSearchParams({
+        format,
+        type: filter,
+        dateRange: dateRange,
+        scope: exportScope,
+        page: String(page),
+        limit: String(LIMIT),
+      });
+
+      const response = await fetch(
+        `/api/admin/credits/transactions/export?${params.toString()}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error("Session expired. Please log in as superadmin.");
+          redirectToLogin("session_expired");
+          return;
+        }
+
+        if (response.status === 403) {
+          toast.error("Access Denied: Only Superadmin users can export transactions.");
+          return;
+        }
+
+        let errMsg = "Failed to export transactions.";
+        try {
+          const json = await response.json();
+          if (json?.error) errMsg = json.error;
+        } catch {}
+
+        if (response.status === 404) {
+          toast.error(errMsg || "No transactions found matching the selected filters to export.");
+        } else {
+          toast.error(errMsg);
+        }
+        return;
+      }
+
+      // Download file blob
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = `soft7-transactions-${new Date().toISOString().slice(0, 10)}.${format}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match && match[1]) filename = match[1];
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(
+        `Transactions exported as ${format.toUpperCase()} successfully!`
+      );
+    } catch (err: any) {
+      console.error("[TransactionsPage] Export error:", err);
+      toast.error(err?.message || "Failed to download export file. Please try again.");
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
   /* ── Fetch ─────────────────────────────────────────────────── */
   const fetchTransactions = useCallback(
     async (currentFilter: FilterType, currentPage: number, currentDateRange: DateRangeOption) => {
@@ -334,30 +429,28 @@ export default function TransactionsPage() {
 
   /* ── Render ──────────────────────────────────────────────── */
   return (
-    <div className={styles["tx-page"]}>
+    <div className="tx-page">
       {/* Header */}
-      <div className={styles["tx-page__header"]}>
-        <h1 className={styles["tx-page__title"]}>Transaction History</h1>
-        <p className={styles["tx-page__subtitle"]}>
+      <div className="tx-page__header">
+        <h1 className="tx-page__title">Transaction History</h1>
+        <p className="tx-page__subtitle">
           Track all credit and debit activity in one place
         </p>
       </div>
 
       {/* Wallet Balance Card */}
-      <div className={styles["tx-balance-card"]}>
-        <div className={styles["tx-balance-card__icon"]}>
+      <div className="tx-balance-card">
+        <div className="tx-balance-card__icon">
           <Wallet size={20} />
         </div>
-        <div className={styles["tx-balance-card__info"]}>
-          <span className={styles["tx-balance-card__label"]}>
+        <div className="tx-balance-card__info">
+          <span className="tx-balance-card__label">
             Current Wallet Balance
           </span>
           {balanceLoading ? (
-            <span
-              className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-            />
+            <span className="skeleton skeleton--md" />
           ) : (
-            <span className={styles["tx-balance-card__amount"]}>
+            <span className="tx-balance-card__amount">
               ₹{walletBalance !== null ? formatCurrency(walletBalance) : "—"}
             </span>
           )}
@@ -365,11 +458,11 @@ export default function TransactionsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className={styles["tx-toolbar"]}>
-        <div className={styles["tx-toolbar__filters"]}>
+      <div className="tx-toolbar">
+        <div className="tx-toolbar__filters">
           {/* Segment Buttons: Type (All, Credit, Debit) */}
           <div
-            className={styles["tx-segment"]}
+            className="tx-segment"
             role="tablist"
             aria-label="Filter by type"
           >
@@ -378,17 +471,17 @@ export default function TransactionsPage() {
                 key={opt.value}
                 role="tab"
                 aria-selected={filter === opt.value}
-                className={`${styles["tx-segment__btn"]} ${
-                  filter === opt.value ? styles["tx-segment__btn--active"] : ""
+                className={`tx-segment__btn ${
+                  filter === opt.value ? "tx-segment__btn--active" : ""
                 }`}
                 onClick={() => handleFilterChange(opt.value)}
               >
                 {opt.value !== "all" && (
                   <span
-                    className={`${styles["tx-segment__dot"]} ${
+                    className={`tx-segment__dot ${
                       opt.value === "credit"
-                        ? styles["tx-segment__dot--credit"]
-                        : styles["tx-segment__dot--debit"]
+                        ? "tx-segment__dot--credit"
+                        : "tx-segment__dot--debit"
                     }`}
                   />
                 )}
@@ -399,11 +492,11 @@ export default function TransactionsPage() {
 
           {/* Segment Buttons: Date Range alongside Type filter */}
           <div
-            className={styles["tx-segment"]}
+            className="tx-segment"
             role="tablist"
             aria-label="Filter by date range"
           >
-            <span className={styles["tx-segment__icon"]} title="Filter by date range">
+            <span className="tx-segment__icon" title="Filter by date range">
               <Calendar size={13} />
             </span>
             {DATE_RANGE_OPTIONS.map((opt) => (
@@ -411,8 +504,8 @@ export default function TransactionsPage() {
                 key={opt.value}
                 role="tab"
                 aria-selected={dateRange === opt.value}
-                className={`${styles["tx-segment__btn"]} ${
-                  dateRange === opt.value ? styles["tx-segment__btn--active"] : ""
+                className={`tx-segment__btn ${
+                  dateRange === opt.value ? "tx-segment__btn--active" : ""
                 }`}
                 onClick={() => handleDateRangeChange(opt.value)}
               >
@@ -422,21 +515,79 @@ export default function TransactionsPage() {
           </div>
         </div>
 
-        {!loading && !error && (
-          <span className={styles["tx-count"]}>
-            {displayedTransactions.length} transaction
-            {displayedTransactions.length !== 1 ? "s" : ""}
-          </span>
-        )}
+        <div className="tx-toolbar__actions">
+          {!loading && !error && (
+            <span className="tx-count">
+              {displayedTransactions.length} transaction
+              {displayedTransactions.length !== 1 ? "s" : ""}
+            </span>
+          )}
+
+          {/* Scope Selector: All Matching vs Current Page */}
+          <div className="tx-scope-toggle" title="Select records to export">
+            <button
+              type="button"
+              className={`tx-scope-pill ${
+                exportScope === "all" ? "tx-scope-pill--active" : ""
+              }`}
+              onClick={() => setExportScope("all")}
+            >
+              All ({pagination?.total || displayedTransactions.length})
+            </button>
+            <button
+              type="button"
+              className={`tx-scope-pill ${
+                exportScope === "current_page"
+                  ? "tx-scope-pill--active"
+                  : ""
+              }`}
+              onClick={() => setExportScope("current_page")}
+            >
+              Page {page}
+            </button>
+          </div>
+
+          {/* Direct Export CSV Button */}
+          <button
+            type="button"
+            className="tx-export-btn tx-export-btn--csv"
+            onClick={() => handleExport("csv")}
+            disabled={exportingFormat !== null}
+            title="Download transaction data in CSV format for bookkeeping/Excel"
+          >
+            {exportingFormat === "csv" ? (
+              <span className="tx-spinner" />
+            ) : (
+              <FileSpreadsheet size={14} />
+            )}
+            Export CSV
+          </button>
+
+          {/* Direct Export PDF Button */}
+          <button
+            type="button"
+            className="tx-export-btn tx-export-btn--pdf"
+            onClick={() => handleExport("pdf")}
+            disabled={exportingFormat !== null}
+            title="Download formatted financial report in PDF format"
+          >
+            {exportingFormat === "pdf" ? (
+              <span className="tx-spinner" />
+            ) : (
+              <FileText size={14} />
+            )}
+            Export PDF
+          </button>
+        </div>
       </div>
 
       {/* Table card */}
-      <div className={styles["tx-table-wrap"]}>
-        <table className={styles["tx-table"]}>
+      <div className="tx-table-wrap">
+        <table className="tx-table">
           <thead>
             <tr>
               <th>
-                <span className={styles["th-sort"]}>
+                <span className="th-sort">
                   Date <ArrowUpDown size={11} />
                 </span>
               </th>
@@ -454,39 +605,25 @@ export default function TransactionsPage() {
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={`skeleton-${i}`}>
                   <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-                    />
+                    <span className="skeleton skeleton--md" />
                   </td>
                   <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
+                    <span className="skeleton skeleton--sm" />
                   </td>
                   <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
+                    <span className="skeleton skeleton--sm" />
                   </td>
                   <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
+                    <span className="skeleton skeleton--sm" />
                   </td>
                   <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
+                    <span className="skeleton skeleton--sm" />
                   </td>
                   <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
+                    <span className="skeleton skeleton--sm" />
                   </td>
                   <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--lg"]}`}
-                    />
+                    <span className="skeleton skeleton--lg" />
                   </td>
                 </tr>
               ))}
@@ -495,13 +632,13 @@ export default function TransactionsPage() {
             {!loading && error && (
               <tr>
                 <td colSpan={7}>
-                  <div className={styles["tx-empty"]}>
-                    <div className={styles["tx-empty__text"]}>
+                  <div className="tx-empty">
+                    <div className="tx-empty__text">
                       Could not load transactions
                     </div>
-                    <div className={styles["tx-empty__hint"]}>{error}</div>
+                    <div className="tx-empty__hint">{error}</div>
                     <button
-                      className={styles["tx-retry"]}
+                      className="tx-retry"
                       onClick={() => fetchTransactions(filter, page, dateRange)}
                     >
                       Try again
@@ -515,14 +652,14 @@ export default function TransactionsPage() {
             {!loading && !error && displayedTransactions.length === 0 && (
               <tr>
                 <td colSpan={7}>
-                  <div className={styles["tx-empty"]}>
-                    <div className={styles["tx-empty__text"]}>
+                  <div className="tx-empty">
+                    <div className="tx-empty__text">
                       No {filter !== "all" ? filter : ""} transactions found
                       {dateRange !== "all"
                         ? ` for ${DATE_RANGE_OPTIONS.find((d) => d.value === dateRange)?.label}`
                         : ""}
                     </div>
-                    <div className={styles["tx-empty__hint"]}>
+                    <div className="tx-empty__hint">
                       Try switching filters or adjusting your date range
                     </div>
                   </div>
@@ -542,39 +679,39 @@ export default function TransactionsPage() {
 
                 return (
                   <tr key={tx.id}>
-                    <td className={styles["td-date"]}>
+                    <td className="td-date">
                       {formatDate(tx.created_at)}
                     </td>
-                    <td className={styles["td-company"]}>
+                    <td className="td-company">
                       {displayCompany}
                     </td>
                     <td>
                       <span
-                        className={`${styles.badge} ${
+                        className={`badge ${
                           isCredit
-                            ? styles["badge--credit"]
-                            : styles["badge--debit"]
+                            ? "badge--credit"
+                            : "badge--debit"
                         }`}
                       >
                         {tx.type}
                       </span>
                     </td>
-                    <td className={styles["td-ref"]}>
+                    <td className="td-ref">
                       {formatReferenceType(tx.reference_type)}
                     </td>
                     <td
-                      className={`${styles["td-amount"]} ${
+                      className={`td-amount ${
                         isCredit
-                          ? styles["td-amount--credit"]
-                          : styles["td-amount--debit"]
+                          ? "td-amount--credit"
+                          : "td-amount--debit"
                       }`}
                     >
                       {isCredit ? "+" : "−"}₹{formatCurrency(Math.abs(amount))}
                     </td>
-                    <td className={styles["td-balance"]}>
+                    <td className="td-balance">
                       ₹{formatCurrency(tx.balance_after)}
                     </td>
-                    <td className={styles["td-desc"]} title={tx.description}>
+                    <td className="td-desc" title={tx.description}>
                       {tx.description}
                     </td>
                   </tr>
@@ -586,14 +723,14 @@ export default function TransactionsPage() {
 
       {/* Pagination */}
       {!loading && !error && pagination && pagination.totalPages > 1 && (
-        <div className={styles["tx-pagination"]}>
-          <span className={styles["tx-pagination__info"]}>
+        <div className="tx-pagination">
+          <span className="tx-pagination__info">
             Page {pagination.page} of {pagination.totalPages} &nbsp;·&nbsp;{" "}
             {pagination.total} total
           </span>
-          <div className={styles["tx-pagination__controls"]}>
+          <div className="tx-pagination__controls">
             <button
-              className={styles["tx-pagination__btn"]}
+              className="tx-pagination__btn"
               disabled={!pagination.hasPreviousPage}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               aria-label="Previous page"
@@ -602,7 +739,7 @@ export default function TransactionsPage() {
               Prev
             </button>
             <button
-              className={styles["tx-pagination__btn"]}
+              className="tx-pagination__btn"
               disabled={!pagination.hasNextPage}
               onClick={() => setPage((p) => p + 1)}
               aria-label="Next page"

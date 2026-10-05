@@ -17,6 +17,7 @@ const pathMappings: Record<string, string> = {
   "/user/support-tickets": "Support Tickets",
   "/user/permissions": "Domain Approvals",
   "/user/domain-approvals": "Domain Approvals",
+  "/user/transactions": "Transactions",
 };
 
 function getNavFromPath(pathname: string | null): string {
@@ -120,7 +121,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   }}
 />
 
-    {/* ✅ DESKTOP SIDEBAR */}
+    {/* DESKTOP SIDEBAR */}
     {!isMobile && (
   <div
     style={{
@@ -141,7 +142,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   </div>
 )}
 
-    {/* ✅ MOBILE SIDEBAR */}
+    {/* MOBILE SIDEBAR */}
     {isMobile && (
       <>
         {sidebarOpen && (
@@ -178,7 +179,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
       </>
     )}
 
-    {/* ✅ MAIN CONTENT */}
+    {/* MAIN CONTENT */}
     <div
       style={{
         marginLeft: isMobile ? "0px" : `${desktopSidebarWidth}px`,

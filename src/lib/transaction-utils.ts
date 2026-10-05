@@ -320,3 +320,230 @@ export async function resolveTransactionCompanyNames<T extends {
     };
   });
 }
+
+/* ── Unified Transaction Querying Engine ───────────────────── */
+
+export interface TransactionQueryOptions {
+  page?: number;
+  limit?: number;
+  type?: string;
+  timeFrame?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  status?: string;
+  search?: string;
+  token?: string;
+  scope?: "all" | "current_page" | string;
+}
+
+export interface PlatformTransaction {
+  id: string;
+  company_id: string;
+  type: string;
+  amount: string | number;
+  balance_before: string | number;
+  balance_after: string | number;
+  reference_type: string | null;
+  reference_id: string | null;
+  description: string | null;
+  created_by: string | null;
+  meta_data: unknown;
+  created_at: string;
+  company_name: string | null;
+  company?: { id: string; name: string } | null;
+  user_id: string | null;
+  email: string | null;
+  status?: string | null;
+}
+
+/**
+ * Single source of truth for querying, resolving, and filtering transactions
+ * across the standard transactions API and the export API.
+ */
+export async function fetchPlatformTransactions(options: TransactionQueryOptions = {}): Promise<{
+  transactions: PlatformTransaction[];
+  total: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}> {
+  const page = Math.max(1, options.page || 1);
+  const limit = Math.max(1, options.limit || 50);
+  const type = (options.type || "all").toLowerCase().trim();
+  const timeFrame = (options.timeFrame || "all").trim();
+  const startDateParam = options.startDate || null;
+  const endDateParam = options.endDate || null;
+  const statusParam = (options.status || "all").toLowerCase().trim();
+  const searchQuery = (options.search || "").toLowerCase().trim();
+  const scope = (options.scope || "current_page").toLowerCase().trim();
+
+  const hostHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+  };
+  if (options.token) {
+    hostHeaders["Authorization"] = `Bearer ${options.token}`;
+  }
+
+  const fetchLimit = scope === "all" ? 2000 : limit;
+  const fetchPage = scope === "all" ? 1 : page;
+
+  let rawTransactions: PlatformTransaction[] = [];
+
+  // 1. Fetch from Host API credit ledger
+  try {
+    if (type === "all") {
+      const [creditRes, debitRes] = await Promise.all([
+        fetch(
+          `https://hostapi.soft7.in/v1/admin/credits/transactions?limit=${fetchLimit}&page=${fetchPage}&type=credit`,
+          { headers: hostHeaders, signal: AbortSignal.timeout(6000) }
+        ).catch(() => null),
+        fetch(
+          `https://hostapi.soft7.in/v1/admin/credits/transactions?limit=${fetchLimit}&page=${fetchPage}&type=debit`,
+          { headers: hostHeaders, signal: AbortSignal.timeout(6000) }
+        ).catch(() => null),
+      ]);
+
+      const creditJson = creditRes?.ok ? await creditRes.json().catch(() => null) : null;
+      const debitJson = debitRes?.ok ? await debitRes.json().catch(() => null) : null;
+
+      const creditList = Array.isArray(creditJson?.data?.data)
+        ? creditJson.data.data
+        : Array.isArray(creditJson?.data)
+        ? creditJson.data
+        : [];
+      const debitList = Array.isArray(debitJson?.data?.data)
+        ? debitJson.data.data
+        : Array.isArray(debitJson?.data)
+        ? debitJson.data
+        : [];
+
+      rawTransactions = [...creditList, ...debitList].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    } else {
+      const hostUrl = new URL("https://hostapi.soft7.in/v1/admin/credits/transactions");
+      hostUrl.searchParams.set("limit", String(fetchLimit));
+      hostUrl.searchParams.set("page", String(fetchPage));
+      hostUrl.searchParams.set("type", type);
+
+      const res = await fetch(hostUrl.toString(), {
+        headers: hostHeaders,
+        signal: AbortSignal.timeout(6000),
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        const json = await res.json().catch(() => null);
+        const payload = json?.data;
+        rawTransactions = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+          ? payload
+          : [];
+      }
+    }
+  } catch {
+    // silent fallback
+  }
+
+  // 2. Fallback to local Prisma wallet transactions if host API returned nothing
+  if (rawTransactions.length === 0) {
+    try {
+      const prismaModule = await import("./prisma");
+      const localWalletTx = await prismaModule.default.walletTransaction.findMany({
+        take: fetchLimit,
+        skip: scope === "all" ? 0 : (page - 1) * limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          User: {
+            include: { company: true },
+          },
+        },
+      });
+
+      if (localWalletTx.length > 0) {
+        rawTransactions = localWalletTx.map((wt) => ({
+          id: String(wt.id),
+          company_id: wt.User.companyId ? String(wt.User.companyId) : "",
+          company_name: wt.User.company?.name || null,
+          user_id: String(wt.userId),
+          email: wt.User.email || null,
+          type: wt.type || "credit",
+          amount: wt.amount,
+          balance_before: wt.User.walletBalance - wt.amount,
+          balance_after: wt.User.walletBalance,
+          reference_type: "wallet_transaction",
+          reference_id: wt.messageId || null,
+          description: `Wallet transaction for message ${wt.messageId || wt.id}`,
+          created_by: wt.User.name || "System",
+          meta_data: null,
+          created_at: wt.createdAt.toISOString(),
+          status: "COMPLETED",
+        }));
+      }
+    } catch {
+      // Prisma fallback silent
+    }
+  }
+
+  // 3. Enrich transactions with company names
+  const enriched = await resolveTransactionCompanyNames(rawTransactions);
+
+  // 4. Apply Filters
+  const filtered = enriched.filter((tx) => {
+    // Date filter
+    if (!isWithinDateRange(tx.created_at, timeFrame, startDateParam, endDateParam)) {
+      return false;
+    }
+
+    // Type filter
+    if (type !== "all") {
+      const txType = String(tx.type || "").toLowerCase();
+      if (txType !== type) return false;
+    }
+
+    // Status filter
+    if (statusParam !== "all") {
+      const txStatus = String(tx.status || "completed").toLowerCase();
+      if (!txStatus.includes(statusParam)) return false;
+    }
+
+    // Search query filter
+    if (searchQuery) {
+      const haystack = [
+        tx.id,
+        tx.company_name,
+        tx.company_id,
+        tx.user_id,
+        tx.email,
+        tx.reference_id,
+        tx.reference_type,
+        tx.description,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (!haystack.includes(searchQuery)) return false;
+    }
+
+    return true;
+  });
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  // If scope is current_page and we fetched multiple, slice
+  const resultTransactions =
+    scope === "current_page" && filtered.length > limit
+      ? filtered.slice((page - 1) * limit, page * limit)
+      : filtered;
+
+  return {
+    transactions: resultTransactions,
+    total,
+    totalPages,
+    page,
+    limit,
+  };
+}
