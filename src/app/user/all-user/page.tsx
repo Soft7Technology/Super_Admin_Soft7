@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
@@ -17,6 +17,7 @@ import { DetailPanel } from "./components/DetailPanel";
 import { EditUserModal } from "./components/EditUserModal";
 import { ResetPasswordModal } from "./components/ResetPasswordModal";
 import {
+  ArrowLeft,
   Eye,
   Pencil,
   KeyRound,
@@ -32,6 +33,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 export default function AllUsers() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("ALL");
   const [role, setRole] = useState("ALL");
   const [sort, setSort] = useState("name");
@@ -39,7 +41,22 @@ export default function AllUsers() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 25;
-  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("sa_selected_company_id") || "";
+    }
+    return "";
+  });
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    // Reset page to 1 when filters change
+    setCurrentPage(1);
+  }, [debouncedSearch, status, role, selectedCompanyId]);
 
   // Inline action states
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -65,50 +82,17 @@ export default function AllUsers() {
     page: currentPage,
     limit: rowsPerPage,
     companyId: selectedCompanyId || undefined,
+    search: debouncedSearch || undefined,
+    status,
+    role,
   });
-
-  // Filter users by status, role, and search query
-  const filteredUsers = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return users.filter((u) => {
-      // Status filter
-      if (status !== "ALL" && u.status.toUpperCase() !== status.toUpperCase()) {
-        return false;
-      }
-      // Role filter
-      if (role !== "ALL" && u.role.toLowerCase() !== role.toLowerCase()) {
-        return false;
-      }
-      // Search filter
-      if (q) {
-        const searchable = [
-          u.name,
-          u.email,
-          u.phone,
-          u.company,
-          u.companyDomain,
-          u.plan,
-          u.role,
-          u.status,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        if (!searchable.includes(q)) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [users, status, role, search]);
 
   // Sort filtered users
   const sortedUsers = useMemo(() => {
-    return [...filteredUsers].sort((a, b) =>
+    return [...users].sort((a, b) =>
       sort === "msgs" ? b.msgs - a.msgs : a.name.localeCompare(b.name),
     );
-  }, [filteredUsers, sort]);
+  }, [users, sort]);
 
   // Backend handles pagination, so use the total page count returned by the API.
   const totalPages = Math.max(
@@ -119,6 +103,21 @@ export default function AllUsers() {
 
   const handleCompanyChange = (companyId: string) => {
     setSelectedCompanyId(companyId);
+    try {
+      if (companyId) {
+        sessionStorage.setItem("sa_selected_company_id", companyId);
+      } else {
+        sessionStorage.removeItem("sa_selected_company_id");
+      }
+    } catch {}
+    setCurrentPage(1);
+    setSelectedUsers([]);
+    setDetail(null);
+  };
+
+  const handleClearCompanyFilter = () => {
+    setSelectedCompanyId("");
+    try { sessionStorage.removeItem("sa_selected_company_id"); } catch {}
     setCurrentPage(1);
     setSelectedUsers([]);
     setDetail(null);
@@ -233,12 +232,37 @@ export default function AllUsers() {
       {/* Header */}
       <div className="au-header">
         <div>
-          <h1 className="au-header__title">All Users</h1>
-          <p className="au-header__subtitle">
-            {selectedCompany
-              ? `Users of ${selectedCompany.name}`
-              : "All platform users across every company"}
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {selectedCompany && (
+              <button
+                onClick={handleClearCompanyFilter}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--au-border, #e2e8f0)",
+                  background: "var(--au-card-bg, #fff)",
+                  cursor: "pointer",
+                  color: "var(--au-text, #1e293b)",
+                  flexShrink: 0,
+                }}
+                title="Back to All Users"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <h1 className="au-header__title">
+              {selectedCompany ? `Users of ${selectedCompany.name}` : "All Users"}
+            </h1>
+          </div>
+          {!selectedCompany && (
+            <p className="au-header__subtitle">
+              All platform users across every company
+            </p>
+          )}
         </div>
 
         <CompanyDropdown
@@ -282,7 +306,7 @@ export default function AllUsers() {
         onRoleChange={handleRoleChange}
         sort={sort}
         onSortChange={handleSortChange}
-        count={filteredUsers.length}
+        count={pagination?.total ?? users.length}
         loading={loading}
         rightSlot={
           <div

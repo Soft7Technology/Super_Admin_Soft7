@@ -173,6 +173,13 @@ export default function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"Overview" | "Activity Log" | "Campaigns" | "Plan">("Overview");
 
+  // Specific user data states from endpoints
+  const [activePlanData, setActivePlanData] = useState<any>(null);
+  const [contactsData, setContactsData] = useState<any[]>([]);
+  const [activityData, setActivityData] = useState<any[]>([]);
+  const [campaignData, setCampaignData] = useState<any[]>([]);
+  const [messagesData, setMessagesData] = useState<any[]>([]);
+
   // Modals state
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
@@ -296,6 +303,118 @@ export default function UserProfilePage() {
   useEffect(() => {
     loadUserData();
   }, [loadUserData]);
+
+  useEffect(() => {
+    if (!user?.companyId || !user?.id) return;
+
+    const fetchSpecificData = async () => {
+      const cId = user.companyId;
+      const uId = user.id;
+
+      // Helper: extract array from any API response shape
+      const extractArray = (res: any): any[] => {
+        const d = res?.data?.data ?? res?.data ?? res;
+        if (Array.isArray(d)) return d;
+        if (Array.isArray(d?.data)) return d.data;
+        if (Array.isArray(d?.items)) return d.items;
+        if (Array.isArray(d?.records)) return d.records;
+        if (Array.isArray(d?.results)) return d.results;
+        if (Array.isArray(d?.list)) return d.list;
+        if (Array.isArray(d?.contacts)) return d.contacts;
+        if (Array.isArray(d?.campaigns)) return d.campaigns;
+        if (Array.isArray(d?.messages)) return d.messages;
+        if (Array.isArray(d?.activities)) return d.activities;
+        return [];
+      };
+
+      // Helper: extract object from response
+      const extractObj = (res: any): any => {
+        const d = res?.data;
+        if (d && typeof d === "object" && !Array.isArray(d)) {
+          if (d.data && typeof d.data === "object" && !Array.isArray(d.data)) return d.data;
+          return d;
+        }
+        return res;
+      };
+
+      try {
+        const [planRes, contactsRes, activityRes, campaignRes, messagesRes] =
+          await Promise.allSettled([
+            axiosInstance.get(`/v1/super-admin/companies/${cId}/${uId}/active-plan`),
+            axiosInstance.get(`/v1/super-admin/companies/${cId}/${uId}/contacts`),
+            axiosInstance.get(`/v1/super-admin/companies/${cId}/${uId}/activity`),
+            axiosInstance.get(`/v1/super-admin/companies/${cId}/${uId}/campaign`),
+            axiosInstance.get(`/v1/super-admin/companies/${cId}/${uId}/messages`),
+          ]);
+
+        // ── Active Plan ──────────────────────────────────────────
+        if (planRes.status === "fulfilled") {
+          // Structure: { data: { data: { active_plan: {...} | null } } }
+          const planObj = planRes.value.data?.data?.active_plan ?? null;
+          setActivePlanData(planObj);
+        } else {
+          console.warn("[active-plan] failed:", planRes.reason);
+        }
+
+        // ── Contacts ─────────────────────────────────────────────
+        if (contactsRes.status === "fulfilled") {
+          // Structure: { data: { data: { items: [], pagination: { total: N } } } }
+          const inner = contactsRes.value.data?.data ?? {};
+          const arr = Array.isArray(inner.items) ? inner.items : [];
+          const total = Number(inner.pagination?.total ?? arr.length);
+          setContactsData(arr);
+          setStats(prev => ({ ...prev, totalContacts: total, uniqueContacts: total }));
+        } else {
+          console.warn("[contacts] failed:", contactsRes.reason);
+        }
+
+        // ── Activity ─────────────────────────────────────────────
+        if (activityRes.status === "fulfilled") {
+          // Structure: { data: { data: { items: [], pagination: { total: N } } } }
+          const inner = activityRes.value.data?.data ?? {};
+          const arr = Array.isArray(inner.items) ? inner.items : [];
+          setActivityData(arr);
+        } else {
+          console.warn("[activity] failed:", activityRes.reason);
+        }
+
+        // ── Campaigns ────────────────────────────────────────────
+        if (campaignRes.status === "fulfilled") {
+          // Structure: { data: { data: { items: [], pagination: { total: N } } } }
+          const inner = campaignRes.value.data?.data ?? {};
+          const arr = Array.isArray(inner.items) ? inner.items : [];
+          const total = Number(inner.pagination?.total ?? arr.length);
+          setCampaignData(arr);
+          setStats(prev => ({ ...prev, totalCampaigns: total }));
+        } else {
+          console.warn("[campaign] failed:", campaignRes.reason);
+        }
+
+        // ── Messages ─────────────────────────────────────────────
+        if (messagesRes.status === "fulfilled") {
+          // Structure: { data: { data: { items: [], pagination: { total: N } } } }
+          const inner = messagesRes.value.data?.data ?? {};
+          const arr = Array.isArray(inner.items) ? inner.items : [];
+          const total = Number(inner.pagination?.total ?? arr.length);
+          setMessagesData(arr);
+          setStats(prev => ({
+            ...prev,
+            totalMessages: total,
+            messagesSent: Number(inner.sent ?? inner.messagesSent ?? arr.filter((m: any) => m.status === "sent" || m.status === "SENT").length),
+            messagesDelivered: Number(inner.delivered ?? inner.messagesDelivered ?? arr.filter((m: any) => m.status === "delivered" || m.status === "DELIVERED").length),
+            failedMessages: Number(inner.failed ?? inner.failedMessages ?? arr.filter((m: any) => m.status === "failed" || m.status === "FAILED").length),
+          }));
+        } else {
+          console.warn("[messages] failed:", messagesRes.reason);
+        }
+
+      } catch (err) {
+        console.error("[fetchSpecificData] unexpected error:", err);
+      }
+    };
+
+    fetchSpecificData();
+  }, [user?.companyId, user?.id]);
 
   // Unified status and plan updater
   const updateUserData = async (payload: { status?: string; plan?: string }, successMsg: string) => {
@@ -505,12 +624,6 @@ export default function UserProfilePage() {
             {/* Inset Sub-bar */}
             <div className="up-hero-subbar">
               <div className="up-subbar-col">
-                <span className="up-subbar-label">User ID</span>
-                <span className="up-subbar-val" title={user.id}>
-                  {user.id}
-                </span>
-              </div>
-              <div className="up-subbar-col">
                 <span className="up-subbar-label">Status</span>
                 <span className="up-subbar-val up-subbar-val--status">
                   {user.status?.toLowerCase() || "active"}
@@ -633,13 +746,27 @@ export default function UserProfilePage() {
                   <h4 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>
                     Activity & Audit History
                   </h4>
-                  <p style={{ color: "var(--up-muted)", fontSize: "14px", lineHeight: "1.8" }}>
-                    • User account created on {formatDate(user.createdAt)}
-                    <br />
-                    • Last updated on {formatDate(user.updatedAt)} ({timeAgo(user.updatedAt)})
-                    <br />• Current account status:{" "}
-                    <strong style={{ textTransform: "uppercase" }}>{user.status}</strong>
-                  </p>
+                  {activityData.length > 0 ? (
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {activityData.map((act, idx) => (
+                        <li key={idx} style={{ padding: "12px", border: "1px solid var(--up-border, #e2e8f0)", borderRadius: "8px" }}>
+                          <div style={{ fontWeight: "600", fontSize: "14px" }}>{act.action || act.title || act.type || "User Activity"}</div>
+                          <div style={{ color: "var(--up-muted)", fontSize: "12px", marginTop: "4px" }}>
+                            {formatPlanDateTime(act.createdAt || act.timestamp || act.created_at || new Date())}
+                            {act.details ? ` • ${act.details}` : ""}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ color: "var(--up-muted)", fontSize: "14px", lineHeight: "1.8" }}>
+                      • User account created on {formatDate(user.createdAt)}
+                      <br />
+                      • Last updated on {formatDate(user.updatedAt)} ({timeAgo(user.updatedAt)})
+                      <br />• Current account status:{" "}
+                      <strong style={{ textTransform: "uppercase" }}>{user.status}</strong>
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -649,14 +776,26 @@ export default function UserProfilePage() {
                   <h4 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>
                     User Campaigns
                   </h4>
-                  <p style={{ color: "var(--up-muted)", fontSize: "14px" }}>
+                  <p style={{ color: "var(--up-muted)", fontSize: "14px", marginBottom: "16px" }}>
                     Total Campaigns launched: <strong>{stats.totalCampaigns}</strong>
                   </p>
-                  {stats.totalCampaigns === 0 && (
+                  {campaignData.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {campaignData.map((camp, idx) => (
+                        <div key={idx} style={{ padding: "12px", border: "1px solid var(--up-border, #e2e8f0)", borderRadius: "8px" }}>
+                          <div style={{ fontWeight: "600", fontSize: "14px" }}>{camp.name || camp.title || camp.campaign_name || "Campaign"}</div>
+                          <div style={{ color: "var(--up-muted)", fontSize: "12px", marginTop: "4px" }}>
+                            Status: <span style={{ textTransform: "capitalize" }}>{camp.status || "Unknown"}</span>
+                            {camp.createdAt || camp.created_at ? ` • Created: ${formatDate(camp.createdAt || camp.created_at)}` : ""}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : stats.totalCampaigns === 0 ? (
                     <div style={{ marginTop: "14px", color: "var(--up-muted)", fontSize: "13px" }}>
                       No active or past campaigns recorded for this user yet.
                     </div>
-                  )}
+                  ) : null}
                 </div>
               )}
 
@@ -664,33 +803,50 @@ export default function UserProfilePage() {
               {activeTab === "Plan" && (
                 <div className="up-plan-wrapper">
                   {(() => {
-                    const currentPlanKey = user.plan || "Free";
+                    // activePlanData = active_plan object from API, or null if no plan
+                    const hasActivePlan = activePlanData !== null;
+                    const currentPlanKey =
+                      activePlanData?.plan_name ||
+                      activePlanData?.name ||
+                      activePlanData?.plan ||
+                      user.plan ||
+                      "Free";
                     const planInfo = PLAN_META[currentPlanKey] || PLAN_META["Free"];
                     const usages = [
-                      { label: "Contact", count: stats.totalContacts, max: planInfo.maxContacts },
-                      { label: "Campaign", count: stats.totalCampaigns, max: planInfo.maxCampaigns },
+                      { label: "Contact", count: stats.totalContacts, max: planInfo?.maxContacts || 0 },
+                      { label: "Campaign", count: stats.totalCampaigns, max: planInfo?.maxCampaigns || 0 },
                     ];
+
+                    const startDate = activePlanData?.start_date || activePlanData?.startDate || activePlanData?.created_at || user.createdAt;
+                    const endDate = activePlanData?.end_date || activePlanData?.endDate || activePlanData?.expires_at || activePlanData?.expiry;
 
                     return (
                       <>
+                        {!hasActivePlan && (
+                          <div style={{ padding: "16px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "10px", marginBottom: "16px", fontSize: "13px", color: "#ef4444" }}>
+                            ⚠️ No active plan found for this user.
+                          </div>
+                        )}
                         <div className="up-plan-card">
                           <div className="up-plan-card-top">
                             <div>
                               <h3 className="up-plan-card-title">{planInfo.title}</h3>
                               <p className="up-plan-card-sub">{planInfo.sub}</p>
                             </div>
-                            <span className="up-plan-active-badge">Active</span>
+                            <span className="up-plan-active-badge" style={{ background: hasActivePlan ? undefined : "rgba(100,100,100,0.15)", color: hasActivePlan ? undefined : "#aaa" }}>
+                              {hasActivePlan ? "Active" : "No Plan"}
+                            </span>
                           </div>
 
                           <div className="up-plan-dates-row">
                             <div className="up-plan-date-col">
                               <span className="up-plan-date-label">Start Date</span>
-                              <span className="up-plan-date-val">{formatPlanDateTime(user.createdAt)}</span>
+                              <span className="up-plan-date-val">{formatPlanDateTime(startDate)}</span>
                             </div>
                             <div className="up-plan-date-col">
                               <span className="up-plan-date-label">End Date</span>
                               <span className="up-plan-date-val">
-                                {formatPlanDateTime(user.createdAt, 10)}
+                                {endDate ? formatPlanDateTime(endDate) : "—"}
                               </span>
                             </div>
                           </div>
