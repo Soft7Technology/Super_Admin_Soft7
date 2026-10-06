@@ -29,7 +29,6 @@ type FieldKey =
   | "name"
   | "email"
   | "phone"
-  | "businessId"
   | "reason"
   | "adminName"
   | "adminEmail"
@@ -41,7 +40,6 @@ type FormState = {
   email: string;
   phone: string;
   phoneDial: string;
-  businessId: string;
   reason: string;
   adminName: string;
   adminEmail: string;
@@ -57,7 +55,6 @@ const INITIAL_FORM: FormState = {
   email: "",
   phone: "",
   phoneDial: "91",
-  businessId: "",
   reason: "",
   adminName: "",
   adminEmail: "",
@@ -70,7 +67,6 @@ const FIELD_ORDER: FieldKey[] = [
   "name",
   "email",
   "phone",
-  "businessId",
   "reason",
   "adminName",
   "adminEmail",
@@ -126,8 +122,6 @@ function validateField(key: FieldKey, f: FormState): string {
     case "phone":
       return validatePhone(f.phone, f.phoneDial, "Company");
 
-    case "businessId":
-      return f.businessId.trim() ? "" : "Business ID is required.";
 
     case "reason":
       return f.reason.trim() ? "" : "Reason is required.";

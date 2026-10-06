@@ -257,67 +257,112 @@ export default function CompanyDetailsPage() {
     }
   };
 
-  const handleStatusChange = () => {
-    setCompany((current) => {
-      if (!current) return current;
+const [statusSubmitting, setStatusSubmitting] = useState(false);
 
-      return {
-        ...current,
-        status: current.status === "active" ? "suspended" : "active",
-      };
-    });
-  };
+const handleStatusChange = async () => {
+  if (!companyId || !company || statusSubmitting) return;
 
-  const handleAddCredits = async () => {
-    const amount = Number(creditAmount);
+  const isSuspending = company.status === "active";
 
-    if (!amount || amount <= 0 || creditSubmitting || !companyId) {
-      return;
-    }
+  const newStatus: CompanyStatus = isSuspending ? "suspended" : "active";
 
-    setCreditSubmitting(true);
-    setError(null);
+  const reason = isSuspending ? "Account review" : "Review completed";
 
-    try {
-      const requestId =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  setStatusSubmitting(true);
+  setError(null);
 
-      await axiosInstance.post(
-        `/v1/super-admin/companies/${companyId}/credits`,
-        {
-          amount: amount.toFixed(2),
-          request_id: requestId,
-          reason: "Approved top-up",
-        },
-      );
+  try {
+    const response = await axiosInstance.patch(
+      `/v1/super-admin/companies/${companyId}/status`,
+      {
+        status: newStatus,
+        reason,
+      },
+    );
 
-      await refreshCompanyCredits();
+    console.log("COMPANY STATUS UPDATE RESPONSE =>", response.data);
 
-      setCreditAmount("");
-      setShowCreditModal(false);
+    // Update UI only after API succeeds
+    setCompany((current) =>
+      current
+        ? {
+            ...current,
+            status: newStatus,
+          }
+        : current,
+    );
 
-      showToast(
-        `${amount.toLocaleString("en-IN")} credits added successfully.`,
-        "success",
-      );
+    showToast(
+      isSuspending
+        ? "Company suspended successfully."
+        : "Company activated successfully.",
+      "success",
+    );
+  } catch (err: any) {
+    console.error("COMPANY STATUS UPDATE ERROR =>", err);
 
-      setCreditAmount("");
-      setShowCreditModal(false);
-    } catch (err: any) {
-      console.error("ADD CREDITS ERROR =>", err);
+    showToast(
+      err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to update company status.",
+      "error",
+    );
+  } finally {
+    setStatusSubmitting(false);
+  }
+};
 
-      setError(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Failed to add credits.",
-      );
-    } finally {
-      setCreditSubmitting(false);
-    }
-  };
+ const handleAddCredits = async () => {
+   const amount = Number(creditAmount);
+
+   if (!amount || amount <= 0 || creditSubmitting || !companyId) {
+     return;
+   }
+
+   setCreditSubmitting(true);
+   setError(null);
+
+   try {
+     const requestId =
+       typeof crypto !== "undefined" && crypto.randomUUID
+         ? crypto.randomUUID()
+         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+     await axiosInstance.post(
+       `/v1/super-admin/companies/${companyId}/credits`,
+       {
+         amount: amount.toFixed(2),
+         request_id: requestId,
+         reason: "Approved top-up",
+       },
+     );
+
+     showToast(
+       `${amount.toLocaleString("en-IN")} credits added successfully.`,
+       "success",
+     );
+     setCreditAmount("");
+     setShowCreditModal(false);
+
+     try {
+       await refreshCompanyCredits();
+     } catch (refreshError) {
+       console.error("CREDITS REFRESH ERROR =>", refreshError);
+     }
+   } catch (err: any) {
+     console.error("ADD CREDITS ERROR =>", err);
+
+     setError(
+       err?.response?.data?.message ||
+         err?.response?.data?.error ||
+         err?.message ||
+         "Failed to add credits.",
+     );
+   } finally {
+     setCreditSubmitting(false);
+   }
+ };
 
   const handleEditProfile = () => {
     setShowEditModal(false);
@@ -611,17 +656,20 @@ useEffect(() => {
                     : "quick-action-item success"
                 }
                 onClick={handleStatusChange}
+                disabled={statusSubmitting}
               >
                 <span className="quick-action-icon">
                   {company.status === "active" ? "⏸" : "✓"}
                 </span>
 
                 <span className="quick-action-text">
-                  <strong>
-                    {company.status === "active"
-                      ? "Suspend Company"
-                      : "Activate Company"}
-                  </strong>
+                 <strong>
+  {statusSubmitting
+    ? "Updating..."
+    : company.status === "active"
+      ? "Suspend Company"
+      : "Activate Company"}
+</strong>
                 </span>
 
                 <span className="quick-action-arrow">→</span>
@@ -712,7 +760,7 @@ useEffect(() => {
                 <KpiCard title="Users" value={stats.users} />
                 <KpiCard title="Contacts" value={stats.contacts} />
                 <KpiCard title="Total Campaigns" value={stats.totalCampaigns} />
-                <KpiCard title="Total Templates" value={stats.templates} />
+                <KpiCard title="Total Messages" value={stats.templates} />
               </div>
 
               {/* Campaigns */}
@@ -909,7 +957,6 @@ useEffect(() => {
                   }
                 />
               </label>
-
             </div>
 
             <div className="modal-actions">
