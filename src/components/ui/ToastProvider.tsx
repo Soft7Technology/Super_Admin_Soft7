@@ -41,8 +41,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-
-      <div className="global-toast-container">
+      <div
+        className="global-toast-container"
+        style={{
+          position: "fixed",
+          top: "24px",
+          right: "24px",
+          zIndex: 999999,
+        }}
+      >
         {toasts.map((toast) => (
           <div key={toast.id} className={`global-toast ${toast.type}`}>
             <span className="global-toast-icon">

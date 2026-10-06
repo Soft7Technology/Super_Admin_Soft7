@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import "./globals.css";
 export const metadata: Metadata = {
   title: "Soft7 Super Admin ",
   description: "Soft7 Super Admin Panel",
