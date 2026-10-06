@@ -30,6 +30,8 @@ interface OverviewStats {
   completedCampaigns: number;
   failedCampaigns: number;
   templates: number;
+
+  totalMessages: number;
   failedMessages: number;
   deliveredMessages: number;
   receivedMessages: number;
@@ -41,9 +43,11 @@ const EMPTY_STATS: OverviewStats = {
   totalCampaigns: 0,
   completedCampaigns: 0,
   failedCampaigns: 0,
-  templates: 0, 
-  failedMessages: 0, 
-  deliveredMessages: 0, 
+  templates: 0,
+
+  totalMessages: 0,
+  failedMessages: 0,
+  deliveredMessages: 0,
   receivedMessages: 0,
 };
 
@@ -457,14 +461,12 @@ useEffect(() => {
         },
       );
 
-      const totalMessages = Number(response.data?.data?.pagination?.total ?? 0);
+     const totalMessages = Number(response.data?.data?.pagination?.total ?? 0);
 
-      console.log("TOTAL MESSAGES =>", totalMessages);
-
-      setStats((current) => ({
-        ...current,
-       
-      }));
+     setStats((current) => ({
+       ...current,
+       totalMessages,
+     }));
     } catch (error) {
       console.error("Failed to fetch messages", error);
     }
@@ -663,13 +665,13 @@ useEffect(() => {
                 </span>
 
                 <span className="quick-action-text">
-                 <strong>
-  {statusSubmitting
-    ? "Updating..."
-    : company.status === "active"
-      ? "Suspend Company"
-      : "Activate Company"}
-</strong>
+                  <strong>
+                    {statusSubmitting
+                      ? "Updating..."
+                      : company.status === "active"
+                      ? "Suspend Company"
+                      : "Activate Company"}
+                  </strong>
                 </span>
 
                 <span className="quick-action-arrow">→</span>
@@ -760,7 +762,7 @@ useEffect(() => {
                 <KpiCard title="Users" value={stats.users} />
                 <KpiCard title="Contacts" value={stats.contacts} />
                 <KpiCard title="Total Campaigns" value={stats.totalCampaigns} />
-                <KpiCard title="Total Messages" value={stats.templates} />
+                <KpiCard title="Total Messages" value={stats.totalMessages} />
               </div>
 
               {/* Campaigns */}
