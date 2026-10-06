@@ -17,11 +17,9 @@ import {
   AlertCircle,
   Check,
   Circle,
-  X,
 } from "lucide-react";
 
 import "../manage-companies.css";
-import Spinner from "@/components/ui/Spinner";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -31,11 +29,11 @@ type FieldKey =
   | "name"
   | "email"
   | "phone"
-  | "businessId"
   | "reason"
   | "adminName"
   | "adminEmail"
   | "adminPhone"
+  | "businessId"
   | "password";
 
 type FormState = {
@@ -43,13 +41,13 @@ type FormState = {
   email: string;
   phone: string;
   phoneDial: string;
-  businessId: string;
   reason: string;
   adminName: string;
   adminEmail: string;
   adminPhone: string;
   adminPhoneDial: string;
   password: string;
+  businessId: string;
 };
 
 type Errors = Partial<Record<FieldKey, string>>;
@@ -59,26 +57,25 @@ const INITIAL_FORM: FormState = {
   email: "",
   phone: "",
   phoneDial: "91",
-  businessId: "",
   reason: "",
   adminName: "",
   adminEmail: "",
   adminPhone: "",
   adminPhoneDial: "91",
   password: "",
+  businessId: "",
 };
-
 
 const FIELD_ORDER: FieldKey[] = [
   "name",
   "email",
   "phone",
-  "businessId",
   "reason",
   "adminName",
   "adminEmail",
   "adminPhone",
   "password",
+  "businessId",
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -106,7 +103,6 @@ function validatePhone(value: string, dialCode: string, label: string) {
   if (!national) return `${label} phone is required.`;
   if (!hasDial) return "Select a country code and enter the number after it.";
 
-  
   if (dialCode === "91") {
     if (!/^[6-9]\d{9}$/.test(national))
       return "Enter a valid 10-digit Indian mobile number (starts with 6–9, no leading 0).";
@@ -129,7 +125,6 @@ function validateField(key: FieldKey, f: FormState): string {
 
     case "phone":
       return validatePhone(f.phone, f.phoneDial, "Company");
-
     case "businessId":
       return f.businessId.trim() ? "" : "Business ID is required.";
 
@@ -185,7 +180,6 @@ export default function CreateCompanyPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
-
   const [serverErr, setServerErr] = useState<string | null>(null);
 
   /* ---------- helpers ---------- */
@@ -197,7 +191,6 @@ export default function CreateCompanyPage() {
       else delete next[key];
       return next;
     });
-
 
   const setField = (
     key: FieldKey,
@@ -217,14 +210,13 @@ export default function CreateCompanyPage() {
     const el = document.getElementById(`field-${key}`);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
-   
+
     setTimeout(() => (el as HTMLElement).focus({ preventScroll: true }), 250);
   };
 
   const inputClass = (key: FieldKey) =>
     `mc-input${errors[key] ? " mc-input--error" : ""}`;
 
- 
   const formRef = useRef(form);
   formRef.current = form;
 
@@ -236,7 +228,7 @@ export default function CreateCompanyPage() {
     value: form[key],
     onChange: (value: string, country: any) =>
       setField(key, value, { [dialKey]: country?.dialCode ?? form[dialKey] }),
-    
+
     countryCodeEditable: false,
     enableSearch: true,
     disableSearchIcon: true,
@@ -248,7 +240,7 @@ export default function CreateCompanyPage() {
     dropdownClass: "mc-phone__dropdown",
     searchClass: "mc-phone__search",
     inputProps: { id: `field-${key}`, autoComplete: "off" },
-   
+
     onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
       const container = e.currentTarget.closest(".react-tel-input");
       setTimeout(() => {
@@ -267,7 +259,6 @@ export default function CreateCompanyPage() {
     if (saving || !passwordValid) return;
     setServerErr(null);
 
-   
     const nextErrors: Errors = {};
     FIELD_ORDER.forEach((key) => {
       const msg = validateField(key, form);
@@ -338,23 +329,22 @@ export default function CreateCompanyPage() {
 
   return (
     <div className="mc-root">
-      <div className="mc-create-wrap">
+      <div className="mc-create-page">
         {/* HEADER */}
-        <div className="mc-header">
+        <div className="mc-create-header">
           <div>
             <button
               type="button"
-              className="back-button"
-              onClick={() => router.push("/user/manage-companies")}
-              style={{ marginBottom: 12 }}
+              className="mc-create-back"
+              onClick={() => router.back()}
             >
               <ArrowLeft size={16} />
-              <span>Back to Companies</span>
+              Back to Companies
             </button>
 
-            <h1 className="mc-header__title">Create Company</h1>
+            <h1 className="mc-create-title">Create Company</h1>
 
-            <p className="mc-header__sub">
+            <p className="mc-create-subtitle">
               Create a new company and its administrator.
             </p>
           </div>
@@ -362,16 +352,18 @@ export default function CreateCompanyPage() {
 
         <form noValidate onSubmit={handleSubmit}>
           {/* COMPANY DETAILS */}
-          <div className="mc-create-card">
+          <section className="mc-create-card">
             <div className="mc-create-card__header">
-              <div className="mc-create-card__title">Company Details</div>
-              <div className="mc-create-card__sub">
-                Enter the basic company information.
+              <div>
+                <div className="mc-create-card__title">Company Details</div>
+                <div className="mc-create-card__subtitle">
+                  Enter the basic company information.
+                </div>
               </div>
             </div>
 
             <div className="mc-create-card__body">
-              <div className="mc-form-grid-2">
+              <div className="mc-create-grid">
                 <div className="mc-field">
                   <label htmlFor="field-name" className="mc-field__label">
                     COMPANY NAME *
@@ -438,7 +430,7 @@ export default function CreateCompanyPage() {
                 </div>
               </div>
 
-              <div className="mc-field" style={{ marginTop: 18 }}>
+              <div className="mc-field mc-create-field--full">
                 <label htmlFor="field-reason" className="mc-field__label">
                   REASON *
                 </label>
@@ -449,27 +441,29 @@ export default function CreateCompanyPage() {
                   value={form.reason}
                   onChange={(e) => setField("reason", e.target.value)}
                   onBlur={() => handleBlur("reason")}
-                  rows={3}
-                  style={{ resize: "vertical", minHeight: 84 }}
+                  rows={4}
+                  style={{ resize: "vertical", minHeight: 100 }}
                   aria-invalid={!!errors.reason}
                   aria-describedby={errors.reason ? "err-reason" : undefined}
                 />
                 <FieldError id="reason" message={errors.reason} />
               </div>
             </div>
-          </div>
+          </section>
 
           {/* COMPANY ADMIN */}
-          <div className="mc-create-card">
+          <section className="mc-create-card">
             <div className="mc-create-card__header">
-              <div className="mc-create-card__title">Company Admin</div>
-              <div className="mc-create-card__sub">
-                Create the administrator account for this company.
+              <div>
+                <div className="mc-create-card__title">Company Admin</div>
+                <div className="mc-create-card__subtitle">
+                  Create the administrator account for this company.
+                </div>
               </div>
             </div>
 
             <div className="mc-create-card__body">
-              <div className="mc-form-grid-2">
+              <div className="mc-create-grid">
                 <div className="mc-field">
                   <label htmlFor="field-adminName" className="mc-field__label">
                     ADMIN NAME *
@@ -519,7 +513,7 @@ export default function CreateCompanyPage() {
                   <FieldError id="adminPhone" message={errors.adminPhone} />
                 </div>
 
-                <div className="mc-field">
+                <div className="mc-field mc-create-field--full">
                   <label htmlFor="field-password" className="mc-field__label">
                     PASSWORD *
                   </label>
@@ -554,13 +548,11 @@ export default function CreateCompanyPage() {
                         transform: "translateY(-50%)",
                         border: "none",
                         background: "transparent",
-                        color: "var(--mc-muted)",
+                        color: "#9ca3af",
                         cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
                       }}
                     >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
                     </button>
                   </div>
 
@@ -576,7 +568,7 @@ export default function CreateCompanyPage() {
                           className={ok ? "mc-pw-rules__ok" : ""}
                         >
                           {ok ? <Check size={13} /> : <Circle size={13} />}
-                          <span>{rule.label}</span>
+                          {rule.label}
                         </li>
                       );
                     })}
@@ -584,14 +576,13 @@ export default function CreateCompanyPage() {
                 </div>
               </div>
 
-              <div className="mc-modal__divider" style={{ margin: "24px 0 16px" }} />
+              <div className="mc-create-divider" />
 
-              {/* Server-side errors */}
               {serverErr && (
                 <div
                   className="mc-error-banner"
                   role="alert"
-                  style={{ marginBottom: 16 }}
+                  style={{ marginBottom: 12 }}
                 >
                   <AlertCircle size={18} className="mc-error-banner__icon" />
                   <span className="mc-error-banner__text">{serverErr}</span>
@@ -601,15 +592,12 @@ export default function CreateCompanyPage() {
                     onClick={() => setServerErr(null)}
                     aria-label="Dismiss error"
                   >
-                    <X size={16} />
+                    ×
                   </button>
                 </div>
               )}
 
-              <div
-                className="mc-modal__actions"
-                style={{ justifyContent: "flex-end", alignItems: "center" }}
-              >
+              <div className="mc-create-actions">
                 {errorCount > 0 && (
                   <span className="mc-actions__hint">
                     {errorCount}{" "}
@@ -620,13 +608,7 @@ export default function CreateCompanyPage() {
                 <button
                   type="button"
                   className="mc-btn mc-btn--ghost"
-                  onClick={() => router.push("/user/manage-companies")}
-                  style={{
-                    width: "auto",
-                    minWidth: 100,
-                    padding: "9px 16px",
-                    flex: "0 0 auto",
-                  }}
+                  onClick={() => router.back()}
                 >
                   Cancel
                 </button>
@@ -640,22 +622,12 @@ export default function CreateCompanyPage() {
                       ? undefined
                       : "Password must meet all the listed requirements"
                   }
-                  style={{
-                    width: "auto",
-                    minWidth: 130,
-                    padding: "9px 16px",
-                    flex: "0 0 auto",
-                  }}
                 >
-                  {saving ? (
-                    <Spinner size="sm" text="Creating…" color="white" />
-                  ) : (
-                    "Create Company"
-                  )}
+                  {saving ? "Creating…" : "Create Company"}
                 </button>
               </div>
             </div>
-          </div>
+          </section>
         </form>
       </div>
 

@@ -1,34 +1,48 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
-import toast from "react-hot-toast";
-import Spinner from "@/components/ui/Spinner";
-import {
-  Activity,
-  ArrowLeft,
-  ArrowRight,
-  Ban,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  CreditCard,
-  Layers,
-  Pause,
-  Pencil,
-  Play,
-  Plus,
-  Share2,
-  TrendingUp,
-  User,
-  X,
-} from "lucide-react";
 import "./company-details.css";
+import { useToast } from "@/components/ui/ToastProvider";
+import {
+  ArrowLeft,
+  Pencil,
+  Share2,
+  PauseCircle,
+  CheckCircle2,
+  Layers,
+  PlusCircle,
+  ChevronRight,
+  Users,
+  UserCheck,
+  MessageSquare,
+  AlertCircle,
+} from "lucide-react";
+
+const AVATAR_COLORS = [
+  "#206bc4",
+  "#4299e1",
+  "#2fb344",
+  "#ae3ec9",
+  "#f59f00",
+  "#17a2b8",
+  "#6366f1",
+  "#ec4899",
+];
+
+function getAvatarBg(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 type CompanyStatus = "active" | "suspended";
 
-type Tab = "overview" | "campaigns" | "activity" | "plan";
+type Tab = "overview" | "campaigns" | "activity";
 
 interface CompanyDetails {
   id: string;
@@ -44,16 +58,33 @@ interface CompanyDetails {
   logo?: string;
 }
 
-interface CompanyStats {
+interface OverviewStats {
+  users: number;
+  contacts: number;
+  totalCampaigns: number;
+  completedCampaigns: number;
+  failedCampaigns: number;
+  templates: number;
+
   totalMessages: number;
   failedMessages: number;
   deliveredMessages: number;
   receivedMessages: number;
-  inProgressMessages: number;
-  totalCampaigns: number;
-  templates: number;
-  messageTemplates: number;
 }
+
+const EMPTY_STATS: OverviewStats = {
+  users: 0,
+  contacts: 0,
+  totalCampaigns: 0,
+  completedCampaigns: 0,
+  failedCampaigns: 0,
+  templates: 0,
+
+  totalMessages: 0,
+  failedMessages: 0,
+  deliveredMessages: 0,
+  receivedMessages: 0,
+};
 
 interface Campaign {
   id: string;
@@ -68,172 +99,37 @@ interface Campaign {
 
 interface Activity {
   id: string;
-  title: string;
+  company_id: string;
+  user_id: string | null;
+  action: string;
+  entity_type: string;
   description: string;
-  date: string;
-  type: "campaign" | "plan" | "credit" | "profile" | "status";
+  status: string;
+  created_at: string;
 }
 
-interface PlanDetails {
-  name: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  status: "Active" | "Inactive";
-  startDate: string;
-  endDate: string;
-  features: string[];
+interface ActivePlan {
+  plan_name?: string;
+  price?: string;
+  active?: boolean;
 }
 
-interface UsageItem {
-  label: string;
-  used: number;
-  limit: number;
+
+function buildActivePlanLabel(plans: ActivePlan[]): string {
+  const active = plans.filter((p) => p?.plan_name && p.active !== false);
+  if (active.length === 0) return "—";
+
+  const sorted = [...active].sort(
+    (a, b) => Number(b.price ?? 0) - Number(a.price ?? 0),
+  );
+  const uniqueNames = Array.from(
+    new Set(sorted.map((p) => p.plan_name as string)),
+  );
+
+  return uniqueNames.length > 1
+    ? `${uniqueNames[0]} +${uniqueNames.length - 1}`
+    : uniqueNames[0];
 }
-
-// -----------------------------------------------------------------------------
-// MOCK DATA
-// -----------------------------------------------------------------------------
-
-const MOCK_STATS: CompanyStats = {
-  totalMessages: 182450,
-  failedMessages: 2450,
-  deliveredMessages: 175820,
-  receivedMessages: 32640,
-  inProgressMessages: 4180,
-  totalCampaigns: 48,
-  templates: 24,
-  messageTemplates: 18,
-};
-
-const MOCK_CAMPAIGNS: Campaign[] = [
-  {
-    id: "CMP-001",
-    title: "Diwali Promotional Campaign",
-    createdDate: "20 Sep 2026",
-    contacts: 12500,
-    messages: 12500,
-    delivered: 12140,
-    failed: 360,
-    status: "Completed",
-  },
-  {
-    id: "CMP-002",
-    title: "Customer Feedback Campaign",
-    createdDate: "18 Sep 2026",
-    contacts: 8200,
-    messages: 8200,
-    delivered: 7980,
-    failed: 220,
-    status: "Completed",
-  },
-  {
-    id: "CMP-003",
-    title: "New Product Launch",
-    createdDate: "28 Sep 2026",
-    contacts: 15000,
-    messages: 15000,
-    delivered: 13840,
-    failed: 310,
-    status: "Running",
-  },
-  {
-    id: "CMP-004",
-    title: "October Customer Updates",
-    createdDate: "30 Sep 2026",
-    contacts: 5600,
-    messages: 0,
-    delivered: 0,
-    failed: 0,
-    status: "Scheduled",
-  },
-  {
-    id: "CMP-005",
-    title: "Inactive Customer Reminder",
-    createdDate: "02 Oct 2026",
-    contacts: 4300,
-    messages: 4300,
-    delivered: 3970,
-    failed: 330,
-    status: "Completed",
-  },
-];
-
-const MOCK_ACTIVITIES: Activity[] = [
-  {
-    id: "ACT-001",
-    title: "Campaign created",
-    description: "New Product Launch campaign was created.",
-    date: "Today, 10:20 AM",
-    type: "campaign",
-  },
-  {
-    id: "ACT-002",
-    title: "Credits added",
-    description: "5,000 credits were added to the company account.",
-    date: "Yesterday, 04:35 PM",
-    type: "credit",
-  },
-  {
-    id: "ACT-003",
-    title: "Plan updated",
-    description: "Company plan was changed to Professional.",
-    date: "28 Sep 2026, 11:15 AM",
-    type: "plan",
-  },
-  {
-    id: "ACT-004",
-    title: "Profile updated",
-    description: "Company profile information was updated.",
-    date: "25 Sep 2026, 02:45 PM",
-    type: "profile",
-  },
-  {
-    id: "ACT-005",
-    title: "Company activated",
-    description: "Company account was activated.",
-    date: "12 Jan 2026, 09:30 AM",
-    type: "status",
-  },
-];
-
-const MOCK_PLAN: PlanDetails = {
-  name: "Professional",
-  monthlyPrice: 4999,
-  yearlyPrice: 49990,
-  status: "Active",
-  startDate: "28 Sep 2026",
-  endDate: "28 Sep 2027",
-  features: [
-    "Unlimited campaign creation",
-    "Advanced campaign analytics",
-    "Priority support",
-    "Message templates",
-    "Contact management",
-    "API access",
-  ],
-};
-
-const MOCK_USAGE: UsageItem[] = [
-  {
-    label: "Contacts",
-    used: 18500,
-    limit: 50000,
-  },
-  {
-    label: "Campaigns",
-    used: 48,
-    limit: 100,
-  },
-  {
-    label: "Messages",
-    used: 182450,
-    limit: 500000,
-  },
-];
-
-// -----------------------------------------------------------------------------
-// COMPONENT
-// -----------------------------------------------------------------------------
 
 export default function CompanyDetailsPage() {
   const params = useParams();
@@ -243,6 +139,8 @@ export default function CompanyDetailsPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [company, setCompany] = useState<CompanyDetails | null>(null);
+  const [stats, setStats] = useState<OverviewStats>(EMPTY_STATS);
+  const [activePlanLabel, setActivePlanLabel] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -253,7 +151,11 @@ export default function CompanyDetailsPage() {
 
   const [creditAmount, setCreditAmount] = useState("");
   const [creditSubmitting, setCreditSubmitting] = useState(false);
-
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const { showToast } = useToast();
   useEffect(() => {
     if (!companyId) return;
 
@@ -300,6 +202,31 @@ export default function CompanyDetailsPage() {
         };
 
         setCompany(mappedCompany);
+
+       
+        const campaignGroups: { status: string; count: string | number }[] =
+          Array.isArray(payload?.campaigns) ? payload.campaigns : [];
+
+        const campaignCount = (status: string) =>
+          Number(
+            campaignGroups.find(
+              (g) => String(g.status).toLowerCase() === status,
+            )?.count ?? 0,
+          );
+
+        const totalCampaigns = campaignGroups.reduce(
+          (sum, g) => sum + Number(g.count ?? 0),
+          0,
+        );
+
+        setStats((current) => ({
+          ...current,
+          users: Number(payload?.counts?.users ?? 0),
+          contacts: Number(payload?.counts?.contacts ?? 0),
+          totalCampaigns,
+          completedCampaigns: campaignCount("completed"),
+          failedCampaigns: campaignCount("failed"),
+        }));
       } catch (err: any) {
         console.error("GET COMPANY DETAILS ERROR =>", err);
 
@@ -322,6 +249,27 @@ export default function CompanyDetailsPage() {
     loadCompany();
   }, [companyId]);
 
+
+  useEffect(() => {
+    if (!companyId) return;
+
+    const fetchActivePlans = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `/v1/super-admin/companies/${companyId}/active-plans`,
+          { params: { page: 1, limit: 25 } },
+        );
+
+        const items = response.data?.data?.items ?? [];
+        setActivePlanLabel(buildActivePlanLabel(items));
+      } catch (err) {
+        console.error("GET ACTIVE PLANS ERROR =>", err);
+      }
+    };
+
+    fetchActivePlans();
+  }, [companyId]);
+
   const refreshCompanyCredits = async () => {
     if (!companyId) return;
 
@@ -330,13 +278,9 @@ export default function CompanyDetailsPage() {
         `/v1/super-admin/companies/${companyId}/credits?page=1&limit=25`,
       );
 
-      console.log("GET COMPANY CREDITS RESPONSE =>", response.data);
-
       const payload = response.data?.data ?? response.data;
       const items = Array.isArray(payload?.items) ? payload.items : [];
 
-      // The API returns the newest transaction first.
-      // balance_after on the latest transaction is the current backend balance.
       if (items.length > 0) {
         const latestBalance = Number(items[0]?.balance_after);
 
@@ -352,76 +296,231 @@ export default function CompanyDetailsPage() {
     }
   };
 
-  const handleStatusChange = () => {
-    setCompany((current) => {
-      if (!current) return current;
+const [statusSubmitting, setStatusSubmitting] = useState(false);
 
-      return {
-        ...current,
-        status: current.status === "active" ? "suspended" : "active",
-      };
-    });
-  };
+const handleStatusChange = async () => {
+  if (!companyId || !company || statusSubmitting) return;
 
-  const handleAddCredits = async () => {
-    const amount = Number(creditAmount);
+  const isSuspending = company.status === "active";
 
-    if (!amount || amount <= 0 || creditSubmitting || !companyId) {
-      return;
-    }
+  const newStatus: CompanyStatus = isSuspending ? "suspended" : "active";
 
-    setCreditSubmitting(true);
-    setError(null);
+  const reason = isSuspending ? "Account review" : "Review completed";
 
-    try {
-      const requestId =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  setStatusSubmitting(true);
+  setError(null);
 
-      await axiosInstance.post(
-        `/v1/super-admin/companies/${companyId}/credits`,
-        {
-          amount: amount.toFixed(2),
-          request_id: requestId,
-          reason: "Approved top-up",
-        },
-      );
+  try {
+    const response = await axiosInstance.patch(
+      `/v1/super-admin/companies/${companyId}/status`,
+      {
+        status: newStatus,
+        reason,
+      },
+    );
 
-      // Refresh credits once after the POST succeeds.
-      // The backend credits API is the source of truth.
-      await refreshCompanyCredits();
+    console.log("COMPANY STATUS UPDATE RESPONSE =>", response.data);
 
-      setCreditAmount("");
-      setShowCreditModal(false);
-    } catch (err: any) {
-      console.error("ADD CREDITS ERROR =>", err);
+    // Update UI only after API succeeds
+    setCompany((current) =>
+      current
+        ? {
+            ...current,
+            status: newStatus,
+          }
+        : current,
+    );
 
-      setError(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Failed to add credits.",
-      );
-    } finally {
-      setCreditSubmitting(false);
-    }
-  };
+    showToast(
+      isSuspending
+        ? "Company suspended successfully."
+        : "Company activated successfully.",
+      "success",
+    );
+  } catch (err: any) {
+    console.error("COMPANY STATUS UPDATE ERROR =>", err);
+
+    showToast(
+      err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to update company status.",
+      "error",
+    );
+  } finally {
+    setStatusSubmitting(false);
+  }
+};
+
+ const handleAddCredits = async () => {
+   const amount = Number(creditAmount);
+
+   if (!amount || amount <= 0 || creditSubmitting || !companyId) {
+     return;
+   }
+
+   setCreditSubmitting(true);
+   setError(null);
+
+   try {
+     const requestId =
+       typeof crypto !== "undefined" && crypto.randomUUID
+         ? crypto.randomUUID()
+         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+     await axiosInstance.post(
+       `/v1/super-admin/companies/${companyId}/credits`,
+       {
+         amount: amount.toFixed(2),
+         request_id: requestId,
+         reason: "Approved top-up",
+       },
+     );
+
+     showToast(
+       `${amount.toLocaleString("en-IN")} credits added successfully.`,
+       "success",
+     );
+     setCreditAmount("");
+     setShowCreditModal(false);
+
+     try {
+       await refreshCompanyCredits();
+     } catch (refreshError) {
+       console.error("CREDITS REFRESH ERROR =>", refreshError);
+     }
+   } catch (err: any) {
+     console.error("ADD CREDITS ERROR =>", err);
+
+     setError(
+       err?.response?.data?.message ||
+         err?.response?.data?.error ||
+         err?.message ||
+         "Failed to add credits.",
+     );
+   } finally {
+     setCreditSubmitting(false);
+   }
+ };
 
   const handleEditProfile = () => {
     setShowEditModal(false);
   };
+  const fetchCampaignsPreview = async () => {
+    if (!companyId) return;
+
+    try {
+      setCampaignsLoading(true);
+
+      const response = await axiosInstance.get(
+        `/v1/super-admin/companies/${companyId}/campaign`,
+        {
+          params: {
+            page: 1,
+            limit: 5,
+          },
+        },
+      );
+
+      const items = response.data?.data?.items ?? [];
+
+      const mappedCampaigns: Campaign[] = items.map((campaign: any) => ({
+        id: String(campaign.id),
+        title: campaign.name || "—",
+        createdDate: campaign.created_at
+          ? new Date(campaign.created_at).toLocaleDateString()
+          : "—",
+        contacts: Number(campaign.total_recipients ?? 0),
+        messages: Number(campaign.sent_count ?? 0),
+        delivered: Number(campaign.delivered_count ?? 0),
+        failed: Number(campaign.failed_count ?? 0),
+        status:
+          String(campaign.status).toLowerCase() === "completed"
+            ? "Completed"
+            : String(campaign.status).toLowerCase() === "failed"
+            ? "Failed"
+            : String(campaign.status).toLowerCase() === "scheduled"
+            ? "Scheduled"
+            : "Running",
+      }));
+
+      setCampaigns(mappedCampaigns);
+    } catch (error) {
+      console.error("Failed to fetch campaigns", error);
+    } finally {
+      setCampaignsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (companyId) {
+      fetchCampaignsPreview();
+    }
+  }, [companyId]);
+
+  const fetchActivitiesPreview = async () => {
+    if (!companyId) return;
+
+    try {
+      setActivitiesLoading(true);
+
+      const response = await axiosInstance.get(
+        `/v1/super-admin/companies/${companyId}/activity`,
+        {
+          params: {
+            page: 1,
+            limit: 5,
+          },
+        },
+      );
+
+      setActivities(response.data?.data?.items ?? []);
+    } catch (error) {
+      console.error("Failed to fetch activities", error);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+useEffect(() => {
+  if (!companyId) return;
+
+  const fetchMessageStats = async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/v1/super-admin/companies/${companyId}/messages`,
+        {
+          params: {
+            page: 1,
+            limit: 1,
+          },
+        },
+      );
+
+     const totalMessages = Number(response.data?.data?.pagination?.total ?? 0);
+
+     setStats((current) => ({
+       ...current,
+       totalMessages,
+     }));
+    } catch (error) {
+      console.error("Failed to fetch messages", error);
+    }
+  };
+
+  fetchMessageStats();
+}, [companyId]);
+  
+  useEffect(() => {
+    if (companyId) {
+      fetchActivitiesPreview();
+    }
+  }, [companyId]);
 
   if (loading) {
     return (
       <div className="company-details-page">
-        <div style={{ padding: "80px 0" }}>
-          <Spinner
-            variant="center"
-            size="lg"
-            color="primary"
-            text="Loading company details..."
-          />
+        <div className="company-details-loading">
+          Loading company details...
         </div>
       </div>
     );
@@ -445,6 +544,10 @@ export default function CompanyDetailsPage() {
       </div>
     );
   }
+
+  const displayPlan =
+    activePlanLabel && activePlanLabel !== "—" ? activePlanLabel : company.plan;
+
   return (
     <div className="company-details-page">
       {/* Header */}
@@ -455,15 +558,11 @@ export default function CompanyDetailsPage() {
             className="back-button"
             onClick={() => router.push("/user/manage-companies")}
           >
-            <ArrowLeft size={16} />
-            <span>Back to Companies</span>
+            <ArrowLeft size={15} /> Back to Companies
           </button>
 
           <h1>Company Details</h1>
-          <p>
-            View and manage company information, campaigns, activity and plan
-            usage.
-          </p>
+          <p>View and manage company information, campaigns and activity.</p>
         </div>
       </div>
 
@@ -474,7 +573,10 @@ export default function CompanyDetailsPage() {
       <section className="company-profile-card">
         {/* LEFT — Company information */}
         <div className="company-profile-left">
-          <div className="company-logo">
+          <div
+            className="company-logo"
+            style={{ background: getAvatarBg(company.name) }}
+          >
             {company.name.charAt(0).toUpperCase()}
           </div>
 
@@ -482,48 +584,63 @@ export default function CompanyDetailsPage() {
             <div className="company-name-row">
               <h2>{company.name}</h2>
 
-              <span className={`status-badge ${company.status}`}>
-                {company.status === "active" ? (
-                  <>
-                    <CheckCircle2 size={12} /> Active
-                  </>
-                ) : (
-                  <>
-                    <Ban size={12} /> Suspended
-                  </>
-                )}
+              <span className={`status-badge ${String(company.status).toLowerCase()}`}>
+                {String(company.status).toLowerCase() === "active" ? "Active" : "Suspended"}
               </span>
+
+              <div className="company-profile-actions">
+                <button
+                  type="button"
+                  className="profile-action-btn"
+                  onClick={() => setShowEditModal(true)}
+                  aria-label="Edit Profile"
+                >
+                  <Pencil size={13} />
+                  <span>Edit Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="profile-action-btn"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(window.location.href);
+                    showToast("Profile link copied.", "success");
+                  }}
+                  aria-label="Share Profile"
+                >
+                  <Share2 size={13} />
+                  <span>Share Profile</span>
+                </button>
+              </div>
             </div>
 
-            <p className="company-email">{company.email}</p>
+            <p className="company-email">{company.email || "—"}</p>
 
             <div className="company-contact-row">
-              <span>{company.phone}</span>
-              <span className="separator">•</span>
-              <span>Business ID: {company.businessId}</span>
+              <span>{company.phone || "—"}</span>
             </div>
 
             {/* Profile metadata — 2 x 2 */}
             <div className="company-profile-meta">
               <div>
                 <span>Joined</span>
-                <strong>{company.joinedDate}</strong>
+                <strong>{company.joinedDate || "—"}</strong>
               </div>
 
               <div>
                 <span>Last Active</span>
-                <strong>{company.lastActive}</strong>
+                <strong>{company.lastActive || "—"}</strong>
               </div>
 
               <div>
                 <span>Plan</span>
-                <strong>{company.plan}</strong>
+                <strong>{displayPlan || "Starter"}</strong>
               </div>
 
               <div>
                 <span>Credits</span>
                 <strong className="credit-value">
-                  {company.credits.toLocaleString("en-IN")}
+                  ₹{Number(company.credits || 0).toLocaleString("en-IN")}
                 </strong>
               </div>
             </div>
@@ -532,31 +649,6 @@ export default function CompanyDetailsPage() {
 
         {/* RIGHT — Profile buttons + Quick Actions */}
         <div className="company-profile-right">
-          <div className="profile-top-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setShowEditModal(true)}
-            >
-              <Pencil size={13} />
-              <span>Edit Profile</span>
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  navigator.clipboard?.writeText(window.location.href);
-                  toast.success("Profile link copied!");
-                }
-              }}
-            >
-              <Share2 size={13} />
-              <span>Share Profile</span>
-            </button>
-          </div>
-
           <div className="company-quick-actions">
             <span className="quick-actions-label">QUICK ACTIONS</span>
 
@@ -564,31 +656,32 @@ export default function CompanyDetailsPage() {
               <button
                 type="button"
                 className={
-                  company.status === "active"
+                  String(company.status).toLowerCase() === "active"
                     ? "quick-action-item danger"
                     : "quick-action-item success"
                 }
                 onClick={handleStatusChange}
+                disabled={statusSubmitting}
               >
                 <span className="quick-action-icon">
-                  {company.status === "active" ? (
-                    <Pause size={14} />
+                  {String(company.status).toLowerCase() === "active" ? (
+                    <PauseCircle size={16} />
                   ) : (
-                    <Play size={14} />
+                    <CheckCircle2 size={16} />
                   )}
                 </span>
 
                 <span className="quick-action-text">
                   <strong>
-                    {company.status === "active"
+                    {statusSubmitting
+                      ? "Updating..."
+                      : String(company.status).toLowerCase() === "active"
                       ? "Suspend Company"
                       : "Activate Company"}
                   </strong>
                 </span>
 
-                <span className="quick-action-arrow">
-                  <ChevronRight size={14} />
-                </span>
+                <ChevronRight size={16} className="quick-action-arrow" />
               </button>
 
               <button
@@ -597,16 +690,14 @@ export default function CompanyDetailsPage() {
                 onClick={() => setShowPlanModal(true)}
               >
                 <span className="quick-action-icon">
-                  <Layers size={14} />
+                  <Layers size={16} />
                 </span>
 
                 <span className="quick-action-text">
                   <strong>Change Plan</strong>
                 </span>
 
-                <span className="quick-action-arrow">
-                  <ChevronRight size={14} />
-                </span>
+                <ChevronRight size={16} className="quick-action-arrow" />
               </button>
 
               <button
@@ -615,16 +706,14 @@ export default function CompanyDetailsPage() {
                 onClick={() => setShowCreditModal(true)}
               >
                 <span className="quick-action-icon">
-                  <Plus size={14} />
+                  <PlusCircle size={16} />
                 </span>
 
                 <span className="quick-action-text">
                   <strong>Add Credits</strong>
                 </span>
 
-                <span className="quick-action-arrow">
-                  <ChevronRight size={14} />
-                </span>
+                <ChevronRight size={16} className="quick-action-arrow" />
               </button>
             </div>
           </div>
@@ -632,53 +721,39 @@ export default function CompanyDetailsPage() {
       </section>
 
       {/* Tabs */}
-      <div className="company-tabs" role="tablist">
-        <button
-          type="button"
-          className={
-            activeTab === "overview" ? "tab-button active" : "tab-button"
-          }
-          onClick={() => setActiveTab("overview")}
-        >
-          <Layers size={14} />
-          <span>Overview</span>
-        </button>
-
-        <button
-          type="button"
-          className={
-            activeTab === "campaigns" ? "tab-button active" : "tab-button"
-          }
-          onClick={() => setActiveTab("campaigns")}
-        >
-          <Share2 size={14} />
-          <span>Campaigns</span>
-        </button>
-
-        <button
-          type="button"
-          className={
-            activeTab === "activity" ? "tab-button active" : "tab-button"
-          }
-          onClick={() => setActiveTab("activity")}
-        >
-          <Activity size={14} />
-          <span>Activity</span>
-        </button>
-
-        <button
-          type="button"
-          className={
-            activeTab === "plan" ? "tab-button active" : "tab-button"
-          }
-          onClick={() => setActiveTab("plan")}
-        >
-          <CreditCard size={14} />
-          <span>Plan & Usage</span>
-        </button>
-      </div>
-
       <section className="company-content-card">
+        <div className="company-tabs">
+          <button
+            type="button"
+            className={
+              activeTab === "overview" ? "tab-button active" : "tab-button"
+            }
+            onClick={() => setActiveTab("overview")}
+          >
+            Overview
+          </button>
+
+          <button
+            type="button"
+            className={
+              activeTab === "campaigns" ? "tab-button active" : "tab-button"
+            }
+            onClick={() => setActiveTab("campaigns")}
+          >
+            Campaigns
+          </button>
+
+          <button
+            type="button"
+            className={
+              activeTab === "activity" ? "tab-button active" : "tab-button"
+            }
+            onClick={() => setActiveTab("activity")}
+          >
+            Activity
+          </button>
+        </div>
+
         <div className="tab-content">
           {/* ========================================================= */}
           {/* OVERVIEW */}
@@ -693,43 +768,56 @@ export default function CompanyDetailsPage() {
                 </div>
               </div>
 
-              <div className="kpi-grid">
-                <KpiCard
-                  title="Total Messages"
-                  value={MOCK_STATS.totalMessages}
-                />
+              {/* Account totals */}
+              <div className="kpi-grid kpi-grid-4">
+                <KpiCard title="Users" value={stats.users} icon={<Users size={18} />} />
+                <KpiCard title="Contacts" value={stats.contacts} icon={<UserCheck size={18} />} />
+                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} icon={<Layers size={18} />} />
+                <KpiCard title="Total Messages" value={stats.totalMessages} icon={<MessageSquare size={18} />} />
+              </div>
 
-                <KpiCard
-                  title="Delivered Messages"
-                  value={MOCK_STATS.deliveredMessages}
-                />
+              {/* Campaigns */}
+              <div className="kpi-section-heading">
+                <h4>Campaigns</h4>
+                <p>Campaign outcomes across this company.</p>
+              </div>
 
+              <div className="kpi-grid kpi-grid-3">
+                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} icon={<Layers size={18} />} />
                 <KpiCard
-                  title="Failed Messages"
-                  value={MOCK_STATS.failedMessages}
+                  title="Completed"
+                  value={stats.completedCampaigns}
+                  tone="success"
+                  icon={<CheckCircle2 size={18} />}
                 />
-
                 <KpiCard
-                  title="Received Messages"
-                  value={MOCK_STATS.receivedMessages}
+                  title="Failed"
+                  value={stats.failedCampaigns}
+                  tone="danger"
+                  icon={<AlertCircle size={18} />}
                 />
+              </div>
 
+              {/* Messages */}
+              <div className="kpi-section-heading">
+                <h4>Messages</h4>
+                <p>Message delivery status.</p>
+              </div>
+
+              <div className="kpi-grid kpi-grid-3">
                 <KpiCard
-                  title="In Progress"
-                  value={MOCK_STATS.inProgressMessages}
+                  title="Failed"
+                  value={stats.failedMessages}
+                  tone="danger"
+                  icon={<AlertCircle size={18} />}
                 />
-
                 <KpiCard
-                  title="Total Campaigns"
-                  value={MOCK_STATS.totalCampaigns}
+                  title="Delivered"
+                  value={stats.deliveredMessages}
+                  tone="success"
+                  icon={<CheckCircle2 size={18} />}
                 />
-
-                <KpiCard title="Templates" value={MOCK_STATS.templates} />
-
-                <KpiCard
-                  title="Message Templates"
-                  value={MOCK_STATS.messageTemplates}
-                />
+                <KpiCard title="Received" value={stats.receivedMessages} icon={<MessageSquare size={18} />} />
               </div>
             </div>
           )}
@@ -749,13 +837,19 @@ export default function CompanyDetailsPage() {
                 <button
                   type="button"
                   className="view-more-button"
-                  onClick={() => {}}
+                  onClick={() =>
+                    router.push(`/user/manage-companies/${companyId}/campaigns`)
+                  }
                 >
-                  <span>View More</span> <ArrowRight size={13} />
+                  View More →
                 </button>
               </div>
 
-              <CampaignTable campaigns={MOCK_CAMPAIGNS} />
+              {campaignsLoading ? (
+                <p>Loading campaigns...</p>
+              ) : (
+                <CampaignTable campaigns={campaigns} />
+              )}
             </div>
           )}
 
@@ -776,147 +870,40 @@ export default function CompanyDetailsPage() {
                 <button
                   type="button"
                   className="view-more-button"
-                  onClick={() => {}}
+                  onClick={() =>
+                    router.push(`/user/manage-companies/${companyId}/activity`)
+                  }
                 >
-                  <span>View More</span> <ArrowRight size={13} />
+                  View More →
                 </button>
               </div>
 
               <div className="activity-timeline">
-                {MOCK_ACTIVITIES.map((activity) => (
-                  <div className="activity-item" key={activity.id}>
-                    <div className={`activity-icon ${activity.type}`}>
-                      {getActivityIcon(activity.type)}
-                    </div>
+                {activitiesLoading ? (
+                  <p>Loading activity...</p>
+                ) : (
+                  <div className="activity-timeline">
+                    {activities.map((activity) => (
+                      <div className="activity-item" key={activity.id}>
+                        <div className="activity-icon profile">•</div>
 
-                    <div className="activity-content">
-                      <div className="activity-title-row">
-                        <strong>{activity.title}</strong>
-                        <span>{activity.date}</span>
-                      </div>
+                        <div className="activity-content">
+                          <div className="activity-title-row">
+                            <strong>
+                              {activity.action} {activity.entity_type}
+                            </strong>
 
-                      <p>{activity.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                            <span>
+                              {new Date(activity.created_at).toLocaleString()}
+                            </span>
+                          </div>
 
-          {/* ========================================================= */}
-          {/* PLAN & USAGE */}
-          {/* ========================================================= */}
-
-          {activeTab === "plan" && (
-            <div>
-              <div className="overview-header">
-                <div>
-                  <h3>Plan & Usage</h3>
-                  <p>Current subscription and resource usage.</p>
-                </div>
-
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => setShowPlanModal(true)}
-                >
-                  Change Plan
-                </button>
-              </div>
-
-              <div className="plan-layout">
-                <div className="plan-card">
-                  <div className="plan-card-header">
-                    <div>
-                      <span className="small-label">Current Plan</span>
-
-                      <h3>{MOCK_PLAN.name}</h3>
-                    </div>
-
-                    <span className="status-badge active">
-                      {MOCK_PLAN.status}
-                    </span>
-                  </div>
-
-                  <div className="plan-pricing">
-                    <div>
-                      <span>Monthly</span>
-                      <strong>
-                        ₹{MOCK_PLAN.monthlyPrice.toLocaleString("en-IN")}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>Yearly</span>
-                      <strong>
-                        ₹{MOCK_PLAN.yearlyPrice.toLocaleString("en-IN")}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="plan-dates">
-                    <div>
-                      <span>Start Date</span>
-                      <strong>{MOCK_PLAN.startDate}</strong>
-                    </div>
-
-                    <div>
-                      <span>End Date</span>
-                      <strong>{MOCK_PLAN.endDate}</strong>
-                    </div>
-                  </div>
-
-                  <div className="plan-features">
-                    <h4>Plan Features</h4>
-
-                    {MOCK_PLAN.features.map((feature) => (
-                      <div className="feature-item" key={feature}>
-                        <Check size={14} />
-                        {feature}
+                          <p>{activity.description}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                <div className="usage-card">
-                  <div className="usage-card-header">
-                    <h3>Usage</h3>
-                    <span>Current billing period</span>
-                  </div>
-
-                  {MOCK_USAGE.map((item) => {
-                    const percentage = Math.min(
-                      (item.used / item.limit) * 100,
-                      100,
-                    );
-
-                    return (
-                      <div className="usage-item" key={item.label}>
-                        <div className="usage-label-row">
-                          <span>{item.label}</span>
-
-                          <strong>
-                            {item.used.toLocaleString("en-IN")} /{" "}
-                            {item.limit.toLocaleString("en-IN")}
-                          </strong>
-                        </div>
-
-                        <div className="usage-progress">
-                          <div
-                            className="usage-progress-bar"
-                            style={{
-                              width: `${percentage}%`,
-                            }}
-                          />
-                        </div>
-
-                        <span className="usage-percentage">
-                          {Math.round(percentage)}% used
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -941,7 +928,7 @@ export default function CompanyDetailsPage() {
                 className="modal-close"
                 onClick={() => setShowEditModal(false)}
               >
-                <X size={16} />
+                ×
               </button>
             </div>
 
@@ -987,11 +974,6 @@ export default function CompanyDetailsPage() {
                   }
                 />
               </label>
-
-              <label>
-                Business ID
-                <input type="text" value={company.businessId} disabled />
-              </label>
             </div>
 
             <div className="modal-actions">
@@ -1033,7 +1015,7 @@ export default function CompanyDetailsPage() {
                 className="modal-close"
                 onClick={() => setShowPlanModal(false)}
               >
-                <X size={16} />
+                ×
               </button>
             </div>
 
@@ -1084,7 +1066,7 @@ export default function CompanyDetailsPage() {
                 className="modal-close"
                 onClick={() => setShowCreditModal(false)}
               >
-                <X size={16} />
+                ×
               </button>
             </div>
 
@@ -1133,11 +1115,26 @@ export default function CompanyDetailsPage() {
 // KPI CARD
 // -----------------------------------------------------------------------------
 
-function KpiCard({ title, value }: { title: string; value: number }) {
+function KpiCard({
+  title,
+  value,
+  icon,
+  tone,
+}: {
+  title: string;
+  value: number;
+  icon?: ReactNode;
+  tone?: "success" | "danger";
+}) {
   return (
-    <div className="kpi-card">
-      <span>{title}</span>
-      <strong>{value.toLocaleString("en-IN")}</strong>
+    <div className={tone ? `kpi-card kpi-${tone}` : "kpi-card"}>
+      <div className="kpi-card__left">
+        {icon && <div className="kpi-card__icon">{icon}</div>}
+        <div className="kpi-card__info">
+          <span className="kpi-card__label">{title}</span>
+          <strong className="kpi-card__val">{value.toLocaleString("en-IN")}</strong>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1196,30 +1193,4 @@ function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
       </div>
     </div>
   );
-}
-
-// -----------------------------------------------------------------------------
-// ACTIVITY ICON
-// -----------------------------------------------------------------------------
-
-function getActivityIcon(type: Activity["type"]) {
-  switch (type) {
-    case "campaign":
-      return <TrendingUp size={14} />;
-
-    case "plan":
-      return <Layers size={14} />;
-
-    case "credit":
-      return <CreditCard size={14} />;
-
-    case "profile":
-      return <User size={14} />;
-
-    case "status":
-      return <CheckCircle2 size={14} />;
-
-    default:
-      return <Check size={14} />;
-  }
 }

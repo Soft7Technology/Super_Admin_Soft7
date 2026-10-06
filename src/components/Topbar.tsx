@@ -231,7 +231,7 @@ useEffect(() => {
             width: "5px",
             height: isMobile ? "26px" : "32px",
             borderRadius: "999px",
-            background: "linear-gradient(180deg,#206bc4,#4299e1)",
+            background: "linear-gradient(180deg, #206bc4, #4299e1)",
           }}
         />
       </div>
@@ -265,7 +265,12 @@ useEffect(() => {
             height: "40px",
           }}
         >
-          <Search size={16} strokeWidth={2} color={t.textFaint} style={{ flexShrink: 0 }} />
+          <Search
+            size={16}
+            strokeWidth={2}
+            color={t.textFaint}
+            style={{ flexShrink: 0 }}
+          />
 
           <input
             type="search"
@@ -314,7 +319,7 @@ useEffect(() => {
             {searchResults.length > 0 ? (
               searchResults.map((item, index) => (
                 <div
-               key={index}
+                  key={index}
                   onMouseDown={() => {
                     router.push(item.route);
                     setSearch("");
@@ -390,11 +395,14 @@ useEffect(() => {
               border: `1px solid ${t.border}`,
               cursor: "pointer",
               color: "#ef4444",
-              transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
+              transition:
+                "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "scale(1.05)";
-              e.currentTarget.style.background = isDark ? "rgba(239, 68, 68, 0.15)" : "rgba(239, 68, 68, 0.08)";
+              e.currentTarget.style.background = isDark
+                ? "rgba(239, 68, 68, 0.15)"
+                : "rgba(239, 68, 68, 0.08)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "none";
@@ -457,7 +465,9 @@ useEffect(() => {
                     transition: "background 0.15s, color 0.15s",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)";
+                    e.currentTarget.style.background = isDark
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.02)";
                     e.currentTarget.style.color = t.text;
                   }}
                   onMouseLeave={(e) => {
@@ -473,36 +483,37 @@ useEffect(() => {
           )}
         </div>
 
-<button
-  onClick={() => router.push("/user/transactions")}
-  title="View wallet transactions"
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    padding: isMobile ? "0 8px" : "0 12px",
-    height: isMobile ? "34px" : "40px",
-    minWidth: isMobile ? "auto" : "105px",
-    borderRadius: isMobile ? "8px" : "10px",
-    background: t.iconBox,
-    border: `1px solid ${t.border}`,
-    color: t.text,
-    fontWeight: 600,
-    fontSize: isMobile ? "0.8rem" : "0.9rem",
-    cursor: "pointer",
-    transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
-    whiteSpace: "nowrap",
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.transform = "scale(1.03)";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.transform = "none";
-  }}
->
-  <Wallet size={isMobile ? 15 : 18} color="#206bc4" />
-  <span suppressHydrationWarning>₹{creditBalance}</span>
-</button>
+        <button
+          onClick={() => router.push("/user/transactions")}
+          title="View wallet transactions"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: isMobile ? "0 8px" : "0 12px",
+            height: isMobile ? "34px" : "40px",
+            minWidth: isMobile ? "auto" : "105px",
+            borderRadius: isMobile ? "8px" : "10px",
+            background: t.iconBox,
+            border: `1px solid ${t.border}`,
+            color: t.text,
+            fontWeight: 600,
+            fontSize: isMobile ? "0.8rem" : "0.9rem",
+            cursor: "pointer",
+            transition:
+              "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
+            whiteSpace: "nowrap",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.03)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "none";
+          }}
+        >
+          <Wallet size={isMobile ? 15 : 18} color="var(--primary, #206bc4)" />
+          <span suppressHydrationWarning>₹{creditBalance}</span>
+        </button>
 
         <button
           onClick={toggleTheme}
@@ -518,14 +529,15 @@ useEffect(() => {
             justifyContent: "center",
             cursor: "pointer",
             flexShrink: 0,
-            transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
+            transition:
+              "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
             color: t.text,
           }}
         >
           {isDark ? (
             <Sun size={isMobile ? 15 : 18} strokeWidth={2} color="#f59f00" />
           ) : (
-            <Moon size={isMobile ? 15 : 18} strokeWidth={2} color="#206bc4" />
+            <Moon size={isMobile ? 15 : 18} strokeWidth={2} color="var(--primary, #206bc4)" />
           )}
         </button>
 
@@ -544,7 +556,8 @@ useEffect(() => {
               justifyContent: "center",
               cursor: "pointer",
               color: t.textSub,
-              transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
+              transition:
+                "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
             }}
           >
             <Bell size={17} strokeWidth={2} />
@@ -583,7 +596,7 @@ useEffect(() => {
                 width: isCompact ? "28px" : "32px",
                 height: isCompact ? "28px" : "32px",
                 borderRadius: isCompact ? "6px" : "8px",
-                background: "linear-gradient(135deg,#206bc4,#4299e1)",
+                background: "linear-gradient(135deg, #206bc4, #4299e1)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -648,9 +661,21 @@ useEffect(() => {
               }}
             >
               {[
-                { icon: <User size={16} strokeWidth={2} />, label: "Profile", route: "/user/profile" },
-                { icon: <Settings size={16} strokeWidth={2} />, label: "Settings", route: "/user/system" },
-                { icon: <LogOut size={16} strokeWidth={2} />, label: "Logout", red: true },
+                {
+                  icon: <User size={16} strokeWidth={2} />,
+                  label: "Profile",
+                  route: "/user/profile",
+                },
+                {
+                  icon: <Settings size={16} strokeWidth={2} />,
+                  label: "Settings",
+                  route: "/user/system",
+                },
+                {
+                  icon: <LogOut size={16} strokeWidth={2} />,
+                  label: "Logout",
+                  red: true,
+                },
               ].map((item, i, arr) => (
                 <div
                   key={item.label}
@@ -667,8 +692,10 @@ useEffect(() => {
                       // Clear local storage token
                       localStorage.removeItem("console_access_token");
                       // Clear client-side cookie
-                      document.cookie = "accessToken=; path=/; max-age=0; SameSite=Lax";
-                      document.cookie = "refreshToken=; path=/; max-age=0; SameSite=Lax";
+                      document.cookie =
+                        "accessToken=; path=/; max-age=0; SameSite=Lax";
+                      document.cookie =
+                        "refreshToken=; path=/; max-age=0; SameSite=Lax";
                       router.replace("/auth");
                     } else if (item.route) {
                       router.push(item.route);
@@ -729,7 +756,14 @@ useEffect(() => {
               margin: "0 16px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "16px",
+              }}
+            >
               <div
                 style={{
                   width: "40px",
@@ -749,8 +783,17 @@ useEffect(() => {
               </h3>
             </div>
 
-            <p style={{ fontSize: "0.9rem", color: t.textSub, lineHeight: 1.5, marginBottom: "20px" }}>
-              Are you sure you want to delete all historical data (Messages, Conversations, Webhooks, Wallet Transactions, support tickets, and notifications) older than{" "}
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: t.textSub,
+                lineHeight: 1.5,
+                marginBottom: "20px",
+              }}
+            >
+              Are you sure you want to delete all historical data (Messages,
+              Conversations, Webhooks, Wallet Transactions, support tickets, and
+              notifications) older than{" "}
               <strong>
                 {confirmRange === "day"
                   ? "24 hours"
@@ -772,7 +815,13 @@ useEffect(() => {
               </span>
             </p>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "12px",
+              }}
+            >
               <button
                 disabled={isDeleting}
                 onClick={() => setConfirmRange(null)}
@@ -794,7 +843,10 @@ useEffect(() => {
                 onClick={async () => {
                   setIsDeleting(true);
                   try {
-                    const response = await axiosInstance.post("/v1/admin/cleanup", { range: confirmRange });
+                    const response = await axiosInstance.post(
+                      "/v1/admin/cleanup",
+                      { range: confirmRange },
+                    );
                     const data = response.data;
                     if (data.success) {
                       setDeleteStatus("SUCCESS");
@@ -804,12 +856,19 @@ useEffect(() => {
                         router.refresh();
                       }, 2000);
                     } else {
-                      alert(data.error || data.message || "Failed to perform database cleanup.");
+                      alert(
+                        data.error ||
+                          data.message ||
+                          "Failed to perform database cleanup.",
+                      );
                       setConfirmRange(null);
                     }
                   } catch (err: any) {
                     console.error("Cleanup error:", err);
-                    const errMsg = err.response?.data?.message || err.response?.data?.error || "An error occurred while cleaning up data.";
+                    const errMsg =
+                      err.response?.data?.message ||
+                      err.response?.data?.error ||
+                      "An error occurred while cleaning up data.";
                     alert(errMsg);
                     setConfirmRange(null);
                   } finally {

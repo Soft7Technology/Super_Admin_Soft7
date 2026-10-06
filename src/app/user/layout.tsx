@@ -101,7 +101,7 @@ React.useEffect(() => {
            width: `${desktopSidebarWidth}px`,
            height: "100vh",
            zIndex: 80,
-           overflow: "visible",
+           overflow: "hidden",
          }}
        >
          <Sidebar

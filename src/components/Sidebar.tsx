@@ -1,5 +1,5 @@
 "use client";
-
+import "./sidebar.css";
 import React, { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -32,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", route: "/user/dashboard" },
   { icon: Building2, label: "Manage Companies", route: "/user/manage-companies" },
   { icon: Users, label: "All User", route: "/user/all-user" },
-  // { icon: CreditCard, label: "Subscription", route: "/user/subscription" },
+ { icon: CreditCard, label: "Subscription", route: "/user/subscription" },
   { icon: ClipboardList, label: "Audit Logs", route: "/user/audit-logs" },
   { icon: Settings, label: "System", route: "/user/system" },
   { icon: UserCircle, label: "Profile", route: "/user/profile" },
@@ -61,7 +61,6 @@ export default function Sidebar({
   const pathname = usePathname();
   const { isDark } = useTheme();
 
-  // Notify parent of fixed width on mount
   React.useEffect(() => {
     onWidthChange?.(SIDEBAR_WIDTH);
   }, [onWidthChange]);
@@ -82,7 +81,13 @@ export default function Sidebar({
   return (
     <aside
       className="admin-sidebar"
-      style={{ "--brand": BRAND } as React.CSSProperties}
+      style={
+        {
+          "--brand": BRAND,
+          width: "100%",
+          height: "100%",
+        } as React.CSSProperties
+      }
     >
       <div className="admin-sidebar__shell">
         {/* ── Brand / Logo ── */}
@@ -117,7 +122,6 @@ export default function Sidebar({
                 onClick={() => handleNavigate(item)}
                 aria-current={active ? "page" : undefined}
               >
-                
                 <span className="admin-sidebar__icon">
                   <Icon size={20} strokeWidth={2.25} />
                 </span>
