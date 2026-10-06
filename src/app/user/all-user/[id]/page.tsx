@@ -4,22 +4,26 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTheme } from "../../../../context/ThemeContext";
 import "./user-profile.css";
+import Spinner from "@/components/ui/Spinner";
 import {
-  ArrowLeft,
-  Mail,
-  Phone,
-  Pencil,
-  Share2,
-  KeyRound,
-  Folder,
-  Users,
-  Send,
-  MessageSquare,
+  Activity,
   AlertCircle,
-  UserCheck,
-  TrendingUp,
-  Zap,
+  ArrowLeft,
   CheckCircle2,
+  CreditCard,
+  Folder,
+  KeyRound,
+  Layers,
+  Mail,
+  MessageSquare,
+  Pencil,
+  Phone,
+  Send,
+  Share2,
+  TrendingUp,
+  UserCheck,
+  Users,
+  Zap,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -38,6 +42,7 @@ interface UserProfileDetails {
   status: string;
   plan: string;
   company: string;
+  companyId?: string;
   companyDomain?: string;
   createdAt: string;
   updatedAt: string;
@@ -204,6 +209,7 @@ export default function UserProfilePage() {
             status: (p.status || "ACTIVE").toUpperCase(),
             plan: p.plan || "Starter",
             company: p.company || "—",
+            companyId: p.companyId ? String(p.companyId) : undefined,
             companyDomain: p.companyDomain || "—",
             createdAt: p.createdAt || new Date().toISOString(),
             updatedAt: p.updatedAt || new Date().toISOString(),
@@ -254,6 +260,9 @@ export default function UserProfilePage() {
           status: String(raw.status || "active").toUpperCase(),
           plan: raw.plan_name || raw.plan || raw.subscription_plan || "Starter",
           company: raw.company?.name || raw.company_name || "—",
+          companyId: (raw.company_id ?? raw.companyId ?? raw.company?.id)
+            ? String(raw.company_id ?? raw.companyId ?? raw.company?.id)
+            : undefined,
           companyDomain: raw.company?.domain || raw.company_domain || "—",
           createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
           updatedAt: raw.updated_at || raw.updatedAt || new Date().toISOString(),
@@ -394,9 +403,10 @@ export default function UserProfilePage() {
         role: user.role,
         status: user.status,
         company: user.company,
+        companyId: user.companyId,
         companyDomain: user.companyDomain,
         plan: user.plan,
-        av: "#10b981",
+        av: "#206bc4",
         login: "Recently",
         joined: formatDate(user.createdAt),
         msgs: stats.totalMessages,
@@ -428,10 +438,7 @@ export default function UserProfilePage() {
       </div>
 
       {loading ? (
-        <div className="up-loader-box">
-          <div className="up-spinner" />
-          <p>Loading user details...</p>
-        </div>
+        <Spinner variant="center" size="lg" color="primary" text="Loading user details..." />
       ) : error || !user ? (
         <div className="up-hero-card" style={{ textAlign: "center", padding: "48px 24px" }}>
           <AlertCircle size={44} style={{ color: "#ef4444", margin: "0 auto 12px" }} />
@@ -586,16 +593,26 @@ export default function UserProfilePage() {
 
             {/* Right Column: Tab Navigation & Content */}
             <div className="up-right-col">
-              <div className="up-tabs-bar">
-                {(["Overview", "Activity Log", "Campaigns", "Plan"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    className={`up-tab-pill ${activeTab === tab ? "up-tab-pill--active" : ""}`}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="up-tabs-bar" role="tablist">
+                {[
+                  { id: "Overview", label: "Overview", shortLabel: "Overview", icon: Layers },
+                  { id: "Activity Log", label: "Activity Log", shortLabel: "Activity", icon: Activity },
+                  { id: "Campaigns", label: "Campaigns", shortLabel: "Campaigns", icon: Share2 },
+                  { id: "Plan", label: "Plan", shortLabel: "Plan", icon: CreditCard },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      className={`up-tab-pill ${activeTab === tab.id ? "up-tab-pill--active" : ""}`}
+                      onClick={() => setActiveTab(tab.id as any)}
+                    >
+                      <Icon size={14} />
+                      <span className="up-tab-label-full">{tab.label}</span>
+                      <span className="up-tab-label-short">{tab.shortLabel}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Tab 1: Overview Grid (9 Metric Cards) */}
@@ -753,6 +770,13 @@ export default function UserProfilePage() {
           onClose={() => setIsEditOpen(false)}
           onUpdated={(updated) => {
             setUser((prev) => (prev ? { ...prev, ...updated } : null));
+            try {
+              const cached = sessionStorage.getItem(`user_${userId}`);
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                sessionStorage.setItem(`user_${userId}`, JSON.stringify({ ...parsed, ...updated }));
+              }
+            } catch {}
           }}
         />
       )}
@@ -809,11 +833,11 @@ export default function UserProfilePage() {
                     padding: "10px 14px",
                     borderRadius: "10px",
                     border: `1px solid ${
-                      selectedPlan === planOption ? "var(--up-accent, #10b981)" : "var(--up-border, #e2e8f0)"
+                      selectedPlan === planOption ? "var(--crm-primary, #206bc4)" : "var(--up-border, #e2e8f0)"
                     }`,
                     background:
                       selectedPlan === planOption
-                        ? "var(--up-accent-subtle, rgba(16, 185, 129, 0.12))"
+                        ? "rgba(32, 107, 196, 0.12)"
                         : "transparent",
                     cursor: "pointer",
                   }}
@@ -824,7 +848,7 @@ export default function UserProfilePage() {
                     name="plan"
                     checked={selectedPlan === planOption}
                     onChange={() => setSelectedPlan(planOption)}
-                    style={{ accentColor: "var(--up-accent, #10b981)" }}
+                    style={{ accentColor: "var(--crm-primary, #206bc4)" }}
                   />
                 </label>
               ))}

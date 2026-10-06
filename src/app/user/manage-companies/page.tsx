@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import "./manage-companies.css";
+import Spinner from "@/components/ui/Spinner";
 
 import { axiosInstance } from "@/lib/axiosInstance";
 import PhoneInput from "react-phone-input-2";
@@ -12,8 +13,23 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import Swal from "sweetalert2";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Search,
+  Building2,
+  CheckCircle2,
+  Ban,
+  FlaskConical,
+  Pencil,
+  Trash2,
+  CreditCard,
+  Plus,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
@@ -202,6 +218,14 @@ const STATUS_COLORS: Record<Status, string> = {
   TRIAL: "#f59e0b",
 };
 
+
+const STATUS_DOT_COLORS: Record<Status, string> = {
+  ACTIVE: "#10b981", // green
+  SUSPENDED: "#ef4444", // red
+  INACTIVE: "#3b82f6", // blue
+  TRIAL: "#f59e0b", // amber
+};
+
 function Badge({ status }: { status: Status }) {
   return (
     <span className={`mc-badge mc-badge--${status}`}>
@@ -219,7 +243,7 @@ function StatusDropdown({
   company: Company;
   onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
 }) {
-  const color = STATUS_COLORS[company.status];
+  const dotColor = STATUS_DOT_COLORS[company.status];
 
   const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as Status;
@@ -236,29 +260,24 @@ function StatusDropdown({
   };
 
   return (
-    <select
-      className="mc-status-dropdown"
-      value={company.status}
-      onChange={handleChange}
-      onClick={(e) => e.stopPropagation()}
-      title="Change status"
-      style={{
-        background: `${color}18`,
-        color,
-        border: `1px solid ${color}55`,
-        borderRadius: 999,
-        padding: "4px 10px 4px 12px",
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: "pointer",
-        outline: "none",
-        appearance: "none",
-        WebkitAppearance: "none",
-      }}
-    >
-      <option value="ACTIVE">● Active</option>
-      <option value="SUSPENDED">● Suspended</option>
-    </select>
+    <span className="mc-status-inline">
+      <span
+        className="mc-status-dot"
+        style={{ background: dotColor }}
+        aria-hidden="true"
+      />
+
+      <select
+        className="mc-status-dropdown"
+        value={company.status}
+        onChange={handleChange}
+        onClick={(e) => e.stopPropagation()}
+        title="Change status"
+      >
+        <option value="ACTIVE">Active</option>
+        <option value="SUSPENDED">Suspended</option>
+      </select>
+    </span>
   );
 }
 
@@ -298,37 +317,17 @@ function Pagination({
     }
   }
 
-  const navBtnStyle = (disabled: boolean): CSSProperties => ({
-    border: "1px solid var(--mc-border, #2c3657)",
-    background: "var(--mc-surface, #1a1a2e)",
-    color: disabled ? "var(--mc-muted, #6b7280)" : "inherit",
-    borderRadius: 8,
-    padding: "6px 12px",
-    fontSize: 13,
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.5 : 1,
-  });
-
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: 12,
-        padding: "14px 4px 4px",
-      }}
-    >
-      <div style={{ fontSize: 13, color: "var(--mc-muted, #6b7280)" }}>
+    <div className="mc-pagination">
+      <div className="mc-pagination__info">
         Showing <strong>{startItem}</strong>–<strong>{endItem}</strong> of{" "}
         <strong>{totalItems}</strong> companies
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div className="mc-pagination__btns">
         <button
           type="button"
-          style={navBtnStyle(currentPage === 1)}
+          className="mc-pagination__btn"
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
         >
@@ -337,34 +336,15 @@ function Pagination({
 
         {pages.map((page, index) =>
           page === "..." ? (
-            <span
-              key={`ellipsis-${index}`}
-              style={{
-                padding: "0 4px",
-                color: "var(--mc-muted, #6b7280)",
-              }}
-            >
-              …
-            </span>
+            <span key={`ellipsis-${index}`} className="mc-pagination__dots">…</span>
           ) : (
             <button
               key={page}
               type="button"
               onClick={() => onPageChange(page)}
-              style={{
-                minWidth: 32,
-                height: 32,
-                borderRadius: 8,
-                border: "1px solid var(--mc-border, #2c3657)",
-                background:
-                  page === currentPage
-                    ? "#10b981"
-                    : "var(--mc-surface, #1a1a2e)",
-                color: page === currentPage ? "#fff" : "inherit",
-                fontWeight: page === currentPage ? 700 : 400,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
+              className={`mc-pagination__btn ${
+                page === currentPage ? "mc-pagination__btn--active" : ""
+              }`}
             >
               {page}
             </button>
@@ -373,7 +353,7 @@ function Pagination({
 
         <button
           type="button"
-          style={navBtnStyle(currentPage === totalPages)}
+          className="mc-pagination__btn"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >
@@ -396,22 +376,21 @@ function KPI({
 }: {
   label: string;
   value: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
 }) {
   return (
     <div className="mc-kpi">
-      <div className="mc-kpi__orb" style={{ background: `${color}10` }} />
-
-      <div className="mc-kpi__top">
-        <span className="mc-kpi__label">{label}</span>
-
-        <div className="mc-kpi__icon" style={{ background: `${color}18` }}>
+      <div className="mc-kpi__left">
+        <span className="mc-kpi__icon" style={{ background: `${color}18`, color }}>
           {icon}
+        </span>
+        <div className="mc-kpi__info">
+          <div className="mc-kpi__label">{label}</div>
+          <div className="mc-kpi__value">{value}</div>
+          <div className="mc-kpi__accent-bar" style={{ background: color }} />
         </div>
       </div>
-
-      <div className="mc-kpi__value">{value}</div>
     </div>
   );
 }
@@ -458,10 +437,9 @@ function CompanyModal({
 }) {
   const [name, setName] = useState(company.name || "");
   const [email, setEmail] = useState(company.email || "");
- const [phone, setPhone] = useState(
-   company.phone === "—" ? "" : company.phone || "",
- );
-
+  const [phone, setPhone] = useState(
+    company.phone === "—" ? "" : company.phone || "",
+  );
 
   const [businessId, setBusinessId] = useState(company.businessId || "");
   const [reason, setReason] = useState("");
@@ -488,15 +466,15 @@ function CompanyModal({
       return;
     }
 
-  if (!phone.trim()) {
-    setErr("Company phone is required.");
-    return;
-  }
+    if (!phone.trim()) {
+      setErr("Company phone is required.");
+      return;
+    }
 
-if (phone.replace(/\D/g, "").length < 10) {
-  setErr("Please enter a valid company phone number.");
-  return;
-}
+    if (phone.replace(/\D/g, "").length < 10) {
+      setErr("Please enter a valid company phone number.");
+      return;
+    }
 
     if (!businessId.trim()) {
       setErr("Business ID is required.");
@@ -570,8 +548,8 @@ if (phone.replace(/\D/g, "").length < 10) {
             <div className="mc-modal__sub">Update {company.name}</div>
           </div>
 
-          <button className="mc-modal__close" onClick={onClose}>
-            ×
+          <button className="mc-modal__close" onClick={onClose} aria-label="Close">
+            <X size={16} />
           </button>
         </div>
 
@@ -728,8 +706,7 @@ function CompanyDetailModal({
             </div>
 
             <div>
-          
-
+              <div className="mc-detail__name">{company.name}</div>
               <div className="mc-detail__domain">{company.email}</div>
 
               <div style={{ marginTop: 6 }}>
@@ -738,8 +715,8 @@ function CompanyDetailModal({
             </div>
           </div>
 
-          <button type="button" className="mc-modal__close" onClick={onClose}>
-            ×
+          <button type="button" className="mc-modal__close" onClick={onClose} aria-label="Close">
+            <X size={16} />
           </button>
         </div>
 
@@ -748,11 +725,12 @@ function CompanyDetailModal({
         <div className="mc-detail__metrics">
           {(
             [
-              ["Domain", company.domain, "var(--mc-accent2)"],
-              ["Phone", company.phone, "var(--mc-success)"],
-              ["Business ID", company.businessId || "—", "var(--mc-accent2)"],
+              ["Domain", company.domain || "—", "var(--mc-title)"],
+              ["Phone", company.phone || "—", "var(--mc-title)"],
+              ["Business ID", company.businessId || "—", "var(--mc-title)"],
+              ["Plan", company.plan || "Starter", "var(--mc-title)"],
               ["Credit Balance", `₹${company.creditBalance}`, "var(--mc-warn)"],
-              ["Member Since", company.createdAt, "var(--mc-accent2)"],
+              ["Member Since", company.createdAt || "—", "var(--mc-title)"],
             ] as [string, string, string][]
           ).map(([label, value, color]) => (
             <div key={label} className="mc-detail__cell">
@@ -792,7 +770,7 @@ function CompanyDetailModal({
               onEdit(company);
             }}
           >
-            ✏️ Edit Company
+            <Pencil size={14} /> Edit Company
           </button>
 
           <button
@@ -811,7 +789,7 @@ function CompanyDetailModal({
               onClose();
             }}
           >
-            🗑️ Delete
+            <Trash2 size={14} /> Delete
           </button>
 
           {company.status !== "SUSPENDED" ? (
@@ -823,7 +801,7 @@ function CompanyDetailModal({
                 onClose();
               }}
             >
-              ⛔ Suspend
+              <Ban size={14} /> Suspend
             </button>
           ) : (
             <button
@@ -834,7 +812,7 @@ function CompanyDetailModal({
                 onClose();
               }}
             >
-              ✅ Restore
+              <CheckCircle2 size={14} /> Restore
             </button>
           )}
         </div>
@@ -923,8 +901,8 @@ function AddCreditModal({
             <div className="mc-modal__sub">Top up {company.name}'s balance</div>
           </div>
 
-          <button type="button" className="mc-modal__close" onClick={onClose}>
-            ×
+          <button type="button" className="mc-modal__close" onClick={onClose} aria-label="Close">
+            <X size={16} />
           </button>
         </div>
 
@@ -1038,7 +1016,7 @@ export default function ManageCompanies() {
   const [pagination, setPagination] =
     useState<CompaniesPagination>(DEFAULT_PAGINATION);
 
-    const router = useRouter();
+  const router = useRouter();
   // ─────────────────────────────────────────────────────────────────────────
   // FETCH COMPANIES
   // ─────────────────────────────────────────────────────────────────────────
@@ -1161,7 +1139,6 @@ export default function ManageCompanies() {
 
   const safePage = Math.min(currentPage, totalPages);
 
-  // Backend already paginates.
   const paginatedCompanies = filtered;
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1338,8 +1315,6 @@ export default function ManageCompanies() {
   // MODAL HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
-
-
   const openEdit = (company: Company) => {
     setEditTarget(company);
     setShowModal(true);
@@ -1370,6 +1345,7 @@ export default function ManageCompanies() {
           className="mc-btn mc-btn--primary"
           onClick={() => router.push("/user/manage-companies/create")}
         >
+          <Plus size={16} />
           Create Company
         </button>
       </div>
@@ -1380,8 +1356,8 @@ export default function ManageCompanies() {
         <KPI
           label="Total Companies"
           value={String(pagination.total)}
-          icon="🏢"
-          color="#6C5CE7"
+          icon={<Building2 size={20} />}
+          color="#206bc4"
         />
 
         <KPI
@@ -1389,8 +1365,8 @@ export default function ManageCompanies() {
           value={String(
             companies.filter((company) => company.status === "ACTIVE").length,
           )}
-          icon="✅"
-          color="#00CBA4"
+          icon={<CheckCircle2 size={20} />}
+          color="#2fb344"
         />
 
         <KPI
@@ -1399,8 +1375,8 @@ export default function ManageCompanies() {
             companies.filter((company) => company.status === "SUSPENDED")
               .length,
           )}
-          icon="⛔"
-          color="#FF6B6B"
+          icon={<Ban size={20} />}
+          color="#d63939"
         />
 
         <KPI
@@ -1408,8 +1384,8 @@ export default function ManageCompanies() {
           value={String(
             companies.filter((company) => company.status === "TRIAL").length,
           )}
-          icon="⏳"
-          color="#FDCB6E"
+          icon={<FlaskConical size={20} />}
+          color="#f59f00"
         />
       </div>
 
@@ -1417,7 +1393,7 @@ export default function ManageCompanies() {
 
       <div className="mc-filter-bar mc-filter-bar-top">
         <div className="mc-search-wrap mc-search-wrap-small">
-          <span className="mc-search-icon">🔍</span>
+          <span className="mc-search-icon"><Search size={15} /></span>
 
           <input
             className="mc-search-input"
@@ -1475,147 +1451,262 @@ export default function ManageCompanies() {
       {/* TABLE */}
 
       {loading ? (
-        <div className="mc-empty">Loading companies…</div>
+        <div className="mc-empty" style={{ padding: "60px 0" }}>
+          <Spinner
+            variant="center"
+            size="lg"
+            color="primary"
+            text="Loading companies…"
+          />
+        </div>
       ) : fetchError ? (
-        <div className="mc-empty">⚠️ {fetchError}</div>
+        <div className="mc-empty" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+          <AlertCircle size={16} style={{ color: "var(--danger)" }} />
+          <span>{fetchError}</span>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="mc-empty">
-          No companies found. Start by adding one 🚀
+          No companies found. Start by adding one.
         </div>
       ) : (
-        <div className="mc-table-wrapper">
-          <table className="mc-table">
-            <thead>
-              <tr>
-                <th
-                  style={{
-                    width: "50px",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                  />
-                </th>
+        <>
+          {/* Desktop Table View */}
+          <div className="mc-table-wrapper crm-desktop-table">
+            <table className="mc-table">
+              <thead>
+                <tr>
+                  <th className="mc-th-check">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
 
-                <th>COMPANY</th>
+                  <th>COMPANY</th>
 
-                <th>EMAIL</th>
+                  <th>EMAIL</th>
 
-                <th>PHONE</th>
+                  <th>PHONE</th>
 
-                <th>BUSINESS ID</th>
+                  <th>BUSINESS ID</th>
 
-                <th>CREDIT BALANCE</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
 
-                <th>STATUS</th>
+              <tbody>
+                {paginatedCompanies.map((company) => (
+                  <tr key={company.id}>
+                    <td className="mc-td-check">
+                      <input
+                        type="checkbox"
+                        checked={selectedCompanies.includes(company.id)}
+                        onChange={() => handleSelectCompany(company.id)}
+                      />
+                    </td>
 
-                <th>JOINED</th>
+                    <td>
+                      <div className="mc-company-cell">
+                        <div
+                          className="mc-company-avatar"
+                          style={{
+                            background: company.col,
+                          }}
+                        >
+                          {company.name.slice(0, 2).toUpperCase()}
+                        </div>
 
-                <th>ACTIONS</th>
-              </tr>
-            </thead>
+                        <div className="mc-company-info">
+                          <button
+                            type="button"
+                            className="company-name-link"
+                            title={company.name}
+                            onClick={() =>
+                              router.push(`/user/manage-companies/${company.id}`)
+                            }
+                          >
+                            {company.name}
+                          </button>
 
-            <tbody>
-              {paginatedCompanies.map((company) => (
-                <tr key={company.id}>
-                  <td>
+                          <div className="mc-company-status">
+                            <StatusDropdown
+                              company={company}
+                              onStatusChange={handleStatusChange}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td title={company.email}>{company.email}</td>
+
+                    <td>{company.phone}</td>
+
+                    <td>{company.businessId || "—"}</td>
+
+                    <td>
+                      <div className="mc-actions">
+                        <button
+                          type="button"
+                          className="mc-action-btn"
+                          onClick={() =>
+                            router.push(`/user/manage-companies/${company.id}`)
+                          }
+                          title="View"
+                        >
+                          <Eye size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="mc-action-btn"
+                          onClick={() => openView(company)}
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="mc-action-btn credit"
+                          onClick={() => setCreditCompany(company)}
+                          title="Add Credit"
+                        >
+                          <CreditCard size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="mc-action-btn delete"
+                          onClick={() => handleDelete(company.id)}
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View (<= 768px) - matches All Users architecture */}
+          <div className="crm-mobile-cards">
+            {paginatedCompanies.map((company) => (
+              <div key={company.id} className="crm-card">
+                {/* Header row: Checkbox, Avatar, Name & Email, Status Badge */}
+                <div className="crm-card__header">
+                  <div className="crm-card__identity">
                     <input
                       type="checkbox"
                       checked={selectedCompanies.includes(company.id)}
                       onChange={() => handleSelectCompany(company.id)}
+                      className="crm-card__checkbox"
+                      style={{
+                        cursor: "pointer",
+                        accentColor: "var(--accent)",
+                        width: "16px",
+                        height: "16px",
+                        flexShrink: 0,
+                      }}
                     />
-                  </td>
-
-                  <td>
-                    <div className="mc-company-cell">
+                    <Link
+                      href={`/user/manage-companies/${company.id}`}
+                      className="crm-card__link"
+                    >
                       <div
-                        className="mc-company-avatar"
+                        className="crm-card__avatar"
                         style={{
                           background: company.col,
                         }}
                       >
                         {company.name.slice(0, 2).toUpperCase()}
                       </div>
+                      <div className="crm-card__text">
+                        <span className="crm-card__title">{company.name}</span>
+                        <span className="crm-card__sub">{company.email}</span>
+                      </div>
+                    </Link>
+                  </div>
 
-                      <button
-                        type="button"
-                        className="company-name-link"
-                        onClick={() =>
-                          router.push(`/user/manage-companies/${company.id}`)
-                        }
-                      >
-                        {company.name}
-                      </button>
-                    </div>
-                  </td>
+                  <div className="crm-card__badge">
+                    <Badge status={company.status} />
+                  </div>
+                </div>
 
-                  <td>{company.email}</td>
+                {/* Meta details: Phone, Business ID, Plan, Balance */}
+                <div className="crm-card__details">
+                  <div className="crm-card__detail-row">
+                    <span className="crm-card__detail-label">Phone</span>
+                    <span className="crm-card__detail-val">{company.phone || "—"}</span>
+                  </div>
 
-                  <td>{company.phone}</td>
+                  <div className="crm-card__detail-row">
+                    <span className="crm-card__detail-label">Business ID</span>
+                    <span className="crm-card__detail-val">{company.businessId || "—"}</span>
+                  </div>
 
-                  <td>{company.businessId || "—"}</td>
+                  <div className="crm-card__detail-row">
+                    <span className="crm-card__detail-label">Plan</span>
+                    <span className="crm-card__detail-val">{company.plan || "Starter"}</span>
+                  </div>
 
-                  <td className="mc-credit-cell">
-                    ₹{Number(company.creditBalance || 0).toFixed(2)}
-                  </td>
+                  <div className="crm-card__detail-row">
+                    <span className="crm-card__detail-label">Balance</span>
+                    <span className="crm-card__detail-val">${company.creditBalance || "0.00"}</span>
+                  </div>
+                </div>
 
-                  <td>
-                    <StatusDropdown
-                      company={company}
-                      onStatusChange={handleStatusChange}
-                    />
-                  </td>
+                {/* Bottom Actions Toolbar */}
+                <div className="crm-card__actions">
+                  <button
+                    type="button"
+                    className="crm-card__action-btn"
+                    onClick={() =>
+                      router.push(`/user/manage-companies/${company.id}`)
+                    }
+                    title="View"
+                  >
+                    <Eye size={14} />
+                    <span>View</span>
+                  </button>
 
-                  <td>{company.createdAt}</td>
+                  <button
+                    type="button"
+                    className="crm-card__action-btn"
+                    onClick={() => openView(company)}
+                    title="Edit"
+                  >
+                    <Pencil size={14} />
+                    <span>Edit</span>
+                  </button>
 
-                  <td>
-                    <div className="mc-actions">
-                      <button
-                        type="button"
-                        className="mc-action-btn"
-                        onClick={() =>
-                          router.push(`/user/manage-companies/${company.id}`)
-                        }
-                        title="View"
-                      >
-                        👁
-                      </button>
+                  <button
+                    type="button"
+                    className="crm-card__action-btn"
+                    onClick={() => setCreditCompany(company)}
+                    title="Add Credit"
+                  >
+                    <CreditCard size={14} />
+                    <span>Credit</span>
+                  </button>
 
-                      <button
-                        type="button"
-                        className="mc-action-btn"
-                        onClick={() => openView(company)}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-
-                      <button
-                        type="button"
-                        className="mc-action-btn credit"
-                        onClick={() => setCreditCompany(company)}
-                        title="Add Credit"
-                      >
-                        💰
-                      </button>
-
-                      <button
-                        type="button"
-                        className="mc-action-btn delete"
-                        onClick={() => handleDelete(company.id)}
-                        title="Delete"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  <button
+                    type="button"
+                    className="crm-card__action-btn crm-card__action-btn--delete"
+                    onClick={() => handleDelete(company.id)}
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* PAGINATION */}

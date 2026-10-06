@@ -4,29 +4,34 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 type Theme = "dark" | "light";
 interface ThemeContextType { theme: Theme; toggleTheme: () => void; isDark: boolean; }
 
-const ThemeContext = createContext<ThemeContextType>({ theme: "dark", toggleTheme: () => {}, isDark: true });
+const ThemeContext = createContext<ThemeContextType>({ theme: "light", toggleTheme: () => {}, isDark: false });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sa-theme") as Theme | null;
-      if (saved === "light" || saved === "dark") {
-        setTheme(saved);
-        document.documentElement.setAttribute("data-theme", saved); 
-      } else {
-        document.documentElement.setAttribute("data-theme", "dark");
-      }
+      const initialTheme = (saved === "light" || saved === "dark")
+        ? saved
+        : (document.documentElement.getAttribute("data-theme") as Theme | null) || "light";
+      setTheme(initialTheme);
+      document.documentElement.setAttribute("data-theme", initialTheme);
+      document.documentElement.classList.toggle("dark", initialTheme === "dark");
+      document.documentElement.classList.toggle("light", initialTheme === "light");
     } catch {
-      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.setAttribute("data-theme", "light");
+      document.documentElement.classList.add("light");
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 
   const toggleTheme = () => setTheme(prev => {
     const next = prev === "dark" ? "light" : "dark";
     try { localStorage.setItem("sa-theme", next); } catch {}
-    document.documentElement.setAttribute("data-theme", next); // ✅ FIX: update <html> on every toggle
+    document.documentElement.setAttribute("data-theme", next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+    document.documentElement.classList.toggle("light", next === "light");
     return next;
   });
 
@@ -37,24 +42,42 @@ export const useTheme = () => useContext(ThemeContext);
 
 export const tokens = {
   dark: {
-    bg: "#070b14", surface: "#0d1117", surface2: "#0a0e17",
-    border: "#244033", text: "#ffffff", textSub: "#e5e7eb",
-    textMuted: "#b6c2d1", textFaint: "#7c8aa0",
-    accent: "#10b981", accentBg: "rgba(16,185,129,0.16)",
-    inputBg: "#161b27", tableHead: "#0a0e17",
-    navActive: "linear-gradient(135deg,rgba(16,185,129,0.32),rgba(13,148,136,0.18))",
-    navHover: "rgba(16,185,129,0.08)", rowHover: "rgba(16,185,129,0.06)",
-    iconBox: "rgba(255,255,255,0.05)", shadow: "rgba(0,0,0,0.4)",
+    bg: "#080b0f",
+    surface: "#0e1218",
+    surface2: "#131920",
+    border: "rgba(255, 255, 255, 0.08)",
+    text: "#edf2f7",
+    textSub: "#c8d3de",
+    textMuted: "#8a97a8",
+    textFaint: "#64748b",
+    accent: "#206bc4",
+    accentBg: "rgba(32, 107, 196, 0.2)",
+    inputBg: "#101620",
+    tableHead: "#131920",
+    navActive: "linear-gradient(135deg,rgba(32,107,196,0.35),rgba(66,153,225,0.2))",
+    navHover: "rgba(32,107,196,0.12)",
+    rowHover: "rgba(32,107,196,0.08)",
+    iconBox: "rgba(255,255,255,0.06)",
+    shadow: "rgba(0,0,0,0.35)",
   },
   light: {
-    bg: "#ffffff", surface: "#ffffff", surface2: "#f0fdf4",
-    border: "#99f6e4", text: "#000000", textSub: "#111827",
-    textMuted: "#1f2937", textFaint: "#4b5563",
-    accent: "#10b981", accentBg: "rgba(16,185,129,0.12)",
-    inputBg: "#ffffff", tableHead: "#ecfdf5",
-    navActive: "linear-gradient(135deg,rgba(16,185,129,0.18),rgba(13,148,136,0.12))",
-    navHover: "rgba(16,185,129,0.08)", rowHover: "rgba(16,185,129,0.06)",
-    iconBox: "rgba(0,0,0,0.05)", shadow: "rgba(0,0,0,0.1)",
+    bg: "#f4f6fa",
+    surface: "#ffffff",
+    surface2: "#f8fafc",
+    border: "#e6e8eb",
+    text: "#1e293b",
+    textSub: "#495057",
+    textMuted: "#64748b",
+    textFaint: "#94a3b8",
+    accent: "#206bc4",
+    accentBg: "rgba(32, 107, 196, 0.12)",
+    inputBg: "#ffffff",
+    tableHead: "#f8fafc",
+    navActive: "linear-gradient(135deg,rgba(32,107,196,0.18),rgba(66,153,225,0.12))",
+    navHover: "rgba(32,107,196,0.08)",
+    rowHover: "rgba(32,107,196,0.05)",
+    iconBox: "rgba(0,0,0,0.04)",
+    shadow: "rgba(0,0,0,0.06)",
   },
 } as const;
 

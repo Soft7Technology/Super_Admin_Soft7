@@ -25,21 +25,39 @@ export function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) 
 
     try {
       setLoading(true);
-      const { data } = await axiosInstance.patch(
-        `/v1/super-admin/companies/${user.companyId}/users/${user.id}`,
-        {
+      const cId = user.companyId || (user as any)?.company_id || (user as any)?.company?.id;
+      let resData: any = null;
+
+      if (cId) {
+        try {
+          const { data } = await axiosInstance.patch(
+            `/v1/super-admin/companies/${cId}/users/${user.id}`,
+            { name, email, phone },
+          );
+          resData = data;
+        } catch {
+          const { data } = await axiosInstance.put(`/v1/admin/users/${user.id}`, {
+            name,
+            email,
+            phone,
+          });
+          resData = data;
+        }
+      } else {
+        const { data } = await axiosInstance.put(`/v1/admin/users/${user.id}`, {
           name,
           email,
           phone,
-        },
-      );
+        });
+        resData = data;
+      }
 
-     if (data.success) {
-  
-  onUpdated({ name, email, phone });
-  onClose();
-} else {
-       toast.error(data.message || "Failed to update user");
+      if (resData?.success !== false) {
+        toast.success("User updated successfully");
+        onUpdated({ name, email, phone });
+        onClose();
+      } else {
+        toast.error(resData?.message || "Failed to update user");
       }
     } catch (error: any) {
   console.error("Update User Error:", error);

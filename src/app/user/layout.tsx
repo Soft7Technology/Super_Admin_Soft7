@@ -30,7 +30,7 @@ function getNavFromPath(pathname: string | null): string {
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [activeNav, setActiveNav] = useState("Dashboard");
+  const [activeNav, setActiveNav] = useState(() => getNavFromPath(pathname));
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -60,7 +60,8 @@ React.useEffect(() => {
  return (
    <div
      data-theme={isDark ? "dark" : "light"}
-     style={{ minHeight: "100vh", background: t.bg }}
+     className={isDark ? "dark" : "light"}
+     style={{ minHeight: "100vh", background: "var(--crm-bg, var(--bg, #f4f6fa))" }}
    >
      <Toaster
        position="top-center"
@@ -143,6 +144,7 @@ React.useEffect(() => {
                setActiveNav(val);
                setSidebarOpen(false);
              }}
+             onClose={() => setSidebarOpen(false)}
            />
          </div>
        </>
@@ -150,12 +152,17 @@ React.useEffect(() => {
 
      {/* ✅ MAIN CONTENT */}
      <div
+       className="user-main-layout"
        style={{
          marginLeft: isMobile ? "0px" : `${desktopSidebarWidth}px`,
          minHeight: "100vh",
          display: "flex",
          flexDirection: "column",
-         transition: "margin-left 220ms ease",
+         width: isMobile ? "100%" : `calc(100% - ${desktopSidebarWidth}px)`,
+         maxWidth: "100%",
+         minWidth: 0,
+         boxSizing: "border-box",
+         transition: "margin-left 220ms ease, width 220ms ease",
        }}
      >
        <Topbar
@@ -164,7 +171,19 @@ React.useEffect(() => {
        />
 
        {/* THIS fixes scroll issue */}
-       <div style={{ flex: 1, overflowY: "auto" }}>{children}</div>
+       <div
+         style={{
+           flex: 1,
+           minWidth: 0,
+           width: "100%",
+           maxWidth: "100%",
+           overflowY: "auto",
+           overflowX: "hidden",
+           boxSizing: "border-box",
+         }}
+       >
+         {children}
+       </div>
      </div>
    </div>
  );

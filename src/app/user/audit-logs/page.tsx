@@ -3,6 +3,34 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import "./audit-logs.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import Spinner from "@/components/ui/Spinner";
+import {
+  Download,
+  Trash2,
+  Check,
+  Search,
+  X,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  RotateCw,
+  Activity,
+  Plus,
+  Pencil,
+  LogIn,
+  Send,
+  CheckCircle,
+  Ban,
+  Sparkles,
+  CreditCard,
+  FileText,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type ActionType =
   | "LOGIN"
@@ -78,20 +106,24 @@ interface UserOption {
   email: string;
 }
 
-// ─── LOOKUP MAPS (unchanged — same data, used for labels) ─────────────────────
-const ACTION_META: Record<string, { icon: string; label: string }> = {
-  CREATE: { icon: "✚", label: "Create" },
-  UPDATE: { icon: "✎", label: "Update" },
-  DELETE: { icon: "✕", label: "Delete" },
-  LOGIN: { icon: "→", label: "Login" },
-  SEND: { icon: "↗", label: "Send" },
-  ACTIVATE: { icon: "✔", label: "Activate" },
-  SUSPEND: { icon: "⊘", label: "Suspend" },
-  SUBSCRIBE: { icon: "★", label: "Subscribe" },
-  EXPORT: { icon: "↑", label: "Export" },
-  CREDIT: { icon: "₹", label: "Credit" },
-};
+interface ActionMeta {
+  icon: LucideIcon;
+  label: string;
+}
 
+// ─── LOOKUP MAPS (with Lucide icons) ──────────────────────────────────────────
+const ACTION_META: Record<string, ActionMeta> = {
+  CREATE: { icon: Plus, label: "Create" },
+  UPDATE: { icon: Pencil, label: "Update" },
+  DELETE: { icon: Trash2, label: "Delete" },
+  LOGIN: { icon: LogIn, label: "Login" },
+  SEND: { icon: Send, label: "Send" },
+  ACTIVATE: { icon: CheckCircle, label: "Activate" },
+  SUSPEND: { icon: Ban, label: "Suspend" },
+  SUBSCRIBE: { icon: Sparkles, label: "Subscribe" },
+  EXPORT: { icon: Download, label: "Export" },
+  CREDIT: { icon: CreditCard, label: "Credit" },
+};
 
 const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: "USER", label: "User" },
@@ -123,7 +155,7 @@ const TIME_FRAME_OPTIONS: { value: TimeFrame; label: string }[] = [
   { value: "1year", label: "Last 1 Year" },
 ];
 
-// ─── HELPERS (unchanged) ───────────────────────────────────────────────────────
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 function normaliseSeverity(raw?: string): SeverityType {
   const map: Record<string, SeverityType> = {
     info: "INFO",
@@ -168,7 +200,7 @@ function timeAgo(raw?: string): string {
   }
 }
 
-// Shortens a UUID-style id for compact display,
+// Shortens a UUID-style id for compact display
 function shortenId(id?: string): string {
   if (!id) return "—";
   if (id.length <= 14) return id;
@@ -176,9 +208,6 @@ function shortenId(id?: string): string {
 }
 
 function enrichLog(raw: RawLog): LogEntry {
-  // The API uses "status" (SUCCESS/FAILED) for severity, and "action" for
-  // the action type. Fall back to old field names too in case the shape
-  // changes again.
   const action = (raw.action || raw.event || "").toUpperCase();
   return {
     id: raw.id,
@@ -206,29 +235,111 @@ function severityBucket(
   return "info";
 }
 
-// ─── ACTIVITY ICON (small wave/pulse glyph, colored by severity) ──────────────
-function ActivityIcon({
+// ─── ACTIVITY BUCKET (Colors action & icon strictly by activity type) ────────
+function getActivityBucket(
+  action?: string,
+  severity?: SeverityType,
+): "info" | "success" | "warning" | "error" {
+  const act = (action || "").toUpperCase().trim();
+
+  // If backend explicitly marked CRITICAL error
+  if (severity === "CRITICAL") return "error";
+
+  // 1. Red / Danger actions (DELETE, REMOVE, SUSPEND, BAN, BLOCK, REVOKE, FAIL)
+  if (
+    act.includes("DELETE") ||
+    act.includes("REMOVE") ||
+    act.includes("SUSPEND") ||
+    act.includes("BAN") ||
+    act.includes("BLOCK") ||
+    act.includes("REVOKE") ||
+    act.includes("FAIL") ||
+    act.includes("DROP") ||
+    act.includes("TERMINAT")
+  ) {
+    return "error";
+  }
+
+  // 2. Green / Success actions (CREATE, ADD, ACTIVATE, REGISTER, INSERT, VERIFY)
+  if (
+    act.includes("CREATE") ||
+    act.includes("ACTIVATE") ||
+    act.includes("ADD") ||
+    act.includes("REGISTER") ||
+    act.includes("INSERT") ||
+    act.includes("ENABLE") ||
+    act.includes("VERIF")
+  ) {
+    return "success";
+  }
+
+  // 3. Amber / Warning actions (UPDATE, EDIT, MODIFY, CHANGE, PATCH, RESET)
+  if (
+    act.includes("UPDATE") ||
+    act.includes("EDIT") ||
+    act.includes("MODIFY") ||
+    act.includes("CHANGE") ||
+    act.includes("PATCH") ||
+    act.includes("RESET")
+  ) {
+    return "warning";
+  }
+
+  // 4. Blue / Info actions (LOGIN, LOGOUT, AUTH, SEND, EXPORT, DOWNLOAD, SUBSCRIBE, CREDIT, VIEW)
+  if (
+    act.includes("LOGIN") ||
+    act.includes("LOGOUT") ||
+    act.includes("AUTH") ||
+    act.includes("SEND") ||
+    act.includes("EXPORT") ||
+    act.includes("DOWNLOAD") ||
+    act.includes("SUBSCRIBE") ||
+    act.includes("CREDIT") ||
+    act.includes("VIEW")
+  ) {
+    return "info";
+  }
+
+  // 5. Fallback based on severity if provided, else "info"
+  if (severity) {
+    return severityBucket(severity);
+  }
+  return "info";
+}
+
+function getActionMeta(action?: string): ActionMeta {
+  const act = (action || "").toUpperCase().trim();
+  if (ACTION_META[act]) return ACTION_META[act];
+  if (act.includes("DELETE") || act.includes("REMOVE")) return { icon: Trash2, label: action || "Delete" };
+  if (act.includes("CREATE") || act.includes("ADD")) return { icon: Plus, label: action || "Create" };
+  if (act.includes("UPDATE") || act.includes("EDIT") || act.includes("PATCH")) return { icon: Pencil, label: action || "Update" };
+  if (act.includes("SUSPEND") || act.includes("BAN") || act.includes("BLOCK")) return { icon: Ban, label: action || "Suspend" };
+  if (act.includes("ACTIVATE") || act.includes("ENABLE")) return { icon: CheckCircle, label: action || "Activate" };
+  if (act.includes("LOGIN") || act.includes("AUTH")) return { icon: LogIn, label: action || "Login" };
+  if (act.includes("SEND")) return { icon: Send, label: action || "Send" };
+  if (act.includes("EXPORT") || act.includes("DOWNLOAD")) return { icon: Download, label: action || "Export" };
+  if (act.includes("CREDIT") || act.includes("PAY")) return { icon: CreditCard, label: action || "Credit" };
+  return { icon: Activity, label: action || "Activity" };
+}
+
+// ─── ACTION ICON COMPONENT (Lucide Icon colored by activity) ──────────────────
+function ActionIcon({
+  action,
   bucket,
 }: {
+  action: string;
   bucket: "info" | "success" | "warning" | "error";
 }) {
+  const meta = getActionMeta(action);
+  const IconComponent = meta.icon;
   return (
     <div className={`al-log-row__icon al-log-row__icon--${bucket}`}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M3 12h4l2 7 4-14 2 7h6"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <IconComponent size={14} strokeWidth={2.2} />
     </div>
   );
 }
 
-// ─── CSV EXPORT (updated to match the new columns: User ID + Type instead of
-// Actor/Actor Role, IP still included since it's still useful in the export) ──
+// ─── CSV EXPORT ───────────────────────────────────────────────────────────────
 function exportToCSV(logs: LogEntry[]) {
   const allChangeKeys = Array.from(
     new Set(logs.flatMap((l) => Object.keys(l.changes))),
@@ -278,7 +389,6 @@ function exportToCSV(logs: LogEntry[]) {
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function AuditLogs() {
-
   const [typeFilter, setTypeFilter] = useState<TypeFilter | "ALL">("ALL");
   const [actionFilter, setActionFilter] = useState<ActionType | "ALL">("ALL");
   const [timeFrame, setTimeFrame] = useState<TimeFrame>("7days");
@@ -292,13 +402,12 @@ export default function AuditLogs() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-
   const [search, setSearch] = useState("");
   const [userSuggestions, setUserSuggestions] = useState<UserOption[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchWrapRef = useRef<HTMLDivElement>(null);
-  const [users,setUsers] = useState<UserOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
 
@@ -379,14 +488,14 @@ export default function AuditLogs() {
     fetchLogs();
   }, [fetchLogs]);
 
-  // Reset to page 1 when filters change (unchanged)
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [typeFilter, actionFilter, timeFrame, search, selectedUserId]);
 
-  // ── Client-side search filter — now also matches on user_id ────────────────
+  // ── Client-side search filter ─────────────────────────────────────────────
   const filtered = logs.filter((l) => {
-    if (selectedUserId) return true; // already filtered server-side by user_id — don't re-filter by email text
+    if (selectedUserId) return true;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -400,7 +509,7 @@ export default function AuditLogs() {
 
   const totalPages = Math.max(1, Math.ceil(totalItems / LIMIT));
 
-  // ── Export (unchanged behavior) ─────────────────────────────────────────────
+  // ── Export CSV ────────────────────────────────────────────────────────────
   const handleExportCSV = () => {
     setExporting(true);
     setTimeout(() => {
@@ -411,8 +520,7 @@ export default function AuditLogs() {
     }, 400);
   };
 
-  // ── Clear logs — confirmation now happens via a toast with buttons,
-  // not window.confirm. ──────────────────────────────────────────────────────
+  // ── Clear logs ────────────────────────────────────────────────────────────
   const handleClearLogs = () => {
     pushToast(
       "confirm",
@@ -435,19 +543,20 @@ export default function AuditLogs() {
     );
   };
 
-  // ── Stat counts (by severity bucket, matches reference cards) ──────────────
+  // ── Stat counts ───────────────────────────────────────────────────────────
   const infoCount = logs.filter(
-    (l) => severityBucket(l.severity) === "info",
+    (l) => getActivityBucket(l.action, l.severity) === "info",
   ).length;
   const successCount = logs.filter(
-    (l) => severityBucket(l.severity) === "success",
+    (l) => getActivityBucket(l.action, l.severity) === "success",
   ).length;
   const warningCount = logs.filter(
-    (l) => severityBucket(l.severity) === "warning",
+    (l) => getActivityBucket(l.action, l.severity) === "warning",
   ).length;
   const errorCount = logs.filter(
-    (l) => severityBucket(l.severity) === "error",
+    (l) => getActivityBucket(l.action, l.severity) === "error",
   ).length;
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -479,6 +588,7 @@ export default function AuditLogs() {
 
     fetchUsers();
   }, []);
+
   useEffect(() => {
     if (selectedUser || search.trim().length < 2) {
       setUserSuggestions([]);
@@ -539,16 +649,20 @@ export default function AuditLogs() {
             disabled={exporting || filtered.length === 0}
             className={`al-btn-export ${
               exportDone ? "al-btn-export--done" : ""
-              }`}
+            }`}
           >
             {exporting ? (
-              <>
-                <span className="al-btn-spinner" /> Exporting…
-              </>
+              <Spinner size="sm" text="Exporting…" />
             ) : exportDone ? (
-              <>✓ Downloaded</>
+              <>
+                <Check size={14} />
+                <span>Downloaded</span>
+              </>
             ) : (
-              <>⬇ Export</>
+              <>
+                <Download size={14} />
+                <span>Export</span>
+              </>
             )}
           </button>
           <button
@@ -557,41 +671,50 @@ export default function AuditLogs() {
             className="al-btn-clear"
           >
             {clearing ? (
-              <>
-                <span className="al-btn-spinner" /> Clearing…
-              </>
+              <Spinner size="sm" text="Clearing…" />
             ) : (
-              <>🗑 Clear Logs</>
+              <>
+                <Trash2 size={14} />
+                <span>Clear Logs</span>
+              </>
             )}
           </button>
         </div>
       </div>
 
-      {/* STAT CARDS — by severity, matches reference (Info / Success / Warnings / Errors) */}
+      {/* STAT CARDS — Lucide Icons & consistent Dashboard tokens */}
       <div className="al-stat-grid">
         <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--info">ⓘ</div>
+          <div className="al-stat__icon al-stat__icon--info">
+            <Info size={20} strokeWidth={2.2} />
+          </div>
           <div>
             <div className="al-stat__value">{infoCount}</div>
             <div className="al-stat__label">Info</div>
           </div>
         </div>
         <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--success">✓</div>
+          <div className="al-stat__icon al-stat__icon--success">
+            <CheckCircle2 size={20} strokeWidth={2.2} />
+          </div>
           <div>
             <div className="al-stat__value">{successCount}</div>
             <div className="al-stat__label">Success</div>
           </div>
         </div>
         <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--warning">⚠</div>
+          <div className="al-stat__icon al-stat__icon--warning">
+            <AlertTriangle size={20} strokeWidth={2.2} />
+          </div>
           <div>
             <div className="al-stat__value">{warningCount}</div>
             <div className="al-stat__label">Warnings</div>
           </div>
         </div>
         <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--error">✕</div>
+          <div className="al-stat__icon al-stat__icon--error">
+            <AlertCircle size={20} strokeWidth={2.2} />
+          </div>
           <div>
             <div className="al-stat__value">{errorCount}</div>
             <div className="al-stat__label">Errors</div>
@@ -604,9 +727,8 @@ export default function AuditLogs() {
         <div
           className="al-search-wrap"
           ref={searchWrapRef}
-          style={{ position: "relative" }}
         >
-          <span className="al-search-icon">🔍</span>
+          <Search size={15} className="al-search-icon" />
           <input
             className="al-search-input"
             value={search}
@@ -631,43 +753,29 @@ export default function AuditLogs() {
                 setSelectedUserId("");
                 setSearch("");
               }}
-              style={{ background: "none", border: "none", cursor: "pointer" }}
+              className="al-search-clear-btn"
               aria-label="Clear user filter"
               title={`Filtering by ${selectedUser.email}`}
             >
-              ✕
+              <X size={14} />
             </button>
           )}
 
           {showSuggestions && !selectedUser && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                zIndex: 30,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                marginTop: 4,
-                maxHeight: 240,
-                overflowY: "auto",
-                boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
-              }}
-            >
+            <div className="al-search-suggestions">
               {suggestLoading ? (
-                <div style={{ padding: 10, fontSize: 13, color: "#6b7280" }}>
+                <div style={{ padding: "10px 14px", fontSize: 13, color: "var(--al-muted)" }}>
                   Searching users…
                 </div>
               ) : userSuggestions.length === 0 ? (
-                <div style={{ padding: 10, fontSize: 13, color: "#6b7280" }}>
+                <div style={{ padding: "10px 14px", fontSize: 13, color: "var(--al-muted)" }}>
                   No matching users
                 </div>
               ) : (
                 userSuggestions.map((u) => (
                   <div
                     key={u.id}
+                    className="al-search-suggestion-item"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       setSelectedUser(u);
@@ -676,20 +784,16 @@ export default function AuditLogs() {
                       setUserSuggestions([]);
                       setShowSuggestions(false);
                     }}
-                    style={{
-                      padding: "8px 10px",
-                      cursor: "pointer",
-                      fontSize: 13,
-                    }}
                   >
-                    <div style={{ fontWeight: 600 }}>{u.name}</div>
-                    <div style={{ color: "#6b7280" }}>{u.email}</div>
+                    <div style={{ fontWeight: 600, color: "var(--al-title)" }}>{u.name}</div>
+                    <div style={{ color: "var(--al-muted)", fontSize: 12 }}>{u.email}</div>
                   </div>
                 ))
               )}
             </div>
           )}
         </div>
+
         <div className="al-dropdown-inner">
           <select
             className="al-dropdown"
@@ -708,16 +812,22 @@ export default function AuditLogs() {
             }}
           >
             <option value="">All Users</option>
-
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name} ({user.email})
-              </option>
-            ))}
+            {users.map((user) => {
+              const fullName = user.name || "";
+              const email = user.email || "";
+              const label = fullName ? `${fullName} (${email})` : email;
+              const display =
+                label.length > 38 ? `${label.slice(0, 36)}…` : label;
+              return (
+                <option key={user.id} value={user.id} title={label}>
+                  {display}
+                </option>
+              );
+            })}
           </select>
-
-          <span className="al-dropdown-arrow">▾</span>
+          <ChevronDown size={14} className="al-dropdown-arrow" />
         </div>
+
         <div className="al-dropdowns-group">
           <div className="al-dropdown-inner">
             <select
@@ -734,7 +844,7 @@ export default function AuditLogs() {
                 </option>
               ))}
             </select>
-            <span className="al-dropdown-arrow">▾</span>
+            <ChevronDown size={14} className="al-dropdown-arrow" />
           </div>
 
           <div className="al-dropdown-inner">
@@ -752,7 +862,7 @@ export default function AuditLogs() {
                 </option>
               ))}
             </select>
-            <span className="al-dropdown-arrow">▾</span>
+            <ChevronDown size={14} className="al-dropdown-arrow" />
           </div>
 
           <div className="al-dropdown-inner">
@@ -767,13 +877,12 @@ export default function AuditLogs() {
                 </option>
               ))}
             </select>
-            <span className="al-dropdown-arrow">▾</span>
+            <ChevronDown size={14} className="al-dropdown-arrow" />
           </div>
         </div>
       </div>
 
-      {/* TABLE — columns are now: ACTIVITY · USER ID · TYPE · ACTION · TIME
-        to match. */}
+      {/* TABLE */}
       <div className="al-table">
         <div className="al-table__head">
           <div className="al-table__head-cell" />
@@ -786,21 +895,25 @@ export default function AuditLogs() {
 
         {loading ? (
           <div className="al-empty">
-            <div className="al-empty__icon">⏳</div>
-            <div className="al-empty__title">Loading activity logs…</div>
+            <Spinner variant="center" size="lg" color="primary" text="Loading activity logs…" />
           </div>
         ) : fetchError ? (
           <div className="al-empty">
-            <div className="al-empty__icon">⚠️</div>
+            <div className="al-empty__icon al-empty__icon--error">
+              <AlertCircle size={36} />
+            </div>
             <div className="al-empty__title">Failed to load logs</div>
             <div className="al-empty__desc">{fetchError}</div>
             <button onClick={fetchLogs} className="al-empty__retry">
-              Retry
+              <RotateCw size={14} />
+              <span>Retry</span>
             </button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="al-empty">
-            <div className="al-empty__icon">🔍</div>
+            <div className="al-empty__icon">
+              <FileText size={36} />
+            </div>
             <div className="al-empty__title">No activity found</div>
             <div className="al-empty__desc">
               Try adjusting your search or filters.
@@ -808,16 +921,13 @@ export default function AuditLogs() {
           </div>
         ) : (
           filtered.map((log) => {
-            const m = ACTION_META[log.action] ?? {
-              icon: "•",
-              label: log.action,
-            };
-            const bucket = severityBucket(log.severity);
+            const m = getActionMeta(log.action);
+            const bucket = getActivityBucket(log.action, log.severity);
 
             return (
               <div key={log.id} className="al-log-row">
                 <div className="al-log-row__main">
-                  <ActivityIcon bucket={bucket} />
+                  <ActionIcon action={log.action} bucket={bucket} />
 
                   <div className="al-log-row__activity">
                     <div
@@ -848,7 +958,7 @@ export default function AuditLogs() {
         )}
       </div>
 
-      {/* PAGINATION (unchanged behavior, restyled) */}
+      {/* PAGINATION */}
       {!loading && !fetchError && totalPages > 1 && (
         <div className="al-pagination">
           <div className="al-pagination__info">
@@ -861,53 +971,68 @@ export default function AuditLogs() {
               onClick={() => setCurrentPage((p) => p - 1)}
               className="al-pagination__btn"
             >
-              ‹ Prev
+              <ChevronLeft size={14} />
+              <span>Prev</span>
             </button>
             <button
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
               className="al-pagination__btn"
             >
-              Next ›
+              <span>Next</span>
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* TOASTS — replaces window.confirm/alert. "confirm" toasts show
-          Confirm/Cancel buttons inline; others auto-dismiss after 3s. */}
+      {/* TOASTS */}
       <div className="al-toast-stack">
-        {toasts.map((t) => (
-          <div key={t.id} className={`al-toast al-toast--${t.kind}`}>
-            <span className="al-toast__msg">{t.message}</span>
-            {t.kind === "confirm" ? (
-              <div className="al-toast__actions">
-                <button
-                  className="al-toast__btn al-toast__btn--confirm"
-                  onClick={() => {
-                    t.onConfirm?.();
-                    dismissToast(t.id);
-                  }}
-                >
-                  Confirm
-                </button>
-                <button
-                  className="al-toast__btn al-toast__btn--cancel"
-                  onClick={() => dismissToast(t.id)}
-                >
-                  Cancel
-                </button>
+        {toasts.map((t) => {
+          const ToastIcon =
+            t.kind === "success"
+              ? CheckCircle2
+              : t.kind === "error"
+              ? AlertCircle
+              : t.kind === "confirm"
+              ? AlertTriangle
+              : Info;
+          return (
+            <div key={t.id} className={`al-toast al-toast--${t.kind}`}>
+              <div className="al-toast__left">
+                <ToastIcon size={16} className={`al-toast__icon--${t.kind}`} />
+                <span className="al-toast__msg">{t.message}</span>
               </div>
-            ) : (
-              <button
-                className="al-toast__close"
-                onClick={() => dismissToast(t.id)}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+              {t.kind === "confirm" ? (
+                <div className="al-toast__actions">
+                  <button
+                    className="al-toast__btn al-toast__btn--confirm"
+                    onClick={() => {
+                      t.onConfirm?.();
+                      dismissToast(t.id);
+                    }}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    className="al-toast__btn al-toast__btn--cancel"
+                    onClick={() => dismissToast(t.id)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="al-toast__close"
+                  onClick={() => dismissToast(t.id)}
+                  aria-label="Dismiss toast"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,14 +1,19 @@
 "use client";
+
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme, tokens } from "../../../context/ThemeContext";
-import { StatCard } from "../../../types";
+import { useTheme } from "@/context/ThemeContext";
 import { axiosInstance } from "@/lib/axiosInstance";
-import CompanyOverview from "../../../components/CompanyOverview";
-import UserManagement from "../../../components/UserManagement";
-import PlatformGrowthChart, { GrowthPoint } from "../../../components/PlatformGrowthChart";
-import AuditLogs from "../../../components/AuditLogs";
+import CompanyOverview from "@/components/CompanyOverview";
+import PlatformGrowthChart, { GrowthPoint } from "@/components/PlatformGrowthChart";
+import UserManagement, { DbUser } from "@/components/UserManagement";
+import AuditLogs, { LogEntry } from "@/components/AuditLogs";
+import RecentTransactionsFeed from "@/components/RecentTransactionsFeed";
+import QuickAdminActions from "@/components/QuickAdminActions";
+import { Building2, Users, Globe, CreditCard, ArrowUpRight } from "lucide-react";
+import "./dashboard.css";
 
+// ─── API Endpoints & Auth ──────────────────────────────────────────────────
 const DASHBOARD_API = "/v1/admin/companies/dashboard";
 const USERS_API = "/v1/admin/companies/user";
 const COMPANIES_API = "/v1/admin/companies?status=active";
@@ -45,7 +50,7 @@ function safeNum(val: any): number {
   return 0;
 }
 
-// Sums the "count" property across objects in an array (e.g. [{ status: "active", count: "16" }])
+// Sums the "count" property across objects in an array
 function sumArrayCounts(arr: any): number {
   if (!Array.isArray(arr)) return 0;
   return arr.reduce((acc, item) => {
@@ -74,59 +79,11 @@ function normalisePlanName(planName: string): string {
   return p.charAt(0).toUpperCase() + p.slice(1);
 }
 
-// Type guard so we don't need to import the raw `axios` package just for
-// isAxiosError — keeps axiosInstance as the single integration pattern.
 function isAxiosErrorLike(err: unknown): err is { isAxiosError: true; response?: { data?: { message?: string } }; message?: string } {
   return typeof err === "object" && err !== null && (err as any).isAxiosError === true;
 }
 
-const DEFAULT_STATS: StatCard[] = [
-  {
-    icon: "📢",
-    label: "Campaigns",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "blue",
-  },
-  {
-    icon: "👥",
-    label: "Users",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "green",
-  },
-  {
-    icon: "🤖",
-    label: "Chatbots",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "purple",
-  },
-  {
-    icon: "💬",
-    label: "Messages",
-    value: "0",
-    change: "—",
-    changeType: "up",
-    accent: "orange",
-  },
-];
-
-interface DashboardCompany {
-  id: string; name: string; ini: string; col: string;
-  status: string; plan: string; users: number;
-}
-interface DashboardUser {
-  id: string; un: string; role: string; status: string; av: string; col: string;
-}
-interface DashboardLog {
-  id: string; msg: string; actor: string; time: string; sev: string;
-}
-
-// Normalizes a variety of API response shapes into a flat array of records.
+// Normalizes a variety of API response shapes into a flat array of records
 function recordsFromResponse(json: any): any[] {
   if (!json) return [];
   if (Array.isArray(json)) return json;
@@ -165,19 +122,8 @@ function growthPointsFromRevenueResponse(json: any): GrowthPoint[] {
   });
 }
 
-// Builds "Platform Growth" points directly from the companies list, since
-// there's no dedicated growth endpoint — only /v1/admin/companies is
-// available. Buckets companies by the month of `created_at` and counts how
-// many were created in each of the last `monthsBack` months, ending with
-// the current month. The x-axis labels are the real trailing months (e.g.
-// if today is July 2026, labels run Feb → Jul 2026), so the range always
-// reflects the actual date range in the data rather than a fixed period.
-function growthPointsFromCompanies(
-  companies: any[],
-  monthsBack: number = 6
-): GrowthPoint[] {
+function growthPointsFromCompanies(companies: any[], monthsBack: number = 6): GrowthPoint[] {
   const now = new Date();
-  // Build the trailing month buckets, oldest first.
   const buckets: { key: string; label: string; value: number }[] = [];
   for (let i = monthsBack - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -200,118 +146,15 @@ function growthPointsFromCompanies(
   return buckets.map(({ label, value }) => ({ label, value }));
 }
 
-function useWindowWidth() {
-  const [width, setWidth] = useState<number>(1024);
-
-  useEffect(() => {
-    const handleResize = () => setWidth(window.innerWidth);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  return width;
+interface StatItem {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  color: string;
+  route?: string;
+  trend?: string;
 }
 
-/* ─── Stat Meta ───────────────────────────────────────────── */
-const STAT_META = [
-  { icon: "📢", label: "Campaigns", accent: "#0d9488", glow: "rgba(13,148,136,0.18)" },
-  { icon: "👥", label: "Users",     accent: "#6366f1", glow: "rgba(99,102,241,0.18)" },
-  { icon: "🤖", label: "Chatbots",  accent: "#f59e0b", glow: "rgba(245,158,11,0.18)" },
-  { icon: "💬", label: "Messages",  accent: "#34d399", glow: "rgba(52,211,153,0.18)" },
-];
-
-/* ─── Inline StatCards ────────────────────────────────────── */
-function InlineStatCards({
-  stats,
-  isDark,
-  isMobile,
-}: {
-  stats: StatCard[];
-  isDark: boolean;
-  isMobile: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-        gap: "16px",
-        marginBottom: "28px",
-      }}
-    >
-      {stats.map((s, i) => {
-        const meta = STAT_META[i] ?? STAT_META[0];
-        return (
-          <div
-            key={s.label}
-            style={{
-              background: isDark ? "rgba(15,17,32,0.9)" : "#ffffff",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-              borderRadius: "14px",
-              padding: "20px 22px",
-              position: "relative",
-              overflow: "hidden",
-              transition: "box-shadow 0.2s, transform 0.2s",
-              boxShadow: isDark
-                ? "0 2px 8px rgba(0,0,0,0.25)"
-                : "0 1px 6px rgba(0,0,0,0.06)",
-            }}
-          >
-            {/* Soft orb */}
-            <div
-              style={{
-                position: "absolute", top: -10, right: -10,
-                width: 64, height: 64, borderRadius: "50%",
-                background: meta.glow, pointerEvents: "none",
-              }}
-            />
-            <div style={{
-              display: "flex", justifyContent: "space-between",
-              alignItems: "flex-start", marginBottom: "14px",
-            }}>
-              <span style={{
-                fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em",
-                color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
-                textTransform: "uppercase",
-              }}>
-                {meta.label}
-              </span>
-              <div style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "12px",
-                background: `${meta.accent}18`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "20px",
-              }}>
-                {meta.icon}
-              </div>
-            </div>
-            <div style={{
-              fontSize: "30px", fontWeight: 800,
-              color: isDark ? "#f1f5f9" : "#0f172a",
-              letterSpacing: "-0.03em", lineHeight: 1,
-              marginBottom: "6px",
-            }}>
-              {s.value}
-            </div>
-            <div style={{
-              height: "2px", width: "36px",
-              borderRadius: "2px",
-              background: meta.accent,
-              opacity: 0.7,
-            }} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ─── Time Range Pills Filter ──────────────────────────────── */
 function TimeRangePills({ isDark }: { isDark: boolean }) {
   const [selected, setSelected] = useState("All Time");
   const [lastUpdated, setLastUpdated] = useState<string>("");
@@ -329,15 +172,15 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
   }, []);
 
   const options = [
-    "Last 7 Days",
-    "Last Month",
-    "Last 6 Months",
-    "Last Year",
-    "All Time",
+    { id: "Last 7 Days", label: "7 Days", short: "7D" },
+    { id: "Last Month", label: "1 Month", short: "1M" },
+    { id: "Last 6 Months", label: "6 Months", short: "6M" },
+    { id: "Last Year", label: "1 Year", short: "1Y" },
+    { id: "All Time", label: "All Time", short: "All" },
   ];
 
-  const handleSelect = (opt: string) => {
-    setSelected(opt);
+  const handleSelect = (optId: string) => {
+    setSelected(optId);
     const now = new Date();
     setLastUpdated(
       now.toLocaleTimeString("en-US", {
@@ -350,124 +193,48 @@ function TimeRangePills({ isDark }: { isDark: boolean }) {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-end",
-        gap: "6px",
-      }}
-    >
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          padding: "3px 4px",
-          borderRadius: "9999px",
-          background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f1f5f9",
-          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0"}`,
-          boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.04)",
-        }}
-      >
+    <div className="crm-time-range-wrap">
+      <div className="crm-time-pills" role="tablist">
         {options.map((opt) => {
-          const isActive = selected === opt;
+          const isActive = selected === opt.id;
           return (
             <button
-              key={opt}
+              key={opt.id}
               type="button"
-              onClick={() => handleSelect(opt)}
-              style={{
-                border: "none",
-                outline: "none",
-                cursor: "pointer",
-                padding: "7px 16px",
-                borderRadius: "9999px",
-                fontSize: "0.8rem",
-                fontWeight: isActive ? 600 : 500,
-                color: isActive
-                  ? isDark
-                    ? "#ffffff"
-                    : "#0f172a"
-                  : isDark
-                  ? "rgba(255, 255, 255, 0.55)"
-                  : "#64748b",
-                background: isActive
-                  ? isDark
-                    ? "rgba(255, 255, 255, 0.14)"
-                    : "#ffffff"
-                  : "transparent",
-                boxShadow: isActive
-                  ? isDark
-                    ? "0 2px 6px rgba(0,0,0,0.3)"
-                    : "0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)"
-                  : "none",
-                transition: "all 0.2s ease",
-              }}
+              onClick={() => handleSelect(opt.id)}
+              className={`crm-time-pill ${isActive ? "crm-time-pill--active" : ""}`}
             >
-              {opt}
+              <span className="crm-time-pill-full">{opt.label}</span>
+              <span className="crm-time-pill-short">{opt.short}</span>
             </button>
           );
         })}
       </div>
 
-      <span
-        style={{
-          fontSize: "0.74rem",
-          fontWeight: 500,
-          color: isDark ? "rgba(255, 255, 255, 0.4)" : "#64748b",
-          paddingRight: "6px",
-        }}
-      >
+      <span className="crm-time-last-updated" suppressHydrationWarning>
         Last updated: {lastUpdated || "—"}
       </span>
     </div>
   );
 }
 
-/* ─── Section wrapper ─────────────────────────────────────── */
-function Section({
-  children,
-  isDark,
-  isMobile,
-}: {
-  children: React.ReactNode;
-  isDark: boolean;
-  isMobile: boolean;
-}) {
-  return (
-    <div
-      style={{
-        background: isDark ? "rgba(15,17,32,0.85)" : "#ffffff",
-        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.07)"}`,
-        borderRadius: "16px",
-        padding: isMobile ? "20px" : "26px 28px",
-        minWidth: 0,
-        boxShadow: isDark
-          ? "0 2px 10px rgba(0,0,0,0.22)"
-          : "0 1px 8px rgba(0,0,0,0.06)",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-/* ─── Dashboard Page ──────────────────────────────────────── */
 export default function DashboardPage() {
-  const { isDark } = useTheme();
-  const t = useMemo(() => (isDark ? tokens.dark : tokens.light), [isDark]);
   const router = useRouter();
-  const width = useWindowWidth();
-  const isMobile     = width <= 768;
-  const isHalfScreen = width <= 768;
+  const { isDark } = useTheme();
 
-  const [stats, setStats]           = useState<StatCard[]>(DEFAULT_STATS);
-  const [companies, setCompanies]   = useState<DashboardCompany[]>([]);
-  const [users, setUsers]           = useState<DashboardUser[]>([]);
-  const [logs, setLogs]             = useState<DashboardLog[]>([]);
-  const [growth, setGrowth]         = useState<GrowthPoint[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState<string | null>(null);
+  const [stats, setStats] = useState<StatItem[]>([
+    { label: "Companies", value: "0", icon: <Building2 size={20} />, color: "#206bc4", route: "/user/manage-companies" },
+    { label: "Users",     value: "0", icon: <Users size={20} />,     color: "#2fb344", route: "/user/all-user" },
+    { label: "Domains",   value: "0", icon: <Globe size={20} />,     color: "#4299e1" },
+    { label: "Credits",   value: "0", icon: <CreditCard size={20} />, color: "#f59f00" },
+  ]);
+
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [users, setUsers] = useState<DbUser[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [growth, setGrowth] = useState<GrowthPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -477,7 +244,7 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
 
-        // ── Dashboard stats (Superadmin Overview API) ─────────
+        // ── 1. Dashboard Stats (Superadmin Overview API) ─────────────
         let statsRes: any = null;
         try {
           statsRes = await axiosInstance.get("/v1/super-admin/overview", {
@@ -496,22 +263,18 @@ export default function DashboardPage() {
         if (!mounted) return;
         const data = statsRes?.data?.data ?? statsRes?.data ?? {};
 
-        // Parse companies / campaigns count
         const companiesVal = Array.isArray(data.companies)
           ? sumArrayCounts(data.companies)
           : safeNum(data.campaigns_count ?? data.total_campaigns ?? data.companies_count ?? data.companies ?? 0);
 
-        // Parse users count
         const usersVal = Array.isArray(data.users)
           ? sumArrayCounts(data.users)
           : safeNum(data.users_count ?? data.total_users ?? data.users ?? 0);
 
-        // Parse domains / chatbots count
         const chatbotsVal = Array.isArray(data.domains)
           ? sumArrayCounts(data.domains)
           : safeNum(data.chatbot_count ?? data.total_chatbots ?? data.chatbots ?? data.total_domains ?? data.domains_count ?? 0);
 
-        // Parse credit balance or messages count
         const creditsTotal = Array.isArray(data.companies) && sumCreditBalances(data.companies) > 0
           ? sumCreditBalances(data.companies)
           : safeNum(data.total_messages ?? data.messages_count ?? data.total_credits ?? 0);
@@ -521,13 +284,13 @@ export default function DashboardPage() {
           : creditsTotal.toLocaleString();
 
         setStats([
-          { label: "Companies", value: companiesVal.toLocaleString(), icon: "🏢", change: "—", changeType: "up", accent: "blue" },
-          { label: "Users",     value: usersVal.toLocaleString(),     icon: "👥", change: "—", changeType: "up", accent: "green" },
-          { label: "Domains",   value: chatbotsVal.toLocaleString(),   icon: "🤖", change: "—", changeType: "up", accent: "purple" },
-          { label: "Credits",   value: messagesFormatted,             icon: "💳", change: "—", changeType: "up", accent: "orange" },
+          { label: "Companies", value: companiesVal.toLocaleString(), icon: <Building2 size={20} />, color: "#206bc4", route: "/user/manage-companies", trend: "+8.4%" },
+          { label: "Users",     value: usersVal.toLocaleString(),     icon: <Users size={20} />,     color: "#2fb344", route: "/user/all-user", trend: "+14%" },
+          { label: "Domains",   value: chatbotsVal.toLocaleString(),   icon: <Globe size={20} />,     color: "#4299e1", trend: "+6.2%" },
+          { label: "Credits",   value: messagesFormatted,             icon: <CreditCard size={20} />, color: "#f59f00", trend: "+22.5%" },
         ]);
 
-        // ── Users (Fetch first so we can map user counts per company) ────
+        // ── 2. Users (Fetch first so we can map user counts per company) ─
         let usersRes: any = null;
         try {
           usersRes = await axiosInstance.get(`${USERS_API}?role=user&page=1&limit=50`, {
@@ -559,7 +322,6 @@ export default function DashboardPage() {
           ...recordsFromResponse(adminUsersRes?.data),
         ];
 
-        // Build map of user counts per company ID / company name
         const companyUserCounts: Record<string, number> = {};
         for (const u of usersData) {
           const cid = String(u.company_id || u.companyId || u.company?.id || "");
@@ -569,7 +331,7 @@ export default function DashboardPage() {
         }
 
         setUsers(
-          usersData.slice(0, 4).map((user: any, index: number) => ({
+          usersData.slice(0, 6).map((user: any, index: number) => ({
             id: String(user.id || user._id || index),
             un: user.name || user.username || user.email || "Unknown User",
             role: user.role
@@ -584,11 +346,11 @@ export default function DashboardPage() {
               .join("")
               .toUpperCase()
               .slice(0, 2),
-            col: ["#10b981", "#34d399", "#059669", "#0d9488"][index % 4],
+            col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
           }))
         );
 
-        // ── Companies ─────────────────────────────────────────
+        // ── 3. Companies ─────────────────────────────────────────────
         let companiesRes: any = null;
         try {
           companiesRes = await axiosInstance.get(COMPANIES_API, {
@@ -607,7 +369,7 @@ export default function DashboardPage() {
 
         const companiesData = recordsFromResponse(companiesRes?.data);
 
-        // ── Platform Growth (Revenue API) ────────────────────
+        // ── 4. Platform Growth ──────────────────────────────────────
         let growthPoints: GrowthPoint[] = [];
         try {
           const { data: revRes } = await axiosInstance.get(
@@ -627,14 +389,13 @@ export default function DashboardPage() {
         }
         setGrowth(growthPoints);
 
-        const topCompanies = companiesData.slice(0, 4);
+        const topCompanies = companiesData.slice(0, 6);
 
         const mappedCompanies = await Promise.all(
           topCompanies.map(async (company: any, index: number) => {
             const cId = String(company.id || company._id || index);
             const cName = company.name || company.company_name || "Unknown Company";
 
-            // Dynamic plan lookup from all possible API response keys
             const rawPlan =
               company.plan ||
               company.plan_name ||
@@ -665,7 +426,6 @@ export default function DashboardPage() {
               }
             }
 
-            // Dynamic user count calculation
             let userCount =
               company.users_count ??
               company.user_count ??
@@ -706,7 +466,7 @@ export default function DashboardPage() {
                 .join("")
                 .toUpperCase()
                 .slice(0, 2),
-              col: ["#10b981", "#34d399", "#059669", "#0d9488"][index % 4],
+              col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
               status: company.status
                 ? company.status.charAt(0).toUpperCase() + company.status.slice(1).toLowerCase()
                 : "Active",
@@ -718,7 +478,7 @@ export default function DashboardPage() {
 
         setCompanies(mappedCompanies);
 
-        // ── Activity Logs ──────────────────────────────────────
+        // ── 5. Activity Logs ─────────────────────────────────────────
         let activityRes: any = null;
         try {
           activityRes = await axiosInstance.get(ACTIVITY_API, {
@@ -754,7 +514,7 @@ export default function DashboardPage() {
               activity.user?.name ||
               activity.created_by?.name ||
               activity.name ||
-              "System",
+              "TB",
             time:
               activity.time ||
               activity.created_at ||
@@ -782,154 +542,121 @@ export default function DashboardPage() {
     };
 
     loadDashboard();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const handleStatCardClick = (stat: StatCard) => {
-    if (stat.label === "Total Companies") {
-      router.push("/user/dashboard/companies");
-      return;
-    }
-
-    if (stat.label === "Active Users") {
-      router.push("/user/dashboard/users");
-    }
-  };
-
   return (
-    <div
-      style={{
-        padding: isMobile ? "24px" : "36px 38px 56px",
-        background: t.bg,
-        minHeight: "100%",
-        transition: "background 0.3s ease",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          alignItems: isMobile ? "flex-start" : "center",
-          justifyContent: "space-between",
-          gap: "18px",
-          marginBottom: "30px",
-        }}
-      >
+    <div className="crm-dashboard">
+      {/* ─── Header ────────────────────────────────────────── */}
+      <div className="crm-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <h1
-            style={{
-              fontWeight: 800,
-              fontSize: isMobile ? "1.75rem" : "2rem",
-              color: t.text,
-              margin: 0,
-              letterSpacing: "-0.025em",
-              transition: "color 0.3s",
-            }}
-          >
-            Dashboard Overview
-          </h1>
-          <p
-            style={{
-              fontSize: "0.95rem",
-              color: isDark ? t.textMuted : "#64748b",
-              margin: "7px 0 0",
-              transition: "color 0.3s",
-            }}
-          >
-            Welcome back! Here&apos;s what&apos;s happening with your platform.
+          <h1 className="crm-header__title">Dashboard</h1>
+          <p className="crm-header__subtitle">
+            Welcome back — here&apos;s your platform overview for today.
           </p>
         </div>
 
         <TimeRangePills isDark={isDark} />
       </div>
 
-      {/* Stats */}
-      <InlineStatCards stats={stats} isDark={isDark} isMobile={isMobile} />
-
       {error && (
         <div
           style={{
-            marginBottom: "18px", padding: "12px 16px",
-            borderRadius: "10px",
-            border: "1px solid rgba(179, 68, 239, 0.25)",
-            background: isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)",
-            color: "#ef4444", fontSize: "0.85rem",
+            marginBottom: "16px",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            background: "rgba(214, 57, 57, 0.1)",
+            border: "1px solid rgba(214, 57, 57, 0.25)",
+            color: "var(--crm-red, #d63939)",
+            fontSize: "13px",
           }}
         >
           {error}
         </div>
       )}
 
-      {/* Row 2 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isHalfScreen ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-          gap: "20px",
-          marginBottom: "20px",
-        }}
-      >
-        <Section isDark={isDark} isMobile={isMobile}>
+      {/* ─── Top 4 Stat Cards (Dashboard Theme) ─────────────── */}
+      <div className="crm-stats-grid">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="crm-stat-card"
+            style={{ cursor: s.route ? "pointer" : "default" }}
+            onClick={() => s.route && router.push(s.route)}
+          >
+            <div className="crm-stat-card__left">
+              <span className="crm-avatar" style={{ background: `${s.color}15`, color: s.color }}>
+                {s.icon}
+              </span>
+              <div className="crm-stat-card__info">
+                <div className="crm-subheader">{s.label.toUpperCase()}</div>
+                <div className="crm-stat-value">{loading ? "…" : s.value}</div>
+                <div style={{ height: "2.5px", width: "32px", borderRadius: "2px", background: s.color, marginTop: "6px" }} />
+              </div>
+            </div>
+            {s.trend && (
+              <span className="crm-stat-trend crm-trend--up">
+                {s.trend} <ArrowUpRight size={14} />
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ─── Top Cards Row (Equal Height: Platform Growth & Quick Actions) ─── */}
+      <div className="crm-row-top">
+        {/* Card: Platform Growth */}
+        <div className="crm-card">
+          <div className="crm-card__header">
+            <div>
+              <h2 className="crm-card__title">Platform Growth</h2>
+              <div className="crm-card__subtitle">
+                Monthly platform activity and engagement overview
+              </div>
+            </div>
+          </div>
+          <div className="crm-card__body">
+            <PlatformGrowthChart data={growth} loading={loading} error={error} />
+          </div>
+        </div>
+
+        {/* Card: Quick Admin Actions */}
+        <QuickAdminActions />
+      </div>
+
+      {/* ─── Two-Column Middle Section (Dashboard Theme) ────── */}
+      <div className="crm-row-middle">
+        {/* Left Column */}
+        <div className="crm-col-stack">
+          {/* Card: Company Overview */}
           <CompanyOverview
             companies={companies}
             loading={loading}
             error={error}
             onViewAll={() => router.push("/user/manage-companies")}
+            onCompanyClick={() => router.push("/user/manage-companies")}
           />
-        </Section>
-        <Section isDark={isDark} isMobile={isMobile}>
-        <UserManagement
-  users={users}
-  loading={loading}
-  error={error}
-  onViewAll={() => router.push("/user/all-user")}
-/>
-        </Section>
-      </div>
 
-      {/* Row 3 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isHalfScreen ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-          gap: "20px",
-        }}
-      >
-        <Section isDark={isDark} isMobile={isMobile}>
-          <div
-            style={{
-              marginBottom: "18px",
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "0.85rem",
-                fontWeight: 700,
-                color: t.text,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Platform Growth
-            </h2>
+          {/* Card: Recent Transactions Feed */}
+          <RecentTransactionsFeed limit={5} />
+        </div>
 
-            <p
-              style={{
-                margin: "4px 0 0",
-                fontSize: "0.75rem",
-                color: isDark ? t.textMuted : "#64748b",
-              }}
-            >
-              Monthly platform activity and engagement overview
-            </p>
-          </div>
+        {/* Right Column */}
+        <div className="crm-col-stack">
+          {/* Card: User Management */}
+          <UserManagement
+            users={users}
+            loading={loading}
+            error={error}
+            onViewAll={() => router.push("/user/all-user")}
+            onUserClick={() => router.push("/user/all-user")}
+          />
 
-          <PlatformGrowthChart data={growth} loading={loading} error={error} />
-        </Section>
-        <Section isDark={isDark} isMobile={isMobile}>
+          {/* Card: Audit Logs */}
           <AuditLogs logs={logs} loading={loading} error={error} />
-        </Section>
+        </div>
       </div>
     </div>
   );

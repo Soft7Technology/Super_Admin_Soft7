@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -10,158 +10,304 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  AlertCircle,
+  Check,
+  Circle,
+  X,
+} from "lucide-react";
 
 import "../manage-companies.css";
+import Spinner from "@/components/ui/Spinner";
+
+/* ------------------------------------------------------------------ */
+/* Types & constants                                                   */
+/* ------------------------------------------------------------------ */
+
+type FieldKey =
+  | "name"
+  | "email"
+  | "phone"
+  | "businessId"
+  | "reason"
+  | "adminName"
+  | "adminEmail"
+  | "adminPhone"
+  | "password";
+
+type FormState = {
+  name: string;
+  email: string;
+  phone: string;
+  phoneDial: string;
+  businessId: string;
+  reason: string;
+  adminName: string;
+  adminEmail: string;
+  adminPhone: string;
+  adminPhoneDial: string;
+  password: string;
+};
+
+type Errors = Partial<Record<FieldKey, string>>;
+
+const INITIAL_FORM: FormState = {
+  name: "",
+  email: "",
+  phone: "",
+  phoneDial: "91",
+  businessId: "",
+  reason: "",
+  adminName: "",
+  adminEmail: "",
+  adminPhone: "",
+  adminPhoneDial: "91",
+  password: "",
+};
+
+
+const FIELD_ORDER: FieldKey[] = [
+  "name",
+  "email",
+  "phone",
+  "businessId",
+  "reason",
+  "adminName",
+  "adminEmail",
+  "adminPhone",
+  "password",
+];
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const PASSWORD_RULES = [
+  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "One lowercase letter", test: (p: string) => /[a-z]/.test(p) },
+  { label: "One number", test: (p: string) => /\d/.test(p) },
+  {
+    label: "One special character (@$!%*?&)",
+    test: (p: string) => /[@$!%*?&]/.test(p),
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Validation        */
+/* ------------------------------------------------------------------ */
+
+function validatePhone(value: string, dialCode: string, label: string) {
+  const digits = value.replace(/\D/g, "");
+  const hasDial = digits.startsWith(dialCode);
+  const national = hasDial ? digits.slice(dialCode.length) : digits;
+
+  if (!national) return `${label} phone is required.`;
+  if (!hasDial) return "Select a country code and enter the number after it.";
+
+  
+  if (dialCode === "91") {
+    if (!/^[6-9]\d{9}$/.test(national))
+      return "Enter a valid 10-digit Indian mobile number (starts with 6–9, no leading 0).";
+  } else if (national.length < 6 || national.length > 14) {
+    return "Enter a valid phone number for the selected country.";
+  }
+  return "";
+}
+
+function validateField(key: FieldKey, f: FormState): string {
+  switch (key) {
+    case "name":
+      return f.name.trim() ? "" : "Company name is required.";
+
+    case "email":
+      if (!f.email.trim()) return "Company email is required.";
+      return EMAIL_REGEX.test(f.email.trim())
+        ? ""
+        : "Enter a valid email address, e.g. company@example.com.";
+
+    case "phone":
+      return validatePhone(f.phone, f.phoneDial, "Company");
+
+    case "businessId":
+      return f.businessId.trim() ? "" : "Business ID is required.";
+
+    case "reason":
+      return f.reason.trim() ? "" : "Reason is required.";
+
+    case "adminName":
+      return f.adminName.trim() ? "" : "Admin name is required.";
+
+    case "adminEmail":
+      if (!f.adminEmail.trim()) return "Admin email is required.";
+      return EMAIL_REGEX.test(f.adminEmail.trim())
+        ? ""
+        : "Enter a valid email address, e.g. admin@example.com.";
+
+    case "adminPhone":
+      return validatePhone(f.adminPhone, f.adminPhoneDial, "Admin");
+
+    case "password": {
+      if (!f.password) return "Password is required.";
+      const missing = PASSWORD_RULES.some((r) => !r.test(f.password));
+      return missing ? "Password doesn't meet all the requirements below." : "";
+    }
+
+    default:
+      return "";
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Small presentational helper                                         */
+/* ------------------------------------------------------------------ */
+
+function FieldError({ id, message }: { id: FieldKey; message?: string }) {
+  if (!message) return null;
+  return (
+    <div id={`err-${id}`} className="mc-field__error" role="alert">
+      <AlertCircle size={13} />
+      <span>{message}</span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
 
 export default function CreateCompanyPage() {
   const router = useRouter();
 
-  // Company
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [businessId, setBusinessId] = useState("");
-  const [reason, setReason] = useState("");
-
-  // Admin
-  const [adminName, setAdminName] = useState("");
-  const [adminEmail, setAdminEmail] = useState("");
-  const [password, setPassword] = useState("");
-
+  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [errors, setErrors] = useState<Errors>({});
   const [showPassword, setShowPassword] = useState(false);
-
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
-  //phone validatn
-  const [phone, setPhone] = useState("");
-  const [adminPhone, setAdminPhone] = useState("");
 
-  const [phoneValid, setPhoneValid] = useState(false);
-  const [adminPhoneValid, setAdminPhoneValid] = useState(false);
+  const [serverErr, setServerErr] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
-    setErr(null);
+  /* ---------- helpers ---------- */
 
-    // Company validation
-    if (!name.trim()) {
-      setErr("Company name is required.");
-      return;
-    }
+  const setErrorFor = (key: FieldKey, message: string) =>
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (message) next[key] = message;
+      else delete next[key];
+      return next;
+    });
 
-    if (!email.trim()) {
-      setErr("Company email is required.");
-      return;
-    }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const setField = (
+    key: FieldKey,
+    value: string,
+    extra: Partial<FormState> = {},
+  ) => {
+    const next = { ...form, [key]: value, ...extra } as FormState;
+    setForm(next);
+    if (errors[key]) setErrorFor(key, validateField(key, next));
+    if (serverErr) setServerErr(null);
+  };
 
-    if (!emailRegex.test(email.trim())) {
-      setErr("Please enter a valid company email.");
-      return;
-    }
+  const handleBlur = (key: FieldKey) =>
+    setErrorFor(key, validateField(key, form));
 
-    if (!phone.trim()) {
-      setErr("Company phone is required.");
-      return;
-    }
+  const focusField = (key: FieldKey) => {
+    const el = document.getElementById(`field-${key}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+   
+    setTimeout(() => (el as HTMLElement).focus({ preventScroll: true }), 250);
+  };
 
-    if (!phoneValid) {
-      setErr("Please enter a valid company phone number.");
-      return;
-    }
+  const inputClass = (key: FieldKey) =>
+    `mc-input${errors[key] ? " mc-input--error" : ""}`;
 
-    if (!businessId.trim()) {
-      setErr("Business ID is required.");
-      return;
-    }
+ 
+  const formRef = useRef(form);
+  formRef.current = form;
 
-    if (!reason.trim()) {
-      setErr("Reason is required.");
-      return;
-    }
+  const phoneProps = (
+    key: "phone" | "adminPhone",
+    dialKey: "phoneDial" | "adminPhoneDial",
+  ) => ({
+    country: "in",
+    value: form[key],
+    onChange: (value: string, country: any) =>
+      setField(key, value, { [dialKey]: country?.dialCode ?? form[dialKey] }),
+    
+    countryCodeEditable: false,
+    enableSearch: true,
+    disableSearchIcon: true,
+    searchPlaceholder: "Search country...",
+    placeholder: "Enter phone number",
+    containerClass: `mc-phone${errors[key] ? " mc-phone--error" : ""}`,
+    inputClass: "mc-input mc-phone__input",
+    buttonClass: "mc-phone__button",
+    dropdownClass: "mc-phone__dropdown",
+    searchClass: "mc-phone__search",
+    inputProps: { id: `field-${key}`, autoComplete: "off" },
+   
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
+      const container = e.currentTarget.closest(".react-tel-input");
+      setTimeout(() => {
+        if (container && container.contains(document.activeElement)) return;
+        setErrorFor(key, validateField(key, formRef.current));
+      }, 150);
+    },
+  });
 
-  
-    if (!adminName.trim()) {
-      setErr("Admin name is required.");
-      return;
-    }
+  /* ---------- submit ---------- */
 
-    if (!adminEmail.trim()) {
-      setErr("Admin email is required.");
-      return;
-    }
+  const passwordValid = PASSWORD_RULES.every((r) => r.test(form.password));
 
-    if (!emailRegex.test(adminEmail.trim())) {
-      setErr("Please enter a valid admin email.");
-      return;
-    }
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (saving || !passwordValid) return;
+    setServerErr(null);
 
-   if (!adminPhone.trim()) {
-     setErr("Admin phone is required.");
-     return;
-   }
+   
+    const nextErrors: Errors = {};
+    FIELD_ORDER.forEach((key) => {
+      const msg = validateField(key, form);
+      if (msg) nextErrors[key] = msg;
+    });
+    setErrors(nextErrors);
 
-   if (!adminPhoneValid) {
-     setErr("Please enter a valid admin phone number.");
-     return;
-   }
-
-    if (!password.trim()) {
-      setErr("Admin password is required.");
-      return;
-    }
-
-    if (password.length < 8) {
-      setErr("Password must be at least 8 characters.");
-      return;
-    }
-
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
-    if (!passwordRegex.test(password)) {
-      setErr(
-        "Password must contain uppercase, lowercase, number and special character.",
-      );
+    const firstInvalid = FIELD_ORDER.find((k) => nextErrors[k]);
+    if (firstInvalid) {
+      focusField(firstInvalid);
       return;
     }
 
     const payload = {
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      business_id: businessId.trim(),
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      business_id: form.businessId.trim(),
       user: {
-        name: adminName.trim(),
-        email: adminEmail.trim(),
-        phone: adminPhone.trim(),
-        password,
+        name: form.adminName.trim(),
+        email: form.adminEmail.trim(),
+        phone: form.adminPhone.trim(),
+        password: form.password,
       },
-      reason: reason.trim(),
+      reason: form.reason.trim(),
     };
 
     try {
       setSaving(true);
 
-      console.log("CREATE COMPANY PAYLOAD =>", payload);
-
       const response = await axiosInstance.post(
         "/v1/super-admin/companies",
         payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
+        { headers: { "Content-Type": "application/json" } },
       );
 
       const data = response.data;
 
-      console.log("CREATE COMPANY RESPONSE =>", data);
-
       if (!data?.success) {
-        setErr(
+        setServerErr(
           data?.error?.message || data?.message || "Failed to create company.",
         );
         return;
@@ -175,7 +321,7 @@ export default function CreateCompanyPage() {
     } catch (error: any) {
       console.error("CREATE COMPANY ERROR =>", error);
 
-      setErr(
+      setServerErr(
         error?.response?.data?.message ||
           error?.response?.data?.error?.message ||
           error?.message ||
@@ -186,348 +332,331 @@ export default function CreateCompanyPage() {
     }
   };
 
+  /* ---------- render ---------- */
+
+  const errorCount = Object.keys(errors).length;
+
   return (
     <div className="mc-root">
-      {/* HEADER */}
-      <div className="mc-header">
-        <div>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "transparent",
-              border: "none",
-              color: "var(--mc-muted)",
-              cursor: "pointer",
-              padding: 0,
-              marginBottom: 10,
-              fontSize: 13,
-            }}
-          >
-            <ArrowLeft size={16} />
-            Back to Companies
-          </button>
-
-          <h1 className="mc-header__title">Create Company</h1>
-
-          <p className="mc-header__sub">
-            Create a new company and its administrator.
-          </p>
-        </div>
-      </div>
-
-      <div
-        style={{
-          maxWidth: 1000,
-          margin: "0 auto",
-        }}
-      >
-        {err && (
-          <div
-            className="mc-error-banner"
-            role="alert"
-            style={{ marginBottom: 20 }}
-          >
-            <AlertCircle size={18} className="mc-error-banner__icon" />
-
-            <span className="mc-error-banner__text">{err}</span>
-
+      <div className="mc-create-wrap">
+        {/* HEADER */}
+        <div className="mc-header">
+          <div>
             <button
               type="button"
-              className="mc-error-banner__close"
-              onClick={() => setErr(null)}
+              className="back-button"
+              onClick={() => router.push("/user/manage-companies")}
+              style={{ marginBottom: 12 }}
             >
-              ×
+              <ArrowLeft size={16} />
+              <span>Back to Companies</span>
             </button>
+
+            <h1 className="mc-header__title">Create Company</h1>
+
+            <p className="mc-header__sub">
+              Create a new company and its administrator.
+            </p>
           </div>
-        )}
+        </div>
 
-        {/* COMPANY DETAILS */}
-        <div
-          className="mc-modal"
-          style={{
-            width: "100%",
-            maxWidth: "none",
-          }}
-        >
-          <div className="mc-modal__header">
-            <div>
-              <div className="mc-modal__title">Company Details</div>
-
-              <div className="mc-modal__sub">
+        <form noValidate onSubmit={handleSubmit}>
+          {/* COMPANY DETAILS */}
+          <div className="mc-create-card">
+            <div className="mc-create-card__header">
+              <div className="mc-create-card__title">Company Details</div>
+              <div className="mc-create-card__sub">
                 Enter the basic company information.
               </div>
             </div>
-          </div>
 
-          <div className="mc-modal__body">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: 18,
-              }}
-            >
-              <div className="mc-field">
-                <div className="mc-field__label">COMPANY NAME *</div>
+            <div className="mc-create-card__body">
+              <div className="mc-form-grid-2">
+                <div className="mc-field">
+                  <label htmlFor="field-name" className="mc-field__label">
+                    COMPANY NAME *
+                  </label>
+                  <input
+                    id="field-name"
+                    className={inputClass("name")}
+                    placeholder="Example Company"
+                    autoComplete="organization"
+                    value={form.name}
+                    onChange={(e) => setField("name", e.target.value)}
+                    onBlur={() => handleBlur("name")}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "err-name" : undefined}
+                  />
+                  <FieldError id="name" message={errors.name} />
+                </div>
 
-                <input
-                  className="mc-input"
-                  placeholder="Example Company"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+                <div className="mc-field">
+                  <label htmlFor="field-email" className="mc-field__label">
+                    COMPANY EMAIL *
+                  </label>
+                  <input
+                    id="field-email"
+                    className={inputClass("email")}
+                    type="email"
+                    placeholder="company@example.com"
+                    autoComplete="off"
+                    value={form.email}
+                    onChange={(e) => setField("email", e.target.value)}
+                    onBlur={() => handleBlur("email")}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "err-email" : undefined}
+                  />
+                  <FieldError id="email" message={errors.email} />
+                </div>
+
+                <div className="mc-field">
+                  <label htmlFor="field-phone" className="mc-field__label">
+                    COMPANY PHONE *
+                  </label>
+                  <PhoneInput {...phoneProps("phone", "phoneDial")} />
+                  <FieldError id="phone" message={errors.phone} />
+                </div>
+
+                <div className="mc-field">
+                  <label htmlFor="field-businessId" className="mc-field__label">
+                    BUSINESS ID *
+                  </label>
+                  <input
+                    id="field-businessId"
+                    className={inputClass("businessId")}
+                    placeholder="BUSINESS123"
+                    autoComplete="off"
+                    value={form.businessId}
+                    onChange={(e) => setField("businessId", e.target.value)}
+                    onBlur={() => handleBlur("businessId")}
+                    aria-invalid={!!errors.businessId}
+                    aria-describedby={
+                      errors.businessId ? "err-businessId" : undefined
+                    }
+                  />
+                  <FieldError id="businessId" message={errors.businessId} />
+                </div>
               </div>
 
-              <div className="mc-field">
-                <div className="mc-field__label">COMPANY EMAIL *</div>
-
-                <input
-                  className="mc-input"
-                  type="email"
-                  placeholder="company@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+              <div className="mc-field" style={{ marginTop: 18 }}>
+                <label htmlFor="field-reason" className="mc-field__label">
+                  REASON *
+                </label>
+                <textarea
+                  id="field-reason"
+                  className={inputClass("reason")}
+                  placeholder="Approved company onboarding"
+                  value={form.reason}
+                  onChange={(e) => setField("reason", e.target.value)}
+                  onBlur={() => handleBlur("reason")}
+                  rows={3}
+                  style={{ resize: "vertical", minHeight: 84 }}
+                  aria-invalid={!!errors.reason}
+                  aria-describedby={errors.reason ? "err-reason" : undefined}
                 />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">COMPANY PHONE *</div>
-
-                <PhoneInput
-                  country="in"
-                  value={phone}
-                  onChange={setPhone}
-                  enableSearch
-                  searchPlaceholder="Search country..."
-                  placeholder="Enter phone number"
-                  isValid={(value) => {
-                    const valid = value.replace(/\D/g, "").length >= 10;
-                    setPhoneValid(valid);
-                    return valid;
-                  }}
-                  inputStyle={{
-                    width: "100%",
-                    height: "48px",
-                    background: "#12182b",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px",
-                    paddingLeft: "55px",
-                  }}
-                  buttonStyle={{
-                    background: "#12182b",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px 0 0 10px",
-                  }}
-                  dropdownStyle={{
-                    background: "#1b2338",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    maxHeight: "250px",
-                  }}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">BUSINESS ID *</div>
-
-                <input
-                  className="mc-input"
-                  placeholder="BUSINESS123"
-                  value={businessId}
-                  onChange={(e) => setBusinessId(e.target.value)}
-                />
+                <FieldError id="reason" message={errors.reason} />
               </div>
             </div>
-
-            <div className="mc-field">
-              <div className="mc-field__label">REASON *</div>
-
-              <textarea
-                className="mc-input"
-                placeholder="Approved company onboarding"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={4}
-                style={{
-                  resize: "vertical",
-                  minHeight: 100,
-                }}
-              />
-            </div>
           </div>
-        </div>
 
-        {/* COMPANY ADMIN */}
-        <div
-          className="mc-modal"
-          style={{
-            width: "100%",
-            maxWidth: "none",
-            marginTop: 20,
-          }}
-        >
-          <div className="mc-modal__header">
-            <div>
-              <div className="mc-modal__title">Company Admin</div>
-
-              <div className="mc-modal__sub">
+          {/* COMPANY ADMIN */}
+          <div className="mc-create-card">
+            <div className="mc-create-card__header">
+              <div className="mc-create-card__title">Company Admin</div>
+              <div className="mc-create-card__sub">
                 Create the administrator account for this company.
               </div>
             </div>
-          </div>
 
-          <div className="mc-modal__body">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: 18,
-              }}
-            >
-              <div className="mc-field">
-                <div className="mc-field__label">ADMIN NAME *</div>
-
-                <input
-                  className="mc-input"
-                  placeholder="Company Admin"
-                  value={adminName}
-                  onChange={(e) => setAdminName(e.target.value)}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">ADMIN EMAIL *</div>
-
-                <input
-                  className="mc-input"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">ADMIN PHONE *</div>
-
-                <PhoneInput
-                  country="in"
-                  value={adminPhone}
-                  onChange={setAdminPhone}
-                  enableSearch
-                  searchPlaceholder="Search country..."
-                  placeholder="Enter phone number"
-                  isValid={(value) => {
-                    const valid = value.replace(/\D/g, "").length >= 10;
-                    setAdminPhoneValid(valid);
-                    return valid;
-                  }}
-                  inputStyle={{
-                    width: "100%",
-                    height: "48px",
-                    background: "#12182b",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px",
-                    paddingLeft: "55px",
-                  }}
-                  buttonStyle={{
-                    background: "#12182b",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px 0 0 10px",
-                  }}
-                  dropdownStyle={{
-                    background: "#1b2338",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    maxHeight: "250px",
-                  }}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">PASSWORD *</div>
-
-                <div
-                  style={{
-                    position: "relative",
-                  }}
-                >
+            <div className="mc-create-card__body">
+              <div className="mc-form-grid-2">
+                <div className="mc-field">
+                  <label htmlFor="field-adminName" className="mc-field__label">
+                    ADMIN NAME *
+                  </label>
                   <input
-                    className="mc-input"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{
-                      paddingRight: 48,
-                    }}
+                    id="field-adminName"
+                    className={inputClass("adminName")}
+                    placeholder="Company Admin"
+                    autoComplete="off"
+                    value={form.adminName}
+                    onChange={(e) => setField("adminName", e.target.value)}
+                    onBlur={() => handleBlur("adminName")}
+                    aria-invalid={!!errors.adminName}
+                    aria-describedby={
+                      errors.adminName ? "err-adminName" : undefined
+                    }
                   />
+                  <FieldError id="adminName" message={errors.adminName} />
+                </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      border: "none",
-                      background: "transparent",
-                      color: "#9ca3af",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-                  </button>
+                <div className="mc-field">
+                  <label htmlFor="field-adminEmail" className="mc-field__label">
+                    ADMIN EMAIL *
+                  </label>
+                  <input
+                    id="field-adminEmail"
+                    className={inputClass("adminEmail")}
+                    type="email"
+                    placeholder="admin@example.com"
+                    autoComplete="off"
+                    value={form.adminEmail}
+                    onChange={(e) => setField("adminEmail", e.target.value)}
+                    onBlur={() => handleBlur("adminEmail")}
+                    aria-invalid={!!errors.adminEmail}
+                    aria-describedby={
+                      errors.adminEmail ? "err-adminEmail" : undefined
+                    }
+                  />
+                  <FieldError id="adminEmail" message={errors.adminEmail} />
+                </div>
+
+                <div className="mc-field">
+                  <label htmlFor="field-adminPhone" className="mc-field__label">
+                    ADMIN PHONE *
+                  </label>
+                  <PhoneInput {...phoneProps("adminPhone", "adminPhoneDial")} />
+                  <FieldError id="adminPhone" message={errors.adminPhone} />
+                </div>
+
+                <div className="mc-field">
+                  <label htmlFor="field-password" className="mc-field__label">
+                    PASSWORD *
+                  </label>
+
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="field-password"
+                      className={inputClass("password")}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Min 8 characters"
+                      autoComplete="new-password"
+                      value={form.password}
+                      onChange={(e) => setField("password", e.target.value)}
+                      onBlur={() => handleBlur("password")}
+                      style={{ paddingRight: 48 }}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={
+                        errors.password ? "err-password" : undefined
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--mc-muted)",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+
+                  <FieldError id="password" message={errors.password} />
+
+                  {/* Live checklist: users see what's missing as they type */}
+                  <ul className="mc-pw-rules">
+                    {PASSWORD_RULES.map((rule) => {
+                      const ok = rule.test(form.password);
+                      return (
+                        <li
+                          key={rule.label}
+                          className={ok ? "mc-pw-rules__ok" : ""}
+                        >
+                          {ok ? <Check size={13} /> : <Circle size={13} />}
+                          <span>{rule.label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               </div>
-            </div>
 
-            <div className="mc-modal__divider" />
+              <div className="mc-modal__divider" style={{ margin: "24px 0 16px" }} />
 
-            <div
-              className="mc-modal__actions"
-              style={{
-                justifyContent: "flex-end",
-              }}
-            >
-              <button
-                type="button"
-                className="mc-btn mc-btn--ghost"
-                onClick={() => router.back()}
-                style={{
-                  width: "auto",
-                  minWidth: 100,
-                  padding: "9px 16px",
-                  flex: "0 0 auto",
-                }}
+              {/* Server-side errors */}
+              {serverErr && (
+                <div
+                  className="mc-error-banner"
+                  role="alert"
+                  style={{ marginBottom: 16 }}
+                >
+                  <AlertCircle size={18} className="mc-error-banner__icon" />
+                  <span className="mc-error-banner__text">{serverErr}</span>
+                  <button
+                    type="button"
+                    className="mc-error-banner__close"
+                    onClick={() => setServerErr(null)}
+                    aria-label="Dismiss error"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+
+              <div
+                className="mc-modal__actions"
+                style={{ justifyContent: "flex-end", alignItems: "center" }}
               >
-                Cancel
-              </button>
+                {errorCount > 0 && (
+                  <span className="mc-actions__hint">
+                    {errorCount}{" "}
+                    {errorCount === 1 ? "field needs" : "fields need"} attention
+                  </span>
+                )}
 
-              <button
-                type="button"
-                className="mc-btn mc-btn--primary"
-                onClick={handleSubmit}
-                disabled={saving}
-                style={{
-                  width: "auto",
-                  minWidth: 130,
-                  padding: "9px 16px",
-                  flex: "0 0 auto",
-                }}
-              >
-                {saving ? "Creating…" : "Create Company"}
-              </button>
+                <button
+                  type="button"
+                  className="mc-btn mc-btn--ghost"
+                  onClick={() => router.push("/user/manage-companies")}
+                  style={{
+                    width: "auto",
+                    minWidth: 100,
+                    padding: "9px 16px",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="mc-btn mc-btn--primary"
+                  disabled={saving || !passwordValid}
+                  title={
+                    passwordValid
+                      ? undefined
+                      : "Password must meet all the listed requirements"
+                  }
+                  style={{
+                    width: "auto",
+                    minWidth: 130,
+                    padding: "9px 16px",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  {saving ? (
+                    <Spinner size="sm" text="Creating…" color="white" />
+                  ) : (
+                    "Create Company"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </form>
       </div>
 
       <ToastContainer

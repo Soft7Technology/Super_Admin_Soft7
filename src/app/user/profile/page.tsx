@@ -3,6 +3,27 @@
 import { useState, useEffect } from "react";
 import "./profile.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import Spinner from "@/components/ui/Spinner";
+import {
+  User,
+  ShieldCheck,
+  Activity,
+  Mail,
+  Phone,
+  Clock,
+  Globe,
+  Camera,
+  Save,
+  Check,
+  Lock,
+  Building2,
+  AlertTriangle,
+  Download,
+  BarChart3,
+  KeyRound,
+  Sliders,
+  AlertCircle,
+} from "lucide-react";
 
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -13,9 +34,9 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   );
 }
 
-function Inp({ label, value, onChange, type = "text", placeholder = "", hint, disabled = false, prefix }: {
+function Inp({ label, value, onChange, type = "text", placeholder = "", hint, disabled = false, prefix, autoComplete }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; hint?: string; disabled?: boolean; prefix?: string;
+  type?: string; placeholder?: string; hint?: string; disabled?: boolean; prefix?: React.ReactNode; autoComplete?: string;
 }) {
   return (
     <div className="pf-field">
@@ -23,6 +44,7 @@ function Inp({ label, value, onChange, type = "text", placeholder = "", hint, di
       <div className={`pf-input-wrap ${disabled ? "pf-input-wrap--disabled" : ""}`}>
         {prefix && <span className="pf-input-prefix">{prefix}</span>}
         <input type={type} value={value} disabled={disabled} placeholder={placeholder}
+          autoComplete={autoComplete}
           onChange={e => onChange(e.target.value)} className="pf-input" />
       </div>
       {hint && <span className="pf-field__hint">{hint}</span>}
@@ -44,10 +66,6 @@ function Sel({ label, value, onChange, options }: {
   );
 }
 
-function Spin() {
-  return <span className="pf-btn-save__spinner" />;
-}
-
 function useSave() {
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
@@ -61,7 +79,7 @@ function useSave() {
 function SaveBtn({ onClick, saving, saved }: { onClick: () => void; saving: boolean; saved: boolean }) {
   return (
     <button onClick={onClick} className={`pf-btn-save ${saved ? "pf-btn-save--saved" : ""}`}>
-      {saving ? <><Spin /> Saving…</> : saved ? <>✓ Saved!</> : <>Save Changes</>}
+      {saving ? <Spinner size="sm" text="Saving…" /> : saved ? <><Check size={14} /> Saved!</> : <><Save size={14} /> Save Changes</>}
     </button>
   );
 }
@@ -112,17 +130,18 @@ function HeroCard({
         <div className="pf-hero__banner-orb1" />
         <div className="pf-hero__banner-orb2" />
         <div className="pf-hero__banner-orb3" />
-        <div className="pf-hero__banner-grid" />
       </div>
 
       <div className="pf-hero__body">
         <div className="pf-hero__top-row">
           <div className="pf-avatar-wrap">
             <div className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}>
-              {uploading ? "⬆" : (avatarEmoji ?? initials)}
+              {uploading ? <Spinner size="md" color="white" /> : (avatarEmoji ?? initials)}
             </div>
             <div className="pf-avatar__online" />
-            <div className="pf-avatar__upload-overlay" onClick={onUpload}>📷</div>
+            <div className="pf-avatar__upload-overlay" onClick={onUpload} title="Upload photo">
+              <Camera size={20} />
+            </div>
           </div>
         </div>
 
@@ -133,12 +152,12 @@ function HeroCard({
           </div>
           <div className="pf-hero__meta">
             {[
-              { icon: "📧", val: profile?.email ?? "—" },
-              { icon: "📱", val: profile?.phone ? `+91 ${profile.phone}` : "—" },
-              ...(lastLogin ? [{ icon: "🕐", val: `Last login: ${lastLogin}` }] : []),
-              { icon: "🌐", val: profile?.status === "active" ? "Active" : profile?.status ?? "—" },
-           ].map(({ icon, val }, index) => (
-  <span key={`${icon}-${index}`} className="pf-hero__meta-item">
+              { icon: <Mail size={13} />, val: profile?.email ?? "—" },
+              { icon: <Phone size={13} />, val: profile?.phone ? `+91 ${profile.phone}` : "—" },
+              ...(lastLogin ? [{ icon: <Clock size={13} />, val: `Last login: ${lastLogin}` }] : []),
+              { icon: <Globe size={13} />, val: profile?.status === "active" ? "Active" : profile?.status ?? "—" },
+            ].map(({ icon, val }, index) => (
+              <span key={index} className="pf-hero__meta-item">
                 <span className="pf-hero__meta-icon">{icon}</span>{val}
               </span>
             ))}
@@ -225,7 +244,7 @@ function PersonalTab({ profile }: { profile: ProfileData | null }) {
             <Inp label="First Name" value={firstName} onChange={setFirstName} placeholder="First name" />
             <Inp label="Last Name"  value={lastName}  onChange={setLastName}  placeholder="Last name" />
             <Inp label="Email"      value={email}     onChange={setEmail}     type="email" hint="Used for login and notifications" />
-            <Inp label="Phone"      value={phone}     onChange={setPhone}     type="tel"   prefix="📱" />
+            <Inp label="Phone"      value={phone}     onChange={setPhone}     type="tel"   placeholder="Phone number" prefix={<Phone size={14} />} />
             <Inp label="Location"   value={location}  onChange={setLocation}  placeholder="City, Country" />
             <Inp label="Website"    value={website}   onChange={setWebsite}   type="url"   placeholder="https://…" />
           </div>
@@ -422,11 +441,25 @@ function SecurityTab({ profile }: { profile: ProfileData | null }) {
           <div className="pf-card__desc">Use a strong, unique password you don't use elsewhere.</div>
         </div>
         <div className="pf-card__body">
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Inp label="Current Password" value={curPwd} onChange={setCurPwd} type="password" placeholder="••••••••••••" />
+          <form onSubmit={e => { e.preventDefault(); savePwd(); }} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <Inp
+              label="Current Password"
+              value={curPwd}
+              onChange={setCurPwd}
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••••••"
+            />
             <div className="pf-grid-2">
               <div>
-                <Inp label="New Password" value={newPwd} onChange={setNewPwd} type="password" placeholder="Min 8 characters" />
+                <Inp
+                  label="New Password"
+                  value={newPwd}
+                  onChange={setNewPwd}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Min 8 characters"
+                />
                 {newPwd.length > 0 && (
                   <div className="pf-strength">
                     <div className="pf-strength__bars">
@@ -439,15 +472,22 @@ function SecurityTab({ profile }: { profile: ProfileData | null }) {
                   </div>
                 )}
               </div>
-              <Inp label="Confirm Password" value={confPwd} onChange={setConfPwd} type="password" placeholder="Repeat new password" />
+              <Inp
+                label="Confirm Password"
+                value={confPwd}
+                onChange={setConfPwd}
+                type="password"
+                autoComplete="new-password"
+                placeholder="Repeat new password"
+              />
             </div>
             {pwdErr && <div className="pf-pwd-err">{pwdErr}</div>}
             <div className="pf-btn-row">
-              <button onClick={savePwd} className={`pf-btn-pwd ${pwdSaved ? "pf-btn-pwd--saved" : ""}`}>
-                {pwdSaving ? <><Spin /> Updating…</> : pwdSaved ? <>✓ Updated!</> : <>Update Password</>}
+              <button type="submit" className={`pf-btn-pwd ${pwdSaved ? "pf-btn-pwd--saved" : ""}`}>
+                {pwdSaving ? <Spinner size="sm" text="Updating…" /> : pwdSaved ? <><Check size={14} /> Updated!</> : <><Lock size={14} /> Update Password</>}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
 
@@ -495,12 +535,12 @@ function timeAgoProfile(dateString: string | null): string {
 // ─── TAB: ACTIVITY ────────────────────────────────────────────────────────────
 function ActivityTab() {
   const [activities, setActivities] = useState<any[]>([
-    { icon: "🏢", color: "#00CBA4", action: "Created company",        detail: "Orbit Analytics",              time: "2 mins ago",  date: "Mar 11, 2026", badge: "CREATE",   badgeCol: "#00CBA4" },
-    { icon: "⛔", color: "#FF6B6B", action: "Suspended company",      detail: "Delta Forge (overdue payment)", time: "2 hrs ago",   date: "Mar 11, 2026", badge: "SUSPEND",  badgeCol: "#FF6B6B" },
-    { icon: "📦", color: "#A29BFE", action: "Updated plan pricing",   detail: "Starter plan ₹399 → ₹499",     time: "5 hrs ago",   date: "Mar 11, 2026", badge: "UPDATE",   badgeCol: "#74B9FF" },
-    { icon: "🔐", color: "#FDCB6E", action: "Changed password",       detail: "Account security updated",     time: "Yesterday",   date: "Mar 10, 2026", badge: "SECURITY", badgeCol: "#FDCB6E" },
-    { icon: "📤", color: "#74B9FF", action: "Exported audit logs",    detail: "12 admin accounts CSV",        time: "Yesterday",   date: "Mar 10, 2026", badge: "EXPORT",   badgeCol: "#74B9FF" },
-    { icon: "👤", color: "#A29BFE", action: "Updated user role",      detail: "Carlos Mendes → Manager",      time: "2 days ago",  date: "Mar 9, 2026",  badge: "UPDATE",   badgeCol: "#74B9FF" },
+    { icon: <Building2 size={16} />, color: "#2fb344", action: "Created company",        detail: "Orbit Analytics",              time: "2 mins ago",  date: "Mar 11, 2026", badge: "CREATE",   badgeCol: "#2fb344" },
+    { icon: <AlertCircle size={16} />, color: "#d63939", action: "Suspended company",      detail: "Delta Forge (overdue payment)", time: "2 hrs ago",   date: "Mar 11, 2026", badge: "SUSPEND",  badgeCol: "#d63939" },
+    { icon: <Sliders size={16} />, color: "#4299e1", action: "Updated plan pricing",   detail: "Starter plan ₹399 → ₹499",     time: "5 hrs ago",   date: "Mar 11, 2026", badge: "UPDATE",   badgeCol: "#4299e1" },
+    { icon: <ShieldCheck size={16} />, color: "#f59f00", action: "Changed password",       detail: "Account security updated",     time: "Yesterday",   date: "Mar 10, 2026", badge: "SECURITY", badgeCol: "#f59f00" },
+    { icon: <Download size={16} />, color: "#206bc4", action: "Exported audit logs",    detail: "12 admin accounts CSV",        time: "Yesterday",   date: "Mar 10, 2026", badge: "EXPORT",   badgeCol: "#206bc4" },
+    { icon: <User size={16} />, color: "#4299e1", action: "Updated user role",      detail: "Carlos Mendes → Manager",      time: "2 days ago",  date: "Mar 9, 2026",  badge: "UPDATE",   badgeCol: "#4299e1" },
   ]);
 
   useEffect(() => {
@@ -525,19 +565,19 @@ function ActivityTab() {
         if (raw.length > 0) {
           const mapped = raw.map((a: any) => {
             const type = (a.type || a.action || a.event || "").toLowerCase();
-            let icon = "📊";
-            let color = "#74B9FF";
+            let icon: React.ReactNode = <Activity size={16} />;
+            let color = "#206bc4";
             let badge = "ACTION";
-            let badgeCol = "#74B9FF";
+            let badgeCol = "#206bc4";
 
             if (type.includes("create") || type.includes("add")) {
-              icon = "🏢"; color = "#00CBA4"; badge = "CREATE"; badgeCol = "#00CBA4";
+              icon = <Building2 size={16} />; color = "#2fb344"; badge = "CREATE"; badgeCol = "#2fb344";
             } else if (type.includes("suspend") || type.includes("delete") || type.includes("remove")) {
-              icon = "⛔"; color = "#FF6B6B"; badge = "SUSPEND"; badgeCol = "#FF6B6B";
+              icon = <AlertCircle size={16} />; color = "#d63939"; badge = "SUSPEND"; badgeCol = "#d63939";
             } else if (type.includes("security") || type.includes("password") || type.includes("auth")) {
-              icon = "🔐"; color = "#FDCB6E"; badge = "SECURITY"; badgeCol = "#FDCB6E";
+              icon = <ShieldCheck size={16} />; color = "#f59f00"; badge = "SECURITY"; badgeCol = "#f59f00";
             } else if (type.includes("update") || type.includes("edit")) {
-              icon = "📦"; color = "#A29BFE"; badge = "UPDATE"; badgeCol = "#A29BFE";
+              icon = <Sliders size={16} />; color = "#4299e1"; badge = "UPDATE"; badgeCol = "#4299e1";
             }
 
             const dStr = a.created_at || a.createdAt || a.time || "";
@@ -567,10 +607,10 @@ function ActivityTab() {
   }, []);
 
   const stats = [
-    { label: "Actions (30d)",     value: String(activities.length), icon: "📊", color: "#6C5CE7" },
-    { label: "Logins (30d)",      value: "31",  icon: "🔑", color: "#74B9FF" },
-    { label: "Exports",           value: "12",  icon: "📤", color: "#FDCB6E" },
-    { label: "Companies Created", value: "8",   icon: "🏢", color: "#00CBA4" },
+    { label: "Actions (30d)",     value: String(activities.length), icon: <BarChart3 size={18} />, color: "#206bc4" },
+    { label: "Logins (30d)",      value: "31",  icon: <KeyRound size={18} />, color: "#4299e1" },
+    { label: "Exports",           value: "12",  icon: <Download size={18} />, color: "#f59f00" },
+    { label: "Companies Created", value: "8",   icon: <Building2 size={18} />, color: "#2fb344" },
   ];
 
   return (
@@ -578,11 +618,11 @@ function ActivityTab() {
       <div className="pf-activity-stats">
         {stats.map(s => (
           <div key={s.label} className="pf-stat-card">
-            <div className="pf-stat-card__orb" style={{ background: `${s.color}10` }} />
+            <div className="pf-stat-card__orb" style={{ background: `${s.color}15` }} />
             <div className="pf-stat-card__label">{s.label}</div>
             <div className="pf-stat-card__row">
               <div className="pf-stat-card__value">{s.value}</div>
-              <span className="pf-stat-card__icon">{s.icon}</span>
+              <span className="pf-stat-card__icon" style={{ color: s.color }}>{s.icon}</span>
             </div>
           </div>
         ))}
@@ -597,14 +637,14 @@ function ActivityTab() {
           {activities.map((a, i) => (
             <div key={i} className="pf-activity-item">
               <div className="pf-activity-item__icon"
-                style={{ background: `${a.color}12`, border: `1px solid ${a.color}22` }}>
+                style={{ background: `${a.color}14`, border: `1px solid ${a.color}30`, color: a.color }}>
                 {a.icon}
               </div>
               <div className="pf-activity-item__body">
                 <div className="pf-activity-item__top">
                   <span className="pf-activity-item__action">{a.action}</span>
                   <span className="pf-activity-item__badge"
-                    style={{ background: `${a.badgeCol}15`, color: a.badgeCol }}>
+                    style={{ background: `${a.badgeCol}18`, color: a.badgeCol }}>
                     {a.badge}
                   </span>
                 </div>
@@ -627,9 +667,9 @@ function ActivityTab() {
 
 // ─── TABS CONFIG ──────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "personal", label: "Personal Info", icon: "👤" },
-  { id: "security", label: "Security",      icon: "🔐" },
-  { id: "activity", label: "Activity",      icon: "📊" },
+  { id: "personal", label: "Personal Info", icon: User },
+  { id: "security", label: "Security",      icon: ShieldCheck },
+  { id: "activity", label: "Activity",      icon: Activity },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -670,7 +710,7 @@ export default function Profile() {
 
   const triggerUpload = () => {
     setUploading(true);
-    setTimeout(() => { setUploading(false); setAvatarEmoji("🧑‍💻"); }, 1200);
+    setTimeout(() => { setUploading(false); setAvatarEmoji(null); }, 1200);
   };
 
   return (
@@ -706,13 +746,16 @@ export default function Profile() {
 
       {/* ── TAB BAR ── */}
       <div className="pf-tabbar">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`pf-tab ${tab === t.id ? "pf-tab--active" : ""}`}>
-            <span className="pf-tab__icon">{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
+        {TABS.map(t => {
+          const TabIcon = t.icon;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`pf-tab ${tab === t.id ? "pf-tab--active" : ""}`}>
+              <span className="pf-tab__icon"><TabIcon size={15} /></span>
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── TAB CONTENT ── */}

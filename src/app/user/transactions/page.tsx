@@ -3,7 +3,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import "@/app/globals.css";
 import styles from "./transactions.module.css";
+import Spinner from "@/components/ui/Spinner";
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Transaction {
@@ -257,7 +259,7 @@ useEffect(() => {
 
   /* ── Render ──────────────────────────────────────────────── */
   return (
-    <div className={styles["tx-page"]}>
+    <div className={`${styles["tx-page"]} tx-page`}>
      {/* Header */}
       <div className={styles["tx-page__header"]}>
         <h1 className={styles["tx-page__title"]}>Transaction History</h1>
@@ -276,9 +278,9 @@ useEffect(() => {
             Current Wallet Balance
           </span>
           {balanceLoading ? (
-            <span
-              className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-            />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", height: "26px" }}>
+              <Spinner size="xs" color="primary" />
+            </span>
           ) : (
             <span className={styles["tx-balance-card__amount"]}>
               ₹{walletBalance !== null ? formatCurrency(walletBalance) : "—"}
@@ -345,47 +347,19 @@ useEffect(() => {
             </tr>
           </thead>
           <tbody>
-            {/* Loading skeletons */}
-            {loading &&
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={`skeleton-${i}`}>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--lg"]}`}
-                    />
-                  </td>
-                </tr>
-              ))}
+            {/* Loading Modern Ring Spinner */}
+            {loading && (
+              <tr>
+                <td colSpan={7} style={{ padding: "40px 0" }}>
+                  <Spinner
+                    variant="center"
+                    size="lg"
+                    color="primary"
+                    text="Loading transactions..."
+                  />
+                </td>
+              </tr>
+            )}
 
             {/* Error */}
             {!loading && error && (
@@ -473,6 +447,119 @@ useEffect(() => {
               })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Cards View (<= 768px) */}
+      <div className={styles["tx-mobile-cards"]}>
+        {/* Loading skeletons */}
+        {loading &&
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={`m-skeleton-${i}`} className={styles["tx-card"]}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className={`${styles.skeleton} ${styles["skeleton--md"]}`} />
+                <span className={`${styles.skeleton} ${styles["skeleton--sm"]}`} />
+              </div>
+              <span className={`${styles.skeleton} ${styles["skeleton--lg"]}`} />
+            </div>
+          ))}
+
+        {/* Error */}
+        {!loading && error && (
+          <div className={styles["tx-empty"]}>
+            <div className={styles["tx-empty__text"]}>
+              Could not load transactions
+            </div>
+            <div className={styles["tx-empty__hint"]}>{error}</div>
+            <button
+              className={styles["tx-retry"]}
+              onClick={() => fetchTransactions(filter, page)}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {/* Empty */}
+        {!loading && !error && safeTransactions.length === 0 && (
+          <div className={styles["tx-empty"]}>
+            <div className={styles["tx-empty__text"]}>
+              No {filter !== "all" ? filter : ""} transactions found
+            </div>
+            {filter !== "all" && (
+              <div className={styles["tx-empty__hint"]}>
+                Try switching the filter to "All"
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Cards */}
+        {!loading &&
+          !error &&
+          safeTransactions.map((tx) => {
+            const isCredit = tx.type === "credit";
+            const amount = Number(tx.amount);
+            return (
+              <div key={`m-tx-${tx.id}`} className={styles["tx-card"]}>
+                <div className={styles["tx-card__header"]}>
+                  <div className={styles["tx-card__title-wrap"]}>
+                    <span className={styles["tx-card__company"]}>
+                      {tx.company_name ?? "—"}
+                    </span>
+                    <span className={styles["tx-card__date"]}>
+                      {formatDate(tx.created_at)}
+                    </span>
+                  </div>
+                  <div className={styles["tx-card__badge-wrap"]}>
+                    <span
+                      className={`${styles.badge} ${
+                        isCredit ? styles["badge--credit"] : styles["badge--debit"]
+                      }`}
+                    >
+                      <span
+                        className={`${styles["tx-segment__dot"]} ${
+                          isCredit
+                            ? styles["tx-segment__dot--credit"]
+                            : styles["tx-segment__dot--debit"]
+                        }`}
+                      />
+                      {tx.type}
+                    </span>
+                    <span
+                      className={`${styles["tx-card__amount"]} ${
+                        isCredit ? styles["td-amount--credit"] : styles["td-amount--debit"]
+                      }`}
+                    >
+                      {isCredit ? "+" : "−"}₹{formatCurrency(Math.abs(amount))}
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles["tx-card__details"]}>
+                  <div className={styles["tx-card__detail-row"]}>
+                    <span className={styles["tx-card__label"]}>Reference</span>
+                    <span className={styles["tx-card__val"]}>
+                      {formatReferenceType(tx.reference_type)}
+                    </span>
+                  </div>
+                  <div className={styles["tx-card__detail-row"]}>
+                    <span className={styles["tx-card__label"]}>Balance After</span>
+                    <span className={styles["tx-card__val"]}>
+                      ₹{formatCurrency(tx.balance_after)}
+                    </span>
+                  </div>
+                  {tx.description && (
+                    <div className={styles["tx-card__detail-row"]}>
+                      <span className={styles["tx-card__label"]}>Description</span>
+                      <span className={styles["tx-card__val"]}>
+                        {tx.description}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
       </div>
 
       {/* Pagination */}

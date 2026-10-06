@@ -150,11 +150,13 @@ export default function NotificationModal({
 
       {/* Modal */}
       <div
+        className="notification-modal"
         style={{
           position: "fixed",
           top: "70px",
           right: "24px",
           width: "420px",
+          maxWidth: "calc(100vw - 32px)",
           maxHeight: "calc(100vh - 100px)",
           background: isDark ? tokens.dark.surface : tokens.light.surface,
           border: `1px solid ${isDark ? tokens.dark.border : tokens.light.border}`,
@@ -165,11 +167,7 @@ export default function NotificationModal({
           display: "flex",
           flexDirection: "column",
           animation: "slideDown 0.3s ease-out",
-          "@media (max-width: 768px)": {
-            width: "calc(100vw - 32px)",
-            right: "16px",
-          },
-        } as React.CSSProperties}
+        }}
       >
         {/* Header */}
         <div
@@ -554,9 +552,9 @@ export default function NotificationModal({
           }
         }
         @media (max-width: 768px) {
-          [style*="position: fixed"][style*="right: 24px"] {
-            width: calc(100vw - 32px);
-            right: 16px;
+          .notification-modal {
+            width: calc(100vw - 32px) !important;
+            right: 16px !important;
           }
         }
       `}</style>

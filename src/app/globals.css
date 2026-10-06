@@ -1,31 +1,266 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+
 
 :root {
-  --primary: #10b981;
+  --primary: #206bc4;
 
-  /* Light Theme */
-  --background: #ffffff;
-  --foreground: #111827;
-  --card: #f9fafb;
-  --border: #e5e7eb;
-  --muted: #6b7280;
+  /* Global Dashboard Theme — Light */
+  --crm-bg: #f4f6fa;
+  --crm-card-bg: #ffffff;
+  --crm-border: #e6e8eb;
+  --crm-border-light: rgba(4, 32, 69, 0.07);
+  --crm-text: #1e293b;
+  --crm-title: #0f172a;
+  --crm-muted: #64748b;
+  --crm-subheader: #64748b;
+  --crm-card-hover: rgba(32, 107, 196, 0.04);
+  --row-hover: rgba(32, 107, 196, 0.04);
+  --crm-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --crm-progress-bg: #eef2f6;
+
+  /* Global Color Accents */
+  --crm-primary: #206bc4;
+  --crm-primary-lt: rgba(32, 107, 196, 0.12);
+  --crm-azure: #4299e1;
+  --crm-azure-lt: rgba(66, 153, 225, 0.14);
+  --crm-green: #2fb344;
+  --crm-green-lt: rgba(47, 179, 68, 0.14);
+  --crm-purple: #ae3ec9;
+  --crm-purple-lt: rgba(174, 62, 201, 0.14);
+  --crm-yellow: #f59f00;
+  --crm-yellow-lt: rgba(245, 159, 0, 0.14);
+  --crm-red: #d63939;
+  --crm-red-lt: rgba(214, 57, 57, 0.14);
+  --crm-cyan: #17a2b8;
+  --crm-cyan-lt: rgba(23, 162, 184, 0.14);
+
+  /* Light Theme Defaults */
+  --background: #f4f6fa;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --border: #e6e8eb;
+  --muted: #64748b;
+
+  /* Universal Page Theme Tokens — Light */
+  --bg: #f4f6fa;
+  --surf: #ffffff;
+  --surf2: #f8fafc;
+  --surf3: #f1f3f8;
+  --text: #1e293b;
+  --text-sub: #495057;
+  --success: #2fb344;
+  --danger: #d63939;
+  --warn: #f59f00;
+  --info: #4299e1;
+  --title-color: #0f172a;
+  --card-bg: #ffffff;
+  --card-sel-bg: rgba(32, 107, 196, 0.06);
+  --input-bg: #ffffff;
+  --modal-bg: #ffffff;
+  --panel-header-bg: #ffffff;
+  --overlay-bg: rgba(0, 0, 0, 0.4);
+  --scrollbar: rgba(32, 107, 196, 0.2);
+  --placeholder: #94a3b8;
+  --select-opt-bg: #ffffff;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-panel: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.16);
+
+  /* Universal Module Accents (Light) */
+  --accent: #206bc4;
+  --accent2: #4299e1;
+  --st-accent: #206bc4;
+  --st-accent2: #4299e1;
+  --st-accent-dim: rgba(32, 107, 196, 0.12);
+  --mc-accent: #206bc4;
+  --mc-accent2: #4299e1;
+  --ss-accent: #206bc4;
+  --ss-accent2: #4299e1;
+  --sb-accent: #206bc4;
+  --sb-accent2: #4299e1;
+  --pf-accent: #206bc4;
+  --pf-accent2: #4299e1;
+  --tx-accent: #206bc4;
+  --pm-accent: #206bc4;
+  --pm-accent2: #4299e1;
+
+  /* Global Page Layout & Padding Tokens */
+  --page-padding: 28px 24px 50px;
+  --page-padding-top: 28px;
+  --page-padding-x: 24px;
+  --page-padding-bottom: 50px;
 }
 
-.dark {
-  /* Dark Theme */
-  --background: #050816;
-  --foreground: #f3f4f6;
-  --card: #0f172a;
-  --border: #1e293b;
-  --muted: #94a3b8;
+[data-theme="light"],
+.light {
+  --primary: #206bc4;
+
+  /* Global Dashboard Theme — Light */
+  --crm-bg: #f4f6fa;
+  --crm-card-bg: #ffffff;
+  --crm-border: #e6e8eb;
+  --crm-border-light: rgba(4, 32, 69, 0.07);
+  --crm-text: #1e293b;
+  --crm-title: #0f172a;
+  --crm-muted: #64748b;
+  --crm-subheader: #64748b;
+  --crm-card-hover: rgba(32, 107, 196, 0.04);
+  --row-hover: rgba(32, 107, 196, 0.04);
+  --crm-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --crm-progress-bg: #eef2f6;
+
+  /* Global Color Accents */
+  --crm-primary: #206bc4;
+  --crm-primary-lt: rgba(32, 107, 196, 0.12);
+  --crm-azure: #4299e1;
+  --crm-azure-lt: rgba(66, 153, 225, 0.14);
+  --crm-green: #2fb344;
+  --crm-green-lt: rgba(47, 179, 68, 0.14);
+  --crm-purple: #ae3ec9;
+  --crm-purple-lt: rgba(174, 62, 201, 0.14);
+  --crm-yellow: #f59f00;
+  --crm-yellow-lt: rgba(245, 159, 0, 0.14);
+  --crm-red: #d63939;
+  --crm-red-lt: rgba(214, 57, 57, 0.14);
+  --crm-cyan: #17a2b8;
+  --crm-cyan-lt: rgba(23, 162, 184, 0.14);
+
+  --background: #f4f6fa;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --border: #e6e8eb;
+  --muted: #64748b;
+
+  --bg: #f4f6fa;
+  --surf: #ffffff;
+  --surf2: #f8fafc;
+  --surf3: #f1f3f8;
+  --text: #1e293b;
+  --text-sub: #495057;
+  --success: #2fb344;
+  --danger: #d63939;
+  --warn: #f59f00;
+  --info: #4299e1;
+  --title-color: #0f172a;
+  --card-bg: #ffffff;
+  --card-sel-bg: rgba(32, 107, 196, 0.06);
+  --input-bg: #ffffff;
+  --modal-bg: #ffffff;
+  --panel-header-bg: #ffffff;
+  --overlay-bg: rgba(0, 0, 0, 0.4);
+  --scrollbar: rgba(32, 107, 196, 0.2);
+  --placeholder: #94a3b8;
+  --select-opt-bg: #ffffff;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-panel: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.16);
+
+  /* Universal Module Accents (Light) */
+  --accent: #206bc4;
+  --accent2: #4299e1;
+  --st-accent: #206bc4;
+  --st-accent2: #4299e1;
+  --st-accent-dim: rgba(32, 107, 196, 0.12);
+  --mc-accent: #206bc4;
+  --mc-accent2: #4299e1;
+  --ss-accent: #206bc4;
+  --ss-accent2: #4299e1;
+  --sb-accent: #206bc4;
+  --sb-accent2: #4299e1;
+  --pf-accent: #206bc4;
+  --pf-accent2: #4299e1;
+  --tx-accent: #206bc4;
+  --pm-accent: #206bc4;
+  --pm-accent2: #4299e1;
+}
+
+.dark,
+[data-theme="dark"] {
+  --primary: #206bc4;
+
+  /* Global Dashboard Theme — Dark */
+  --crm-bg: #080b0f;
+  --crm-card-bg: #0e1218;
+  --crm-border: rgba(255, 255, 255, 0.08);
+  --crm-border-light: rgba(255, 255, 255, 0.05);
+  --crm-text: #c8d3de;
+  --crm-title: #edf2f7;
+  --crm-muted: #8a97a8;
+  --crm-subheader: #64748b;
+  --crm-card-hover: rgba(32, 107, 196, 0.1);
+  --row-hover: rgba(32, 107, 196, 0.08);
+  --crm-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  --crm-progress-bg: rgba(255, 255, 255, 0.08);
+
+  --crm-primary-lt: rgba(32, 107, 196, 0.2);
+  --crm-azure-lt: rgba(66, 153, 225, 0.2);
+  --crm-green-lt: rgba(47, 179, 68, 0.2);
+  --crm-purple-lt: rgba(174, 62, 201, 0.2);
+  --crm-yellow-lt: rgba(245, 159, 0, 0.2);
+  --crm-red-lt: rgba(214, 57, 57, 0.2);
+  --crm-cyan-lt: rgba(23, 162, 184, 0.2);
+
+  /* Dark Theme Defaults */
+  --background: #080b0f;
+  --foreground: #edf2f7;
+  --card: #0e1218;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #8a97a8;
+
+  /* Universal Page Theme Tokens — Dark */
+  --bg: #080b0f;
+  --surf: #0e1218;
+  --surf2: #131920;
+  --surf3: #192028;
+  --text: #c8d3de;
+  --text-sub: #94a3b8;
+  --success: #2fb344;
+  --danger: #d63939;
+  --warn: #f59f00;
+  --info: #4299e1;
+  --title-color: #edf2f7;
+  --card-bg: #0e1218;
+  --card-sel-bg: rgba(32, 107, 196, 0.08);
+  --input-bg: #0e1218;
+  --modal-bg: #0e1218;
+  --panel-header-bg: #0e1218;
+  --overlay-bg: rgba(0, 0, 0, 0.75);
+  --scrollbar: rgba(255, 255, 255, 0.15);
+  --placeholder: #64748b;
+  --select-opt-bg: #131920;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-panel: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.5);
+
+  /* Universal Module Accents (Dark) */
+  --accent: #206bc4;
+  --accent2: #4299e1;
+  --st-accent: #206bc4;
+  --st-accent2: #4299e1;
+  --st-accent-dim: rgba(32, 107, 196, 0.2);
+  --mc-accent: #206bc4;
+  --mc-accent2: #4299e1;
+  --ss-accent: #206bc4;
+  --ss-accent2: #4299e1;
+  --sb-accent: #206bc4;
+  --sb-accent2: #4299e1;
+  --pf-accent: #206bc4;
+  --pf-accent2: #4299e1;
+  --tx-accent: #206bc4;
+  --pm-accent: #206bc4;
+  --pm-accent2: #4299e1;
 }
 
 html {
   scroll-behavior: smooth;
   font-family: 'DM Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 15px;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -34,10 +269,21 @@ body {
   cursor: default;
   font-family: 'DM Sans', 'Segoe UI', sans-serif;
   font-size: 15px;
+  overflow-x: hidden;
+  max-width: 100%;
   transition:
     background 0.3s ease,
     color 0.3s ease;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 
 * {
   box-sizing: border-box;
@@ -64,11 +310,9 @@ textarea,
   cursor: pointer;
 }
 
-/* Brand Color Usage */
-button,
-.btn,
+/* Reusable Brand Elements */
+.btn-primary,
 .primary,
-.logo,
 .active,
 .nav-active {
   background-color: var(--primary);
@@ -76,37 +320,18 @@ button,
 }
 
 /* Hover Effects */
-button:hover,
 .btn:hover,
-a:hover,
 .clickable:hover,
 .card:hover {
   transform: translateY(-2px);
   opacity: 0.95;
 }
 
-/* Borders & Focus */
-input,
-textarea,
-select {
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--foreground);
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-}
-
 /* Cards */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
 }
 
 /* Links */
@@ -120,12 +345,17 @@ a:hover {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--primary);
+  background: rgba(32, 107, 196, 0.3);
   border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(32, 107, 196, 0.5);
 }
 
 ::-webkit-scrollbar-track {
@@ -137,3 +367,788 @@ a:hover {
   background: var(--primary);
   color: white;
 }
+
+/* Sidebar Logo Initial Constraint */
+.sidebar-logo {
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ============================================================
+   ADMIN SIDEBAR (Global SSR/Hydration Persistent Styles)
+   ============================================================ */
+.admin-sidebar {
+  width: 260px;
+  height: 100vh;
+  flex: 0 0 260px;
+  color: var(--text);
+}
+
+.admin-sidebar__shell {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: var(--surf);
+}
+
+.admin-sidebar__brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surf);
+}
+
+.admin-sidebar__close-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surf2);
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 150ms ease;
+  padding: 0;
+}
+
+.admin-sidebar__close-btn:hover {
+  background: rgba(214, 57, 57, 0.1);
+  color: var(--danger);
+  border-color: rgba(214, 57, 57, 0.3);
+}
+
+.admin-sidebar__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 120px;
+  overflow: hidden;
+  margin: 0;
+  line-height: 1;
+}
+
+.admin-sidebar__nav {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  align-content: start;
+  overflow-y: auto;
+  padding: 16px 12px;
+}
+
+.admin-sidebar__nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.admin-sidebar__nav::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--scrollbar);
+}
+
+.admin-sidebar__item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 44px;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-sub);
+  padding: 0 14px;
+  font-family: inherit;
+  text-align: left;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+  cursor: pointer;
+}
+
+.admin-sidebar__item:hover {
+  background: var(--crm-primary-lt);
+  color: var(--title-color);
+  transform: translateX(2px);
+}
+
+.admin-sidebar__item[data-active="true"] {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.25);
+}
+
+.admin-sidebar__item[data-active="true"]:hover {
+  background: #1c5fac;
+  color: #ffffff;
+  transform: none;
+}
+
+.admin-sidebar__icon {
+  display: grid;
+  flex: 0 0 20px;
+  place-items: center;
+  color: currentColor;
+}
+
+.admin-sidebar__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.admin-sidebar__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: var(--surf);
+}
+
+.admin-sidebar__footer span:not(.admin-sidebar__status-dot) {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-sidebar__footer small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.admin-sidebar__status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 999px;
+  background: #2fb344;
+  box-shadow: 0 0 0 4px rgba(47, 179, 68, 0.2);
+}
+
+@media (max-width: 768px) {
+  .user-main-layout {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* ─── Global Page Padding Responsive Breakpoints ──────────── */
+@media (max-width: 1400px) {
+  :root {
+    --page-padding: 26px 20px 48px;
+    --page-padding-top: 26px;
+    --page-padding-x: 20px;
+    --page-padding-bottom: 48px;
+  }
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --page-padding: 24px 18px 40px;
+    --page-padding-top: 24px;
+    --page-padding-x: 18px;
+    --page-padding-bottom: 40px;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --page-padding: 20px 16px 40px;
+    --page-padding-top: 20px;
+    --page-padding-x: 16px;
+    --page-padding-bottom: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --page-padding: 16px 12px 32px;
+    --page-padding-top: 16px;
+    --page-padding-x: 12px;
+    --page-padding-bottom: 32px;
+  }
+}
+
+/* ─── Global Page Container Standard ──────────────────────── */
+.crm-dashboard,
+.mc-root,
+.cd-root,
+.company-details-page,
+.au-root,
+.up-container,
+.st-root,
+.ss-root,
+.al-root,
+.pf-root,
+.pm-root,
+.tx-page,
+.page-container {
+  padding: var(--page-padding) !important;
+}
+
+/* ─── Global Back Button Utility ─────────────────────────── */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surf2, #f1f5f9);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  padding: 6px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--title-color, var(--text, #1e293b));
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+
+.back-button:hover {
+  background: var(--surf, #ffffff);
+  border-color: var(--primary, #206bc4);
+  color: var(--primary, #206bc4);
+  transform: translateX(-3px);
+  box-shadow: 0 2px 8px rgba(32, 107, 196, 0.15);
+}
+
+.back-button svg {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.back-button:hover svg {
+  transform: translateX(-2px);
+}
+
+/* ============================================================
+   CRM UNIFIED MOBILE CARD & DESKTOP TABLE SYSTEM
+   Shared across all pages: All Users, Support Tickets, etc.
+   ============================================================ */
+
+/* Desktop vs Mobile Toggle */
+.app-desktop-only,
+.crm-desktop-table,
+.au-desktop-only {
+  display: block;
+  width: 100%;
+}
+
+.app-mobile-cards,
+.crm-mobile-cards,
+.au-mobile-cards {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app-desktop-only,
+  .crm-desktop-table,
+  .au-desktop-only {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app-mobile-cards,
+  .crm-mobile-cards,
+  .au-mobile-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-top: 10px;
+    box-sizing: border-box !important;
+  }
+
+  /* Unified Card Base */
+  .crm-mobile-cards .crm-card,
+  .crm-card,
+  .au-mobile-cards .au-user-card,
+  .au-user-card {
+    background: var(--surf) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    padding: 15px 16px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .crm-mobile-cards .crm-card:hover,
+  .crm-card:hover,
+  .au-mobile-cards .au-user-card:hover,
+  .au-user-card:hover {
+    border-color: rgba(32, 107, 196, 0.35) !important;
+  }
+
+  /* Card Header: Identity + Badge */
+  .crm-mobile-cards .crm-card__header,
+  .crm-card__header,
+  .au-mobile-cards .au-user-card__header,
+  .au-user-card__header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    border: none !important;
+    border-bottom: none !important;
+  }
+
+  .crm-card__identity,
+  .au-user-card__identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .crm-card__link,
+  .au-user-card__link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-decoration: none;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+  }
+
+  .crm-card__avatar,
+  .au-avatar--table {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+    background: var(--crm-primary, #206bc4);
+  }
+
+  .crm-card__text,
+  .crm-card__title-wrap,
+  .au-user-card__name-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .crm-card__title,
+  .au-user-card__name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--title-color, var(--crm-title));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .crm-card__sub,
+  .au-user-card__email {
+    font-size: 12px;
+    color: var(--muted, var(--crm-muted));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    margin-top: 1px;
+  }
+
+  .crm-card__badge,
+  .au-user-card__status {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Card Meta Box */
+  .crm-mobile-cards .crm-card__details,
+  .crm-card__details,
+  .au-mobile-cards .au-user-card__details,
+  .au-user-card__details {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px 14px !important;
+    background: var(--surf2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    padding: 12px 14px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .crm-mobile-cards .crm-card__detail-row,
+  .crm-card__detail-row,
+  .au-mobile-cards .au-user-card__detail-row,
+  .au-user-card__detail-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    font-size: 12px !important;
+    min-width: 0 !important;
+    padding: 2px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .crm-mobile-cards .crm-card__detail-label,
+  .crm-card__detail-label,
+  .au-mobile-cards .au-user-card__detail-label,
+  .au-user-card__detail-label {
+    color: var(--muted, var(--crm-muted)) !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    flex-shrink: 0 !important;
+    padding-right: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .crm-mobile-cards .crm-card__detail-val,
+  .crm-card__detail-val,
+  .au-mobile-cards .au-user-card__detail-val,
+  .au-user-card__detail-val {
+    color: var(--text, var(--crm-text)) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+    text-align: right !important;
+    padding-left: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Card Actions Toolbar */
+  .crm-mobile-cards .crm-card__actions,
+  .crm-card__actions,
+  .au-mobile-cards .au-user-card__actions,
+  .au-user-card__actions {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding-top: 2px !important;
+    border-top: none !important;
+    border-bottom: none !important;
+  }
+
+  .crm-mobile-cards .crm-card__action-btn,
+  .crm-card__action-btn,
+  .au-mobile-cards .au-user-card__action-btn,
+  .au-user-card__action-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    border-radius: 8px !important;
+    background: var(--surf2) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text, var(--crm-text)) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    padding: 0 12px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide labels only in compact multi-button toolbar (e.g. 5-button All Users card) */
+  .crm-card__actions--multi .crm-card__action-btn span,
+  .au-user-card__actions .au-user-card__action-btn span {
+    display: none !important;
+  }
+
+  .crm-card__action-btn:hover,
+  .au-user-card__action-btn:hover {
+    background: rgba(32, 107, 196, 0.08);
+    border-color: var(--accent, var(--crm-primary));
+    color: var(--accent, var(--crm-primary));
+  }
+
+  .crm-card__action-btn--delete:hover,
+  .au-user-card__action-btn--delete:hover {
+    background: rgba(214, 57, 57, 0.1);
+    color: var(--danger);
+    border-color: rgba(214, 57, 57, 0.3);
+  }
+
+  .crm-card__action-btn--suspend:hover,
+  .au-user-card__action-btn--suspend:hover {
+    background: rgba(245, 159, 0, 0.1);
+    color: var(--warn);
+    border-color: rgba(245, 159, 0, 0.3);
+  }
+
+  .crm-card__action-btn--restore:hover,
+  .au-user-card__action-btn--restore:hover {
+    background: rgba(47, 179, 68, 0.1);
+    color: var(--success);
+    border-color: rgba(47, 179, 68, 0.3);
+  }
+
+  .crm-card--empty,
+  .au-user-card--empty {
+    text-align: center;
+    padding: 32px 16px;
+    background: var(--surf);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 13.5px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .crm-mobile-cards .crm-card__details,
+  .crm-card__details,
+  .au-mobile-cards .au-user-card__details,
+  .au-user-card__details {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+}
+
+/* Phone Input (react-phone-input-2) */
+.react-tel-input .form-control {
+  width: 100% !important;
+  height: 44px !important;
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 9px !important;
+  font-size: 13.5px !important;
+  padding-left: 48px !important;
+}
+
+.react-tel-input .form-control:focus,
+.react-tel-input .country-list .search-box:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.12) !important;
+}
+
+.react-tel-input .flag-dropdown {
+  background: var(--surf2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 9px 0 0 9px !important;
+}
+
+.react-tel-input .flag-dropdown:hover,
+.react-tel-input .flag-dropdown.open,
+.react-tel-input .flag-dropdown.open .selected-flag {
+  background: var(--surf3) !important;
+  border-color: var(--accent) !important;
+}
+
+.react-tel-input .selected-flag {
+  background: transparent !important;
+}
+
+.react-tel-input .selected-flag .arrow {
+  border-top-color: var(--muted) !important;
+}
+
+.react-tel-input .selected-flag .arrow.up {
+  border-bottom-color: var(--muted) !important;
+}
+
+.react-tel-input .country-list {
+  background: var(--surf) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-modal) !important;
+}
+
+.react-tel-input .country-list .search {
+  background: var(--surf2) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 8px 10px !important;
+}
+
+.react-tel-input .country-list .search-box {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 7px !important;
+  padding: 7px 10px !important;
+  outline: none !important;
+}
+
+.react-tel-input .country-list .country {
+  padding: 8px 12px !important;
+  color: var(--text) !important;
+}
+
+.react-tel-input .country-list .country:hover,
+.react-tel-input .country-list .country.highlight {
+  background: var(--crm-primary-lt) !important;
+}
+
+.react-tel-input .country-list .country .dial-code {
+  color: var(--muted) !important;
+}
+
+/* ─── REUSABLE GENERIC MOBILE CARD (src/components/MobileCard.tsx) ── */
+@media (max-width: 768px) {
+  .app-card {
+    background: var(--surf);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .app-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .app-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .app-card__identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .app-card__status {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .app-card__details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .app-card__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12.5px;
+  }
+
+  .app-card__label {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .app-card__val {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 12.5px;
+    text-align: right;
+  }
+
+  .app-card__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* ── Unified Modern Minimalist Ring Spinner Animation ── */
+@keyframes modern-ring-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
