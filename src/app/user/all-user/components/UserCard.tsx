@@ -33,7 +33,15 @@ export function UserCard({
       <div className="au-card__top">
         <div className="au-card__identity">
           <div className="au-avatar-wrap">
-            <div className="au-avatar au-avatar--44" style={{ background: user.av }}>
+            <div
+              className="au-avatar au-avatar--44"
+              style={{
+                background:
+                  !user.av || user.av === "#10b981" || user.av === "#00a67d"
+                    ? "var(--crm-primary, #206bc4)"
+                    : user.av,
+              }}
+            >
               {user.name
                 .split(" ")
                 .map((n: string) => n[0])
