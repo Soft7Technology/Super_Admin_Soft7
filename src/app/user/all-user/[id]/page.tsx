@@ -172,6 +172,8 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"Overview" | "Activity Log" | "Campaigns" | "Plan">("Overview");
+  const [showAllActivities, setShowAllActivities] = useState(false);
+  const [showAllCampaigns, setShowAllCampaigns] = useState(false);
 
   // Specific user data states from endpoints
   const [activePlanData, setActivePlanData] = useState<any>(null);
@@ -746,9 +748,9 @@ export default function UserProfilePage() {
                   <h4 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>
                     Activity & Audit History
                   </h4>
-                  {activityData.length > 0 ? (
+                  {activityData.length > 0 ? ( <span style={{display: "contents"}}>
                     <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {activityData.map((act, idx) => (
+                      {(showAllActivities ? activityData : activityData.slice(0, 4)).map((act, idx) => (
                         <li key={idx} style={{ padding: "12px", border: "1px solid var(--up-border, #e2e8f0)", borderRadius: "8px" }}>
                           <div style={{ fontWeight: "600", fontSize: "14px" }}>{act.action || act.title || act.type || "User Activity"}</div>
                           <div style={{ color: "var(--up-muted)", fontSize: "12px", marginTop: "4px" }}>
@@ -757,8 +759,7 @@ export default function UserProfilePage() {
                           </div>
                         </li>
                       ))}
-                    </ul>
-                  ) : (
+                    </ul> {!showAllActivities && activityData.length > 4 && (<div style={{ marginTop: "16px", textAlign: "center" }}><button className="up-btn up-btn--secondary" onClick={() => setShowAllActivities(true)} style={{ padding: "6px 16px", fontSize: "13px" }}>View More</button></div>)} </span> ) : (
                     <p style={{ color: "var(--up-muted)", fontSize: "14px", lineHeight: "1.8" }}>
                       • User account created on {formatDate(user.createdAt)}
                       <br />
@@ -779,9 +780,9 @@ export default function UserProfilePage() {
                   <p style={{ color: "var(--up-muted)", fontSize: "14px", marginBottom: "16px" }}>
                     Total Campaigns launched: <strong>{stats.totalCampaigns}</strong>
                   </p>
-                  {campaignData.length > 0 ? (
+                  {campaignData.length > 0 ? ( <span style={{display: "contents"}}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {campaignData.map((camp, idx) => (
+                      {(showAllCampaigns ? campaignData : campaignData.slice(0, 4)).map((camp, idx) => (
                         <div key={idx} style={{ padding: "12px", border: "1px solid var(--up-border, #e2e8f0)", borderRadius: "8px" }}>
                           <div style={{ fontWeight: "600", fontSize: "14px" }}>{camp.name || camp.title || camp.campaign_name || "Campaign"}</div>
                           <div style={{ color: "var(--up-muted)", fontSize: "12px", marginTop: "4px" }}>
@@ -790,8 +791,7 @@ export default function UserProfilePage() {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  ) : stats.totalCampaigns === 0 ? (
+                    </div> {!showAllCampaigns && campaignData.length > 4 && (<div style={{ marginTop: "16px", textAlign: "center" }}><button className="up-btn up-btn--secondary" onClick={() => setShowAllCampaigns(true)} style={{ padding: "6px 16px", fontSize: "13px" }}>View More</button></div>)} </span> ) : stats.totalCampaigns === 0 ? (
                     <div style={{ marginTop: "14px", color: "var(--up-muted)", fontSize: "13px" }}>
                       No active or past campaigns recorded for this user yet.
                     </div>
@@ -1037,3 +1037,5 @@ export default function UserProfilePage() {
     </div>
   );
 }
+
+

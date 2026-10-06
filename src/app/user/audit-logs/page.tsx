@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { axiosInstance } from "@/lib/axiosInstance";
 import "./audit-logs.css";
 
-const U = [
-  { n: "Rupesh Giri", e: "rupesh@soft7.in", id: "ccc9d3d5-4e2a-41b0-9c1f-8a77d2c8" },
-  { n: "Priya Sharma", e: "priya@acme.co", id: "ae6ff5f9-1b3c-4d2e-8f90-6a4d" },
-  { n: "Admin", e: "admin@soft7.in", id: "e0b6333a-77c1-4a5b-b3d2-067b" },
-  { n: "Aman Verma", e: "aman@zenith.io", id: "1e8c0729-5d4f-4e6a-a1c3-fed1" },
-  { n: "Neha Singh", e: "neha@bright.in", id: "b673e9ea-2c9d-4f10-8e5a-078e" }
-];
+// Users fetched dynamically now
 
 const AC: Record<string, [string, string]> = {
   CREATE: ["+", "var(--a-create)"],
@@ -41,7 +36,7 @@ const rnd = (s => () => (s = (s * 9301 + 49297) % 233280) / 233280)(7);
 const hex = (n: number) => [...Array(n)].map(() => Math.floor(rnd() * 16).toString(16)).join("");
 
 interface LogEntry {
-  id: number;
+  id: number | string;
   act: string;
   type: string;
   sev: string;
@@ -53,28 +48,63 @@ interface LogEntry {
   st: number;
   ip: string;
   ms: number;
+  changes?: Record<string, any>;
+  rawDate?: string;
 }
 
-const generateData = () => {
-  let L: LogEntry[] = [];
-  let t = 1;
-  for (let i = 0; i < 120; i++) {
-    const burst = i >= 8 && i < 60;
-    const k = burst ? (i % 6 < 4 ? 4 : 5) : Math.floor(rnd() * 4);
-    const T = TPL[k];
-    const u = U[T[6]];
-    t += burst ? (i % 12 === 0 ? 9 : 0) : Math.floor(rnd() * 6) + 1;
-    const p = T[5].endsWith("/") ? T[5] + hex(8) + "-" + hex(4) + "-" + hex(4) + "-" + hex(12) : T[5];
+const fetchData = async (params: Record<string, any>): Promise<{ data: LogEntry[], total: number }> => {
+  try {
+    const res = await axiosInstance.get("/v1/super-admin/activities", { params });
+
+    const rawData = res.data?.data?.data
+      ? res.data.data.data
+      : res.data?.data?.items
+      ? res.data.data.items
+      : res.data?.data
+      ? res.data.data
+      : res.data;
+
+    const rawArray = Array.isArray(rawData) ? rawData : [];
+
+    const total = res.data?.data?.pagination?.total ?? res.data?.data?.total ?? res.data?.total ?? rawArray.length;
     
-    L.push({
-      id: i, act: T[0], type: T[1], sev: T[2], text: T[3], m: T[4], path: p, u, min: t,
-      st: T[2] === "warning" ? 429 : 200,
-      ip: "49.36." + Math.floor(rnd() * 255) + "." + Math.floor(rnd() * 255),
-      ms: Math.floor(rnd() * 400) + 40
+    const data = rawArray.map((raw: any, i: number) => {
+      const ts = raw.created_at || raw.timestamp || new Date().toISOString();
+      const diffMs = Date.now() - new Date(ts).getTime();
+      const minAgo = Math.max(0, Math.floor(diffMs / 60000));
+
+      const sevStr = (raw.severity || raw.level || raw.status || "info").toString().toLowerCase();
+      const mappedSev = sevStr.includes("crit") || sevStr.includes("err") ? "error" :
+                        sevStr.includes("warn") ? "warning" :
+                        sevStr.includes("succ") ? "success" : "info";
+
+      return {
+        id: raw.id || i,
+        act: (raw.action || raw.event || "UNKNOWN").toUpperCase(),
+        type: (raw.entity_type || raw.type || raw.resource || "SYSTEM").toUpperCase(),
+        sev: mappedSev,
+        text: raw.description || raw.detail || raw.message || "No description provided",
+        m: raw.method || "GET",
+        path: raw.path || raw.resource || "",
+        u: {
+          n: raw.actor_name || raw.user_name || "Unknown User",
+          e: raw.actor_email || raw.user_email || raw.actor || raw.user_id || "Unknown Email",
+          id: raw.user_id || raw.actor || raw.user || "unknown-id"
+        },
+        min: minAgo,
+        st: raw.status_code || (mappedSev === "error" ? 400 : 200),
+        ip: raw.ip || raw.ip_address || "ÔÇö",
+        ms: raw.duration_ms || raw.ms || 0,
+        changes: raw.metadata || raw.changes || raw.new_data || {},
+        rawDate: ts,
+      };
     });
+
+    return { data, total };
+  } catch (err) {
+    console.error("Failed to fetch audit logs", err);
+    return { data: [], total: 0 };
   }
-  L.push({ id: 200, act: "UPDATE", type: "CONTACT", sev: "info", text: "Updated contact", m: "PUT", path: "/v1/admin/contacts/old", u: U[3], min: 60 * 30, st: 200, ip: "49.36.1.9", ms: 90 });
-  return L;
 };
 
 const ago = (m: number) => m < 1 ? "just now" : m < 60 ? m + " mins ago" : m < 1440 ? Math.floor(m / 60) + " hrs ago" : Math.floor(m / 1440) + " days ago";
@@ -93,7 +123,8 @@ export default function AuditLogs() {
   const [sevFilter, setSevFilter] = useState("");
   
   const [pg, setPg] = useState(1);
-  const [pp, setPp] = useState(10);
+  const [pp, setPp] = useState(25); // Default to 25 as requested
+  const [totalItems, setTotalItems] = useState(0);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState(false);
   
@@ -101,14 +132,36 @@ export default function AuditLogs() {
   const [showRawDiff, setShowRawDiff] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
   const [clearInput, setClearInput] = useState("");
+  const [allUsers, setAllUsers] = useState<{id: string, n: string, e: string}[]>([]);
 
   useEffect(() => {
-    // simulate load
-    setTimeout(() => {
-      setL(generateData());
-      setLoading(false);
-    }, 500);
-    
+    const timer = setTimeout(() => {
+      setLoading(true);
+      fetchData({
+        page: pg,
+        limit: pp,
+        search: q || undefined,
+        user_id: uFilter || undefined,
+        type: tFilter || undefined,
+        action: aFilter || undefined,
+        days: dFilter !== 7 ? dFilter : undefined,
+        severity: sevFilter || undefined
+      }).then(res => {
+        setL(res.data);
+        setTotalItems(res.total);
+        setLoading(false);
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [pg, pp, q, uFilter, tFilter, aFilter, dFilter, sevFilter]);
+
+  useEffect(() => {
+    // Fetch users for dropdown
+    axiosInstance.get("/v1/super-admin/users", { params: { limit: 100 } }).then(res => {
+      const raw = Array.isArray(res.data?.data?.data) ? res.data.data.data : Array.isArray(res.data?.data?.items) ? res.data.data.items : Array.isArray(res.data?.data) ? res.data.data : [];
+      setAllUsers(raw.map((u: any) => ({ id: u.id, n: u.name || "Unknown", e: u.email || "" })));
+    }).catch(console.error);
+
     const clickHandler = (e: MouseEvent) => {
       if (!(e.target as Element).closest('.menu')) {
         setMenuOpen(false);
@@ -143,7 +196,7 @@ export default function AuditLogs() {
 
   const groups = useMemo(() => {
     const out: { k: LogEntry, items: LogEntry[] }[] = [];
-    filteredBySev.forEach(r => {
+    L.forEach(r => {
       const g = out[out.length - 1];
       if (g && g.k.u.id === r.u.id && g.k.act === r.act && g.k.type === r.type && r.act === "UPDATE" && Math.abs(g.k.min - r.min) <= 2) {
         g.items.push(r);
@@ -152,12 +205,13 @@ export default function AuditLogs() {
       }
     });
     return out;
-  }, [filteredBySev]);
+  }, [L]);
 
-  const pages = Math.max(1, Math.ceil(groups.length / pp));
+  const pages = Math.max(1, Math.ceil(totalItems / pp));
   useEffect(() => { if (pg > pages) setPg(pages); }, [pages, pg]);
   
-  const pagedGroups = groups.slice((pg - 1) * pp, pg * pp);
+  // Since we use server-side pagination now, pagedGroups is just groups
+  const pagedGroups = groups;
 
   const pgBtns = [];
   for (let i = 1; i <= pages; i++) {
@@ -179,8 +233,12 @@ export default function AuditLogs() {
   };
 
   const uniqueUsers = Array.from(new Set(L.map(l => l.u.id))).map(id => L.find(l => l.u.id === id)!.u);
-  const uniqueTypes = Array.from(new Set(L.map(l => l.type))).map(x => [x, x[0] + x.slice(1).toLowerCase()]);
-  const uniqueActions = Object.keys(AC).map(x => [x, x[0] + x.slice(1).toLowerCase()]);
+  const uniqueTypes = [
+    "USER", "AUTH", "MESSAGE", "SUBSCRIBE", "CAMPAIGN", "WALLET", "CONTACT", "CHATBOT", "WABA"
+  ].map(x => [x, x[0] + x.slice(1).toLowerCase()]);
+  const uniqueActions = [
+    "LOGIN", "SEND", "UPDATE", "ACTIVATE", "CREATE", "SUSPEND", "SUBSCRIBE", "DELETE"
+  ].map(x => [x, x[0] + x.slice(1).toLowerCase()]);
 
   const renderRow = (l: LogEntry, isChild = false, extra?: React.ReactNode) => {
     const [ic, co] = AC[l.act] || ["?", "#000"];
@@ -204,16 +262,23 @@ export default function AuditLogs() {
           </div>
         </div>
         <div className="usr">
-          <div className="av">{l.u.n[0]}</div>
-          <div style={{ minWidth: 0 }}>
-            <div className="un">{l.u.n}</div>
-            <div className="ue" title={l.u.id}>{l.u.e}</div>
-          </div>
+          {(() => {
+            const resolvedUser = allUsers.find(u => String(u.id) === String(l.u.id)) || { n: l.u.n, e: l.u.e };
+            return (
+              <>
+                <div className="av">{resolvedUser.n[0]?.toUpperCase() || '?'}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div className="un">{resolvedUser.n}</div>
+                  <div className="ue" title={l.u.id}>{resolvedUser.e}</div>
+                </div>
+              </>
+            );
+          })()}
         </div>
         <div>
           <span className="badge" style={{ background: co }}>{l.act[0] + l.act.slice(1).toLowerCase()}</span>
         </div>
-        <div className="time" title={new Date(Date.now() - l.min * 60000).toLocaleString()}>
+        <div className="time" title={l.rawDate ? new Date(l.rawDate).toLocaleString() : new Date(Date.now() - l.min * 60000).toLocaleString()}>
           {ago(l.min)}
         </div>
       </div>
@@ -270,7 +335,7 @@ export default function AuditLogs() {
           />
           <select value={uFilter} onChange={e => { setUFilter(e.target.value); setPg(1); }}>
             <option value="">All users</option>
-            {uniqueUsers.map(u => <option key={u.id} value={u.id}>{u.n}</option>)}
+            {allUsers.map(u => <option key={u.id} value={u.id}>{u.n} ({u.e})</option>)}
           </select>
           <select value={tFilter} onChange={e => { setTFilter(e.target.value); setPg(1); }}>
             <option value="">All types</option>
@@ -361,7 +426,7 @@ export default function AuditLogs() {
               </select>
             </div>
             <div>
-              Showing <b>{Math.min((pg - 1) * pp + 1, filteredBySev.length)}-{Math.min(pg * pp, filteredBySev.length)}</b> of <b>{filteredBySev.length}</b> activities
+              Showing <b>{Math.min((pg - 1) * pp + 1, totalItems)}-{Math.min(pg * pp, totalItems)}</b> of <b>{totalItems}</b> activities
             </div>
           </div>
           <div className="pg">
@@ -396,10 +461,16 @@ export default function AuditLogs() {
                 <button className="btn" onClick={() => setSelectedLog(null)}>Close</button>
               </div>
               <h3 style={{ margin: "16px 0 4px" }}>{l.text}</h3>
-              <div className="sub">{new Date(Date.now() - l.min * 60000).toLocaleString()}</div>
+              <div className="sub">{l.rawDate ? new Date(l.rawDate).toLocaleString() : new Date(Date.now() - l.min * 60000).toLocaleString()}</div>
               
               <div className="kv">
-                <span>User</span><div>{l.u.n} · {l.u.e}</div>
+                <span>User</span>
+                <div>
+                  {(() => {
+                    const resolvedUser = allUsers.find(u => String(u.id) === String(l.u.id)) || { n: l.u.n, e: l.u.e };
+                    return `${resolvedUser.n} · ${resolvedUser.e}`;
+                  })()}
+                </div>
                 <span>User ID</span>
                 <div>
                   <code>{l.u.id}</code> 
