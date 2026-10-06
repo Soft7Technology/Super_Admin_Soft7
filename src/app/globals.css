@@ -3,14 +3,20 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --primary: #10b981;
+  --primary: #238357;
 
-  /* Light Theme */
-  --background: #ffffff;
-  --foreground: #111827;
-  --card: #f9fafb;
-  --border: #e5e7eb;
-  --muted: #6b7280;
+  --brand-bg: #e8f1ee;
+  --brand-light: #f4f8f6;
+  --brand-hover: #d9ebe3;
+  --brand-border: #b9d8ca;
+  --brand-dark: #15583b;
+  --brand-muted: #60736a;
+
+  --background: #f7faf8;
+  --foreground: #1b2b24;
+  --card: #ffffff;
+  --border: #dce8e2;
+  --muted: #60736a;
 }
 
 .dark {
@@ -64,26 +70,7 @@ textarea,
   cursor: pointer;
 }
 
-/* Brand Color Usage */
-button,
-.btn,
-.primary,
-.logo,
-.active,
-.nav-active {
-  background-color: var(--primary);
-  color: white;
-}
 
-/* Hover Effects */
-button:hover,
-.btn:hover,
-a:hover,
-.clickable:hover,
-.card:hover {
-  transform: translateY(-2px);
-  opacity: 0.95;
-}
 
 /* Borders & Focus */
 input,
