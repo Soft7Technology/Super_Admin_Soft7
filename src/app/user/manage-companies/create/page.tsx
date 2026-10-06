@@ -33,6 +33,7 @@ type FieldKey =
   | "adminName"
   | "adminEmail"
   | "adminPhone"
+  | "businessId"
   | "password";
 
 type FormState = {
@@ -46,6 +47,7 @@ type FormState = {
   adminPhone: string;
   adminPhoneDial: string;
   password: string;
+  businessId: string;
 };
 
 type Errors = Partial<Record<FieldKey, string>>;
@@ -61,6 +63,7 @@ const INITIAL_FORM: FormState = {
   adminPhone: "",
   adminPhoneDial: "91",
   password: "",
+  businessId: "",
 };
 
 const FIELD_ORDER: FieldKey[] = [
@@ -72,6 +75,7 @@ const FIELD_ORDER: FieldKey[] = [
   "adminEmail",
   "adminPhone",
   "password",
+  "businessId",
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -121,7 +125,8 @@ function validateField(key: FieldKey, f: FormState): string {
 
     case "phone":
       return validatePhone(f.phone, f.phoneDial, "Company");
-
+    case "businessId":
+      return f.businessId.trim() ? "" : "Business ID is required.";
 
     case "reason":
       return f.reason.trim() ? "" : "Reason is required.";
