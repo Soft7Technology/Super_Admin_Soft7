@@ -693,6 +693,15 @@ export default function SupportTickets() {
 
   useEffect(() => {
     void loadTickets();
+
+    const interval = setInterval(() => {
+      // Do not refresh the list while the conversation modal is open.
+      if (!selectedId) {
+        void loadTickets();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [selectedId]);
 
   // Deselect if ticket disappears from the server response.

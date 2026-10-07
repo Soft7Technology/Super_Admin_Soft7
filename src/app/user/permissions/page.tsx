@@ -210,6 +210,8 @@ export default function PermissionsPage() {
 
   useEffect(() => {
     void loadRequests();
+    const interval = window.setInterval(() => void loadRequests(true), REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(interval);
   }, [loadRequests]);
 
   // Derived stats

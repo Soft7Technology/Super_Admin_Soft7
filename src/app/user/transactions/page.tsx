@@ -263,6 +263,10 @@ useEffect(() => {
   };
 
   fetchBalance();
+
+  const interval = setInterval(fetchBalance, 30000);
+
+  return () => clearInterval(interval);
 }, []);
   /* ── Filter change resets to page 1 ───────────────────────── */
   const handleFilterChange = (newFilter: FilterType) => {

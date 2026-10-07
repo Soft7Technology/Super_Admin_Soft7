@@ -84,8 +84,11 @@ useEffect(() => {
 
   window.addEventListener("resize", handleResize);
 
+  const pollInterval = setInterval(fetchBalance, 30000);
+
   return () => {
     window.removeEventListener("resize", handleResize);
+    clearInterval(pollInterval);
   };
 }, []);
 
