@@ -32,21 +32,31 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function AllUsers() {
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [role, setRole] = useState("ALL");
+  const [search, setSearch] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("sa_allusers_search") || "" : "");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [status, setStatus] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("sa_allusers_status") || "ALL" : "ALL");
+  const [role, setRole] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("sa_allusers_role") || "ALL" : "ALL");
   const [sort, setSort] = useState("name");
   const [detail, setDetail] = useState<User | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [currentPage, setCurrentPage] = useState(() => typeof window !== "undefined" ? parseInt(sessionStorage.getItem("sa_allusers_page") || "1") : 1);
+  const [rowsPerPage, setRowsPerPage] = useState(() => typeof window !== "undefined" ? parseInt(sessionStorage.getItem("sa_allusers_rows") || "25") : 25);
   const [selectedCompanyId, setSelectedCompanyId] = useState(() => {
     if (typeof window !== "undefined") {
       return sessionStorage.getItem("sa_selected_company_id") || "";
     }
     return "";
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("sa_allusers_search", search);
+      sessionStorage.setItem("sa_allusers_status", status);
+      sessionStorage.setItem("sa_allusers_role", role);
+      sessionStorage.setItem("sa_allusers_page", currentPage.toString());
+      sessionStorage.setItem("sa_allusers_rows", rowsPerPage.toString());
+    }
+  }, [search, status, role, currentPage, rowsPerPage]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
