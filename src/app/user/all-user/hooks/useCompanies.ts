@@ -62,30 +62,16 @@ export function useCompanies(): CompaniesResponse {
       setError(null);
 
       try {
-        const limit = 100;
-        let page = 1;
-        let all: Company[] = [];
-        let total = 0;
+        const limit = 1000;
+        const page = 1;
 
-        // Fetch all company pages so the dropdown is not limited to the first API page.
-        do {
-          const { data: response } = await axiosInstance.get(
-            "/v1/super-admin/companies",
-            { params: { page, limit } },
-          );
+        // Fetch a large page of companies so the dropdown is populated
+        const { data: response } = await axiosInstance.get(
+          "/v1/super-admin/companies",
+          { params: { page, limit } },
+        );
 
-          const records = recordsFromResponse(response).map(mapCompany);
-          const pagination = paginationFromResponse(response);
-
-          all = [...all, ...records];
-          total = pagination.total;
-
-          const hasMoreByTotal =
-            total > 0 && all.length < total && records.length > 0;
-
-          if (!hasMoreByTotal) break;
-          page += 1;
-        } while (page <= 100);
+        const all = recordsFromResponse(response).map(mapCompany);
 
         const activeCompanies = all
           .filter((company) => company.status === "active")
