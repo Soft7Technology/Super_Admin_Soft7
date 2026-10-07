@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 // Palette used for avatar background colours (deterministic per user id)
 const AVATAR_PALETTE = [
-  "#6C5CE7", "#00CBA4", "#FF6B6B", "#FDCB6E", "#74B9FF",
-  "#A29BFE", "#FD79A8", "#00B894", "#E17055", "#0984E3",
+  "#6C5CE7", "#00CBA4", "#FF6B6B", "#FDCB6E", "#52a77d",
+  "#A29BFE", "#FD79A8", "#00B894", "#E17055", "#087f5b",
 ];
 
 function avatarColor(id: number) {

@@ -6,6 +6,7 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
 import "./company-details.css";
 import { useToast } from "@/components/ui/ToastProvider";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import {
   ArrowLeft,
   Pencil,
@@ -22,8 +23,8 @@ import {
 } from "lucide-react";
 
 const AVATAR_COLORS = [
-  "#206bc4",
-  "#4299e1",
+  "#087f5b",
+  "#52a77d",
   "#2fb344",
   "#ae3ec9",
   "#f59f00",
@@ -573,12 +574,7 @@ useEffect(() => {
       <section className="company-profile-card">
         {/* LEFT — Company information */}
         <div className="company-profile-left">
-          <div
-            className="company-logo"
-            style={{ background: getAvatarBg(company.name) }}
-          >
-            {company.name.charAt(0).toUpperCase()}
-          </div>
+          <ProfileAvatar name={company.name} size={52} />
 
           <div className="company-profile-info">
             <div className="company-name-row">

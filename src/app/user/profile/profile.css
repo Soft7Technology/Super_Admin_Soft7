@@ -47,14 +47,14 @@
   --pf-danger-btn-br:   rgba(214, 57, 57, 0.30);
   --pf-danger-btn-hbg:  rgba(214, 57, 57, 0.20);
   --pf-info-note-bg:    var(--crm-primary-lt);
-  --pf-info-note-br:    rgba(32, 107, 196, 0.22);
+  --pf-info-note-br:    rgba(8, 127, 91, 0.22);
 }
 
 /* Dark-specific banner background */
 :root,
 [data-theme="dark"],
 .dark {
-  --pf-banner-bg: linear-gradient(135deg, rgba(32, 107, 196, 0.30) 0%, rgba(14, 18, 24, 0.95) 55%, rgba(66, 153, 225, 0.18) 100%);
+  --pf-banner-bg: linear-gradient(135deg, rgba(8, 127, 91, 0.30) 0%, rgba(14, 18, 24, 0.95) 55%, rgba(82, 167, 125, 0.18) 100%);
 }
 
 /* Light-specific banner background */
@@ -169,7 +169,7 @@
   font-weight: 800;
   color: #fff;
   letter-spacing: -0.5px;
-  box-shadow: 0 4px 14px rgba(32, 107, 196, 0.28);
+  box-shadow: 0 4px 14px rgba(8, 127, 91, 0.28);
   transition: border-color 0.3s;
 }
 .pf-avatar--uploading {
@@ -221,14 +221,14 @@
   font-size: 11.5px;
   font-weight: 700;
   transition: opacity 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
+  box-shadow: 0 2px 6px rgba(8, 127, 91, 0.28);
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 .pf-btn-edit:hover {
   opacity: 0.92;
-  box-shadow: 0 4px 12px rgba(32, 107, 196, 0.38);
+  box-shadow: 0 4px 12px rgba(8, 127, 91, 0.38);
 }
 
 /* Hero name + meta */
@@ -256,7 +256,7 @@
   padding: 3px 10px;
   border-radius: 20px;
   letter-spacing: 0.05em;
-  box-shadow: 0 1px 4px rgba(32, 107, 196, 0.25);
+  box-shadow: 0 1px 4px rgba(8, 127, 91, 0.25);
 }
 .pf-hero__meta {
   display: flex;
@@ -321,7 +321,7 @@
   background: var(--pf-accent);
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
+  box-shadow: 0 2px 6px rgba(8, 127, 91, 0.28);
 }
 .pf-tab__icon {
   display: inline-flex;
@@ -412,7 +412,7 @@
 }
 .pf-input-wrap:focus-within {
   border-color: var(--pf-accent);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.18);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.18);
 }
 .pf-input-wrap--disabled {
   background: var(--pf-input-dis-bg);
@@ -455,7 +455,7 @@
 }
 .pf-select:focus {
   border-color: var(--pf-accent);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.18);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.18);
 }
 
 /* ─── TEXTAREA ───────────────────────────────────────────── */
@@ -474,7 +474,7 @@
 }
 .pf-textarea:focus {
   border-color: var(--pf-accent);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.18);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.18);
 }
 
 /* ─── TOGGLE ─────────────────────────────────────────────── */
@@ -551,11 +551,11 @@
   align-items: center;
   gap: 7px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
+  box-shadow: 0 2px 6px rgba(8, 127, 91, 0.28);
 }
 .pf-btn-save:hover {
   opacity: 0.92;
-  box-shadow: 0 4px 12px rgba(32, 107, 196, 0.38);
+  box-shadow: 0 4px 12px rgba(8, 127, 91, 0.38);
 }
 .pf-btn-save--saved {
   background: var(--crm-green-lt) !important;
@@ -620,11 +620,11 @@
   align-items: center;
   gap: 7px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
+  box-shadow: 0 2px 6px rgba(8, 127, 91, 0.28);
 }
 .pf-btn-pwd:hover {
   opacity: 0.92;
-  box-shadow: 0 4px 12px rgba(32, 107, 196, 0.38);
+  box-shadow: 0 4px 12px rgba(8, 127, 91, 0.38);
 }
 .pf-btn-pwd--saved {
   background: var(--crm-green-lt) !important;
@@ -790,7 +790,7 @@
   transition: background 0.15s ease, border-color 0.3s;
 }
 .pf-activity-item:hover {
-  background: var(--row-hover, var(--crm-card-hover, rgba(32, 107, 196, 0.04)));
+  background: var(--row-hover, var(--crm-card-hover, rgba(8, 127, 91, 0.04)));
 }
 .pf-activity-item:last-child {
   border-bottom: none;

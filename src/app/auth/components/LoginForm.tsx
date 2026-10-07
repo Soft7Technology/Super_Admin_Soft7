@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  AlertCircle,
+  ShieldCheck,
+  KeyRound,
+  ScrollText,
+} from "lucide-react";
 import type { Theme } from "../types/auth.types";
 import "./LoginForm.css";
 
@@ -22,11 +32,11 @@ type Node = {
   y: number;
   vx: number;
   vy: number;
-  z: number; // depth 0.35 (far) → 1 (near)
+  z: number; 
   r: number;
   hub: boolean;
-  ph: number; // phase for ring pulse
-  sx: number; // screen position (after parallax)
+  ph: number; 
+  sx: number; 
   sy: number;
 };
 type Packet = { a: number; b: number; t: number; hops: number; speed: number };
@@ -68,7 +78,7 @@ function NetworkCanvas() {
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       link = w < 640 ? 120 : 170;
-      const count = Math.round(Math.min(110, Math.max(30, (w * h) / 15000)));
+      const count = Math.round(Math.min(130, Math.max(30, (w * h) / 12000)));
       nodes = Array.from({ length: count }, (_, i) => {
         const z = 0.35 + Math.random() * 0.65;
         return {
@@ -77,7 +87,7 @@ function NetworkCanvas() {
           vx: (Math.random() - 0.5) * 0.28 * z,
           vy: (Math.random() - 0.5) * 0.28 * z,
           z,
-          r: 0.9 + z * 1.4,
+          r: 1.2 + z * 1.8,
           hub: i % 9 === 0,
           ph: Math.random() * Math.PI * 2,
           sx: 0,
@@ -101,7 +111,7 @@ function NetworkCanvas() {
 
     const spawn = (from: number, hops = 3 + Math.floor(Math.random() * 3)) => {
       const to = neighbour(from, -1);
-      if (to < 0 || packets.length > 26) return;
+      if (to < 0 || packets.length > 44) return;
       packets.push({
         a: from,
         b: to,
@@ -154,7 +164,7 @@ function NetworkCanvas() {
         n.sx = n.x - cam.x * 26 * n.z;
         n.sy = n.y - cam.y * 18 * n.z;
 
-        // gentle repel from the cursor
+        
         const dx = n.sx - mouse.x;
         const dy = n.sy - mouse.y;
         const d = Math.hypot(dx, dy);
@@ -165,7 +175,7 @@ function NetworkCanvas() {
         }
       }
 
-
+      // links
       ctx.lineWidth = 0.8;
       for (let i = 0; i < nodes.length; i++) {
         const a = nodes[i];
@@ -174,7 +184,7 @@ function NetworkCanvas() {
           const d = Math.hypot(a.sx - b.sx, a.sy - b.sy);
           if (d < link) {
             const z = (a.z + b.z) / 2;
-            ctx.strokeStyle = `rgba(${GREEN}, ${(1 - d / link) * 0.26 * z})`;
+            ctx.strokeStyle = `rgba(${GREEN}, ${(1 - d / link) * 0.42 * z})`;
             ctx.beginPath();
             ctx.moveTo(a.sx, a.sy);
             ctx.lineTo(b.sx, b.sy);
@@ -183,7 +193,7 @@ function NetworkCanvas() {
         }
         const md = Math.hypot(a.sx - mouse.x, a.sy - mouse.y);
         if (md < 160) {
-          ctx.strokeStyle = `rgba(${GLOW}, ${(1 - md / 160) * 0.5})`;
+          ctx.strokeStyle = `rgba(${GLOW}, ${(1 - md / 160) * 0.75})`;
           ctx.beginPath();
           ctx.moveTo(a.sx, a.sy);
           ctx.lineTo(mouse.x, mouse.y);
@@ -195,14 +205,14 @@ function NetworkCanvas() {
       for (const n of nodes) {
         const md = Math.hypot(n.sx - mouse.x, n.sy - mouse.y);
         const boost = md < 160 ? 1 - md / 160 : 0;
-        ctx.fillStyle = `rgba(${GREEN}, ${0.22 + 0.4 * n.z + boost * 0.35})`;
+        ctx.fillStyle = `rgba(${GREEN}, ${0.32 + 0.5 * n.z + boost * 0.3})`;
         ctx.beginPath();
         ctx.arc(n.sx, n.sy, n.r + boost * 1.2, 0, Math.PI * 2);
         ctx.fill();
 
         if (n.hub) {
           const pulse = reduce ? 0.5 : (Math.sin(now / 1100 + n.ph) + 1) / 2;
-          ctx.strokeStyle = `rgba(${GLOW}, ${0.18 + pulse * 0.22})`;
+          ctx.strokeStyle = `rgba(${GLOW}, ${0.25 + pulse * 0.3})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.arc(n.sx, n.sy, n.r + 4 + pulse * 4, 0, Math.PI * 2);
@@ -213,7 +223,7 @@ function NetworkCanvas() {
 
       if (!reduce) {
         // ambient data packets
-        if (now - lastSpawn > 420) {
+        if (now - lastSpawn > 240) {
           lastSpawn = now;
           if (nodes.length) spawn(Math.floor(Math.random() * nodes.length));
         }
@@ -314,9 +324,6 @@ function NetworkCanvas() {
 const vars = (o: Record<string, string | number>) => o as React.CSSProperties;
 const delay = (s: number) => vars({ "--d": `${s}s` });
 
-/* ─────────────────────────────────────────────────────────────
-   Login form
-   ───────────────────────────────────────────────────────────── */
 export function LoginForm({
   onSubmit,
   errors,
@@ -367,129 +374,194 @@ export function LoginForm({
 
       <main className="sa-stage" ref={stageRef}>
         <div className="sa-card">
-          <div className="sa-stagger" style={delay(0.2)}>
-            <h1 className="sa-title">Sign in</h1>
-            <p className="sa-subtitle">Soft7 Technologies</p>
-          </div>
-
-          <form onSubmit={onSubmit} noValidate>
-            {errors.general && (
-              <div className="sa-alert" role="alert" key={errors.general}>
-                <AlertCircle size={16} style={{ flex: "none", marginTop: 1 }} />
-                <span>{errors.general}</span>
-              </div>
-            )}
-
-            {/* Email / Phone */}
-            <div className="sa-field sa-stagger" style={delay(0.3)}>
-              <label className="sa-label" htmlFor="sa-identifier">
-                Email or phone
-              </label>
-              <div className="sa-control">
-                <Mail className="sa-icon" size={16} />
-                <input
-                  id="sa-identifier"
-                  className="sa-input"
-                  type="text"
-                  name="identifier"
-                  placeholder="name@company.com"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  value={identifier}
-                  aria-invalid={!!identifierError}
-                  aria-describedby={
-                    identifierError ? "sa-identifier-err" : undefined
-                  }
-                  onChange={(e) => {
-                    setIdentifier(e.target.value);
-                    clearError("identifier");
-                    clearError("email");
-                  }}
-                />
-              </div>
-              {identifierError && (
-                <p className="sa-error" id="sa-identifier-err" role="alert">
-                  {identifierError}
-                </p>
-              )}
+          {/* ── Left: welcome + live platform visual ── */}
+          <section className="sa-hero">
+            <div className="sa-stagger" style={delay(0.25)}>
+              <h2 className="sa-headline">
+                Welcome back.
+                <br />
+                Your platform is ready when you are.
+              </h2>
+              <p className="sa-lede">
+                Manage companies, users, and platform operations from one secure
+                console.
+              </p>
             </div>
 
-            {/* Password */}
-            <div className="sa-field sa-stagger" style={delay(0.38)}>
-              <label className="sa-label" htmlFor="sa-password">
-                Password
-              </label>
-              <div className="sa-control">
-                <Lock className="sa-icon" size={16} />
-                <input
-                  id="sa-password"
-                  className="sa-input sa-input--pw"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  value={password}
-                  aria-invalid={!!errors.password}
-                  aria-describedby={
-                    errors.password ? "sa-password-err" : undefined
-                  }
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    clearError("password");
-                  }}
-                />
-                <button
-                  type="button"
-                  className="sa-eye"
-                  onClick={() => setShowPassword((p) => !p)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  aria-pressed={showPassword}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            <div
+              className="sa-orbit sa-stagger"
+              style={delay(0.45)}
+              aria-hidden="true"
+            >
+              <span className="sa-ring sa-ring--1" />
+              <span className="sa-ring sa-ring--2" />
+              <span className="sa-ring sa-ring--3" />
+              <span className="sa-spin sa-spin--1">
+                <i />
+              </span>
+              <span className="sa-spin sa-spin--2">
+                <i />
+              </span>
+              <span className="sa-spin sa-spin--3">
+                <i />
+              </span>
+
+              <div className="sa-core">
+                <ShieldCheck size={34} strokeWidth={1.8} />
+              </div>
+
+              <div className="sa-chip sa-chip--a">
+                <span className="sa-chip__live" />
+                Tenants
+              </div>
+              <div className="sa-chip sa-chip--b">
+                <KeyRound size={14} strokeWidth={2} />
+                Access control
+              </div>
+              <div className="sa-chip sa-chip--c">
+                <ScrollText size={14} strokeWidth={2} />
+                Audit logs
+              </div>
+            </div>
+          </section>
+
+          {/* ── Right: sign-in form ── */}
+          <section className="sa-pane">
+            <div className="sa-stagger" style={delay(0.2)}>
+              <h1 className="sa-title">Sign in</h1>
+              <p className="sa-subtitle">
+                Enter your credentials to access your Super Admin workspace.
+              </p>
+            </div>
+
+            <form onSubmit={onSubmit} noValidate>
+              {errors.general && (
+                <div className="sa-alert" role="alert" key={errors.general}>
+                  <AlertCircle
+                    size={16}
+                    style={{ flex: "none", marginTop: 1 }}
+                  />
+                  <span>{errors.general}</span>
+                </div>
+              )}
+
+              {/* Email / Phone */}
+              <div className="sa-field sa-stagger" style={delay(0.3)}>
+                <label className="sa-label" htmlFor="sa-identifier">
+                  Email or phone
+                </label>
+                <div className="sa-control">
+                  <Mail className="sa-icon" size={16} />
+                  <input
+                    id="sa-identifier"
+                    className="sa-input"
+                    type="text"
+                    name="identifier"
+                    placeholder="name@company.com"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    value={identifier}
+                    aria-invalid={!!identifierError}
+                    aria-describedby={
+                      identifierError ? "sa-identifier-err" : undefined
+                    }
+                    onChange={(e) => {
+                      setIdentifier(e.target.value);
+                      clearError("identifier");
+                      clearError("email");
+                    }}
+                  />
+                </div>
+                {identifierError && (
+                  <p className="sa-error" id="sa-identifier-err" role="alert">
+                    {identifierError}
+                  </p>
+                )}
+              </div>
+
+              {/* Password */}
+              <div className="sa-field sa-stagger" style={delay(0.38)}>
+                <label className="sa-label" htmlFor="sa-password">
+                  Password
+                </label>
+                <div className="sa-control">
+                  <Lock className="sa-icon" size={16} />
+                  <input
+                    id="sa-password"
+                    className="sa-input sa-input--pw"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    value={password}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={
+                      errors.password ? "sa-password-err" : undefined
+                    }
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      clearError("password");
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="sa-eye"
+                    onClick={() => setShowPassword((p) => !p)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="sa-error" id="sa-password-err" role="alert">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+
+              {/* Forgot */}
+              <div className="sa-row sa-stagger" style={delay(0.44)}>
+                <button type="button" className="sa-link" onClick={onForgot}>
+                  Forgot password?
                 </button>
               </div>
-              {errors.password && (
-                <p className="sa-error" id="sa-password-err" role="alert">
-                  {errors.password}
-                </p>
-              )}
-            </div>
 
-            {/* Forgot */}
-            <div className="sa-row sa-stagger" style={delay(0.44)}>
-              <button type="button" className="sa-link" onClick={onForgot}>
-                Forgot password?
-              </button>
-            </div>
+              {/* Submit */}
+              <div className="sa-stagger" style={delay(0.5)}>
+                <button
+                  type="submit"
+                  className="sa-submit"
+                  disabled={isPending}
+                  aria-busy={isPending}
+                >
+                  {isPending ? (
+                    <>
+                      <span className="sa-spinner" aria-hidden="true" />
+                      <span className="sr-only">Signing in</span>
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight
+                        className="sa-arrow"
+                        size={16}
+                        strokeWidth={2.25}
+                      />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
 
-            {/* Submit */}
-            <div className="sa-stagger" style={delay(0.5)}>
-              <button
-                type="submit"
-                className="sa-submit"
-                disabled={isPending}
-                aria-busy={isPending}
-              >
-                {isPending ? (
-                  <>
-                    <span className="sa-spinner" aria-hidden="true" />
-                    <span className="sr-only">Signing in</span>
-                  </>
-                ) : (
-                  <>
-                    Sign in
-                    <ArrowRight
-                      className="sa-arrow"
-                      size={16}
-                      strokeWidth={2.25}
-                    />
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+            <p className="sa-foot sa-stagger" style={delay(0.58)}>
+              Restricted to authorised administrators.
+            </p>
+          </section>
         </div>
       </main>
     </div>

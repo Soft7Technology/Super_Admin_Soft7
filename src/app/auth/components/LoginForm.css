@@ -1,50 +1,27 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 
 /* ─────────────────────────────────────────────────────────────
-   Soft7 Technologies · Super Admin Login
-
-   Premium enterprise login:
-   - Soft ivory background
-   - White elevated login card
-   - Pale green inputs
-   - Refined green accents
-   - Interactive network atmosphere
-   - Restrained, sophisticated motion
-
+   Soft7 Technologies · Super Admin login
+   Flat off-white canvas, light green accents, restrained motion.
    Everything is scoped under .sa-login.
    ───────────────────────────────────────────────────────────── */
 
 .sa-login {
   --sa-bg: #f7f8f6;
-
-  /* Card */
   --sa-surface: #ffffff;
-
-  /* Input */
-  --sa-field: #f0f5f2;
-
-  /* Borders */
-  --sa-border: #dfe7e3;
-  --sa-border-strong: #c8d7d0;
-
-  /* Typography */
+  --sa-field: #fbfcfb;
+  --sa-border: #e0e7e3;
+  --sa-border-strong: #c9d6cf;
   --sa-text: #14231e;
   --sa-muted: #6b7d74;
-  --sa-placeholder: #92a29b;
+  --sa-placeholder: #97a79f;
 
-  /* Brand */
-  --sa-brand: #3f9879;
-  --sa-brand-hover: #35886c;
-  --sa-brand-disabled: #9bc5b6;
-  --sa-brand-ink: #24715a;
-  --sa-brand-light: #e8f2ee;
+  --sa-brand: #2f8a6e;
+  --sa-brand-hover: #277a61;
+  --sa-brand-disabled: #8dbbad;
+  --sa-brand-ink: #1f6e56;
+  --sa-brand-light: #e8f1ee;
 
-  /* Network */
-  --sa-network: rgba(47, 138, 110, 0.42);
-  --sa-network-soft: rgba(47, 138, 110, 0.13);
-  --sa-network-glow: rgba(63, 152, 121, 0.18);
-
-  /* Errors */
   --sa-danger: #b42318;
   --sa-danger-bg: #fef3f2;
   --sa-danger-border: #fecdca;
@@ -53,31 +30,15 @@
 
   position: fixed;
   inset: 0;
-
   display: grid;
   place-items: center;
-
   padding: 16px;
-
   overflow: hidden;
-
   background: var(--sa-bg);
-
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
-
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--sa-text);
-
   -webkit-font-smoothing: antialiased;
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   Base
-   ═══════════════════════════════════════════════════════════════ */
 
 .sa-login *,
 .sa-login *::before,
@@ -85,906 +46,465 @@
   box-sizing: border-box;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Background Scene
-   ═══════════════════════════════════════════════════════════════ */
+/* ═════════════ Background scene ═════════════ */
 
 .sa-scene {
   position: absolute;
   inset: 0;
-
   overflow: hidden;
-
   pointer-events: none;
-
-  isolation: isolate;
 }
 
-/* Very subtle technical grid */
+/* hairline grid that fades toward the edges */
 .sa-grid {
   position: absolute;
   inset: 0;
-
   background-image:
-    linear-gradient(
-      to right,
-      rgba(28, 99, 75, 0.032) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      rgba(28, 99, 75, 0.032) 1px,
-      transparent 1px
-    );
-
-  background-size: 56px 56px;
+    linear-gradient(to right, rgba(6, 95, 70, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(6, 95, 70, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
   background-position: center;
-
-  -webkit-mask-image:
-    radial-gradient(
-      ellipse 78% 72% at 50% 50%,
-      #000 0%,
-      rgba(0, 0, 0, 0.55) 52%,
-      transparent 100%
-    );
-
-  mask-image:
-    radial-gradient(
-      ellipse 78% 72% at 50% 50%,
-      #000 0%,
-      rgba(0, 0, 0, 0.55) 52%,
-      transparent 100%
-    );
-
-  opacity: 0.85;
-
-  animation: sa-grid-breathe 10s ease-in-out infinite;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(ellipse at 50% 50%, #000 0%, transparent 78%);
 }
 
-/*
-  Soft central atmosphere.
-
-  This is intentionally NOT a gradient background.
-  It is an extremely subtle light source behind the card.
-*/
-.sa-scene::before {
-  content: "";
-
-  position: absolute;
-
-  width: 720px;
-  height: 520px;
-
-  left: 50%;
-  top: 50%;
-
-  transform: translate(-50%, -50%);
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      ellipse at center,
-      rgba(63, 152, 121, 0.075) 0%,
-      rgba(63, 152, 121, 0.035) 38%,
-      rgba(63, 152, 121, 0) 72%
-    );
-
-  filter: blur(10px);
-
-  opacity: 0.9;
-
-  animation: sa-center-glow 8s ease-in-out infinite;
-}
-
-/*
-  Left atmospheric glow.
-  Keeps the sides visually alive without colouring the page.
-*/
-.sa-scene::after {
-  content: "";
-
-  position: absolute;
-
-  width: 420px;
-  height: 420px;
-
-  left: -180px;
-  top: 42%;
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(63, 152, 121, 0.065) 0%,
-      rgba(63, 152, 121, 0) 70%
-    );
-
-  filter: blur(8px);
-
-  animation: sa-side-glow 11s ease-in-out infinite alternate;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Network Canvas
-   ═══════════════════════════════════════════════════════════════ */
-
+/* network canvas: fully visible, only softly quieted right behind the card */
 .sa-canvas {
   position: absolute;
   inset: 0;
-
   width: 100%;
   height: 100%;
-
   opacity: 0;
-
-  /*
-    Make the network more visible than before while
-    preserving the quiet area directly behind the card.
-  */
-  animation: sa-network-in 1.8s ease 0.15s forwards;
-
-  -webkit-mask-image:
-    radial-gradient(
-      ellipse 31% 38% at 50% 50%,
-      rgba(0, 0, 0, 0.16),
-      rgba(0, 0, 0, 0.72) 48%,
-      #000 100%
-    );
-
-  mask-image:
-    radial-gradient(
-      ellipse 31% 38% at 50% 50%,
-      rgba(0, 0, 0, 0.16),
-      rgba(0, 0, 0, 0.72) 48%,
-      #000 100%
-    );
-
-  /*
-    Slight visual depth.
-    Does not affect the actual canvas animation.
-  */
-  filter: saturate(0.92);
+  animation: sa-fade-in 1.6s ease 0.2s forwards;
+  
 }
 
-/*
-  Keep the canvas itself non-interactive so the login
-  controls remain completely accessible.
-*/
+/* the canvas must receive pointer events through the card layer */
 .sa-scene,
 .sa-canvas {
   pointer-events: none;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Login Stage
-   ═══════════════════════════════════════════════════════════════ */
+/* ═════════════ Card (split layout) ═════════════ */
 
 .sa-stage {
   position: relative;
-
   z-index: 2;
-
   width: 100%;
-  max-width: 404px;
+  max-width: 980px;
   max-height: 100%;
-
-  transform:
-    translate3d(
-      var(--mx, 0px),
-      var(--my, 0px),
-      0
-    );
-
-  transition:
-    transform 0.6s var(--sa-ease);
+  transform: translate3d(var(--mx, 0px), var(--my, 0px), 0);
+  transition: transform 0.5s var(--sa-ease);
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   Login Card
-   ═══════════════════════════════════════════════════════════════ */
 
 .sa-card {
-  position: relative;
-
-  padding: 40px 36px 34px;
-
-  border-radius: 18px;
-
-  background: var(--sa-surface);
-
-  border: 1px solid rgba(210, 224, 218, 0.92);
-
-  /*
-    Very subtle top accent.
-    Gives the card a premium product feel without
-    turning it into a colourful component.
-  */
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  overflow: hidden;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--sa-border);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 1px 2px rgba(20, 35, 30, 0.035),
-    0 18px 45px -18px rgba(20, 35, 30, 0.14),
-    0 35px 80px -42px rgba(20, 35, 30, 0.12);
-
-  animation:
-    sa-card-in 0.9s var(--sa-ease) 0.1s both;
+    0 1px 2px rgba(20, 35, 30, 0.04),
+    0 24px 56px -20px rgba(20, 35, 30, 0.16),
+    0 56px 100px -48px rgba(20, 35, 30, 0.14);
+  animation: sa-card-in 0.9s var(--sa-ease) 0.1s both;
 }
-
-/*
-  Small elegant accent line.
-*/
-.sa-card::before {
-  content: "";
-
-  position: absolute;
-
-  top: -1px;
-  left: 18%;
-
-  width: 64%;
-  height: 2px;
-
-  border-radius: 0 0 4px 4px;
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(63, 152, 121, 0),
-      rgba(63, 152, 121, 0.55),
-      rgba(63, 152, 121, 0)
-    );
-
-  opacity: 0.75;
-}
-
-/*
-  Extremely subtle ambient shadow below card.
-*/
-.sa-card::after {
-  content: "";
-
-  position: absolute;
-
-  left: 15%;
-  right: 15%;
-  bottom: -20px;
-
-  height: 35px;
-
-  border-radius: 50%;
-
-  background: rgba(47, 138, 110, 0.055);
-
-  filter: blur(18px);
-
-  z-index: -1;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Staggered Entrance
-   ═══════════════════════════════════════════════════════════════ */
 
 .sa-stagger {
-  animation:
-    sa-rise 0.6s var(--sa-ease) both;
-
+  animation: sa-rise 0.6s var(--sa-ease) both;
   animation-delay: var(--d, 0s);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Typography
-   ═══════════════════════════════════════════════════════════════ */
-
-.sa-title {
-  margin: 0 0 6px;
-
-  font-size: 26px;
-  font-weight: 600;
-
-  letter-spacing: -0.6px;
-  line-height: 1.2;
+/* ── hero (left) ── */
+.sa-hero {
+  --o: 300px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 52px 44px 40px 52px;
+  background: #eff6f2;
+  overflow: hidden;
 }
-
-.sa-subtitle {
-  margin: 0 0 28px;
-
-  font-size: 13.5px;
-
+.sa-headline {
+  margin: 0 0 14px;
+  max-width: 400px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.9px;
+  line-height: 1.16;
+  color: var(--sa-text);
+}
+.sa-lede {
+  margin: 0;
+  max-width: 340px;
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--sa-muted);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Alert
-   ═══════════════════════════════════════════════════════════════ */
-
-.sa-alert {
-  display: flex;
-
-  gap: 10px;
-
-  align-items: flex-start;
-
-  margin-bottom: 16px;
-  padding: 10px 12px;
-
-  border-radius: 8px;
-
-  font-size: 13px;
-  line-height: 1.45;
-
-  color: var(--sa-danger);
-
-  background: var(--sa-danger-bg);
-
-  border: 1px solid var(--sa-danger-border);
-
-  animation: sa-shake 0.4s ease both;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Screen Reader
-   ═══════════════════════════════════════════════════════════════ */
-
-.sr-only {
-  position: absolute;
-
-  width: 1px;
-  height: 1px;
-
-  margin: -1px;
-  padding: 0;
-
-  overflow: hidden;
-
-  clip: rect(0 0 0 0);
-
-  white-space: nowrap;
-
-  border: 0;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Form Fields
-   ═══════════════════════════════════════════════════════════════ */
-
-.sa-field {
-  margin-bottom: 16px;
-}
-
-.sa-label {
-  display: block;
-
-  margin-bottom: 6px;
-
-  font-size: 12.5px;
-  font-weight: 500;
-
-  color: #2c3f38;
-}
-
-.sa-control {
+/* ── orbit visual ── */
+.sa-orbit {
   position: relative;
+  align-self: center;
+  flex: none;
+  width: var(--o);
+  height: var(--o);
 }
+.sa-ring,
+.sa-spin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.sa-ring { border: 1px solid rgba(47, 138, 110, 0.22); }
+.sa-ring--1 { width: 100%; height: 100%; }
+.sa-ring--2 { width: 76%; height: 76%; border-color: rgba(47, 138, 110, 0.18); }
+.sa-ring--3 { width: 52%; height: 52%; border-color: rgba(47, 138, 110, 0.14); }
 
-/*
-  Inputs are slightly darker than the white card,
-  but still very light.
-*/
-.sa-input {
-  width: 100%;
-  height: 46px;
+.sa-spin--1 { width: 100%; height: 100%; animation: sa-orbit 16s linear infinite; }
+.sa-spin--2 { width: 76%; height: 76%; animation: sa-orbit 24s linear infinite reverse; }
+.sa-spin--3 { width: 52%; height: 52%; animation: sa-orbit 11s linear infinite; }
+.sa-spin i {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--sa-brand);
+  box-shadow: 0 0 0 4px rgba(47, 138, 110, 0.14), 0 0 14px 2px rgba(47, 138, 110, 0.45);
+}
+.sa-spin--2 i { width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; opacity: 0.8; }
+.sa-spin--3 i { width: 6px; height: 6px; margin: -3px 0 0 -3px; opacity: 0.65; }
 
-  padding: 0 14px 0 42px;
+.sa-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  margin: -44px 0 0 -44px;
+  border-radius: 24px;
+  color: #fff;
+  background: var(--sa-brand);
+  box-shadow: 0 14px 30px -10px rgba(47, 138, 110, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: sa-breathe 5s ease-in-out infinite;
+}
+.sa-core::before,
+.sa-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px solid rgba(47, 138, 110, 0.5);
+  animation: sa-pulse 3.6s ease-out infinite;
+}
+.sa-core::after { animation-delay: 1.8s; }
 
-  font: inherit;
-  font-size: 14px;
-
+.sa-chip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
   color: var(--sa-text);
-
-  background: var(--sa-field);
-
+  background: #fff;
   border: 1px solid var(--sa-border);
-
-  border-radius: 10px;
-
-  outline: none;
-
-  transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease,
-    background 0.22s ease,
-    transform 0.18s ease;
+  box-shadow: 0 10px 24px -10px rgba(20, 35, 30, 0.25);
+  animation: sa-float 6s ease-in-out infinite;
+}
+.sa-chip svg { color: var(--sa-brand); }
+.sa-chip--a { top: 12%; left: -14%; }
+.sa-chip--b { bottom: 4%; right: -16%; animation-delay: -2s; }
+.sa-chip--c { top: 46%; right: -22%; animation-delay: -4s; }
+.sa-chip__live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sa-brand);
+  animation: sa-live 2s ease-in-out infinite;
 }
 
-.sa-input--pw {
-  padding-right: 46px;
+/* ── form pane (right) ── */
+.sa-pane {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 52px 56px 40px;
+}
+.sa-pane > * { width: 100%; max-width: 380px; margin-inline: auto; }
+
+.sa-title {
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+}
+.sa-subtitle {
+  margin: 0 0 28px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sa-muted);
 }
 
-.sa-input::placeholder {
+.sa-foot {
+  margin-top: 26px;
+  text-align: center;
+  font-size: 12px;
   color: var(--sa-placeholder);
 }
 
-.sa-input:hover {
-  border-color: var(--sa-border-strong);
-  background: #edf4f1;
+.sa-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--sa-danger);
+  background: var(--sa-danger-bg);
+  border: 1px solid var(--sa-danger-border);
+  animation: sa-shake 0.4s ease both;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sa-field { margin-bottom: 16px; }
+.sa-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #2c3f38;
+}
+.sa-control { position: relative; }
+.sa-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px 0 42px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--sa-text);
+  background: var(--sa-field);
+  border: 1px solid var(--sa-border);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.sa-input--pw { padding-right: 46px; }
+.sa-input::placeholder { color: var(--sa-placeholder); }
+.sa-input:hover { border-color: var(--sa-border-strong); }
 .sa-input:focus {
-  background: #edf5f2;
-
+  background: #fff;
   border-color: var(--sa-brand);
-
-  box-shadow:
-    0 0 0 3px rgba(63, 152, 121, 0.1),
-    0 4px 14px rgba(47, 138, 110, 0.055);
-
-  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(47, 138, 110, 0.14);
 }
-
 .sa-input[aria-invalid="true"] {
   border-color: #d92d20;
-
   background: #fff;
 }
-
 .sa-input[aria-invalid="true"]:focus {
-  box-shadow:
-    0 0 0 3px rgba(217, 45, 32, 0.12);
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.12);
 }
-
-/* Browser autofill */
-
+/* neutralise the browser's blue autofill */
 .sa-input:-webkit-autofill,
 .sa-input:-webkit-autofill:hover,
 .sa-input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--sa-text);
-
-  -webkit-box-shadow:
-    0 0 0 100px var(--sa-field) inset;
-
-  transition:
-    background-color 9999s ease-out;
+  -webkit-box-shadow: 0 0 0 100px var(--sa-field) inset;
+  transition: background-color 9999s ease-out;
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   Input Icons
-   ═══════════════════════════════════════════════════════════════ */
 
 .sa-icon {
   position: absolute;
-
   left: 14px;
   top: 50%;
-
   transform: translateY(-50%);
-
-  color: #82968c;
-
+  color: #8a9c94;
   pointer-events: none;
-
-  transition:
-    color 0.2s ease,
-    transform 0.2s ease;
+  transition: color 0.2s ease;
 }
-
-.sa-control:focus-within .sa-icon {
-  color: var(--sa-brand);
-
-  transform:
-    translateY(-50%)
-    scale(1.04);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Password Eye
-   ═══════════════════════════════════════════════════════════════ */
+.sa-control:focus-within .sa-icon { color: var(--sa-brand); }
 
 .sa-eye {
   position: absolute;
-
   right: 6px;
   top: 50%;
-
   transform: translateY(-50%);
-
   display: grid;
   place-items: center;
-
   width: 34px;
   height: 34px;
-
   border: 0;
   border-radius: 8px;
-
   color: #6f8279;
-
   background: transparent;
-
   cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
-
-.sa-eye:hover {
-  color: var(--sa-brand-ink);
-
-  background: var(--sa-brand-light);
-
-  transform:
-    translateY(-50%)
-    scale(1.04);
-}
-
+.sa-eye:hover { color: var(--sa-brand-ink); background: var(--sa-brand-light); }
 .sa-eye:focus-visible,
 .sa-link:focus-visible,
 .sa-submit:focus-visible {
   outline: 2px solid var(--sa-brand);
-
   outline-offset: 2px;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Errors
-   ═══════════════════════════════════════════════════════════════ */
-
 .sa-error {
   margin: 6px 2px 0;
-
   font-size: 12.5px;
-
   color: var(--sa-danger);
-
-  animation:
-    sa-rise 0.3s var(--sa-ease) both;
+  animation: sa-rise 0.3s var(--sa-ease) both;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Forgot Password
-   ═══════════════════════════════════════════════════════════════ */
-
-.sa-row {
-  display: flex;
-
-  justify-content: flex-end;
-
-  margin: -4px 0 20px;
-}
-
+.sa-row { display: flex; justify-content: flex-end; margin: -4px 0 20px; }
 .sa-link {
   padding: 2px 0;
-
   border: 0;
-
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
-
   color: var(--sa-brand-ink);
-
   background: none;
-
   cursor: pointer;
-
-  transition:
-    color 0.2s ease,
-    transform 0.2s ease;
+  transition: color 0.2s ease;
 }
-
-.sa-link:hover {
-  color: var(--sa-brand-hover);
-
-  text-decoration: underline;
-  text-underline-offset: 3px;
-
-  transform: translateX(-1px);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Submit Button
-   ═══════════════════════════════════════════════════════════════ */
+.sa-link:hover { color: var(--sa-brand-hover); text-decoration: underline; text-underline-offset: 3px; }
 
 .sa-submit {
-  position: relative;
-
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   gap: 8px;
-
   width: 100%;
   height: 46px;
-
   border: 0;
-
   border-radius: 10px;
-
   font: inherit;
-
   font-size: 14.5px;
   font-weight: 600;
-
   letter-spacing: 0.1px;
-
-  color: #ffffff;
-
-  /* Softer green */
+  color: #fff;
   background: var(--sa-brand);
-
-  box-shadow:
-    0 1px 2px rgba(31, 110, 86, 0.18),
-    0 6px 16px -9px rgba(47, 138, 110, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-
+  box-shadow: 0 1px 2px rgba(31, 110, 86, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   cursor: pointer;
-
-  overflow: hidden;
-
-  transition:
-    background 0.22s ease,
-    box-shadow 0.22s ease,
-    transform 0.16s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
-
-/*
-  Very subtle moving highlight across button.
-*/
-.sa-submit::before {
-  content: "";
-
-  position: absolute;
-
-  top: 0;
-  bottom: 0;
-
-  left: -60%;
-
-  width: 35%;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.18),
-      transparent
-    );
-
-  transform: skewX(-18deg);
-
-  transition: left 0.6s ease;
-}
-
-.sa-submit:hover:not(:disabled)::before {
-  left: 125%;
-}
-
 .sa-submit:hover:not(:disabled) {
   background: var(--sa-brand-hover);
-
-  box-shadow:
-    0 10px 24px -10px rgba(47, 138, 110, 0.48),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-
-  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -8px rgba(47, 138, 110, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
-
-.sa-submit:hover:not(:disabled) .sa-arrow {
-  transform: translateX(3px);
-}
-
-.sa-submit:active:not(:disabled) {
-  transform: translateY(0) scale(0.99);
-}
-
+.sa-submit:hover:not(:disabled) .sa-arrow { transform: translateX(3px); }
+.sa-submit:active:not(:disabled) { transform: scale(0.99); }
 .sa-submit:disabled {
   cursor: not-allowed;
-
   background: var(--sa-brand-disabled);
-
   box-shadow: none;
 }
-
-.sa-arrow {
-  transition:
-    transform 0.25s var(--sa-ease);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Spinner
-   ═══════════════════════════════════════════════════════════════ */
-
+.sa-arrow { transition: transform 0.25s var(--sa-ease); }
 .sa-spinner {
   width: 18px;
   height: 18px;
-
   border-radius: 50%;
-
   border: 2px solid rgba(255, 255, 255, 0.4);
-
   border-top-color: #fff;
-
-  animation:
-    sa-spin 0.7s linear infinite;
+  animation: sa-spin 0.7s linear infinite;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Animations
-   ═══════════════════════════════════════════════════════════════ */
+/* ═════════════ Keyframes ═════════════ */
 
-@keyframes sa-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+@keyframes sa-spin { to { transform: rotate(360deg); } }
 @keyframes sa-rise {
-  from {
-    opacity: 0;
-
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes sa-card-in {
-  from {
-    opacity: 0;
-
-    transform:
-      translateY(14px)
-      scale(0.992);
-  }
-
-  to {
-    opacity: 1;
-
-    transform:
-      translateY(0)
-      scale(1);
-  }
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes sa-network-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 0.9;
-  }
-}
-
-@keyframes sa-grid-breathe {
-  0%,
-  100% {
-    opacity: 0.72;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes sa-center-glow {
-  0%,
-  100% {
-    transform:
-      translate(-50%, -50%)
-      scale(0.96);
-
-    opacity: 0.72;
-  }
-
-  50% {
-    transform:
-      translate(-50%, -50%)
-      scale(1.04);
-
-    opacity: 1;
-  }
-}
-
-@keyframes sa-side-glow {
-  0% {
-    transform: translate3d(0, -15px, 0);
-  }
-
-  100% {
-    transform: translate3d(35px, 20px, 0);
-  }
-}
-
+@keyframes sa-fade-in { to { opacity: 1; } }
 @keyframes sa-shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(-3px);
-  }
-
-  75% {
-    transform: translateX(3px);
-  }
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Responsive
-   ═══════════════════════════════════════════════════════════════ */
+@keyframes sa-orbit { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes sa-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+@keyframes sa-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+@keyframes sa-pulse {
+  0%   { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes sa-live {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 138, 110, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(47, 138, 110, 0); }
+}
+
+/* ═════════════ Responsive ═════════════ */
+
+@media (max-width: 900px) {
+  .sa-stage { max-width: 440px; }
+  .sa-card { grid-template-columns: 1fr; }
+  .sa-hero { padding: 28px 28px 0; gap: 0; background: #fff; }
+  .sa-headline { margin: 0; font-size: 20px; letter-spacing: -0.4px; }
+  .sa-lede, .sa-orbit { display: none; }
+  .sa-pane { padding: 22px 28px 30px; }
+}
 
 @media (max-width: 480px) {
-  .sa-login {
-    padding: 12px;
-  }
-
-  .sa-card {
-    padding: 30px 22px 26px;
-  }
-
-  .sa-input {
-    font-size: 16px;
-  }
-
-  .sa-stage {
-    transform: none;
-  }
-
-  .sa-canvas {
-    -webkit-mask-image: none;
-    mask-image: none;
-
-    opacity: 0.8;
-  }
-
-  .sa-grid {
-    background-size: 44px 44px;
-  }
+  .sa-login { padding: 12px; }
+  .sa-hero { padding: 24px 22px 0; }
+  .sa-pane { padding: 18px 22px 26px; }
+  .sa-input { font-size: 16px; } /* prevents iOS zoom on focus */
+  .sa-stage { transform: none; }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Short screens
-   ═══════════════════════════════════════════════════════════════ */
-
-@media (max-height: 720px) {
-  .sa-card {
-    padding: 30px 32px 26px;
-  }
-
-  .sa-subtitle {
-    margin-bottom: 20px;
-  }
-
-  .sa-field {
-    margin-bottom: 12px;
-  }
+/* shrink the visual on shorter screens */
+@media (min-width: 901px) and (max-height: 800px) {
+  .sa-hero { --o: 236px; padding-top: 40px; padding-bottom: 28px; }
+  .sa-pane { padding-top: 40px; padding-bottom: 30px; }
+  .sa-subtitle { margin-bottom: 20px; }
+  .sa-field { margin-bottom: 12px; }
 }
-
+@media (min-width: 901px) and (max-height: 660px) {
+  .sa-orbit { display: none; }
+}
 @media (max-height: 560px) {
-  .sa-login {
-    overflow-y: auto;
-
-    place-items: start center;
-  }
-
-  .sa-scene {
-    position: fixed;
-  }
+  .sa-login { overflow-y: auto; place-items: start center; }
+  .sa-scene { position: fixed; }
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   Reduced Motion
-   ═══════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
   .sa-login *,
@@ -992,7 +512,6 @@
   .sa-login *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-
     transition-duration: 0.001ms !important;
   }
 }

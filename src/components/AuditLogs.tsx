@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "../context/ThemeContext";
 import { ChevronRight } from "lucide-react";
 import Spinner from "./ui/Spinner";
+import ProfileAvatar from "./ProfileAvatar";
 
 export interface LogEntry {
   id:    string;
@@ -105,7 +106,7 @@ export default function AuditLogs({
           onClick={() => router.push("/user/audit-logs")}
           style={{
             fontSize: viewAllSize,
-            color: "var(--crm-primary, #206bc4)",
+            color: "var(--crm-primary, #087f5b)",
             cursor: "pointer",
             fontWeight: 600,
             display: "flex",
@@ -182,34 +183,17 @@ export default function AuditLogs({
                             width: `${dotSize}px`,
                             height: `${dotSize}px`,
                             borderRadius: "50%",
-                            background: "var(--crm-primary, #206bc4)",
+                            background: "var(--crm-primary, #087f5b)",
                             border: "2px solid var(--crm-card-bg, #ffffff)",
                             zIndex: 2,
-                            boxShadow: "0 0 0 2px rgba(32, 107, 196, 0.2)",
+                            boxShadow: "0 0 0 2px rgba(8, 127, 91, 0.2)",
                           }}
                         />
 
                         {/* Log Item Content */}
                         <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
                           {/* Round Initial Avatar */}
-                          <div
-                            style={{
-                              width: `${avatarSize}px`,
-                              height: `${avatarSize}px`,
-                              borderRadius: "50%",
-                              background: "var(--crm-primary-lt, rgba(32, 107, 196, 0.12))",
-                              color: "var(--crm-primary, #206bc4)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: isSmall ? "11px" : "12px",
-                              fontWeight: 700,
-                              flexShrink: 0,
-                              border: "1px solid var(--crm-border, #e2e8f0)",
-                            }}
-                          >
-                            {getInitials(log.actor)}
-                          </div>
+                          <ProfileAvatar name={log.actor} size={avatarSize} fontSize={isSmall ? "11px" : "12px"} />
 
                           {/* Message & Timestamp */}
                           <div style={{ flex: 1, minWidth: 0, marginTop: "-1px" }}>

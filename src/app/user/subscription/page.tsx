@@ -109,10 +109,10 @@ const HISTORY: Transaction[] = [];
 
 const TYPE_COLOR: Record<TxnType, string> = {
   New:"#00CBA4", Renewal:"#A29BFE", Upgrade:"#FDCB6E",
-  Failed:"#FF6B6B", Trial:"#74B9FF", Refund:"#FD79A8",
+  Failed:"#FF6B6B", Trial:"#52a77d", Refund:"#FD79A8",
 };
 const ICON_OPTIONS  = ["🌱","🚀","⚡","🏆","💎","🔥","🌟","🎯","🛡️","🧩"];
-const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#74B9FF","#FD79A8","#00B894","#E17055","#0984e3"];
+const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#52a77d","#FD79A8","#00B894","#E17055","#087f5b"];
 
 // ─── PLAN COLOR MAP ───────────────────────────────────────────────────────────
 const PLAN_COLORS: Record<string, string> = {

@@ -223,9 +223,9 @@ export default function DashboardPage() {
   const { isDark } = useTheme();
 
   const [stats, setStats] = useState<StatItem[]>([
-    { label: "Companies", value: "0", icon: <Building2 size={20} />, color: "#206bc4", route: "/user/manage-companies" },
+    { label: "Companies", value: "0", icon: <Building2 size={20} />, color: "#087f5b", route: "/user/manage-companies" },
     { label: "Users",     value: "0", icon: <Users size={20} />,     color: "#2fb344", route: "/user/all-user" },
-    { label: "Domains",   value: "0", icon: <Globe size={20} />,     color: "#4299e1" },
+    { label: "Domains",   value: "0", icon: <Globe size={20} />,     color: "#52a77d" },
     { label: "Credits",   value: "0", icon: <CreditCard size={20} />, color: "#f59f00" },
   ]);
 
@@ -311,7 +311,7 @@ export default function DashboardPage() {
             label: "Companies",
             value: companiesVal.toLocaleString(),
             icon: <Building2 size={20} />,
-            color: "#206bc4",
+            color: "#087f5b",
             route: "/user/manage-companies",
             trend: "+8.4%",
           },
@@ -327,7 +327,7 @@ export default function DashboardPage() {
             label: "Domains",
             value: chatbotsVal.toLocaleString(),
             icon: <Globe size={20} />,
-            color: "#4299e1",
+            color: "#52a77d",
             trend: "+6.2%",
           },
           {
@@ -369,7 +369,7 @@ export default function DashboardPage() {
               .join("")
               .toUpperCase()
               .slice(0, 2),
-            col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
+            col: ["#087f5b", "#2fb344", "#52a77d", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
           }))
         );
 
@@ -414,7 +414,7 @@ export default function DashboardPage() {
               .join("")
               .toUpperCase()
               .slice(0, 2),
-            col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
+            col: ["#087f5b", "#2fb344", "#52a77d", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
             status: company.status
               ? company.status.charAt(0).toUpperCase() + company.status.slice(1).toLowerCase()
               : "Active",

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import Spinner from "./ui/Spinner";
+import ProfileAvatar from "./ProfileAvatar";
 
 export interface DbUser {
   id:     string;
@@ -107,7 +108,7 @@ export default function UserManagement({
             onClick={onViewAll}
             style={{
               fontSize: viewAllSize,
-              color: "var(--crm-primary, #206bc4)",
+              color: "var(--crm-primary, #087f5b)",
               cursor: "pointer",
               fontWeight: 600,
               display: "flex",
@@ -314,23 +315,7 @@ function Row({
       {/* Username + Avatar */}
       <td style={{ padding: cellPad, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-          <div
-            style={{
-              width: `${avatarSize}px`,
-              height: `${avatarSize}px`,
-              borderRadius: "6px",
-              background: u.col,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 800,
-              fontSize: avatarFont,
-              color: "#fff",
-              flexShrink: 0,
-            }}
-          >
-            {u.av}
-          </div>
+          <ProfileAvatar name={u.un} initials={u.av} size={avatarSize} fontSize={avatarFont} />
           <span
             style={{
               fontWeight: 600,

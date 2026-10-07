@@ -6,6 +6,7 @@ import Topbar from "../../components/Topbar";
 import { useTheme, tokens } from "../../context/ThemeContext";
 import { useRedirectOnRefresh } from "../../hooks/useRedirectOnRefresh";
 import { Toaster } from "react-hot-toast";
+
 const pathMappings: Record<string, string> = {
   "/user/dashboard": "Dashboard",
   "/user/manage-companies": "Manage Companies",
@@ -34,157 +35,166 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   const [isMobile, setIsMobile] = useState(false);
 
-React.useEffect(() => {
-  const check = () => setIsMobile(window.innerWidth <= 768);
-  check();
-  window.addEventListener("resize", check);
-  return () => window.removeEventListener("resize", check);
-}, []);
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // Update activeNav when pathname changes
   useEffect(() => {
     setActiveNav(getNavFromPath(pathname));
   }, [pathname]);
+
   const { isDark } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarWidth, setDesktopSidebarWidth] = useState(260);
   const mobileSidebarWidth = 260;
   const t = isDark ? tokens.dark : tokens.light;
-  const titles: Record<string,string> = {
-    "Dashboard":"Dashboard","Manage Companies":"Manage Companies",
-    "All User":"All Users","Subscription":"Subscription",
-    "Audit Logs":"Audit Logs","System":"System",
-    "Profile":"Profile","Support Tickets":"Support Tickets",
-    "Permissions":"Permissions",
+
+  const titles: Record<string, string> = {
+    Dashboard: "Dashboard",
+    "Manage Companies": "Manage Companies",
+    "All User": "All Users",
+    Subscription: "Subscription",
+    "Audit Logs": "Audit Logs",
+    System: "System",
+    Profile: "Profile",
+    "Support Tickets": "Support Tickets",
+    Permissions: "Permissions",
   };
- return (
-   <div
-     data-theme={isDark ? "dark" : "light"}
-     className={isDark ? "dark" : "light"}
-     style={{ minHeight: "100vh", background: "var(--crm-bg, var(--bg, #f4f6fa))" }}
-   >
-     <Toaster
-       position="top-center"
-       gutter={0}
-       containerStyle={{
-         top: "20px",
-       }}
-       toastOptions={{
-         duration: 4000,
-         style: {
-           background: isDark ? "#0d1117" : "#ffffff",
-           color: isDark ? "#f8fafc" : "#111827",
-           border: "1px solid #10b981",
-           borderRadius: "12px",
-           padding: "18px 26px",
-           minWidth: "340px",
-           maxWidth: "460px",
-           justifyContent: "center",
-           fontSize: "18px",
-           fontWeight: "700",
-           textAlign: "center",
-           boxShadow: "0 18px 45px rgba(16, 185, 129, 0.22)",
-         },
-         success: {
-           icon: null,
-         },
-       }}
-     />
 
-     {/* ✅ DESKTOP SIDEBAR */}
-     {!isMobile && (
-       <div
-         style={{
-           position: "fixed",
-           top: 0,
-           left: 0,
-           width: `${desktopSidebarWidth}px`,
-           height: "100vh",
-           zIndex: 80,
-           overflow: "hidden",
-         }}
-       >
-         <Sidebar
-           activeItem={activeNav}
-           onNavigate={setActiveNav}
-           onWidthChange={setDesktopSidebarWidth}
-         />
-       </div>
-     )}
+  return (
+    <div
+      data-theme={isDark ? "dark" : "light"}
+      className={isDark ? "dark" : "light"}
+      style={{ minHeight: "100vh", background: "var(--crm-bg, var(--bg, #f4f6fa))" }}
+    >
+      <Toaster
+        position="top-center"
+        gutter={0}
+        containerStyle={{
+          top: "20px",
+        }}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: isDark ? "#0d1117" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#111827",
+            border: "1px solid #10b981",
+            borderRadius: "12px",
+            padding: "18px 26px",
+            minWidth: "340px",
+            maxWidth: "460px",
+            justifyContent: "center",
+            fontSize: "18px",
+            fontWeight: "700",
+            textAlign: "center",
+            boxShadow: "0 18px 45px rgba(16, 185, 129, 0.22)",
+          },
+          success: {
+            icon: null,
+          },
+        }}
+      />
 
-     {/* ✅ MOBILE SIDEBAR */}
-     {isMobile && (
-       <>
-         {sidebarOpen && (
-           <div
-             onClick={() => setSidebarOpen(false)}
-             style={{
-               position: "fixed",
-               inset: 0,
-               background: "rgba(0,0,0,0.4)",
-               zIndex: 100,
-             }}
-           />
-         )}
+      {/* ✅ DESKTOP SIDEBAR */}
+      {!isMobile && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: `${desktopSidebarWidth}px`,
+            height: "100vh",
+            zIndex: 80,
+            overflow: "hidden",
+          }}
+        >
+          <Sidebar
+            activeItem={activeNav}
+            onNavigate={setActiveNav}
+            onWidthChange={setDesktopSidebarWidth}
+          />
+        </div>
+      )}
 
-         <div
-           style={{
-             position: "fixed",
-             top: 0,
-             left: sidebarOpen ? "0" : `-${mobileSidebarWidth}px`,
-             width: `${mobileSidebarWidth}px`,
-             height: "100vh",
-             zIndex: 200,
-             transition: "left 0.3s ease",
-           }}
-         >
-           <Sidebar
-             activeItem={activeNav}
-             onNavigate={(val) => {
-               setActiveNav(val);
-               setSidebarOpen(false);
-             }}
-             onClose={() => setSidebarOpen(false)}
-           />
-         </div>
-       </>
-     )}
+      {/* ✅ MOBILE SIDEBAR */}
+      {isMobile && (
+        <>
+          {sidebarOpen && (
+            <div
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.4)",
+                zIndex: 100,
+              }}
+            />
+          )}
 
-     {/* ✅ MAIN CONTENT */}
-     <div
-       className="user-main-layout"
-       style={{
-         marginLeft: isMobile ? "0px" : `${desktopSidebarWidth}px`,
-         minHeight: "100vh",
-         display: "flex",
-         flexDirection: "column",
-         width: isMobile ? "100%" : `calc(100% - ${desktopSidebarWidth}px)`,
-         maxWidth: "100%",
-         minWidth: 0,
-         boxSizing: "border-box",
-         transition: "margin-left 220ms ease, width 220ms ease",
-       }}
-     >
-       <Topbar
-         title={titles[activeNav] ?? activeNav}
-         onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
-       />
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: sidebarOpen ? "0" : `-${mobileSidebarWidth}px`,
+              width: `${mobileSidebarWidth}px`,
+              height: "100vh",
+              zIndex: 200,
+              transition: "left 0.3s ease",
+            }}
+          >
+            <Sidebar
+              activeItem={activeNav}
+              onNavigate={(val) => {
+                setActiveNav(val);
+                setSidebarOpen(false);
+              }}
+              onClose={() => setSidebarOpen(false)}
+            />
+          </div>
+        </>
+      )}
 
-       {/* THIS fixes scroll issue */}
-       <div
-         style={{
-           flex: 1,
-           minWidth: 0,
-           width: "100%",
-           maxWidth: "100%",
-           overflowY: "auto",
-           overflowX: "hidden",
-           boxSizing: "border-box",
-         }}
-       >
-         {children}
-       </div>
-     </div>
-   </div>
- );
+      {/* ✅ MAIN CONTENT */}
+      <div
+        className="user-main-layout"
+        style={{
+          marginLeft: isMobile ? "0px" : `${desktopSidebarWidth}px`,
+          height: "100vh",
+          maxHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          width: isMobile ? "100%" : `calc(100% - ${desktopSidebarWidth}px)`,
+          maxWidth: "100%",
+          minWidth: 0,
+          boxSizing: "border-box",
+          overflow: "hidden",
+          transition: "margin-left 220ms ease, width 220ms ease",
+        }}
+      >
+        <Topbar
+          title={titles[activeNav] ?? activeNav}
+          onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
+        />
+
+        {/* Scrollable page body */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            width: "100%",
+            maxWidth: "100%",
+            overflowY: "auto",
+            overflowX: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -5,7 +5,7 @@ import { getPrismaConnectionErrorMessage } from "../../../../lib/prisma-errors";
 export const dynamic = "force-dynamic";
 
 const AVATAR_PALETTE = [
-  "linear-gradient(135deg,#3b5bdb,#6741d9)",
+  "linear-gradient(135deg,#087f5b,#6741d9)",
   "linear-gradient(135deg,#0ca678,#2f9e44)",
   "linear-gradient(135deg,#f59f00,#e67700)",
   "linear-gradient(135deg,#e03131,#c92a2a)",

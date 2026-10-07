@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./support-tickets.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 import Spinner from "@/components/ui/Spinner";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import {
   Ticket as TicketIcon,
   Clock,
@@ -122,7 +123,7 @@ const safeMessages = (ticket: Ticket): Message[] =>
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 const AVATAR_GRADIENTS = [
-  "linear-gradient(135deg, #206bc4, #4299e1)",
+  "linear-gradient(135deg, #087f5b, #52a77d)",
   "linear-gradient(135deg, #2fb344, #48bb78)",
   "linear-gradient(135deg, #f59f00, #ed8936)",
   "linear-gradient(135deg, #ae3ec9, #9f7aea)",
@@ -197,28 +198,8 @@ function PriorityBadge({ priority }: { priority: TicketPriority }) {
   );
 }
 
-function Ava({ init, size = 34, col }: { init: string; size?: number; col?: string }) {
-  const bg = col ?? getAvatarBg(init);
-  return (
-    <div
-      className="st-ava"
-      style={{
-        width: size,
-        height: size,
-        background: bg,
-        fontSize: Math.max(10, Math.round(size * 0.36)),
-        fontWeight: 700,
-        borderRadius: "50%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#ffffff",
-        flexShrink: 0,
-      }}
-    >
-      {init}
-    </div>
-  );
+function Ava({ init, size = 34 }: { init: string; size?: number; col?: string }) {
+  return <ProfileAvatar name={init} initials={init} size={size} />;
 }
 
 function Pager({
@@ -348,12 +329,7 @@ function ConvPanel({
             </div>
             <div className="st-conv__subject">{ticket.subject}</div>
             <div className="st-conv__meta-row">
-              <div
-                className="st-conv__company-logo"
-                style={{ background: getAvatarBg(ticket.company || ticket.user || "C") }}
-              >
-                {ticket.companyLogo || (ticket.company ? ticket.company[0].toUpperCase() : "C")}
-              </div>
+              <ProfileAvatar name={ticket.company || ticket.user || "C"} size={32} />
               <span className="st-conv__meta-text">{ticket.company}</span>
               <span className="st-conv__meta-sep">·</span>
               <span className="st-conv__meta-text">{ticket.user}</span>
@@ -969,10 +945,10 @@ export default function SupportTickets() {
 
           {/* KPI grid */}
           <div className="st-kpi-grid">
-            <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon={<TicketIcon size={20} />}    color="#4299e1" />
+            <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon={<TicketIcon size={20} />}    color="#52a77d" />
             <KPI label="In Progress"    value={String(inProgress)} sub="being handled"              icon={<Clock size={20} />}         color="#f59f00" />
             <KPI label="Resolved (7d)"  value={String(resolved)}   sub="closed this week"           icon={<CheckCircle2 size={20} />}  color="#2fb344" />
-            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon={<Zap size={20} />}           color="#206bc4" />
+            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon={<Zap size={20} />}           color="#087f5b" />
           </div>
 
           {/* Main grid */}
@@ -1055,12 +1031,7 @@ export default function SupportTickets() {
                               onClick={() => void loadSingleTicket(ticket.id)}
                               title={`Open chat with ${ticket.user}`}
                             >
-                              <div
-                                className="st-company-logo"
-                                style={{ background: getAvatarBg(ticket.user || "User") }}
-                              >
-                                {nameInitial}
-                              </div>
+                              <ProfileAvatar name={ticket.user || "User"} initials={nameInitial} size={32} />
                               <span className="st-td-user-name">
                                 {ticket.user}
                               </span>
@@ -1114,7 +1085,7 @@ export default function SupportTickets() {
                       : ticket.priority === "HIGH"
                       ? { bg: "rgba(245, 159, 0, 0.15)", col: "var(--warn)" }
                       : ticket.priority === "MEDIUM"
-                      ? { bg: "rgba(32, 107, 196, 0.15)", col: "var(--accent)" }
+                      ? { bg: "rgba(8, 127, 91, 0.15)", col: "var(--accent)" }
                       : { bg: "rgba(100, 116, 139, 0.15)", col: "var(--muted)" };
 
                   return (
@@ -1126,12 +1097,7 @@ export default function SupportTickets() {
                       {/* Header row: Avatar, Name & Email, Status Badge */}
                       <div className="crm-card__header">
                         <div className="crm-card__identity">
-                          <div
-                            className="crm-card__avatar"
-                            style={{ background: getAvatarBg(ticket.user || "User") }}
-                          >
-                            {nameInitial}
-                          </div>
+                          <ProfileAvatar name={ticket.user || "User"} initials={nameInitial} size={36} />
                           <div className="crm-card__text">
                             <span className="crm-card__title">{ticket.user}</span>
                             <span className="crm-card__sub">{ticket.userEmail || "—"}</span>

@@ -23,7 +23,7 @@ const ticketInclude = {
 
 const COMPANY_COLORS = [
   "#FDCB6E", "#A29BFE", "#00B894", "#6C5CE7", "#00CBA4",
-  "#FF6B6B", "#E17055", "#FD79A8", "#74B9FF", "#0984E3",
+  "#FF6B6B", "#E17055", "#FD79A8", "#52a77d", "#087f5b",
 ];
 
 function mapStatus(s: DbTicketStatus): UiTicketStatus {

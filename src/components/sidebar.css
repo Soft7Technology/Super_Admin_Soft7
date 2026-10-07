@@ -74,31 +74,37 @@
 }
 
 .admin-sidebar__item:hover {
-  background: var(--crm-primary-lt, rgba(32, 107, 196, 0.08)) !important;
-  color: var(--primary, #206bc4) !important;
+  background: var(--crm-primary-lt, rgba(8, 127, 91, 0.08)) !important;
+  color: var(--primary, #087f5b) !important;
   transform: none !important;
   opacity: 1 !important;
 }
 
 .admin-sidebar__item[data-active="true"] {
-  background: var(--primary, #206bc4) !important;
-  color: #ffffff !important;
+  background: var(--crm-primary-lt, #e8f1ee) !important;
+  color: var(--primary, #087f5b) !important;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.25);
-  text-shadow: 0 1px 1px rgba(10, 48, 94, 0.24);
+  box-shadow: none;
+  text-shadow: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+.dark .admin-sidebar__item[data-active="true"],
+[data-theme="dark"] .admin-sidebar__item[data-active="true"] {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #10b981 !important;
+}
+
 .admin-sidebar__item[data-active="true"] .admin-sidebar__label {
-  color: #ffffff;
+  color: currentColor;
   font-weight: 700;
   letter-spacing: 0.005em;
 }
 
 .admin-sidebar__item[data-active="true"]:hover {
-  background: #1c5fac !important;
-  color: #ffffff !important;
+  background: rgba(8, 127, 91, 0.18) !important;
+  color: var(--primary, #087f5b) !important;
 }
 
 .admin-sidebar__icon {
@@ -165,6 +171,6 @@
 
 .admin-sidebar__close-btn:hover {
   background: var(--surf2, #f8fafc) !important;
-  color: var(--primary, #206bc4) !important;
+  color: var(--primary, #087f5b) !important;
   transform: none !important;
 }

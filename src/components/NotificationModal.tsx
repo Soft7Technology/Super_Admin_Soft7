@@ -114,7 +114,7 @@ export default function NotificationModal({
         return "#fb923c";
       case "info":
       default:
-        return "#3b82f6";
+        return "#159765";
     }
   };
 
