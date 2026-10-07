@@ -231,7 +231,7 @@ useEffect(() => {
             width: "5px",
             height: isMobile ? "26px" : "32px",
             borderRadius: "999px",
-            background: "linear-gradient(180deg, #238357, #5aa982)",
+            background: "linear-gradient(180deg, #206bc4, #4299e1)",
           }}
         />
       </div>
@@ -511,7 +511,7 @@ useEffect(() => {
             e.currentTarget.style.transform = "none";
           }}
         >
-          <Wallet size={isMobile ? 15 : 18} color="#238357" />
+          <Wallet size={isMobile ? 15 : 18} color="var(--primary, #206bc4)" />
           <span suppressHydrationWarning>₹{creditBalance}</span>
         </button>
 
@@ -537,7 +537,7 @@ useEffect(() => {
           {isDark ? (
             <Sun size={isMobile ? 15 : 18} strokeWidth={2} color="#f59f00" />
           ) : (
-            <Moon size={isMobile ? 15 : 18} strokeWidth={2} color="#238357" />
+            <Moon size={isMobile ? 15 : 18} strokeWidth={2} color="var(--primary, #206bc4)" />
           )}
         </button>
 
@@ -596,7 +596,7 @@ useEffect(() => {
                 width: isCompact ? "28px" : "32px",
                 height: isCompact ? "28px" : "32px",
                 borderRadius: isCompact ? "6px" : "8px",
-                background: "linear-gradient(135deg, #238357, #5aa982)",
+                background: "linear-gradient(135deg, #206bc4, #4299e1)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

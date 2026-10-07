@@ -1,10 +1,45 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
 import "./company-details.css";
 import { useToast } from "@/components/ui/ToastProvider";
+import {
+  ArrowLeft,
+  Pencil,
+  Share2,
+  PauseCircle,
+  CheckCircle2,
+  Layers,
+  PlusCircle,
+  ChevronRight,
+  Users,
+  UserCheck,
+  MessageSquare,
+  AlertCircle,
+} from "lucide-react";
+
+const AVATAR_COLORS = [
+  "#206bc4",
+  "#4299e1",
+  "#2fb344",
+  "#ae3ec9",
+  "#f59f00",
+  "#17a2b8",
+  "#6366f1",
+  "#ec4899",
+];
+
+function getAvatarBg(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 type CompanyStatus = "active" | "suspended";
 
 type Tab = "overview" | "campaigns" | "activity";
@@ -523,7 +558,7 @@ useEffect(() => {
             className="back-button"
             onClick={() => router.push("/user/manage-companies")}
           >
-            ← Back to Companies
+            <ArrowLeft size={15} /> Back to Companies
           </button>
 
           <h1>Company Details</h1>
@@ -538,106 +573,74 @@ useEffect(() => {
       <section className="company-profile-card">
         {/* LEFT — Company information */}
         <div className="company-profile-left">
-          <div className="company-logo">
+          <div
+            className="company-logo"
+            style={{ background: getAvatarBg(company.name) }}
+          >
             {company.name.charAt(0).toUpperCase()}
           </div>
 
           <div className="company-profile-info">
             <div className="company-name-row">
-              <div className="company-name-actions">
-                <h2>{company.name}</h2>
+              <h2>{company.name}</h2>
 
-                <span className={`status-badge ${company.status}`}>
-                  {company.status === "active" ? "Active" : "Suspended"}
-                </span>
+              <span className={`status-badge ${String(company.status).toLowerCase()}`}>
+                {String(company.status).toLowerCase() === "active" ? "Active" : "Suspended"}
+              </span>
 
-                <div className="company-icon-actions">
-                  <div className="company-icon-actions">
-                    {/* Edit */}
-                    <button
-                      type="button"
-                      className="company-icon-button"
-                      onClick={() => setShowEditModal(true)}
-                      aria-label="Edit Profile"
-                    >
-                      <svg
-                        width="17"
-                        height="17"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                      </svg>
+              <div className="company-profile-actions">
+                <button
+                  type="button"
+                  className="profile-action-btn"
+                  onClick={() => setShowEditModal(true)}
+                  aria-label="Edit Profile"
+                >
+                  <Pencil size={13} />
+                  <span>Edit Profile</span>
+                </button>
 
-                      <span className="tooltip">Edit Profile</span>
-                    </button>
-
-                    {/* Share */}
-                    <button
-                      type="button"
-                      className="company-icon-button"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(window.location.href);
-                        showToast("Profile link copied.", "success");
-                      }}
-                      aria-label="Share Profile"
-                    >
-                      <svg
-                        width="17"
-                        height="17"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <circle cx="18" cy="5" r="3" />
-                        <circle cx="6" cy="12" r="3" />
-                        <circle cx="18" cy="19" r="3" />
-                        <path d="m8.6 13.5 6.8 4" />
-                        <path d="m15.4 6.5-6.8 4" />
-                      </svg>
-
-                      <span className="tooltip">Share Profile</span>
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  className="profile-action-btn"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(window.location.href);
+                    showToast("Profile link copied.", "success");
+                  }}
+                  aria-label="Share Profile"
+                >
+                  <Share2 size={13} />
+                  <span>Share Profile</span>
+                </button>
               </div>
             </div>
 
-            <p className="company-email">{company.email}</p>
+            <p className="company-email">{company.email || "—"}</p>
 
             <div className="company-contact-row">
-              <span>{company.phone}</span>
+              <span>{company.phone || "—"}</span>
             </div>
 
             {/* Profile metadata — 2 x 2 */}
             <div className="company-profile-meta">
               <div>
                 <span>Joined</span>
-                <strong>{company.joinedDate}</strong>
+                <strong>{company.joinedDate || "—"}</strong>
               </div>
 
               <div>
                 <span>Last Active</span>
-                <strong>{company.lastActive}</strong>
+                <strong>{company.lastActive || "—"}</strong>
               </div>
 
               <div>
                 <span>Plan</span>
-                <strong>{displayPlan}</strong>
+                <strong>{displayPlan || "Starter"}</strong>
               </div>
 
               <div>
                 <span>Credits</span>
                 <strong className="credit-value">
-                  {company.credits.toLocaleString("en-IN")}
+                  ₹{Number(company.credits || 0).toLocaleString("en-IN")}
                 </strong>
               </div>
             </div>
@@ -653,7 +656,7 @@ useEffect(() => {
               <button
                 type="button"
                 className={
-                  company.status === "active"
+                  String(company.status).toLowerCase() === "active"
                     ? "quick-action-item danger"
                     : "quick-action-item success"
                 }
@@ -661,20 +664,24 @@ useEffect(() => {
                 disabled={statusSubmitting}
               >
                 <span className="quick-action-icon">
-                  {company.status === "active" ? "⏸" : "✓"}
+                  {String(company.status).toLowerCase() === "active" ? (
+                    <PauseCircle size={16} />
+                  ) : (
+                    <CheckCircle2 size={16} />
+                  )}
                 </span>
 
                 <span className="quick-action-text">
                   <strong>
                     {statusSubmitting
                       ? "Updating..."
-                      : company.status === "active"
+                      : String(company.status).toLowerCase() === "active"
                       ? "Suspend Company"
                       : "Activate Company"}
                   </strong>
                 </span>
 
-                <span className="quick-action-arrow">→</span>
+                <ChevronRight size={16} className="quick-action-arrow" />
               </button>
 
               <button
@@ -682,13 +689,15 @@ useEffect(() => {
                 className="quick-action-item"
                 onClick={() => setShowPlanModal(true)}
               >
-                <span className="quick-action-icon">◆</span>
+                <span className="quick-action-icon">
+                  <Layers size={16} />
+                </span>
 
                 <span className="quick-action-text">
                   <strong>Change Plan</strong>
                 </span>
 
-                <span className="quick-action-arrow">→</span>
+                <ChevronRight size={16} className="quick-action-arrow" />
               </button>
 
               <button
@@ -696,13 +705,15 @@ useEffect(() => {
                 className="quick-action-item"
                 onClick={() => setShowCreditModal(true)}
               >
-                <span className="quick-action-icon">＋</span>
+                <span className="quick-action-icon">
+                  <PlusCircle size={16} />
+                </span>
 
                 <span className="quick-action-text">
                   <strong>Add Credits</strong>
                 </span>
 
-                <span className="quick-action-arrow">→</span>
+                <ChevronRight size={16} className="quick-action-arrow" />
               </button>
             </div>
           </div>
@@ -759,10 +770,10 @@ useEffect(() => {
 
               {/* Account totals */}
               <div className="kpi-grid kpi-grid-4">
-                <KpiCard title="Users" value={stats.users} />
-                <KpiCard title="Contacts" value={stats.contacts} />
-                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} />
-                <KpiCard title="Total Messages" value={stats.totalMessages} />
+                <KpiCard title="Users" value={stats.users} icon={<Users size={18} />} />
+                <KpiCard title="Contacts" value={stats.contacts} icon={<UserCheck size={18} />} />
+                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} icon={<Layers size={18} />} />
+                <KpiCard title="Total Messages" value={stats.totalMessages} icon={<MessageSquare size={18} />} />
               </div>
 
               {/* Campaigns */}
@@ -772,16 +783,18 @@ useEffect(() => {
               </div>
 
               <div className="kpi-grid kpi-grid-3">
-                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} />
+                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} icon={<Layers size={18} />} />
                 <KpiCard
                   title="Completed"
                   value={stats.completedCampaigns}
                   tone="success"
+                  icon={<CheckCircle2 size={18} />}
                 />
                 <KpiCard
                   title="Failed"
                   value={stats.failedCampaigns}
                   tone="danger"
+                  icon={<AlertCircle size={18} />}
                 />
               </div>
 
@@ -796,13 +809,15 @@ useEffect(() => {
                   title="Failed"
                   value={stats.failedMessages}
                   tone="danger"
+                  icon={<AlertCircle size={18} />}
                 />
                 <KpiCard
                   title="Delivered"
                   value={stats.deliveredMessages}
                   tone="success"
+                  icon={<CheckCircle2 size={18} />}
                 />
-                <KpiCard title="Received" value={stats.receivedMessages} />
+                <KpiCard title="Received" value={stats.receivedMessages} icon={<MessageSquare size={18} />} />
               </div>
             </div>
           )}
@@ -1103,16 +1118,23 @@ useEffect(() => {
 function KpiCard({
   title,
   value,
+  icon,
   tone,
 }: {
   title: string;
   value: number;
+  icon?: ReactNode;
   tone?: "success" | "danger";
 }) {
   return (
     <div className={tone ? `kpi-card kpi-${tone}` : "kpi-card"}>
-      <span>{title}</span>
-      <strong>{value.toLocaleString("en-IN")}</strong>
+      <div className="kpi-card__left">
+        {icon && <div className="kpi-card__icon">{icon}</div>}
+        <div className="kpi-card__info">
+          <span className="kpi-card__label">{title}</span>
+          <strong className="kpi-card__val">{value.toLocaleString("en-IN")}</strong>
+        </div>
+      </div>
     </div>
   );
 }

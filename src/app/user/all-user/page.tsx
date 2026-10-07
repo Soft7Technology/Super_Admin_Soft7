@@ -114,7 +114,7 @@ export default function AllUsers() {
   const totalPages = Math.max(
     1,
     pagination?.totalPages ??
-      Math.ceil((pagination?.total ?? users.length) / rowsPerPage),
+    Math.ceil((pagination?.total ?? users.length) / rowsPerPage),
   );
 
   const handleCompanyChange = (companyId: string) => {
@@ -320,9 +320,8 @@ export default function AllUsers() {
 
       {/* Grid */}
       <div
-        className={`au-main-grid ${
-          detail ? "au-main-grid--panel" : "au-main-grid--full"
-        }`}
+        className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"
+          }`}
       >
         <div className="au-table-wrapper au-desktop-only">
           <table className="au-table">
@@ -367,7 +366,7 @@ export default function AllUsers() {
                           try {
                             sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
                             sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
-                          } catch {}
+                          } catch { }
                         }}
                         className="au-user-cell"
                         title={`View profile of ${user.name}`}
@@ -524,7 +523,7 @@ export default function AllUsers() {
                         try {
                           sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
                           sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
-                        } catch {}
+                        } catch { }
                       }}
                       className="au-user-card__link"
                     >
@@ -668,24 +667,24 @@ export default function AllUsers() {
           )}
         </div>
 
-          {/* Pagination */}
-          <div className="au-pagination">
-            <button
-              disabled={currentPage <= 1 || loading}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            >
-              Previous
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              disabled={currentPage >= totalPages || loading}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Next
-            </button>
-          </div>
+        {/* Pagination */}
+        <div className="au-pagination">
+          <button
+            disabled={currentPage <= 1 || loading}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            disabled={currentPage >= totalPages || loading}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
+        </div>
 
         {/* Detail panel (view only — no action buttons) */}
         {detail && (

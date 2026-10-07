@@ -17,12 +17,32 @@ import {
   CheckCircle2,
   Eye,
   Pencil,
+  Search,
   Trash2,
   Wallet,
 } from "lucide-react";
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
+
+const AVATAR_COLORS = [
+  "#206bc4",
+  "#4299e1",
+  "#2fb344",
+  "#ae3ec9",
+  "#f59f00",
+  "#17a2b8",
+  "#6366f1",
+  "#ec4899",
+];
+
+function getAvatarBg(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 const COMPANIES_API = "/v1/super-admin/companies";
 const ITEMS_PER_PAGE = 25;
@@ -238,37 +258,17 @@ function Pagination({
     }
   }
 
-  const navBtnStyle = (disabled: boolean): CSSProperties => ({
-    border: "1px solid var(--mc-border, #2c3657)",
-    background: "var(--mc-surface, #1a1a2e)",
-    color: disabled ? "var(--mc-muted, #6b7280)" : "inherit",
-    borderRadius: 8,
-    padding: "6px 12px",
-    fontSize: 13,
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.5 : 1,
-  });
-
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: 12,
-        padding: "14px 4px 4px",
-      }}
-    >
-      <div style={{ fontSize: 13, color: "var(--mc-muted, #6b7280)" }}>
+    <div className="mc-pagination">
+      <div className="mc-pagination__info">
         Showing <strong>{startItem}</strong>–<strong>{endItem}</strong> of{" "}
         <strong>{totalItems}</strong> companies
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div className="mc-pagination__btns">
         <button
           type="button"
-          style={navBtnStyle(currentPage === 1)}
+          className="mc-pagination__btn"
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
         >
@@ -277,13 +277,7 @@ function Pagination({
 
         {pages.map((page, index) =>
           page === "..." ? (
-            <span
-              key={`ellipsis-${index}`}
-              style={{
-                padding: "0 4px",
-                color: "var(--mc-muted, #6b7280)",
-              }}
-            >
+            <span key={`ellipsis-${index}`} className="mc-pagination__ellipsis">
               …
             </span>
           ) : (
@@ -291,20 +285,9 @@ function Pagination({
               key={page}
               type="button"
               onClick={() => onPageChange(page)}
-              style={{
-                minWidth: 32,
-                height: 32,
-                borderRadius: 8,
-                border: "1px solid var(--mc-border, #2c3657)",
-                background:
-                  page === currentPage
-                    ? "#10b981"
-                    : "var(--mc-surface, #1a1a2e)",
-                color: page === currentPage ? "#fff" : "inherit",
-                fontWeight: page === currentPage ? 700 : 400,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
+              className={`mc-pagination__btn ${
+                page === currentPage ? "mc-pagination__btn--active" : ""
+              }`}
             >
               {page}
             </button>
@@ -313,7 +296,7 @@ function Pagination({
 
         <button
           type="button"
-          style={navBtnStyle(currentPage === totalPages)}
+          className="mc-pagination__btn"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >
@@ -340,17 +323,17 @@ function KPI({
   color: string;
 }) {
   return (
-    <div className="mc-stat">
+    <div className="mc-kpi">
       <div
-        className="mc-stat__icon"
+        className="mc-kpi__icon"
         style={{ background: `${color}1f`, color }}
       >
         {icon}
       </div>
 
-      <div className="mc-stat__body">
-        <span className="mc-stat__label">{label}</span>
-        <span className="mc-stat__value">{value}</span>
+      <div className="mc-kpi__info">
+        <span className="mc-kpi__label">{label}</span>
+        <span className="mc-kpi__value">{value}</span>
       </div>
     </div>
   );
@@ -1297,7 +1280,7 @@ export default function ManageCompanies() {
 
       {/* STATS */}
 
-      <div className="mc-stats">
+      <div className="mc-kpi-grid">
         <KPI
           label="Total Companies"
           value={String(pagination.total)}
@@ -1329,13 +1312,15 @@ export default function ManageCompanies() {
 
       <div className="mc-filter-bar mc-filter-bar-top">
         <div className="mc-search-wrap mc-search-wrap-small">
-          <span className="mc-search-icon">🔍</span>
+          <span className="mc-search-icon">
+            <Search size={15} />
+          </span>
 
           <input
             className="mc-search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email, domain or business ID…"
+            placeholder="Search by name, email or phone…"
             autoComplete="off"
           />
         </div>
@@ -1413,7 +1398,9 @@ export default function ManageCompanies() {
 
                 <th>PHONE</th>
 
-                <th>ACTIONS</th>
+                <th>CREDIT BALANCE</th>
+
+                <th style={{ textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
 
@@ -1430,7 +1417,10 @@ export default function ManageCompanies() {
 
                   <td>
                     <div className="mc-company-cell">
-                      <div className="mc-company-avatar">
+                      <div
+                        className="mc-company-avatar"
+                        style={{ background: getAvatarBg(company.name) }}
+                      >
                         {company.name.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="mc-company-info">
@@ -1452,9 +1442,15 @@ export default function ManageCompanies() {
                     </div>
                   </td>
 
-                  <td title={company.email}>{company.email}</td>
+                  <td title={company.email}>{company.email || "—"}</td>
 
-                  <td>{company.phone}</td>
+                  <td>{company.phone || "—"}</td>
+
+                  <td>
+                    <span className="mc-credit-badge">
+                      ₹{Number(company.creditBalance || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </td>
 
                   <td>
                     <div className="mc-actions">
@@ -1464,20 +1460,20 @@ export default function ManageCompanies() {
                         onClick={() =>
                           router.push(`/user/manage-companies/${company.id}`)
                         }
-                        title="View"
+                        title="View Details"
                         aria-label="View company"
                       >
-                        <Eye />
+                        <Eye size={15} />
                       </button>
 
                       <button
                         type="button"
                         className="mc-action-btn"
                         onClick={() => openEdit(company)}
-                        title="Edit"
+                        title="Edit Company"
                         aria-label="Edit company"
                       >
-                        <Pencil />
+                        <Pencil size={15} />
                       </button>
 
                       <button
@@ -1487,17 +1483,17 @@ export default function ManageCompanies() {
                         title="Add Credit"
                         aria-label="Add credit"
                       >
-                        <Wallet />
+                        <Wallet size={15} />
                       </button>
 
                       <button
                         type="button"
                         className="mc-action-btn delete"
                         onClick={() => handleDelete(company.id)}
-                        title="Delete"
+                        title="Delete Company"
                         aria-label="Delete company"
                       >
-                        <Trash2 />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </td>
