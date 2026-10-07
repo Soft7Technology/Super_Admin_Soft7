@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Providers } from "./providers";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
-
 export const metadata: Metadata = {
   title: "Soft7 Super Admin ",
   description: "Soft7 Super Admin Panel",
@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap"
@@ -43,7 +43,9 @@ export default function RootLayout({
             __html: `try{var t=localStorage.getItem('sa-theme');if(t){document.documentElement.setAttribute('data-theme',t);document.documentElement.className=t;}}catch(e){}`,
           }}
         />
-        <Providers>{children}</Providers>
+        <ToastProvider>
+          <Providers>{children}</Providers>
+        </ToastProvider>
       </body>
     </html>
   );

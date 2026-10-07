@@ -244,28 +244,42 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
 
-        // ── 1. Dashboard Stats (Superadmin Overview API) ─────────────
-        let statsRes: any = null;
-        try {
-          statsRes = await axiosInstance.get("/v1/super-admin/overview", {
-            headers: getExternalHeaders(),
-            withCredentials: false,
-          });
-        } catch {
-          statsRes = await axiosInstance
-            .get(DASHBOARD_API, {
-              headers: getExternalHeaders(),
-              withCredentials: false,
-            })
-            .catch(() => null);
-        }
+        const config = { headers: getExternalHeaders(), withCredentials: false };
+        const getOrFallback = (url: string, fallbackUrl?: string) =>
+          axiosInstance.get(url, config).catch(() =>
+            fallbackUrl ? axiosInstance.get(fallbackUrl, config).catch(() => null) : null
+          );
+
+        const [statsRes, usersRes, adminUsersRes, companiesRes, revRes, activityRes] =
+          await Promise.all([
+            getOrFallback("/v1/super-admin/overview", DASHBOARD_API),
+            getOrFallback(
+              `${USERS_API}?role=user&page=1&limit=50`,
+              "/v1/super-admin/users?page=1&limit=50"
+            ),
+            getOrFallback(`${USERS_API}?role=admin`),
+            getOrFallback(
+              COMPANIES_API,
+              "/v1/super-admin/companies?page=1&limit=25&status=active"
+            ),
+            getOrFallback("/v1/super-admin/subscriptions/revenue"),
+            getOrFallback(ACTIVITY_API, "/v1/super-admin/activities?page=1&limit=10"),
+          ]);
 
         if (!mounted) return;
+
+        // ── 1. Stats ───────────────────────────────────────────────
         const data = statsRes?.data?.data ?? statsRes?.data ?? {};
 
         const companiesVal = Array.isArray(data.companies)
           ? sumArrayCounts(data.companies)
-          : safeNum(data.campaigns_count ?? data.total_campaigns ?? data.companies_count ?? data.companies ?? 0);
+          : safeNum(
+              data.campaigns_count ??
+                data.total_campaigns ??
+                data.companies_count ??
+                data.companies ??
+                0
+            );
 
         const usersVal = Array.isArray(data.users)
           ? sumArrayCounts(data.users)
@@ -273,50 +287,59 @@ export default function DashboardPage() {
 
         const chatbotsVal = Array.isArray(data.domains)
           ? sumArrayCounts(data.domains)
-          : safeNum(data.chatbot_count ?? data.total_chatbots ?? data.chatbots ?? data.total_domains ?? data.domains_count ?? 0);
+          : safeNum(
+              data.chatbot_count ??
+                data.total_chatbots ??
+                data.chatbots ??
+                data.total_domains ??
+                data.domains_count ??
+                0
+            );
 
-        const creditsTotal = Array.isArray(data.companies) && sumCreditBalances(data.companies) > 0
-          ? sumCreditBalances(data.companies)
-          : safeNum(data.total_messages ?? data.messages_count ?? data.total_credits ?? 0);
+        const creditsTotal =
+          Array.isArray(data.companies) && sumCreditBalances(data.companies) > 0
+            ? sumCreditBalances(data.companies)
+            : safeNum(data.total_messages ?? data.messages_count ?? data.total_credits ?? 0);
 
-        const messagesFormatted = Array.isArray(data.companies) && sumCreditBalances(data.companies) > 0
-          ? `₹${creditsTotal.toLocaleString()}`
-          : creditsTotal.toLocaleString();
+        const messagesFormatted =
+          Array.isArray(data.companies) && sumCreditBalances(data.companies) > 0
+            ? `₹${creditsTotal.toLocaleString()}`
+            : creditsTotal.toLocaleString();
 
         setStats([
-          { label: "Companies", value: companiesVal.toLocaleString(), icon: <Building2 size={20} />, color: "#206bc4", route: "/user/manage-companies", trend: "+8.4%" },
-          { label: "Users",     value: usersVal.toLocaleString(),     icon: <Users size={20} />,     color: "#2fb344", route: "/user/all-user", trend: "+14%" },
-          { label: "Domains",   value: chatbotsVal.toLocaleString(),   icon: <Globe size={20} />,     color: "#4299e1", trend: "+6.2%" },
-          { label: "Credits",   value: messagesFormatted,             icon: <CreditCard size={20} />, color: "#f59f00", trend: "+22.5%" },
+          {
+            label: "Companies",
+            value: companiesVal.toLocaleString(),
+            icon: <Building2 size={20} />,
+            color: "#206bc4",
+            route: "/user/manage-companies",
+            trend: "+8.4%",
+          },
+          {
+            label: "Users",
+            value: usersVal.toLocaleString(),
+            icon: <Users size={20} />,
+            color: "#2fb344",
+            route: "/user/all-user",
+            trend: "+14%",
+          },
+          {
+            label: "Domains",
+            value: chatbotsVal.toLocaleString(),
+            icon: <Globe size={20} />,
+            color: "#4299e1",
+            trend: "+6.2%",
+          },
+          {
+            label: "Credits",
+            value: messagesFormatted,
+            icon: <CreditCard size={20} />,
+            color: "#f59f00",
+            trend: "+22.5%",
+          },
         ]);
 
-        // ── 2. Users (Fetch first so we can map user counts per company) ─
-        let usersRes: any = null;
-        try {
-          usersRes = await axiosInstance.get(`${USERS_API}?role=user&page=1&limit=50`, {
-            headers: getExternalHeaders(),
-            withCredentials: false,
-          });
-        } catch {
-          usersRes = await axiosInstance
-            .get("/v1/super-admin/users?page=1&limit=50", {
-              headers: getExternalHeaders(),
-              withCredentials: false,
-            })
-            .catch(() => null);
-        }
-        if (!mounted) return;
-
-        let adminUsersRes: any = null;
-        try {
-          adminUsersRes = await axiosInstance.get(`${USERS_API}?role=admin`, {
-            headers: getExternalHeaders(),
-            withCredentials: false,
-          });
-        } catch {
-          // ignore admin call error
-        }
-
+        // ── 2. Users & Company User Counts ─────────────────────────
         const usersData = [
           ...recordsFromResponse(usersRes?.data),
           ...recordsFromResponse(adminUsersRes?.data),
@@ -350,154 +373,67 @@ export default function DashboardPage() {
           }))
         );
 
-        // ── 3. Companies ─────────────────────────────────────────────
-        let companiesRes: any = null;
-        try {
-          companiesRes = await axiosInstance.get(COMPANIES_API, {
-            headers: getExternalHeaders(),
-            withCredentials: false,
-          });
-        } catch {
-          companiesRes = await axiosInstance
-            .get("/v1/super-admin/companies?page=1&limit=25&status=active", {
-              headers: getExternalHeaders(),
-              withCredentials: false,
-            })
-            .catch(() => null);
-        }
-        if (!mounted) return;
-
+        // ── 3. Companies ───────────────────────────────────────────
         const companiesData = recordsFromResponse(companiesRes?.data);
+        const mappedCompanies = companiesData.slice(0, 6).map((company: any, index: number) => {
+          const cId = String(company.id || company._id || index);
+          const cName = company.name || company.company_name || "Unknown Company";
 
-        // ── 4. Platform Growth ──────────────────────────────────────
-        let growthPoints: GrowthPoint[] = [];
-        try {
-          const { data: revRes } = await axiosInstance.get(
-            "/v1/super-admin/subscriptions/revenue",
-            {
-              headers: getExternalHeaders(),
-              withCredentials: false,
-            }
-          );
-          growthPoints = growthPointsFromRevenueResponse(revRes);
-        } catch {
-          // ignore error
-        }
+          const rawPlan =
+            company.plan ||
+            company.plan_name ||
+            company.subscription?.plan ||
+            company.subscription?.name ||
+            company.subscription_plan?.name ||
+            company.subscription_plans?.[0]?.name ||
+            company.UserSubscription?.[0]?.subscription_plans?.name ||
+            company.package ||
+            company.tier;
 
+          const finalPlan = typeof rawPlan === "string" && rawPlan.trim() !== "" ? rawPlan : "Basic";
+
+          const directUserCount =
+            company.users_count ??
+            company.user_count ??
+            company.usersCount ??
+            company.total_users ??
+            company._count?.users ??
+            (Array.isArray(company.users) ? company.users.length : undefined);
+
+          const userCount =
+            directUserCount !== undefined && directUserCount !== null
+              ? safeNum(directUserCount)
+              : safeNum(companyUserCounts[cId] ?? companyUserCounts[cName.toLowerCase()] ?? 0);
+
+          return {
+            id: cId,
+            name: cName,
+            ini: (cName || "C")
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2),
+            col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
+            status: company.status
+              ? company.status.charAt(0).toUpperCase() + company.status.slice(1).toLowerCase()
+              : "Active",
+            plan: normalisePlanName(finalPlan),
+            users: userCount,
+          };
+        });
+
+        setCompanies(mappedCompanies);
+
+        // ── 4. Growth ──────────────────────────────────────────────
+        let growthPoints = growthPointsFromRevenueResponse(revRes?.data);
         if (growthPoints.length === 0) {
           growthPoints = growthPointsFromCompanies(companiesData, 6);
         }
         setGrowth(growthPoints);
 
-        const topCompanies = companiesData.slice(0, 6);
-
-        const mappedCompanies = await Promise.all(
-          topCompanies.map(async (company: any, index: number) => {
-            const cId = String(company.id || company._id || index);
-            const cName = company.name || company.company_name || "Unknown Company";
-
-            const rawPlan =
-              company.plan ||
-              company.plan_name ||
-              company.subscription?.plan ||
-              company.subscription?.name ||
-              company.subscription_plan?.name ||
-              company.subscription_plans?.[0]?.name ||
-              company.UserSubscription?.[0]?.subscription_plans?.name ||
-              company.package ||
-              company.tier;
-
-            let finalPlan = typeof rawPlan === "string" ? rawPlan : "";
-
-            if (!finalPlan) {
-              try {
-                const { data: detailRes } = await axiosInstance.get(
-                  `/v1/super-admin/companies/${cId}`,
-                  { headers: getExternalHeaders(), withCredentials: false }
-                );
-                const detailData = detailRes?.data ?? detailRes ?? {};
-                finalPlan =
-                  detailData.plan ||
-                  detailData.subscription?.plan ||
-                  detailData.subscription_plan?.name ||
-                  "Basic";
-              } catch {
-                finalPlan = "Basic";
-              }
-            }
-
-            let userCount =
-              company.users_count ??
-              company.user_count ??
-              company.usersCount ??
-              company.total_users ??
-              company._count?.users ??
-              (Array.isArray(company.users) ? company.users.length : undefined);
-
-            if (userCount === undefined || userCount === null || userCount === 0) {
-              const mappedCount = companyUserCounts[cId] || companyUserCounts[cName.toLowerCase()];
-              if (mappedCount && mappedCount > 0) {
-                userCount = mappedCount;
-              } else {
-                try {
-                  const { data: cUsersRes } = await axiosInstance.get(
-                    `/v1/super-admin/companies/${cId}/users?page=1&limit=1`,
-                    { headers: getExternalHeaders(), withCredentials: false }
-                  );
-                  const totalFromApi =
-                    cUsersRes?.data?.pagination?.total ??
-                    cUsersRes?.pagination?.total ??
-                    cUsersRes?.total ??
-                    recordsFromResponse(cUsersRes).length;
-
-                  userCount = safeNum(totalFromApi);
-                } catch {
-                  userCount = 0;
-                }
-              }
-            }
-
-            return {
-              id: cId,
-              name: cName,
-              ini: (cName || "C")
-                .split(" ")
-                .map((n: string) => n[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2),
-              col: ["#206bc4", "#2fb344", "#4299e1", "#f59f00", "#6366f1", "#17a2b8"][index % 6],
-              status: company.status
-                ? company.status.charAt(0).toUpperCase() + company.status.slice(1).toLowerCase()
-                : "Active",
-              plan: normalisePlanName(finalPlan),
-              users: safeNum(userCount),
-            };
-          })
-        );
-
-        setCompanies(mappedCompanies);
-
-        // ── 5. Activity Logs ─────────────────────────────────────────
-        let activityRes: any = null;
-        try {
-          activityRes = await axiosInstance.get(ACTIVITY_API, {
-            headers: getExternalHeaders(),
-            withCredentials: false,
-          });
-        } catch {
-          activityRes = await axiosInstance
-            .get("/v1/super-admin/activities?page=1&limit=10", {
-              headers: getExternalHeaders(),
-              withCredentials: false,
-            })
-            .catch(() => null);
-        }
-
-        if (!mounted) return;
-
+        // ── 5. Activity Logs ───────────────────────────────────────
         const activityData = recordsFromResponse(activityRes?.data);
-
         setLogs(
           activityData.slice(0, 5).map((activity: any, index: number) => ({
             id: String(activity.id || activity._id || index),
