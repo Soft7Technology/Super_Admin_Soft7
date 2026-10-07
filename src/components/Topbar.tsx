@@ -20,6 +20,7 @@ import { useTheme, tokens } from "../context/ThemeContext";
 import { useRouter, usePathname } from "next/navigation";
 import NotificationModal from "./NotificationModal";
 import { axiosInstance } from "@/lib/axiosInstance";
+import ProfileAvatar from "./ProfileAvatar";
 
 export default function Topbar({
   title = "Dashboard",
@@ -192,7 +193,8 @@ useEffect(() => {
         gap: isMobile ? "8px" : "16px",
         position: "sticky",
         top: 0,
-        zIndex: 50,
+        zIndex: 100,
+        flexShrink: 0,
         transition: "background 0.3s,border-color 0.3s",
       }}
     >
@@ -231,7 +233,7 @@ useEffect(() => {
             width: "5px",
             height: isMobile ? "26px" : "32px",
             borderRadius: "999px",
-            background: "linear-gradient(180deg, #206bc4, #4299e1)",
+            background: "linear-gradient(180deg, #087f5b, #52a77d)",
           }}
         />
       </div>
@@ -511,7 +513,7 @@ useEffect(() => {
             e.currentTarget.style.transform = "none";
           }}
         >
-          <Wallet size={isMobile ? 15 : 18} color="var(--primary, #206bc4)" />
+          <Wallet size={isMobile ? 15 : 18} color="var(--primary, #087f5b)" />
           <span suppressHydrationWarning>₹{creditBalance}</span>
         </button>
 
@@ -537,7 +539,7 @@ useEffect(() => {
           {isDark ? (
             <Sun size={isMobile ? 15 : 18} strokeWidth={2} color="#f59f00" />
           ) : (
-            <Moon size={isMobile ? 15 : 18} strokeWidth={2} color="var(--primary, #206bc4)" />
+            <Moon size={isMobile ? 15 : 18} strokeWidth={2} color="var(--primary, #087f5b)" />
           )}
         </button>
 
@@ -591,27 +593,11 @@ useEffect(() => {
               transition: "background 0.15s ease, border-color 0.15s ease",
             }}
           >
-            <div
-              style={{
-                width: isCompact ? "28px" : "32px",
-                height: isCompact ? "28px" : "32px",
-                borderRadius: isCompact ? "6px" : "8px",
-                background: "linear-gradient(135deg, #206bc4, #4299e1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 800,
-                fontSize: isCompact ? "0.68rem" : "0.78rem",
-                color: "#fff",
-                flexShrink: 0,
-              }}
-            >
-              {adminName
-                .split(" ")
-                .map((word) => word[0])
-                .join("")
-                .toUpperCase()}
-            </div>
+            <ProfileAvatar
+              name={adminName}
+              size={isCompact ? 28 : 32}
+              fontSize={isCompact ? "0.68rem" : "0.78rem"}
+            />
             {!isNarrow && (
               <div>
                 <div

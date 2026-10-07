@@ -34,8 +34,8 @@ export default function QuickAdminActions() {
       desc: "Register a new business & admin account",
       icon: <Building2 size={18} strokeWidth={2.2} />,
       route: "/user/manage-companies/create",
-      color: "var(--crm-primary, #206bc4)",
-      bgColor: "rgba(32, 107, 196, 0.12)",
+      color: "var(--crm-primary, #087f5b)",
+      bgColor: "rgba(8, 127, 91, 0.12)",
       badge: "+ Add",
     },
     {
@@ -106,8 +106,8 @@ export default function QuickAdminActions() {
             letterSpacing: "0.04em",
             padding: "3px 8px",
             borderRadius: "999px",
-            background: "rgba(32, 107, 196, 0.1)",
-            color: "var(--crm-primary, #206bc4)",
+            background: "rgba(8, 127, 91, 0.1)",
+            color: "var(--crm-primary, #087f5b)",
           }}
         >
           {actions.length} Shortcuts

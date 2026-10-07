@@ -2,16 +2,22 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import {
+  Plus, Pencil, LogIn, Send, Trash2, HelpCircle,
+  Info, CheckCircle2, AlertTriangle, XCircle,
+  Download, MoreHorizontal, ChevronRight, ChevronDown,
+  Trash,
+} from "lucide-react";
 import "./audit-logs.css";
 
 // Users fetched dynamically now
 
-const AC: Record<string, [string, string]> = {
-  CREATE: ["+", "var(--a-create)"],
-  UPDATE: ["✎", "var(--a-update)"],
-  LOGIN: ["→", "var(--a-login)"],
-  SEND: ["➤", "var(--a-send)"],
-  DELETE: ["×", "var(--a-delete)"]
+const AC: Record<string, [React.ReactNode, string]> = {
+  CREATE: [<Plus size={15} strokeWidth={2.5} />, "var(--a-create)"],
+  UPDATE: [<Pencil size={14} strokeWidth={2.5} />, "var(--a-update)"],
+  LOGIN:  [<LogIn size={14} strokeWidth={2.5} />, "var(--a-login)"],
+  SEND:   [<Send size={14} strokeWidth={2.5} />, "var(--a-send)"],
+  DELETE: [<Trash2 size={14} strokeWidth={2.5} />, "var(--a-delete)"],
 };
 
 const SV: Record<string, [string, string]> = {
@@ -241,7 +247,7 @@ export default function AuditLogs() {
   ].map(x => [x, x[0] + x.slice(1).toLowerCase()]);
 
   const renderRow = (l: LogEntry, isChild = false, extra?: React.ReactNode) => {
-    const [ic, co] = AC[l.act] || ["?", "#000"];
+    const [ic, co] = AC[l.act] || [<HelpCircle size={14} />, "#64748b"];
     return (
       <div 
         key={l.id} 
@@ -285,11 +291,11 @@ export default function AuditLogs() {
     );
   };
 
-  const metaData: Record<string, [string, string]> = {
-    info: ["i", "Info"],
-    success: ["✓", "Success"],
-    warning: ["!", "Warnings"],
-    error: ["!", "Errors"]
+  const metaData: Record<string, [React.ReactNode, string]> = {
+    info:    [<Info size={18} strokeWidth={2.5} />, "Info"],
+    success: [<CheckCircle2 size={18} strokeWidth={2.5} />, "Success"],
+    warning: [<AlertTriangle size={18} strokeWidth={2.5} />, "Warnings"],
+    error:   [<XCircle size={18} strokeWidth={2.5} />, "Errors"],
   };
 
   return (
@@ -300,10 +306,15 @@ export default function AuditLogs() {
             <h1>Activity logs</h1>
             <div className="sub">Monitor all system activities and user actions</div>
           </div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button className="btn" onClick={exportCSV}>Export CSV</button>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button className="btn" onClick={exportCSV} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+              <Download size={15} strokeWidth={2.5} />
+              Export CSV
+            </button>
             <div className="menu">
-              <button className="btn" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
+              <button className="btn" onClick={() => setMenuOpen(!menuOpen)} style={{ padding: "9px 12px" }}>
+                <MoreHorizontal size={17} strokeWidth={2.5} />
+              </button>
               <div className={`pop ${menuOpen ? "open" : ""}`}>
                 <button className="red" onClick={() => { setMenuOpen(false); setClearModalOpen(true); }}>Clear logs…</button>
               </div>
@@ -521,7 +532,8 @@ export default function AuditLogs() {
                   </div>
                   
                   <button className="diff-tog" onClick={() => setShowRawDiff(!showRawDiff)}>
-                    <span style={{ fontSize: 10 }}>{showRawDiff ? "▼" : "▶"}</span> View raw diff
+                    {showRawDiff ? <ChevronDown size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />}
+                    View raw diff
                   </button>
 
                   {showRawDiff && (

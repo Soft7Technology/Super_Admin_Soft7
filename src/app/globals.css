@@ -3,29 +3,29 @@
 
 
 :root {
-  --primary: #206bc4;
+  --primary: #087f5b;
 
   /* Global Dashboard Theme — Light */
-  --crm-bg: #f4f6fa;
+  --crm-bg: #f0f7f3;
   --crm-card-bg: #ffffff;
-  --crm-border: #e6e8eb;
-  --crm-border-light: rgba(4, 32, 69, 0.07);
-  --crm-text: #1e293b;
-  --crm-title: #0f172a;
-  --crm-muted: #64748b;
-  --crm-subheader: #64748b;
-  --crm-card-hover: rgba(32, 107, 196, 0.04);
-  --row-hover: rgba(32, 107, 196, 0.04);
+  --crm-border: #dbe8e2;
+  --crm-border-light: rgba(19, 56, 41, 0.08);
+  --crm-text: #1b2d27;
+  --crm-title: #13251e;
+  --crm-muted: #6c8177;
+  --crm-subheader: #6c8177;
+  --crm-card-hover: rgba(8, 127, 91, 0.05);
+  --row-hover: rgba(8, 127, 91, 0.05);
   --crm-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --crm-progress-bg: #eef2f6;
+  --crm-progress-bg: #e4efea;
 
   /* Global Color Accents */
-  --crm-primary: #206bc4;
-  --crm-primary-lt: rgba(32, 107, 196, 0.12);
-  --crm-azure: #4299e1;
-  --crm-azure-lt: rgba(66, 153, 225, 0.14);
-  --crm-green: #2fb344;
-  --crm-green-lt: rgba(47, 179, 68, 0.14);
+  --crm-primary: #087f5b;
+  --crm-primary-lt: rgba(8, 127, 91, 0.12);
+  --crm-azure: #52a77d;
+  --crm-azure-lt: rgba(82, 167, 125, 0.14);
+  --crm-green: #159765;
+  --crm-green-lt: rgba(21, 151, 101, 0.14);
   --crm-purple: #ae3ec9;
   --crm-purple-lt: rgba(174, 62, 201, 0.14);
   --crm-yellow: #f59f00;
@@ -36,32 +36,32 @@
   --crm-cyan-lt: rgba(23, 162, 184, 0.14);
 
   /* Light Theme Defaults */
-  --background: #f4f6fa;
-  --foreground: #1e293b;
+  --background: #f0f7f3;
+  --foreground: #1b2d27;
   --card: #ffffff;
-  --border: #e6e8eb;
-  --muted: #64748b;
+  --border: #dbe8e2;
+  --muted: #6c8177;
 
   /* Universal Page Theme Tokens — Light */
-  --bg: #f4f6fa;
+  --bg: #f0f7f3;
   --surf: #ffffff;
-  --surf2: #f8fafc;
-  --surf3: #f1f3f8;
-  --text: #1e293b;
-  --text-sub: #495057;
-  --success: #2fb344;
+  --surf2: #f6faf8;
+  --surf3: #e8f1ee;
+  --text: #1b2d27;
+  --text-sub: #4f625a;
+  --success: #159765;
   --danger: #d63939;
   --warn: #f59f00;
-  --info: #4299e1;
-  --title-color: #0f172a;
+  --info: #087f5b;
+  --title-color: #13251e;
   --card-bg: #ffffff;
-  --card-sel-bg: rgba(32, 107, 196, 0.06);
+  --card-sel-bg: #e8f1ee;
   --input-bg: #ffffff;
   --modal-bg: #ffffff;
   --panel-header-bg: #ffffff;
   --overlay-bg: rgba(0, 0, 0, 0.4);
-  --scrollbar: rgba(32, 107, 196, 0.2);
-  --placeholder: #94a3b8;
+  --scrollbar: rgba(8, 127, 91, 0.22);
+  --placeholder: #93a49c;
   --select-opt-bg: #ffffff;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -69,33 +69,57 @@
   --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.16);
 
   /* Universal Module Accents (Light) */
-  --accent: #206bc4;
-  --accent2: #4299e1;
-  --st-accent: #206bc4;
-  --st-accent2: #4299e1;
-  --st-accent-dim: rgba(32, 107, 196, 0.12);
-  --mc-accent: #206bc4;
-  --mc-accent2: #4299e1;
-  --ss-accent: #206bc4;
-  --ss-accent2: #4299e1;
-  --sb-accent: #206bc4;
-  --sb-accent2: #4299e1;
-  --pf-accent: #206bc4;
-  --pf-accent2: #4299e1;
-  --tx-accent: #206bc4;
-  --pm-accent: #206bc4;
-  --pm-accent2: #4299e1;
+  --accent: #087f5b;
+  --accent2: #52a77d;
+  --st-accent: #087f5b;
+  --st-accent2: #52a77d;
+  --st-accent-dim: rgba(8, 127, 91, 0.12);
+  --mc-accent: #087f5b;
+  --mc-accent2: #52a77d;
+  --ss-accent: #087f5b;
+  --ss-accent2: #52a77d;
+  --sb-accent: #087f5b;
+  --sb-accent2: #52a77d;
+  --pf-accent: #087f5b;
+  --pf-accent2: #52a77d;
+  --tx-accent: #087f5b;
+  --pm-accent: #087f5b;
+  --pm-accent2: #52a77d;
 
   /* Global Page Layout & Padding Tokens */
   --page-padding: 28px 24px 50px;
   --page-padding-top: 28px;
   --page-padding-x: 24px;
   --page-padding-bottom: 50px;
+
+  /* Global Profile Avatar Theme Tokens */
+  --avatar-bg: #e8f5ef;
+  --avatar-color: #278b67;
 }
+
+/* Global Profile Avatar Standard CSS */
+.global-profile-avatar {
+  background-color: var(--avatar-bg, #e8f5ef);
+  color: var(--avatar-color, #278b67);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+[data-theme="dark"],
+.dark {
+  --avatar-bg: rgba(16, 185, 129, 0.16);
+  --avatar-color: #34d399;
+}
+
+[data-theme="dark"] .global-profile-avatar,
+.dark .global-profile-avatar {
+  background-color: var(--avatar-bg, rgba(16, 185, 129, 0.16)) !important;
+  color: var(--avatar-color, #34d399) !important;
+}
+
 
 [data-theme="light"],
 .light {
-  --primary: #206bc4;
+  --primary: #087f5b;
 
   /* Global Dashboard Theme — Light */
   --crm-bg: #f4f6fa;
@@ -106,16 +130,16 @@
   --crm-title: #0f172a;
   --crm-muted: #64748b;
   --crm-subheader: #64748b;
-  --crm-card-hover: rgba(32, 107, 196, 0.04);
-  --row-hover: rgba(32, 107, 196, 0.04);
+  --crm-card-hover: rgba(8, 127, 91, 0.04);
+  --row-hover: rgba(8, 127, 91, 0.04);
   --crm-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --crm-progress-bg: #eef2f6;
 
   /* Global Color Accents */
-  --crm-primary: #206bc4;
-  --crm-primary-lt: rgba(32, 107, 196, 0.12);
-  --crm-azure: #4299e1;
-  --crm-azure-lt: rgba(66, 153, 225, 0.14);
+  --crm-primary: #087f5b;
+  --crm-primary-lt: rgba(8, 127, 91, 0.12);
+  --crm-azure: #52a77d;
+  --crm-azure-lt: rgba(82, 167, 125, 0.14);
   --crm-green: #2fb344;
   --crm-green-lt: rgba(47, 179, 68, 0.14);
   --crm-purple: #ae3ec9;
@@ -142,15 +166,15 @@
   --success: #2fb344;
   --danger: #d63939;
   --warn: #f59f00;
-  --info: #4299e1;
+  --info: #52a77d;
   --title-color: #0f172a;
   --card-bg: #ffffff;
-  --card-sel-bg: rgba(32, 107, 196, 0.06);
+  --card-sel-bg: rgba(8, 127, 91, 0.06);
   --input-bg: #ffffff;
   --modal-bg: #ffffff;
   --panel-header-bg: #ffffff;
   --overlay-bg: rgba(0, 0, 0, 0.4);
-  --scrollbar: rgba(32, 107, 196, 0.2);
+  --scrollbar: rgba(8, 127, 91, 0.2);
   --placeholder: #94a3b8;
   --select-opt-bg: #ffffff;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
@@ -159,100 +183,213 @@
   --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.16);
 
   /* Universal Module Accents (Light) */
-  --accent: #206bc4;
-  --accent2: #4299e1;
-  --st-accent: #206bc4;
-  --st-accent2: #4299e1;
-  --st-accent-dim: rgba(32, 107, 196, 0.12);
-  --mc-accent: #206bc4;
-  --mc-accent2: #4299e1;
-  --ss-accent: #206bc4;
-  --ss-accent2: #4299e1;
-  --sb-accent: #206bc4;
-  --sb-accent2: #4299e1;
-  --pf-accent: #206bc4;
-  --pf-accent2: #4299e1;
-  --tx-accent: #206bc4;
-  --pm-accent: #206bc4;
-  --pm-accent2: #4299e1;
+  --accent: #087f5b;
+  --accent2: #52a77d;
+  --st-accent: #087f5b;
+  --st-accent2: #52a77d;
+  --st-accent-dim: rgba(8, 127, 91, 0.12);
+  --mc-accent: #087f5b;
+  --mc-accent2: #52a77d;
+  --ss-accent: #087f5b;
+  --ss-accent2: #52a77d;
+  --sb-accent: #087f5b;
+  --sb-accent2: #52a77d;
+  --pf-accent: #087f5b;
+  --pf-accent2: #52a77d;
+  --tx-accent: #087f5b;
+  --pm-accent: #087f5b;
+  --pm-accent2: #52a77d;
 }
 
 .dark,
 [data-theme="dark"] {
-  --primary: #206bc4;
+  --primary: #10b981;
 
   /* Global Dashboard Theme — Dark */
-  --crm-bg: #080b0f;
-  --crm-card-bg: #0e1218;
+  --crm-bg: #0b0e11;
+  --crm-card-bg: #13171d;
   --crm-border: rgba(255, 255, 255, 0.08);
   --crm-border-light: rgba(255, 255, 255, 0.05);
-  --crm-text: #c8d3de;
-  --crm-title: #edf2f7;
-  --crm-muted: #8a97a8;
+  --crm-text: #cbd5e1;
+  --crm-title: #ffffff;
+  --crm-muted: #94a3b8;
   --crm-subheader: #64748b;
-  --crm-card-hover: rgba(32, 107, 196, 0.1);
-  --row-hover: rgba(32, 107, 196, 0.08);
-  --crm-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  --crm-card-hover: rgba(16, 185, 129, 0.1);
+  --row-hover: rgba(16, 185, 129, 0.06);
+  --crm-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   --crm-progress-bg: rgba(255, 255, 255, 0.08);
 
-  --crm-primary-lt: rgba(32, 107, 196, 0.2);
-  --crm-azure-lt: rgba(66, 153, 225, 0.2);
-  --crm-green-lt: rgba(47, 179, 68, 0.2);
-  --crm-purple-lt: rgba(174, 62, 201, 0.2);
-  --crm-yellow-lt: rgba(245, 159, 0, 0.2);
-  --crm-red-lt: rgba(214, 57, 57, 0.2);
-  --crm-cyan-lt: rgba(23, 162, 184, 0.2);
+  --crm-primary-lt: rgba(16, 185, 129, 0.16);
+  --crm-azure-lt: rgba(82, 167, 125, 0.16);
+  --crm-green-lt: rgba(16, 185, 129, 0.16);
+  --crm-purple-lt: rgba(168, 85, 247, 0.16);
+  --crm-yellow-lt: rgba(245, 158, 11, 0.16);
+  --crm-red-lt: rgba(239, 68, 68, 0.16);
+  --crm-cyan-lt: rgba(14, 165, 233, 0.16);
 
   /* Dark Theme Defaults */
-  --background: #080b0f;
-  --foreground: #edf2f7;
-  --card: #0e1218;
+  --background: #0b0e11;
+  --foreground: #ffffff;
+  --card: #13171d;
   --border: rgba(255, 255, 255, 0.08);
-  --muted: #8a97a8;
+  --muted: #94a3b8;
 
   /* Universal Page Theme Tokens — Dark */
-  --bg: #080b0f;
-  --surf: #0e1218;
-  --surf2: #131920;
-  --surf3: #192028;
-  --text: #c8d3de;
+  --bg: #0b0e11;
+  --surf: #13171d;
+  --surf2: #171c24;
+  --surf3: #1d222b;
+  --text: #cbd5e1;
   --text-sub: #94a3b8;
-  --success: #2fb344;
-  --danger: #d63939;
-  --warn: #f59f00;
-  --info: #4299e1;
-  --title-color: #edf2f7;
-  --card-bg: #0e1218;
-  --card-sel-bg: rgba(32, 107, 196, 0.08);
-  --input-bg: #0e1218;
-  --modal-bg: #0e1218;
-  --panel-header-bg: #0e1218;
-  --overlay-bg: rgba(0, 0, 0, 0.75);
+  --success: #10b981;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --info: #3b82f6;
+  --title-color: #ffffff;
+  --card-bg: #13171d;
+  --card-sel-bg: rgba(16, 185, 129, 0.16);
+  --input-bg: #13171d;
+  --modal-bg: #13171d;
+  --panel-header-bg: #13171d;
+  --overlay-bg: rgba(0, 0, 0, 0.8);
   --scrollbar: rgba(255, 255, 255, 0.15);
   --placeholder: #64748b;
-  --select-opt-bg: #131920;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-panel: 0 4px 20px rgba(0, 0, 0, 0.35);
-  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --select-opt-bg: #171c24;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-panel: 0 4px 25px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.7);
 
   /* Universal Module Accents (Dark) */
-  --accent: #206bc4;
-  --accent2: #4299e1;
-  --st-accent: #206bc4;
-  --st-accent2: #4299e1;
-  --st-accent-dim: rgba(32, 107, 196, 0.2);
-  --mc-accent: #206bc4;
-  --mc-accent2: #4299e1;
-  --ss-accent: #206bc4;
-  --ss-accent2: #4299e1;
-  --sb-accent: #206bc4;
-  --sb-accent2: #4299e1;
-  --pf-accent: #206bc4;
-  --pf-accent2: #4299e1;
-  --tx-accent: #206bc4;
-  --pm-accent: #206bc4;
-  --pm-accent2: #4299e1;
+  --accent: #10b981;
+  --accent2: #34d399;
+  --st-accent: #10b981;
+  --st-accent2: #34d399;
+  --st-accent-dim: rgba(16, 185, 129, 0.16);
+  --mc-accent: #10b981;
+  --mc-accent2: #34d399;
+  --ss-accent: #10b981;
+  --ss-accent2: #34d399;
+  --sb-accent: #10b981;
+  --sb-accent2: #34d399;
+  --pf-accent: #10b981;
+  --pf-accent2: #34d399;
+  --tx-accent: #10b981;
+  --pm-accent: #10b981;
+  --pm-accent2: #34d399;
+}
+
+/* Mint theme overrides. These stay after the legacy light/dark declarations so
+   every screen receives one consistent palette while module CSS is migrated. */
+[data-theme="light"],
+.light {
+  --primary: #087f5b;
+  --crm-bg: #f0f7f3;
+  --crm-border: #dbe8e2;
+  --crm-border-light: rgba(19, 56, 41, 0.08);
+  --crm-text: #1b2d27;
+  --crm-title: #13251e;
+  --crm-muted: #6c8177;
+  --crm-subheader: #6c8177;
+  --crm-card-hover: rgba(8, 127, 91, 0.05);
+  --row-hover: rgba(8, 127, 91, 0.05);
+  --crm-progress-bg: #e4efea;
+  --crm-primary: #087f5b;
+  --crm-primary-lt: rgba(8, 127, 91, 0.12);
+  --crm-azure: #52a77d;
+  --crm-azure-lt: rgba(82, 167, 125, 0.14);
+  --crm-green: #159765;
+  --crm-green-lt: rgba(21, 151, 101, 0.14);
+  --background: #f0f7f3;
+  --foreground: #1b2d27;
+  --border: #dbe8e2;
+  --muted: #6c8177;
+  --bg: #f0f7f3;
+  --surf2: #f6faf8;
+  --surf3: #e8f1ee;
+  --text: #1b2d27;
+  --text-sub: #4f625a;
+  --success: #159765;
+  --info: #087f5b;
+  --title-color: #13251e;
+  --card-sel-bg: #e8f1ee;
+  --scrollbar: rgba(8, 127, 91, 0.22);
+  --placeholder: #93a49c;
+  --accent: #087f5b;
+  --accent2: #52a77d;
+  --st-accent: #087f5b;
+  --st-accent2: #52a77d;
+  --st-accent-dim: rgba(8, 127, 91, 0.12);
+  --mc-accent: #087f5b;
+  --mc-accent2: #52a77d;
+  --ss-accent: #087f5b;
+  --ss-accent2: #52a77d;
+  --sb-accent: #087f5b;
+  --sb-accent2: #52a77d;
+  --pf-accent: #087f5b;
+  --pf-accent2: #52a77d;
+  --tx-accent: #087f5b;
+  --pm-accent: #087f5b;
+  --pm-accent2: #52a77d;
+}
+
+.dark,
+[data-theme="dark"] {
+  --primary: #10b981;
+  --crm-bg: #0b0e11;
+  --crm-card-bg: #13171d;
+  --crm-border: rgba(255, 255, 255, 0.08);
+  --crm-border-light: rgba(255, 255, 255, 0.05);
+  --crm-text: #cbd5e1;
+  --crm-title: #ffffff;
+  --crm-muted: #94a3b8;
+  --crm-subheader: #64748b;
+  --crm-card-hover: rgba(16, 185, 129, 0.1);
+  --row-hover: rgba(16, 185, 129, 0.06);
+  --crm-progress-bg: rgba(255, 255, 255, 0.08);
+  --crm-primary: #10b981;
+  --crm-primary-lt: rgba(16, 185, 129, 0.16);
+  --crm-azure: #34d399;
+  --crm-azure-lt: rgba(52, 211, 153, 0.16);
+  --crm-green: #10b981;
+  --crm-green-lt: rgba(16, 185, 129, 0.16);
+  --background: #0b0e11;
+  --foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #94a3b8;
+  --bg: #0b0e11;
+  --surf: #13171d;
+  --surf2: #171c24;
+  --surf3: #1d222b;
+  --text: #cbd5e1;
+  --text-sub: #94a3b8;
+  --success: #10b981;
+  --info: #3b82f6;
+  --title-color: #ffffff;
+  --card-bg: #13171d;
+  --card-sel-bg: rgba(16, 185, 129, 0.16);
+  --input-bg: #13171d;
+  --modal-bg: #13171d;
+  --panel-header-bg: #13171d;
+  --select-opt-bg: #171c24;
+  --scrollbar: rgba(255, 255, 255, 0.15);
+  --placeholder: #64748b;
+  --accent: #10b981;
+  --accent2: #34d399;
+  --st-accent: #10b981;
+  --st-accent2: #34d399;
+  --st-accent-dim: rgba(16, 185, 129, 0.16);
+  --mc-accent: #10b981;
+  --mc-accent2: #34d399;
+  --ss-accent: #10b981;
+  --ss-accent2: #34d399;
+  --sb-accent: #10b981;
+  --sb-accent2: #34d399;
+  --pf-accent: #10b981;
+  --pf-accent2: #34d399;
+  --tx-accent: #10b981;
+  --pm-accent: #10b981;
+  --pm-accent2: #34d399;
 }
 
 html {
@@ -350,12 +487,12 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(32, 107, 196, 0.3);
+  background: rgba(8, 127, 91, 0.3);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(32, 107, 196, 0.5);
+  background: rgba(8, 127, 91, 0.5);
 }
 
 ::-webkit-scrollbar-track {
@@ -487,14 +624,14 @@ a:hover {
 }
 
 .admin-sidebar__item[data-active="true"] {
-  background: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.25);
+  background: var(--crm-primary-lt);
+  color: var(--primary);
+  box-shadow: none;
 }
 
 .admin-sidebar__item[data-active="true"]:hover {
-  background: #1c5fac;
-  color: #ffffff;
+  background: rgba(8, 127, 91, 0.18);
+  color: var(--primary);
   transform: none;
 }
 
@@ -600,10 +737,11 @@ a:hover {
 .cd-root,
 .company-details-page,
 .au-root,
+.al-root,
+.al-page .wrap,
 .up-container,
 .st-root,
 .ss-root,
-.al-root,
 .pf-root,
 .pm-root,
 .tx-page,
@@ -631,10 +769,10 @@ a:hover {
 
 .back-button:hover {
   background: var(--surf, #ffffff);
-  border-color: var(--primary, #206bc4);
-  color: var(--primary, #206bc4);
+  border-color: var(--primary, #087f5b);
+  color: var(--primary, #087f5b);
   transform: translateX(-3px);
-  box-shadow: 0 2px 8px rgba(32, 107, 196, 0.15);
+  box-shadow: 0 2px 8px rgba(8, 127, 91, 0.15);
 }
 
 .back-button svg {
@@ -715,7 +853,7 @@ a:hover {
   .crm-card:hover,
   .au-mobile-cards .au-user-card:hover,
   .au-user-card:hover {
-    border-color: rgba(32, 107, 196, 0.35) !important;
+    border-color: rgba(8, 127, 91, 0.35) !important;
   }
 
   /* Card Header: Identity + Badge */
@@ -778,7 +916,7 @@ a:hover {
     color: #fff;
     flex-shrink: 0;
     letter-spacing: 0.02em;
-    background: var(--crm-primary, #206bc4);
+    background: var(--crm-primary, #087f5b);
   }
 
   .crm-card__text,
@@ -930,7 +1068,7 @@ a:hover {
 
   .crm-card__action-btn:hover,
   .au-user-card__action-btn:hover {
-    background: rgba(32, 107, 196, 0.08);
+    background: rgba(8, 127, 91, 0.08);
     border-color: var(--accent, var(--crm-primary));
     color: var(--accent, var(--crm-primary));
   }
@@ -996,7 +1134,7 @@ a:hover {
 .react-tel-input .form-control:focus,
 .react-tel-input .country-list .search-box:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.12) !important;
 }
 
 .react-tel-input .flag-dropdown {
@@ -1205,8 +1343,8 @@ a:hover {
 }
 
 .global-toast.info .global-toast-icon {
-  background: var(--crm-primary-lt, rgba(32, 107, 196, 0.12));
-  color: var(--primary, #206bc4);
+  background: var(--crm-primary-lt, rgba(8, 127, 91, 0.12));
+  color: var(--primary, #087f5b);
 }
 
 

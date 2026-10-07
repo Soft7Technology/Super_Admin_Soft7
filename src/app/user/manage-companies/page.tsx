@@ -8,6 +8,7 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import {
@@ -26,8 +27,8 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  "#206bc4",
-  "#4299e1",
+  "#087f5b",
+  "#52a77d",
   "#2fb344",
   "#ae3ec9",
   "#f59f00",
@@ -638,17 +639,7 @@ function CompanyDetailModal({
               alignItems: "center",
             }}
           >
-            <div
-              className="mc-detail__logo"
-              style={{
-                background: "#e8f5ef",
-                color: "#278b67",
-                width: 52,
-                height: 52,
-              }}
-            >
-              {getCompanyInitials(company.name)}
-            </div>
+            <ProfileAvatar name={company.name} size={52} />
 
             <div>
               <div className="mc-detail__domain">{company.email}</div>
@@ -1417,12 +1408,7 @@ export default function ManageCompanies() {
 
                   <td>
                     <div className="mc-company-cell">
-                      <div
-                        className="mc-company-avatar"
-                        style={{ background: getAvatarBg(company.name) }}
-                      >
-                        {company.name.slice(0, 2).toUpperCase()}
-                      </div>
+                      <ProfileAvatar name={company.name} size={36} />
                       <div className="mc-company-info">
                         <button
                           type="button"

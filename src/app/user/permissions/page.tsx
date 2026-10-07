@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "@/app/globals.css";
 import Spinner from "@/components/ui/Spinner";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import "./permissions.css";
 
 /* ============================================================
@@ -165,7 +166,7 @@ function domainInitials(domain?: string | null) {
 }
 
 const AVATAR_GRADIENTS = [
-  "linear-gradient(135deg, #206bc4, #4299e1)",
+  "linear-gradient(135deg, #087f5b, #52a77d)",
   "linear-gradient(135deg, #2fb344, #48bb78)",
   "linear-gradient(135deg, #f59f00, #ed8936)",
   "linear-gradient(135deg, #ae3ec9, #9f7aea)",
@@ -316,7 +317,7 @@ export default function PermissionsPage() {
         <div className="pm-kpi-card">
           <div
             className="pm-kpi-card__icon"
-            style={{ background: "rgba(32, 107, 196, 0.12)", color: "var(--primary, #206bc4)" }}
+            style={{ background: "rgba(8, 127, 91, 0.12)", color: "var(--primary, #087f5b)" }}
           >
             <Globe size={22} />
           </div>
@@ -470,14 +471,7 @@ export default function PermissionsPage() {
                   <tr key={item.id}>
                     <td>
                       <div className="pm-domain-cell">
-                        <div
-                          className="pm-avatar"
-                          style={{
-                            background: domainAvatarColor(item.domain_name ?? ""),
-                          }}
-                        >
-                          {domainInitials(item.domain_name ?? "")}
-                        </div>
+                        <ProfileAvatar name={item.domain_name} size={36} />
                         <div className="pm-domain-info">
                           <span className="pm-domain-name">{item.domain_name}</span>
                           <span className="pm-domain-type">

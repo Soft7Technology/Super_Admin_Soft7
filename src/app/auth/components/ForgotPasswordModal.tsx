@@ -43,61 +43,72 @@ export function ForgotPasswordModal({
 
   const isDark = theme === "dark";
 
-  /* ── Field style helper ── */
-  const fieldStyle = (name: string, hasError?: boolean): React.CSSProperties => ({
-    width: "100%",
-    height: "48px",
-    background: isDark ? "rgba(255,255,255,0.05)" : "#f8fffe",
-    border: `1.5px solid ${
-      hasError
-        ? "#ef4444"
-        : focusedField === name
-        ? "#10b981"
-        : isDark
-        ? "rgba(255,255,255,0.10)"
-        : "#d1fae5"
-    }`,
-    borderRadius: "12px",
-    color: isDark ? "#ecfdf5" : "#064e3b",
-    padding: "0 46px 0 14px",
-    fontSize: "14px",
-    outline: "none",
-    fontFamily: "'DM Sans', sans-serif",
-    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-    boxShadow: "none",
-  });
+ const fieldStyle = (
+   name: string,
+   hasError?: boolean,
+ ): React.CSSProperties => ({
+   width: "100%",
+   height: "48px",
+   background: isDark ? "rgba(255,255,255,0.05)" : "#f0f5f2",
+   border: `1px solid ${
+     hasError
+       ? "#d92d20"
+       : focusedField === name
+       ? "#3f9879"
+       : isDark
+       ? "rgba(255,255,255,0.10)"
+       : "#dfe7e3"
+   }`,
+   borderRadius: "10px",
+   color: isDark ? "#ecfdf5" : "#14231e",
+   padding: "0 46px 0 14px",
+   fontSize: "14px",
+   outline: "none",
+   fontFamily: "'Inter', system-ui, sans-serif",
+   transition:
+     "border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease",
+   boxShadow:
+     focusedField === name ? "0 0 0 3px rgba(63,152,121,0.10)" : "none",
+ });
 
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: "12px",
-    fontWeight: 600,
-    color: isDark ? "rgba(167,243,208,0.7)" : "#047857",
-    marginBottom: "7px",
-    letterSpacing: "0.2px",
-  };
+ const labelStyle: React.CSSProperties = {
+   display: "block",
+   fontSize: "12.5px",
+   fontWeight: 500,
+   color: isDark ? "rgba(167,243,208,0.7)" : "#2c3f38",
+   marginBottom: "7px",
+   letterSpacing: "0",
+ };
 
-  const iconColor = isDark ? "rgba(167,243,208,0.5)" : "#6ee7b7";
+ const iconColor = isDark ? "rgba(167,243,208,0.5)" : "#82968c";
 
-  const primaryBtn: React.CSSProperties = {
-    width: "100%",
-    height: "50px",
-    borderRadius: "14px",
-    border: "none",
-    cursor: loading ? "not-allowed" : "pointer",
-    background: loading
-      ? "rgba(16,185,129,0.40)"
-      : "linear-gradient(135deg,#10b981,#059669)",
-    color: "#fff",
-    fontSize: "15px",
-    fontWeight: 700,
-    fontFamily: "'DM Sans', sans-serif",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    boxShadow: loading ? "none" : "0 8px 24px rgba(16,185,129,0.35)",
-    transition: "all 0.2s ease",
-  };
+ const primaryBtn: React.CSSProperties = {
+   width: "100%",
+   height: "46px",
+   borderRadius: "10px",
+   border: "none",
+   cursor: loading ? "not-allowed" : "pointer",
+
+   background: loading ? "#9bc5b6" : "#3f9879",
+
+   color: "#fff",
+   fontSize: "14.5px",
+   fontWeight: 600,
+   fontFamily: "'Inter', system-ui, sans-serif",
+
+   display: "flex",
+   alignItems: "center",
+   justifyContent: "center",
+   gap: "8px",
+
+   boxShadow: loading ? "none" : "0 6px 16px -9px rgba(47,138,110,0.45)",
+
+   transition:
+     "background 0.22s ease, box-shadow 0.22s ease, transform 0.16s ease",
+ };
+
+
+
 
   /* ── Step indicator ── */
   const StepIndicator = () => (
@@ -111,15 +122,15 @@ export function ForgotPasswordModal({
             <div style={{
               width: "28px", height: "28px", borderRadius: "50%",
               background: done
-                ? "#10b981"
+                ? "#3f9879"
                 : active
-                ? "linear-gradient(135deg,#10b981,#059669)"
-                : isDark ? "rgba(255,255,255,0.07)" : "#e8fdf5",
+                ? "linear-gradient(135deg,#3f9879,#35886c)"
+                : isDark ? "rgba(255,255,255,0.07)" : "#dfe7e3",
               border: active
                 ? "none"
                 : done
                 ? "none"
-                : `1.5px solid ${isDark ? "rgba(255,255,255,0.12)" : "#d1fae5"}`,
+                : `1.5px solid ${isDark ? "rgba(255,255,255,0.12)" : "#e8f2ee"}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
               boxShadow: active ? "0 4px 12px rgba(16,185,129,0.35)" : "none",
@@ -132,7 +143,7 @@ export function ForgotPasswordModal({
               ) : (
                 <span style={{
                   fontSize: "11px", fontWeight: 700,
-                  color: active ? "#fff" : isDark ? "rgba(167,243,208,0.4)" : "#6ee7b7",
+                  color: active ? "#fff" : isDark ? "rgba(167,243,208,0.4)" : "#82968c",
                 }}>
                   {i + 1}
                 </span>
@@ -142,8 +153,8 @@ export function ForgotPasswordModal({
               <div style={{
                 flex: 1, height: "1.5px",
                 background: done
-                  ? "#10b981"
-                  : isDark ? "rgba(255,255,255,0.08)" : "#d1fae5",
+                  ? "#3f9879"
+                  : isDark ? "rgba(255,255,255,0.08)" : "#e8f2ee",
                 transition: "background 0.4s ease",
               }} />
             )}
@@ -155,10 +166,10 @@ export function ForgotPasswordModal({
 
   /* ── Step icon ── */
   const stepIcon = {
-    request: <Mail size={22} color="#10b981" />,
-    verify:  <ShieldCheck size={22} color="#10b981" />,
-    reset:   <KeyRound size={22} color="#10b981" />,
-  }[step] ?? <Mail size={22} color="#10b981" />;
+    request: <Mail size={22} color="#3f9879" />,
+    verify:  <ShieldCheck size={22} color="#3f9879" />,
+    reset:   <KeyRound size={22} color="#3f9879" />,
+  }[step] ?? <Mail size={22} color="#3f9879" />;
 
   const stepTitle = {
     request: "Reset your password",
@@ -176,10 +187,15 @@ export function ForgotPasswordModal({
   return (
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 9998,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(14px)",
+        position: "fixed",
+        inset: 0,
+        zIndex: 9998,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(20,35,30,0.22)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         padding: isMobile ? "16px" : "0",
         fontFamily: "'DM Sans', sans-serif",
       }}
@@ -190,36 +206,50 @@ export function ForgotPasswordModal({
           width: isMobile ? "100%" : "440px",
           maxWidth: "440px",
           background: isDark ? "rgba(8,20,15,0.97)" : "#ffffff",
-          borderRadius: "24px",
+          borderRadius: "18px",
+          border: isDark
+            ? "1px solid rgba(255,255,255,0.08)"
+            : "1px solid #dfe7e3",
           overflow: "hidden",
           boxShadow: isDark
-            ? "0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(16,185,129,0.14)"
-            : "0 32px 80px rgba(16,185,129,0.16), 0 0 0 1px rgba(16,185,129,0.12)",
+            ? "0 32px 80px rgba(0,0,0,0.65)"
+            : "0 24px 60px rgba(20,35,30,0.14)",
           position: "relative",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Top emerald accent bar ── */}
-        <div style={{
-          height: "4px",
-          background: "linear-gradient(90deg,#10b981,#34d399,#6ee7b7)",
-        }} />
+        <div
+          style={{
+            height: "2px",
+            background:
+              "linear-gradient(90deg, transparent, #3f9879, transparent)",
+          }}
+        />
 
         {/* ── Modal body ── */}
-        <div style={{ padding: isMobile ? "28px 24px 32px" : "32px 36px 36px" }}>
-
+        <div
+          style={{ padding: isMobile ? "28px 24px 32px" : "32px 36px 36px" }}
+        >
           {/* Close */}
           <button
             onClick={onClose}
             style={{
-              position: "absolute", top: "20px", right: "20px",
+              position: "absolute",
+              top: "20px",
+              right: "20px",
               background: isDark ? "rgba(255,255,255,0.07)" : "#f0fdf9",
-              border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #d1fae5",
+              border: isDark
+                ? "1px solid rgba(255,255,255,0.08)"
+                : "1px solid #e8f2ee",
               borderRadius: "8px",
-              width: "30px", height: "30px",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              width: "30px",
+              height: "30px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               cursor: "pointer",
-              color: isDark ? "rgba(167,243,208,0.7)" : "#6ee7b7",
+              color: isDark ? "rgba(167,243,208,0.7)" : "#82968c",
             }}
           >
             <X size={15} />
@@ -229,28 +259,43 @@ export function ForgotPasswordModal({
           <StepIndicator />
 
           {/* Step icon + title */}
-          <div style={{
-            width: "48px", height: "48px", borderRadius: "14px",
-            background: isDark ? "rgba(16,185,129,0.12)" : "#ecfdf5",
-            border: isDark ? "1px solid rgba(16,185,129,0.2)" : "1px solid #a7f3d0",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            marginBottom: "16px",
-          }}>
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "14px",
+              background: isDark ? "rgba(16,185,129,0.12)" : "#ecfdf5",
+              border: isDark
+                ? "1px solid rgba(16,185,129,0.2)"
+                : "1px solid #a7f3d0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: "16px",
+            }}
+          >
             {stepIcon}
           </div>
 
-          <h2 style={{
-            fontSize: "20px", fontWeight: 800,
-            color: isDark ? "#ecfdf5" : "#022c22",
-            letterSpacing: "-0.5px", marginBottom: "5px",
-          }}>
+          <h2
+            style={{
+              fontSize: "20px",
+              fontWeight: 800,
+              color: isDark ? "#ecfdf5" : "#022c22",
+              letterSpacing: "-0.5px",
+              marginBottom: "5px",
+            }}
+          >
             {stepTitle}
           </h2>
-          <p style={{
-            fontSize: "13px",
-            color: isDark ? "rgba(167,243,208,0.55)" : "#6ee7b7",
-            marginBottom: "28px", lineHeight: 1.5,
-          }}>
+          <p
+            style={{
+              fontSize: "13px",
+              color: isDark ? "rgba(167,243,208,0.55)" : "#82968c",
+              marginBottom: "28px",
+              lineHeight: 1.5,
+            }}
+          >
             {stepDesc}
           </p>
 
@@ -258,30 +303,47 @@ export function ForgotPasswordModal({
           {step === "request" && (
             <>
               {/* Channel toggle */}
-              <div style={{
-                display: "flex", gap: "8px", marginBottom: "20px",
-                background: isDark ? "rgba(255,255,255,0.04)" : "#f0fdf9",
-                padding: "4px", borderRadius: "12px",
-                border: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid #d1fae5",
-              }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  marginBottom: "20px",
+                  background: isDark ? "rgba(255,255,255,0.04)" : "#f0fdf9",
+                  padding: "4px",
+                  borderRadius: "12px",
+                  border: isDark
+                    ? "1px solid rgba(255,255,255,0.07)"
+                    : "1px solid #e8f2ee",
+                }}
+              >
                 {(["email", "whatsapp"] as const).map((ch) => (
                   <button
                     key={ch}
                     type="button"
                     onClick={() => setChannel(ch)}
                     style={{
-                      flex: 1, height: "36px", borderRadius: "9px",
+                      flex: 1,
+                      height: "36px",
+                      borderRadius: "9px",
                       cursor: "pointer",
                       border: "none",
-                      background: channel === ch
-                        ? "linear-gradient(135deg,#10b981,#059669)"
-                        : "transparent",
-                      color: channel === ch
-                        ? "#fff"
-                        : isDark ? "rgba(167,243,208,0.5)" : "#6ee7b7",
-                      fontSize: "13px", fontWeight: 700,
+                      background:
+                        channel === ch
+                          ? "linear-gradient(135deg,#3f9879,#35886c)"
+                          : "transparent",
+                      color:
+                        channel === ch
+                          ? "#fff"
+                          : isDark
+                          ? "rgba(167,243,208,0.5)"
+                          : "#82968c",
+                      fontSize: "13px",
+                      fontWeight: 700,
                       fontFamily: "'DM Sans', sans-serif",
-                      boxShadow: channel === ch ? "0 4px 10px rgba(16,185,129,0.28)" : "none",
+                      boxShadow:
+                        channel === ch
+                          ? "0 4px 10px rgba(16,185,129,0.28)"
+                          : "none",
                       transition: "all 0.2s ease",
                     }}
                   >
@@ -307,13 +369,28 @@ export function ForgotPasswordModal({
                       opacity: isEditing ? 1 : 0.65,
                     }}
                   />
-                  <Mail size={15} style={{
-                    position: "absolute", right: "14px", top: "50%",
-                    transform: "translateY(-50%)", color: iconColor, pointerEvents: "none",
-                  }} />
+                  <Mail
+                    size={15}
+                    style={{
+                      position: "absolute",
+                      right: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: iconColor,
+                      pointerEvents: "none",
+                    }}
+                  />
                 </div>
                 {emailError && (
-                  <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>{emailError}</p>
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "5px",
+                    }}
+                  >
+                    {emailError}
+                  </p>
                 )}
               </div>
 
@@ -335,10 +412,17 @@ export function ForgotPasswordModal({
                         opacity: isEditing ? 1 : 0.65,
                       }}
                     />
-                    <Phone size={15} style={{
-                      position: "absolute", right: "14px", top: "50%",
-                      transform: "translateY(-50%)", color: iconColor, pointerEvents: "none",
-                    }} />
+                    <Phone
+                      size={15}
+                      style={{
+                        position: "absolute",
+                        right: "14px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: iconColor,
+                        pointerEvents: "none",
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -348,10 +432,16 @@ export function ForgotPasswordModal({
                   type="button"
                   onClick={() => setIsEditing(true)}
                   style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    fontSize: "13px", color: isDark ? "#34d399" : "#059669",
-                    fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
-                    marginBottom: "16px", padding: 0, display: "block",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    color: isDark ? "#34d399" : "#35886c",
+                    fontWeight: 600,
+                    fontFamily: "'DM Sans', sans-serif",
+                    marginBottom: "16px",
+                    padding: 0,
+                    display: "block",
                   }}
                 >
                   Edit details →
@@ -359,7 +449,14 @@ export function ForgotPasswordModal({
               )}
 
               <button onClick={sendOtp} disabled={loading} style={primaryBtn}>
-                {loading ? <Spinner /> : <><span>Send verification code</span><ArrowRight size={16} strokeWidth={2.5} /></>}
+                {loading ? (
+                  <Spinner />
+                ) : (
+                  <>
+                    <span>Send verification code</span>
+                    <ArrowRight size={16} strokeWidth={2.5} />
+                  </>
+                )}
               </button>
             </>
           )}
@@ -393,16 +490,33 @@ export function ForgotPasswordModal({
                   }}
                 />
                 {otpError && (
-                  <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>{otpError}</p>
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "5px",
+                    }}
+                  >
+                    {otpError}
+                  </p>
                 )}
               </div>
 
               {/* Resend */}
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                marginBottom: "24px",
-              }}>
-                <span style={{ fontSize: "13px", color: isDark ? "rgba(167,243,208,0.45)" : "#a7f3d0" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "24px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: isDark ? "rgba(167,243,208,0.45)" : "#a7f3d0",
+                  }}
+                >
                   {timer > 0 ? `Resend in ${timer}s` : "Didn't receive a code?"}
                 </span>
                 {timer === 0 && (
@@ -410,10 +524,16 @@ export function ForgotPasswordModal({
                     type="button"
                     onClick={resendOtp}
                     style={{
-                      background: "none", border: "none", cursor: "pointer",
-                      fontSize: "13px", color: isDark ? "#34d399" : "#059669",
-                      fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
-                      display: "flex", alignItems: "center", gap: "5px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      color: isDark ? "#34d399" : "#35886c",
+                      fontWeight: 700,
+                      fontFamily: "'DM Sans', sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
                     }}
                   >
                     <RefreshCw size={13} />
@@ -423,7 +543,14 @@ export function ForgotPasswordModal({
               </div>
 
               <button onClick={verifyOtp} disabled={loading} style={primaryBtn}>
-                {loading ? <Spinner /> : <><span>Verify code</span><ArrowRight size={16} strokeWidth={2.5} /></>}
+                {loading ? (
+                  <Spinner />
+                ) : (
+                  <>
+                    <span>Verify code</span>
+                    <ArrowRight size={16} strokeWidth={2.5} />
+                  </>
+                )}
               </button>
             </>
           )}
@@ -442,18 +569,34 @@ export function ForgotPasswordModal({
                     onChange={(e) => setNewPassword(e.target.value)}
                     onFocus={() => setFocusedField("newpw")}
                     onBlur={() => setFocusedField(null)}
-                    style={{ ...fieldStyle("newpw", !!passwordError), paddingRight: "76px" }}
+                    style={{
+                      ...fieldStyle("newpw", !!passwordError),
+                      paddingRight: "76px",
+                    }}
                   />
-                  <div style={{
-                    position: "absolute", right: "12px", top: "50%",
-                    transform: "translateY(-50%)",
-                    display: "flex", gap: "8px", alignItems: "center",
-                  }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                    }}
+                  >
                     <Lock size={15} style={{ color: iconColor }} />
                     <button
                       type="button"
                       onClick={() => setShowNewPw((p) => !p)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", color: isDark ? "#6ee7b7" : "#059669" }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "2px",
+                        display: "flex",
+                        color: isDark ? "#82968c" : "#35886c",
+                      }}
                     >
                       {showNewPw ? <Eye size={15} /> : <EyeOff size={15} />}
                     </button>
@@ -472,25 +615,49 @@ export function ForgotPasswordModal({
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     onFocus={() => setFocusedField("confpw")}
                     onBlur={() => setFocusedField(null)}
-                    style={{ ...fieldStyle("confpw", !!passwordError), paddingRight: "76px" }}
+                    style={{
+                      ...fieldStyle("confpw", !!passwordError),
+                      paddingRight: "76px",
+                    }}
                   />
-                  <div style={{
-                    position: "absolute", right: "12px", top: "50%",
-                    transform: "translateY(-50%)",
-                    display: "flex", gap: "8px", alignItems: "center",
-                  }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                    }}
+                  >
                     <Lock size={15} style={{ color: iconColor }} />
                     <button
                       type="button"
                       onClick={() => setShowConfPw((p) => !p)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", color: isDark ? "#6ee7b7" : "#059669" }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "2px",
+                        display: "flex",
+                        color: isDark ? "#82968c" : "#35886c",
+                      }}
                     >
                       {showConfPw ? <Eye size={15} /> : <EyeOff size={15} />}
                     </button>
                   </div>
                 </div>
                 {passwordError && (
-                  <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "5px" }}>{passwordError}</p>
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "5px",
+                    }}
+                  >
+                    {passwordError}
+                  </p>
                 )}
               </div>
 
@@ -501,8 +668,19 @@ export function ForgotPasswordModal({
                 </div>
               )}
 
-              <button onClick={resetPassword} disabled={loading} style={{ ...primaryBtn, marginTop: "8px" }}>
-                {loading ? <Spinner /> : <><span>Set new password</span><ArrowRight size={16} strokeWidth={2.5} /></>}
+              <button
+                onClick={resetPassword}
+                disabled={loading}
+                style={{ ...primaryBtn, marginTop: "8px" }}
+              >
+                {loading ? (
+                  <Spinner />
+                ) : (
+                  <>
+                    <span>Set new password</span>
+                    <ArrowRight size={16} strokeWidth={2.5} />
+                  </>
+                )}
               </button>
             </>
           )}
@@ -543,7 +721,7 @@ function PasswordStrengthBar({ password, isDark }: { password: string; isDark: b
   })();
 
   const labels = ["Weak", "Fair", "Good", "Strong"];
-  const colors = ["#ef4444", "#f59e0b", "#10b981", "#059669"];
+  const colors = ["#ef4444", "#f59e0b", "#3f9879", "#35886c"];
 
   return (
     <div>
@@ -551,7 +729,7 @@ function PasswordStrengthBar({ password, isDark }: { password: string; isDark: b
         {[0,1,2,3].map((i) => (
           <div key={i} style={{
             flex: 1, height: "3px", borderRadius: "2px",
-            background: i < score ? colors[score - 1] : isDark ? "rgba(255,255,255,0.08)" : "#d1fae5",
+            background: i < score ? colors[score - 1] : isDark ? "rgba(255,255,255,0.08)" : "#e8f2ee",
             transition: "background 0.3s ease",
           }} />
         ))}

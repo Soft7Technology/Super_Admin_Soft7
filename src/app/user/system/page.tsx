@@ -575,11 +575,11 @@ function HealthTab() {
     { label: "CPU Usage",         value: "24%",      bar: 0.24, color: "#00CBA4" },
     { label: "Memory",            value: "61%",      bar: 0.61, color: "#FDCB6E" },
     { label: "Disk I/O",          value: "8%",       bar: 0.08, color: "#00CBA4" },
-    { label: "Network Throughput",value: "2.4 GB/s", bar: 0.48, color: "#74B9FF" },
+    { label: "Network Throughput",value: "2.4 GB/s", bar: 0.48, color: "#52a77d" },
   ];
 
   const actions = [
-    { label: "Clear App Cache",    sub: "Flush Redis + in-memory cache",     action: clearCache, loading: clearing, done: cleared,  col: "#74B9FF" },
+    { label: "Clear App Cache",    sub: "Flush Redis + in-memory cache",     action: clearCache, loading: clearing, done: cleared,  col: "#52a77d" },
     { label: "Rebuild Indexes",    sub: "Rebuild DB search indexes",          action: ()=>{},     loading: false,    done: false,    col: "#FDCB6E" },
     { label: "Vacuum Database",    sub: "Reclaim dead tuples and space",      action: ()=>{},     loading: false,    done: false,    col: "#A29BFE" },
     { label: "Flush Job Queue",    sub: "Clear all pending background jobs",  action: ()=>{},     loading: false,    done: false,    col: "#FDCB6E" },

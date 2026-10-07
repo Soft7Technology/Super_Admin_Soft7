@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useTheme } from "../../../../context/ThemeContext";
 import "./user-profile.css";
 import Spinner from "@/components/ui/Spinner";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import {
   Activity,
   AlertCircle,
@@ -520,7 +521,7 @@ export default function UserProfilePage() {
   // Pre-configured arrays for clean rendering
   const topStats = [
     { label: "Total Campaigns", val: stats.totalCampaigns, icon: Folder, color: "#ec4899" },
-    { label: "Total Contacts", val: stats.totalContacts, icon: Users, color: "#3b82f6" },
+    { label: "Total Contacts", val: stats.totalContacts, icon: Users, color: "#159765" },
     { label: "Messages Sent", val: stats.messagesSent, icon: Send, color: "#f97316" },
     { label: "Messages Delivered", val: stats.messagesDelivered, icon: MessageSquare, color: "#10b981" },
     { label: "Failed Messages", val: stats.failedMessages, icon: Send, color: "#f43f5e", rotate: true },
@@ -626,7 +627,7 @@ export default function UserProfilePage() {
         companyId: user.companyId,
         companyDomain: user.companyDomain,
         plan: user.plan,
-        av: "#206bc4",
+        av: "#087f5b",
         login: "Recently",
         joined: formatDate(user.createdAt),
         msgs: stats.totalMessages,
@@ -683,7 +684,7 @@ export default function UserProfilePage() {
           <div className="up-hero-card">
             <div className="up-hero-top">
               <div className="up-hero-user-info">
-                <div className="up-hero-avatar">{initials}</div>
+                <ProfileAvatar name={user.name || "User"} initials={initials} size={64} />
 
                 <div className="up-hero-meta">
                   <div className="up-hero-title-row">
@@ -1824,11 +1825,11 @@ export default function UserProfilePage() {
                     padding: "10px 14px",
                     borderRadius: "10px",
                     border: `1px solid ${
-                      selectedPlan === planOption ? "var(--crm-primary, #206bc4)" : "var(--up-border, #e2e8f0)"
+                      selectedPlan === planOption ? "var(--crm-primary, #087f5b)" : "var(--up-border, #e2e8f0)"
                     }`,
                     background:
                       selectedPlan === planOption
-                        ? "rgba(32, 107, 196, 0.12)"
+                        ? "rgba(8, 127, 91, 0.12)"
                         : "transparent",
                     cursor: "pointer",
                   }}
@@ -1839,7 +1840,7 @@ export default function UserProfilePage() {
                     name="plan"
                     checked={selectedPlan === planOption}
                     onChange={() => setSelectedPlan(planOption)}
-                    style={{ accentColor: "var(--crm-primary, #206bc4)" }}
+                    style={{ accentColor: "var(--crm-primary, #087f5b)" }}
                   />
                 </label>
               ))}

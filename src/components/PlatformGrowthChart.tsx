@@ -267,7 +267,7 @@ export default function PlatformGrowthChart({
   }
 
   // Soft7 Website Theme Colors
-  const themeColor = isDark ? "#4299e1" : "#206bc4";
+  const themeColor = isDark ? "#52a77d" : "#087f5b";
   const dashedGridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0";
 
   return (

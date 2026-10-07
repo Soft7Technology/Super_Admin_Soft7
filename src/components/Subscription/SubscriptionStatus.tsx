@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { SubscriptionTier } from "../../types";
 
 const DEFAULT_TIERS: SubscriptionTier[] = [
-  { name: "Enterprise", count: 58, max: 80, color: "#4dabf7" },
+  { name: "Enterprise", count: 58, max: 80, color: "#52a77d" },
   { name: "Professional", count: 82, max: 100, color: "#4ade80" },
   { name: "Starter", count: 54, max: 70, color: "#fbbf24" },
   { name: "Trial", count: 24, max: 50, color: "#94a3b8" },
@@ -44,7 +44,7 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({
         </span>
         <span
           onClick={onViewDetails}
-          style={{ fontSize: "0.8rem", color: "#4dabf7", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}
+          style={{ fontSize: "0.8rem", color: "#52a77d", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}
         >
           Details
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

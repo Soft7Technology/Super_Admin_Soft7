@@ -40,7 +40,7 @@ export default function Spinner({
     color === "current"
       ? "currentColor"
       : color === "primary"
-      ? "var(--crm-primary, #206bc4)"
+      ? "var(--crm-primary, #087f5b)"
       : color === "white"
       ? "#ffffff"
       : color;
