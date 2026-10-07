@@ -63,11 +63,6 @@ export default function AllUsers() {
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => {
-    // Reset page to 1 when filters change
-    setCurrentPage(1);
-  }, [debouncedSearch, status, role, selectedCompanyId]);
-
   // Inline action states
   const [editUser, setEditUser] = useState<User | null>(null);
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
