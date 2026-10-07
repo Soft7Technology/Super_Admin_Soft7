@@ -532,7 +532,9 @@ export default function UserProfilePage() {
     { label: "Unique Contacts", val: stats.uniqueContacts },
     { label: "Total Messages", val: stats.totalMessages },
     { label: "Messages Delivered", val: stats.messagesDelivered },
-    
+    { label: "Contact Lists", val: stats.contactLists },
+    { label: "Message Templates", val: stats.messageTemplates },
+    { label: "Templates", val: stats.templates },
     { label: "Failed Messages", val: stats.failedMessages },
   ];
 
