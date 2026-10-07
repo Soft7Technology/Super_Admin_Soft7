@@ -279,7 +279,7 @@ export default function CampaignsPage() {
 
         .scheduled,
         .other {
-          color: #2474b5;
+          color: #087f5b;
           background: #edf6ff;
         }
 

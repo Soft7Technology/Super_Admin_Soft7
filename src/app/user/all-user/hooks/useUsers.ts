@@ -128,7 +128,7 @@ function mapExternalUser(u: any): User {
 
     plan,
 
-    av: (u.av && u.av !== "#10b981" && u.av !== "#00a67d") ? u.av : "#206bc4",
+    av: (u.av && u.av !== "#10b981" && u.av !== "#00a67d") ? u.av : "#087f5b",
 
     login: timeAgo(u.last_login_at || u.updated_at || null),
 

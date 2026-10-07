@@ -5,6 +5,7 @@ import Link from "next/link";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "./all-user.css";
 import Spinner from "@/components/ui/Spinner";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { User, UserStats, roleColor, planColor } from "./types";
 
 import { Badge } from "./components/Badge";
@@ -256,7 +257,7 @@ export default function AllUsers() {
           label="Total Users"
           value={stats.totalUsers.toLocaleString()}
           icon={<Users size={20} strokeWidth={2} />}
-          color="#206bc4"
+          color="#087f5b"
         />
         <KPI
           label="Active Users"
@@ -371,17 +372,7 @@ export default function AllUsers() {
                         className="au-user-cell"
                         title={`View profile of ${user.name}`}
                       >
-                        <div
-                          className="au-avatar au-avatar--table"
-                          style={{
-                            background:
-                              !user.av || user.av === "#10b981" || user.av === "#00a67d"
-                                ? "var(--crm-primary, #206bc4)"
-                                : user.av,
-                          }}
-                        >
-                          {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                        </div>
+                        <ProfileAvatar name={user.name} size={32} />
                         <span className="au-user-name">{user.name}</span>
                       </Link>
                     </td>
@@ -527,17 +518,7 @@ export default function AllUsers() {
                       }}
                       className="au-user-card__link"
                     >
-                      <div
-                        className="au-avatar au-avatar--table"
-                        style={{
-                          background:
-                            !user.av || user.av === "#10b981" || user.av === "#00a67d"
-                              ? "var(--crm-primary, #206bc4)"
-                              : user.av,
-                        }}
-                      >
-                        {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </div>
+                      <ProfileAvatar name={user.name} size={36} />
                       <div className="au-user-card__name-wrap">
                         <span className="au-user-card__name">{user.name}</span>
                         <span className="au-user-card__email">{user.email}</span>

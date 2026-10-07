@@ -19,7 +19,7 @@ import {
 import { useTheme } from "../context/ThemeContext";
 import Logo from "./Logo";
 
-const BRAND = "#206bc4";
+const BRAND = "#087f5b";
 const SIDEBAR_WIDTH = 260;
 
 type NavItem = {

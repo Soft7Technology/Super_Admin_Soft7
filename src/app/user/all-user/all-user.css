@@ -152,7 +152,7 @@
 }
 .au-search-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.18);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.18);
 }
 
 .au-filter-group {
@@ -235,7 +235,7 @@
 .au-avatar {
   border-radius: 50%; display: flex; align-items: center;
   justify-content: center; font-weight: 800; color: #fff; flex-shrink: 0;
-  background: var(--crm-primary, #206bc4);
+  background: var(--crm-primary, #087f5b);
 }
 .au-avatar--44 { width: 42px; height: 42px; font-size: 13px; }
 .au-avatar--68 { width: 64px; height: 64px; font-size: 20px; }
@@ -516,7 +516,7 @@
 }
 .au-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.18);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.18);
 }
 .au-select {
   width: 100%;
@@ -544,7 +544,7 @@
 }
 .au-select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.18);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.18);
 }
 
 .au-password-wrap {
@@ -600,11 +600,11 @@
   background: var(--accent);
   color: #ffffff;
   border: 1px solid var(--accent);
-  box-shadow: 0 1px 2px rgba(32, 107, 196, 0.2);
+  box-shadow: 0 1px 2px rgba(8, 127, 91, 0.2);
 }
 .au-btn--primary:hover {
-  background: #1a569d;
-  border-color: #1a569d;
+  background: #056344;
+  border-color: #056344;
   color: #ffffff;
 }
 .au-btn--ghost {
@@ -668,7 +668,7 @@
 .au-company-dropdown__trigger:hover,
 .au-company-dropdown__trigger--open {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.12);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.12);
 }
 
 .au-company-dropdown__trigger-text {
@@ -996,7 +996,7 @@
   color: #fff;
   flex-shrink: 0;
   letter-spacing: 0.02em;
-  background: var(--crm-primary, #206bc4);
+  background: var(--crm-primary, #087f5b);
 }
 
 .au-user-name {
@@ -1111,9 +1111,9 @@
 
 /* View — blue on hover */
 .au-action-btn:not([class*="--"]):hover {
-  background: rgba(32, 107, 196, 0.1);
+  background: rgba(8, 127, 91, 0.1);
   color: var(--accent);
-  border-color: rgba(32, 107, 196, 0.3);
+  border-color: rgba(8, 127, 91, 0.3);
 }
 
 /* Edit — indigo */

@@ -15,10 +15,10 @@
   --crm-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --crm-progress-bg: #eef2f6;
 
-  --crm-primary: #206bc4;
-  --crm-primary-lt: rgba(32, 107, 196, 0.12);
-  --crm-azure: #4299e1;
-  --crm-azure-lt: rgba(66, 153, 225, 0.14);
+  --crm-primary: #087f5b;
+  --crm-primary-lt: rgba(8, 127, 91, 0.12);
+  --crm-azure: #52a77d;
+  --crm-azure-lt: rgba(82, 167, 125, 0.14);
   --crm-green: #2fb344;
   --crm-green-lt: rgba(47, 179, 68, 0.14);
   --crm-purple: #ae3ec9;
@@ -45,8 +45,8 @@
   --crm-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
   --crm-progress-bg: rgba(255, 255, 255, 0.08);
 
-  --crm-primary-lt: rgba(32, 107, 196, 0.2);
-  --crm-azure-lt: rgba(66, 153, 225, 0.2);
+  --crm-primary-lt: rgba(8, 127, 91, 0.2);
+  --crm-azure-lt: rgba(82, 167, 125, 0.2);
   --crm-green-lt: rgba(47, 179, 68, 0.2);
   --crm-purple-lt: rgba(174, 62, 201, 0.2);
   --crm-yellow-lt: rgba(245, 159, 0, 0.2);
@@ -295,8 +295,8 @@
 }
 
 .crm-btn--primary:hover {
-  background: #1a569d;
-  border-color: #1a569d;
+  background: #056344;
+  border-color: #056344;
 }
 
 .crm-btn--icon {
@@ -798,10 +798,10 @@
 }
 
 .crm-time-pill--active {
-  background: var(--crm-primary, #206bc4) !important;
+  background: var(--crm-primary, #087f5b) !important;
   color: #ffffff !important;
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
+  box-shadow: 0 2px 6px rgba(8, 127, 91, 0.28);
 }
 
 .crm-time-pill-short {
@@ -1057,8 +1057,8 @@
 }
 
 .crm-action-tile:hover {
-  background: var(--crm-card-hover, rgba(32, 107, 196, 0.04));
-  border-color: var(--crm-primary, #206bc4);
+  background: var(--crm-card-hover, rgba(8, 127, 91, 0.04));
+  border-color: var(--crm-primary, #087f5b);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
@@ -1114,7 +1114,7 @@
 
 .crm-action-tile:hover .crm-action-tile__arrow {
   opacity: 1;
-  color: var(--crm-primary, #206bc4);
+  color: var(--crm-primary, #087f5b);
   transform: translateX(3px);
 }
 
