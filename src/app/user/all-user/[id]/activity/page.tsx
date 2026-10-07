@@ -117,7 +117,7 @@ export default function UserActivityPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button
-            onClick={() => router.push(`/user/all-user/${userId}`)}
+            onClick={() => router.back()}
             style={{
               display: "flex",
               alignItems: "center",
@@ -379,3 +379,4 @@ export default function UserActivityPage() {
     </div>
   );
 }
+

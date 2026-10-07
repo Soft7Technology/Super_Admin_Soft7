@@ -253,8 +253,7 @@ export default function UserProfilePage() {
     // 1. Instant load from sessionStorage cache
     try {
       const cached =
-        sessionStorage.getItem(`user_${userId}`) ||
-        sessionStorage.getItem("sa_selected_user");
+        sessionStorage.getItem(`user_${userId}`) ;
 
       if (cached) {
         const p = JSON.parse(cached);
@@ -1870,5 +1869,6 @@ export default function UserProfilePage() {
     </div>
   );
 }
+
 
 

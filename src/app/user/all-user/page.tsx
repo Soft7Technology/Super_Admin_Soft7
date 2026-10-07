@@ -379,10 +379,10 @@ export default function AllUsers() {
                   </div>
                   
                   <div className="au-usr">
-                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user)); sessionStorage.setItem("sa_selected_user", JSON.stringify(user)); } catch {} }} className="au-av" style={{ background: !user.av || user.av === '#10b981' || user.av === '#00a67d' ? 'var(--crm-primary, #206bc4)' : user.av }}>
+                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem("user_" + user.id, JSON.stringify(user)); } catch {} }} className="au-av" style={{ background: !user.av || user.av === '#10b981' || user.av === '#00a67d' ? 'var(--crm-primary, #206bc4)' : user.av }}>
                       {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </Link>
-                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user)); sessionStorage.setItem("sa_selected_user", JSON.stringify(user)); } catch {} }} className="au-un">
+                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem("user_" + user.id, JSON.stringify(user)); } catch {} }} className="au-un">
                       {user.name}
                     </Link>
                   </div>
@@ -433,15 +433,7 @@ export default function AllUsers() {
                       onChange={() => handleSelectUser(user.id)}
                       className="au-user-card__checkbox"
                     />
-                    <Link
-                      href={`/user/all-user/${user.id}`}
-                      onClick={() => {
-                        try {
-                          sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
-                          sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
-                        } catch {}
-                      }}
-                      className="au-user-card__link"
+                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem("user_" + user.id, JSON.stringify(user)); } catch {} }} className="au-user-card__link"
                     >
                       <div
                         className="au-avatar au-avatar--table"
@@ -657,6 +649,9 @@ export default function AllUsers() {
     </div>
   );
 }
+
+
+
 
 
 
