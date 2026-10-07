@@ -45,10 +45,20 @@ const DEFAULT_PAGINATION: PaginationInfo = {
 };
 
 function recordsFromResponse(json: any): any[] {
+  // Debug: log the raw response shape to console
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[useUsers] raw response:", JSON.stringify(json)?.slice(0, 500));
+  }
+
   if (Array.isArray(json?.data?.items)) return json.data.items;
   if (Array.isArray(json?.data?.data)) return json.data.data;
+  if (Array.isArray(json?.data?.users)) return json.data.users;
+  if (Array.isArray(json?.data?.records)) return json.data.records;
   if (Array.isArray(json?.data)) return json.data;
   if (Array.isArray(json?.users)) return json.users;
+  if (Array.isArray(json?.records)) return json.records;
+  if (Array.isArray(json?.result)) return json.result;
+  if (Array.isArray(json?.results)) return json.results;
   if (Array.isArray(json)) return json;
 
   return [];
@@ -59,17 +69,27 @@ function paginationFromResponse(
   requestedPage: number,
   requestedLimit: number,
 ): PaginationInfo {
-  const p = json?.data?.pagination ?? json?.pagination ?? {};
+  const p =
+    json?.data?.pagination ??
+    json?.data?.meta ??
+    json?.pagination ??
+    json?.meta ??
+    {};
 
   const total = Number(
-    p.total ?? p.totalUsers ?? p.count ?? json?.data?.total ?? 0,
+    p.total ??
+    p.totalUsers ??
+    p.count ??
+    json?.data?.total ??
+    json?.total ??
+    0,
   );
 
   const page = Number(p.page ?? requestedPage);
-  const limit = Number(p.limit ?? requestedLimit);
+  const limit = Number(p.limit ?? p.per_page ?? requestedLimit);
 
   const totalPages = Number(
-    p.totalPages ?? p.total_pages ?? Math.max(1, Math.ceil(total / limit)),
+    p.totalPages ?? p.total_pages ?? p.pages ?? Math.max(1, Math.ceil(total / limit)),
   );
 
   return {
@@ -203,6 +223,9 @@ export function useUsers({
   page = 1,
   limit = 25,
   companyId,
+  search,
+  status,
+  role,
 }: UseUsersParams = {}): UseUsersReturn {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
@@ -245,10 +268,16 @@ export function useUsers({
           ? `/v1/super-admin/companies/${encodeURIComponent(companyId)}/users`
           : EXTERNAL_USERS_API;
 
+        const statusParam = status && status.toLowerCase() !== 'all' ? toApiStatus(status) : undefined;
+        const roleParam = role && role.toLowerCase() !== 'all' ? toApiRole(role) : undefined;
+
         const { data: resJson } = await axiosInstance.get(endpoint, {
           params: {
             page,
             limit,
+            ...(search && { search }),
+            ...(statusParam && { status: statusParam }),
+            ...(roleParam && { role: roleParam }),
           },
         });
 
@@ -296,7 +325,7 @@ export function useUsers({
     return () => {
       cancelled = true;
     };
-  }, [page, limit, companyId, tick]);
+  }, [page, limit, companyId, tick, search, status, role]);
 
   return {
     users,
