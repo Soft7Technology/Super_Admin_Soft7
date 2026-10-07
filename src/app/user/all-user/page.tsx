@@ -40,7 +40,7 @@ export default function AllUsers() {
   const [detail, setDetail] = useState<User | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 25;
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [selectedCompanyId, setSelectedCompanyId] = useState(() => {
     if (typeof window !== "undefined") {
       return sessionStorage.getItem("sa_selected_company_id") || "";
@@ -98,7 +98,7 @@ export default function AllUsers() {
   const totalPages = Math.max(
     1,
     pagination?.totalPages ??
-    Math.ceil((pagination?.total ?? users.length) / rowsPerPage),
+      Math.ceil((pagination?.total ?? users.length) / rowsPerPage),
   );
 
   const handleCompanyChange = (companyId: string) => {
@@ -344,188 +344,80 @@ export default function AllUsers() {
 
       {/* Grid */}
       <div
-        className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"
-          }`}
+        className={`au-main-grid ${
+          detail ? "au-main-grid--panel" : "au-main-grid--full"
+        }`}
       >
-        <div className="au-table-wrapper au-desktop-only">
-          <table className="au-table">
-            <thead>
-              <tr>
-                <th style={{ width: "50px" }}>
-                  <input
-                    type="checkbox"
-                    checked={
-                      sortedUsers.length > 0 &&
-                      selectedUsers.length === sortedUsers.length
-                    }
-                    onChange={handleSelectAll}
-                  />
-                </th>
-                <th style={{ width: "180px", maxWidth: "180px" }}>USER</th>
-                <th style={{ width: "240px", maxWidth: "240px" }}>EMAIL</th>
-                <th style={{ width: "150px" }}>PHONE</th>
-                <th style={{ width: "100px" }}>ROLE</th>
-                <th style={{ width: "120px" }}>PLAN</th>
-                <th style={{ width: "120px" }}>STATUS</th>
-                <th style={{ width: "260px", minWidth: "260px" }}>ACTIONS</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {sortedUsers.length > 0 ? (
-                sortedUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.id)}
-                        onChange={() => handleSelectUser(user.id)}
-                      />
-                    </td>
-
-                    <td>
-                      <Link
-                        href={`/user/all-user/${user.id}`}
-                        onClick={() => {
-                          try {
-                            sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
-                            sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
-                          } catch { }
-                        }}
-                        className="au-user-cell"
-                        title={`View profile of ${user.name}`}
-                      >
-                        <div
-                          className="au-avatar au-avatar--table"
-                          style={{
-                            background:
-                              !user.av || user.av === "#10b981" || user.av === "#00a67d"
-                                ? "var(--crm-primary, #206bc4)"
-                                : user.av,
-                          }}
-                        >
-                          {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                        </div>
-                        <span className="au-user-name">{user.name}</span>
-                      </Link>
-                    </td>
-
-                    <td>{user.email}</td>
-                    <td>{user.phone || "-"}</td>
-
-                    <td>
-                      <span
-                        className="au-chip"
-                        style={{
-                          background: `${roleColor(user.role)}15`,
-                          color: roleColor(user.role),
-                        }}
-                      >
-                        {user.role}
-                      </span>
-                    </td>
-
-                    <td>
-                      <span
-                        className="au-chip"
-                        style={{
-                          background: `${planColor(user.plan)}15`,
-                          color: planColor(user.plan),
-                        }}
-                      >
-                        {user.plan}
-                      </span>
-                    </td>
-
-                    <td>
-                      <Badge status={user.status} />
-                    </td>
-
-                    {/* ── ACTION BUTTONS COLUMN ── */}
-                    <td>
-                      <div className="au-action-group">
-                        <button
-                          className="au-action-btn"
-                          title="View Details"
-                          onClick={() => setDetail(user)}
-                        >
-                          <Eye size={15} />
-                        </button>
-
-                        <button
-                          className="au-action-btn au-action-btn--edit"
-                          title="Edit User"
-                          onClick={() => setEditUser(user)}
-                        >
-                          <Pencil size={15} />
-                        </button>
-
-                        <button
-                          className="au-action-btn au-action-btn--key"
-                          title="Reset Password"
-                          onClick={() => setPasswordUser(user)}
-                        >
-                          <KeyRound size={15} />
-                        </button>
-
-                        {user.status === "SUSPENDED" ? (
-                          <button
-                            className="au-action-btn au-action-btn--restore"
-                            title="Restore Account"
-                            disabled={suspendingId === user.id}
-                            onClick={() => handleSuspendToggle(user)}
-                          >
-                            <ShieldCheck size={15} />
-                          </button>
-                        ) : (
-                          <button
-                            className="au-action-btn au-action-btn--suspend"
-                            title="Suspend User"
-                            disabled={suspendingId === user.id}
-                            onClick={() => handleSuspendToggle(user)}
-                          >
-                            <ShieldOff size={15} />
-                          </button>
-                        )}
-
-                        <button
-                          className="au-action-btn au-action-btn--delete"
-                          title="Delete User"
-                          disabled={deletingId === user.id}
-                          onClick={() => handleDeleteUser(user)}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={8}
-                    style={{
-                      textAlign: "center",
-                      padding: "32px 0",
-                      color: "#6b7280",
-                    }}
-                  >
-                    {loading ? (
-                      <Spinner
-                        variant="center"
-                        size="lg"
-                        color="primary"
-                        text="Loading users..."
-                      />
+        
+          <div className="au-tbl au-tbl-scroll au-desktop-only">
+            <div className="au-th">
+              <div>
+                <input type="checkbox" checked={sortedUsers.length > 0 && selectedUsers.length === sortedUsers.length} onChange={handleSelectAll} />
+              </div>
+              <div>USER</div>
+              <div>EMAIL</div>
+              <div>PHONE</div>
+              <div>ROLE</div>
+              <div>PLAN</div>
+              <div>STATUS</div>
+              <div>ACTIONS</div>
+            </div>
+            
+            {loading ? (
+               <div style={{ padding: '32px 0', textAlign: 'center' }}>
+                 <Spinner variant="center" size="lg" color="primary" text="Loading users..." />
+               </div>
+            ) : sortedUsers.length === 0 ? (
+               <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--muted)' }}>
+                 No users match your filters
+               </div>
+            ) : (
+              sortedUsers.map(user => (
+                <div className="au-row" key={user.id}>
+                  <div>
+                    <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => handleSelectUser(user.id)} />
+                  </div>
+                  
+                  <div className="au-usr">
+                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user)); sessionStorage.setItem("sa_selected_user", JSON.stringify(user)); } catch {} }} className="au-av" style={{ background: !user.av || user.av === '#10b981' || user.av === '#00a67d' ? 'var(--crm-primary, #206bc4)' : user.av }}>
+                      {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </Link>
+                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user)); sessionStorage.setItem("sa_selected_user", JSON.stringify(user)); } catch {} }} className="au-un">
+                      {user.name}
+                    </Link>
+                  </div>
+                  
+                  <div className="au-cell-muted">{user.email}</div>
+                  <div className="au-cell-muted">{user.phone || "-"}</div>
+                  
+                  <div>
+                    <span className="au-badge-role" style={{ color: roleColor(user.role) }}>{user.role}</span>
+                  </div>
+                  
+                  <div>
+                    <span className="au-badge-plan"><Award size={14} color={planColor(user.plan)} /> {user.plan}</span>
+                  </div>
+                  
+                  <div>
+                    <Badge status={user.status} />
+                  </div>
+                  
+                  <div className="au-action-group">
+                    <button className="au-action-btn" title="View Details" onClick={() => setDetail(user)}><Eye size={15} /></button>
+                    <button className="au-action-btn au-action-btn--edit" title="Edit User" onClick={() => setEditUser(user)}><Pencil size={15} /></button>
+                    <button className="au-action-btn au-action-btn--key" title="Reset Password" onClick={() => setPasswordUser(user)}><KeyRound size={15} /></button>
+                    {user.status === "SUSPENDED" ? (
+                      <button className="au-action-btn au-action-btn--restore" title="Restore Account" disabled={suspendingId === user.id} onClick={() => handleSuspendToggle(user)}><ShieldCheck size={15} /></button>
                     ) : (
-                      "No users match your filters"
+                      <button className="au-action-btn au-action-btn--suspend" title="Suspend User" disabled={suspendingId === user.id} onClick={() => handleSuspendToggle(user)}><ShieldOff size={15} /></button>
                     )}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <button className="au-action-btn au-action-btn--delete" title="Delete User" disabled={deletingId === user.id} onClick={() => handleDeleteUser(user)}><Trash2 size={15} /></button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
 
         {/* Mobile Cards View (<= 768px) */}
         <div className="au-mobile-cards">
@@ -547,7 +439,7 @@ export default function AllUsers() {
                         try {
                           sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
                           sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
-                        } catch { }
+                        } catch {}
                       }}
                       className="au-user-card__link"
                     >
@@ -691,26 +583,37 @@ export default function AllUsers() {
           )}
         </div>
 
-        {/* Pagination */}
-        <div className="au-pagination">
-          <button
-            disabled={currentPage <= 1 || loading}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          >
-            Previous
-          </button>
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            disabled={currentPage >= totalPages || loading}
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </button>
-        </div>
+          {/* Pagination */}
+          
+          {/* Pagination */}
+          <div className="au-foot au-desktop-only">
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <div>
+                  Showing <b>{Math.min((currentPage - 1) * rowsPerPage + 1, pagination?.total || users.length)}-{Math.min(currentPage * rowsPerPage, pagination?.total || users.length)}</b> of <b>{pagination?.total || users.length}</b> users
+              </div>
+            </div>
+            
+            <div className="au-pg">
+              <button className="text-btn" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Prev</button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1).map((p, i, arr) => (
+                <span key={p} style={{display: 'flex', alignItems: 'center'}}>
+                  {i > 0 && arr[i - 1] !== p - 1 && <span style={{margin: '0 4px', color: 'var(--muted)'}}>...</span>}
+                  <button className={`num-btn ${currentPage === p ? 'on' : ''}`} onClick={() => setCurrentPage(p)}>{p}</button>
+                </span>
+              ))}
+              
+              <button className="text-btn" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
+            </div>
+          </div>
 
-        {/* Detail panel (view only — no action buttons) */}
+        {/* Detail panel (view only - no action buttons) */}
         {detail && (
           <DetailPanel
             user={detail}
@@ -754,3 +657,6 @@ export default function AllUsers() {
     </div>
   );
 }
+
+
+
