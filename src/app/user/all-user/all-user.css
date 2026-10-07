@@ -1265,3 +1265,42 @@
     box-sizing: border-box;
   }
 }
+
+/* AL Style Table & Pagination */
+.au-tbl { background: var(--surf); border: 1px solid var(--border); border-top-left-radius: 14px; border-top-right-radius: 14px; margin-top: 10px; overflow: hidden; }
+.au-tbl-scroll { overflow-x: auto; }
+.au-row, .au-th { 
+  display: grid; 
+  grid-template-columns: 40px minmax(200px, 2fr) minmax(200px, 2fr) 130px 100px 120px 110px 180px; 
+  gap: 12px; 
+  align-items: center; 
+  padding: 12px 20px; 
+  min-width: 1000px; 
+}
+.au-th { color: var(--muted); font-size: 12px; font-weight: 500; border-bottom: 1px solid var(--border); padding: 14px 20px; text-transform: uppercase; letter-spacing: 0.04em; }
+.au-row { border-bottom: 1px solid var(--border); background: var(--surf); }
+.au-row:last-child { border-bottom: none; }
+.au-row:hover { background: var(--surf2); }
+
+.au-usr { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.au-av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 12px; flex-shrink: 0; text-transform: uppercase; color: #fff; text-decoration: none; }
+.au-un { font-weight: 500; font-size: 13px; line-height: 1.2; text-decoration: none; color: var(--text); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-un:hover { color: var(--accent); }
+
+.au-cell-text { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-cell-muted { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.au-badge-role { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--surf2); color: var(--text); text-transform: capitalize; }
+.au-badge-plan { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--text); }
+.au-badge-plan i { color: var(--accent); }
+
+.au-foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px 20px; color: var(--muted); background: var(--surf); border: 1px solid var(--border); border-top: none; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; margin-top: 0; font-size: 13px; }
+.au-pg { display: flex; gap: 4px; align-items: center; }
+.au-pg .num-btn, .au-pg span { min-width: 28px; height: 28px; border: none; background: transparent; border-radius: 6px; cursor: pointer; display: grid; place-items: center; font-size: 13px; color: var(--text); font-weight: 500; }
+.au-pg span { cursor: default; }
+.au-pg .num-btn:hover { background: var(--surf2); }
+.au-pg .num-btn.on { background: var(--accent); color: #fff; }
+.au-pg .text-btn { background: transparent; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 0 8px; font-weight: 500; }
+.au-pg .text-btn:hover:not(:disabled) { color: var(--text); }
+.au-pg .text-btn:disabled { opacity: .4; cursor: not-allowed; }
+.au-foot select { border: 1px solid var(--border); background: var(--surf); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 13px; outline: none; color: var(--text); }

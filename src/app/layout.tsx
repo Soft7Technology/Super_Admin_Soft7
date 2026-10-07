@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Providers } from "./providers";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
@@ -34,6 +35,14 @@ export default function RootLayout({
           fontSize: "15px",
         }}
       >
+        {/* Theme init script — next/script handles injection before page renders */}
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('sa-theme');if(t){document.documentElement.setAttribute('data-theme',t);document.documentElement.className=t;}}catch(e){}`,
+          }}
+        />
         <ToastProvider>
           <Providers>{children}</Providers>
         </ToastProvider>
