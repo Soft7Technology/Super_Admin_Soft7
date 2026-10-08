@@ -88,8 +88,8 @@ export default function AllActivityPage() {
 
   return (
     <div
+      className="page-container"
       style={{
-        padding: isMobile ? "16px" : isSmall ? "24px 22px 36px" : isMedium ? "28px 30px 44px" : "36px 38px 56px",
         background: t.bg,
         minHeight: "100%",
         transition: "background 0.3s ease",

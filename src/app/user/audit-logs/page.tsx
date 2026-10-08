@@ -6,7 +6,7 @@ import {
   Plus, Pencil, LogIn, Send, Trash2, HelpCircle,
   Info, CheckCircle2, AlertTriangle, XCircle,
   Download, MoreHorizontal, ChevronRight, ChevronDown,
-  Trash,
+  Trash, X, Copy, Check, Clock,
 } from "lucide-react";
 import "./audit-logs.css";
 
@@ -99,7 +99,7 @@ const fetchData = async (params: Record<string, any>): Promise<{ data: LogEntry[
         },
         min: minAgo,
         st: raw.status_code || (mappedSev === "error" ? 400 : 200),
-        ip: raw.ip || raw.ip_address || "ÔÇö",
+        ip: raw.ip || raw.ip_address || "—",
         ms: raw.duration_ms || raw.ms || 0,
         changes: raw.metadata || raw.changes || raw.new_data || {},
         rawDate: ts,
@@ -139,6 +139,7 @@ export default function AuditLogs() {
   const [clearModalOpen, setClearModalOpen] = useState(false);
   const [clearInput, setClearInput] = useState("");
   const [allUsers, setAllUsers] = useState<{id: string, n: string, e: string}[]>([]);
+  const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -377,7 +378,7 @@ export default function AuditLogs() {
               <div>Action</div>
               <div style={{ textAlign: "right" }}>Time</div>
             </div>
-            <div>
+            <div className="tbl-body">
               {loading ? (
                 [...Array(6)].map((_, i) => (
                   <div className="row" key={i}>
@@ -397,7 +398,7 @@ export default function AuditLogs() {
                   const isOpen = openGroups[g.k.id];
 
                   return (
-                    <div key={g.k.id}>
+                    <div key={g.k.id} className="row-group">
                       {dStr !== prevDStr && <div className="day">{dStr}</div>}
                       {renderRow(
                         g.k, 
@@ -464,42 +465,112 @@ export default function AuditLogs() {
       <aside className={`dr ${selectedLog ? "open" : ""}`}>
         {selectedLog && (() => {
           const l = selectedLog;
-          const [ic, co] = AC[l.act] || ["?", "#000"];
+          const [ic, co] = AC[l.act] || [<HelpCircle size={15} />, "#64748b"];
+          const resolvedUser = allUsers.find(u => String(u.id) === String(l.u.id)) || { n: l.u.n, e: l.u.e };
+          const formattedDate = l.rawDate 
+            ? new Date(l.rawDate).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "medium" })
+            : new Date(Date.now() - l.min * 60000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "medium" });
+
           return (
-            <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span className="badge" style={{ background: co }}>{l.act}</span>
-                <button className="btn" onClick={() => setSelectedLog(null)}>Close</button>
-              </div>
-              <h3 style={{ margin: "16px 0 4px" }}>{l.text}</h3>
-              <div className="sub">{l.rawDate ? new Date(l.rawDate).toLocaleString() : new Date(Date.now() - l.min * 60000).toLocaleString()}</div>
-              
-              <div className="kv">
-                <span>User</span>
-                <div>
-                  {(() => {
-                    const resolvedUser = allUsers.find(u => String(u.id) === String(l.u.id)) || { n: l.u.n, e: l.u.e };
-                    return `${resolvedUser.n} · ${resolvedUser.e}`;
-                  })()}
+            <div className="dr-inner">
+              {/* Header */}
+              <div className="dr-head">
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span className="badge" style={{ background: co }}>{l.act}</span>
+                  <span className="dr-type-tag">{l.type}</span>
                 </div>
-                <span>User ID</span>
-                <div>
-                  <code>{l.u.id}</code> 
-                  <button className="reset" onClick={() => navigator.clipboard.writeText(l.u.id)}>Copy</button>
-                </div>
-                <span>Type</span><div>{l.type}</div>
-                <span>Severity</span>
-                <div><span className="dot" style={{ background: SV[l.sev][0], display: "inline-block" }} /> {l.sev}</div>
-                <span>Status</span><div>{l.st}</div>
-                <span>Duration</span><div>{l.ms} ms</div>
-                <span>IP address</span><div>{l.ip}</div>
+                <button className="dr-close-btn" onClick={() => setSelectedLog(null)} aria-label="Close">
+                  <X size={18} strokeWidth={2.2} />
+                </button>
               </div>
-              
+
+              {/* Title & Date */}
+              <div className="dr-summary">
+                <h3 className="dr-title">{l.text}</h3>
+                <div className="dr-sub">
+                  <Clock size={13} strokeWidth={2} />
+                  <span>{formattedDate}</span>
+                  <span className="dr-ago">({ago(l.min)})</span>
+                </div>
+              </div>
+
+              {/* Actor Card */}
+              <div className="dr-card">
+                <div className="dr-card-title">User Information</div>
+                <div className="dr-user-info">
+                  <div className="av dr-user-av">
+                    {resolvedUser.n[0]?.toUpperCase() || "U"}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="dr-user-name">{resolvedUser.n}</div>
+                    <div className="dr-user-email">{resolvedUser.e}</div>
+                  </div>
+                </div>
+                {l.u.id && (
+                  <div className="dr-id-box">
+                    <span className="dr-id-lbl">User ID</span>
+                    <code className="dr-id-val">{l.u.id}</code>
+                    <button 
+                      className="dr-copy-btn" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(l.u.id);
+                        setCopiedId(true);
+                        setTimeout(() => setCopiedId(false), 2000);
+                      }}
+                      title="Copy ID"
+                    >
+                      {copiedId ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} strokeWidth={2} />}
+                      <span>{copiedId ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Execution Details Card */}
+              <div className="dr-card">
+                <div className="dr-card-title">Event Details</div>
+                <div className="dr-detail-rows">
+                  <div className="dr-detail-row">
+                    <span className="dr-detail-lbl">Status</span>
+                    <span className={`dr-status-pill ${l.st >= 200 && l.st < 300 ? "ok" : l.st >= 400 ? "err" : "info"}`}>
+                      {l.st}
+                    </span>
+                  </div>
+
+                  <div className="dr-detail-row">
+                    <span className="dr-detail-lbl">Severity</span>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <span className="dot" style={{ background: SV[l.sev]?.[0] || "var(--in)" }} />
+                      <span style={{ textTransform: "capitalize", fontWeight: 600 }}>{l.sev}</span>
+                    </div>
+                  </div>
+
+                  {l.path && (
+                    <div className="dr-detail-row">
+                      <span className="dr-detail-lbl">Endpoint</span>
+                      <div className="dr-path-box">
+                        <span className="dr-method-pill">{l.m || "POST"}</span>
+                        <code className="dr-path-text">{l.path}</code>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="dr-detail-row">
+                    <span className="dr-detail-lbl">Duration</span>
+                    <span className="dr-detail-val">{l.ms} ms</span>
+                  </div>
+
+                  <div className="dr-detail-row">
+                    <span className="dr-detail-lbl">IP Address</span>
+                    <span className="dr-detail-val">{l.ip === "ÔÇö" || !l.ip ? "—" : l.ip}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Changes section if UPDATE */}
               {l.act === "UPDATE" && (
-                <div style={{ marginTop: 24 }}>
-                  <b style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    Changes <span style={{ fontSize: 11, color: "var(--mu)", fontWeight: 500 }}>2 fields</span>
-                  </b>
+                <div style={{ marginTop: 20 }}>
+                  <div className="dr-card-title" style={{ marginBottom: 10 }}>Field Changes</div>
                   
                   <div className="diff-card">
                     <div className="diff-card-title">STATUS</div>
@@ -546,7 +617,7 @@ export default function AuditLogs() {
                   )}
                 </div>
               )}
-            </>
+            </div>
           );
         })()}
       </aside>

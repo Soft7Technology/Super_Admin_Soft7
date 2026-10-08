@@ -143,7 +143,8 @@ export default function CampaignsPage() {
         .full-list-page {
           min-height: 100vh;
           padding: 24px 28px;
-          background: #f4f8f6;
+          background: var(--bg, #f0f7f3);
+          color: var(--text, #1b2d27);
         }
 
         .full-list-container {
@@ -163,39 +164,50 @@ export default function CampaignsPage() {
           border: 0;
           background: transparent;
           padding: 0;
-          color: #087f5b;
+          color: var(--primary, #087f5b);
           font-weight: 700;
           cursor: pointer;
           margin-bottom: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: opacity 0.2s;
+        }
+
+        .back-button:hover {
+          opacity: 0.8;
         }
 
         .page-header h1 {
           margin: 0;
-          color: #13231e;
+          color: var(--title-color, #13231e);
           font-size: 26px;
+          font-weight: 800;
         }
 
         .page-header p {
           margin: 7px 0 0;
-          color: #70807a;
+          color: var(--muted, #70807a);
+          font-size: 14px;
         }
 
         .count-pill {
-          padding: 8px 12px;
-          border: 1px solid #d8e7e1;
+          padding: 8px 14px;
+          border: 1px solid var(--border, #d8e7e1);
           border-radius: 999px;
-          background: white;
-          color: #4f625b;
+          background: var(--card-bg, #ffffff);
+          color: var(--text-sub, #4f625b);
           font-weight: 700;
           white-space: nowrap;
+          font-size: 13px;
         }
 
         .list-card {
           overflow: hidden;
-          border: 1px solid #e0ebe7;
+          border: 1px solid var(--border, #e0ebe7);
           border-radius: 16px;
-          background: white;
-          box-shadow: 0 5px 20px rgba(22, 54, 44, 0.06);
+          background: var(--card-bg, #ffffff);
+          box-shadow: var(--shadow-card, 0 5px 20px rgba(0, 0, 0, 0.06));
         }
 
         .table-wrapper {
@@ -212,33 +224,34 @@ export default function CampaignsPage() {
 
         th,
         td {
-          padding: 12px 10px;
-          border-bottom: 1px solid #edf2f0;
+          padding: 12px 14px;
+          border-bottom: 1px solid var(--border, #edf2f0);
           text-align: left;
           white-space: nowrap;
         }
 
         th {
-          background: #f7faf9;
-          color: #71827c;
+          background: var(--surf2, #f7faf9);
+          color: var(--muted, #71827c);
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 0.04em;
+          font-weight: 700;
         }
 
         td {
-          color: #4c5d57;
+          color: var(--text-sub, #4c5d57);
           font-size: 13px;
         }
 
         tbody tr:hover {
-          background: #fbfdfc;
+          background: var(--row-hover, rgba(8, 127, 91, 0.05));
         }
 
         .campaign-name {
           display: block;
           overflow: hidden;
-          color: #182923;
+          color: var(--title-color, #182923);
           font-weight: 700;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -263,35 +276,36 @@ export default function CampaignsPage() {
         }
 
         .success {
-          color: #087f5b;
-          background: #e8f7f1;
+          color: var(--success, #087f5b);
+          background: rgba(16, 185, 129, 0.15);
         }
 
         .failed {
-          color: #d92d20;
-          background: #fff0ef;
+          color: var(--danger, #d92d20);
+          background: rgba(239, 68, 68, 0.15);
         }
 
         .running {
-          color: #b77900;
-          background: #fff7db;
+          color: var(--warn, #b77900);
+          background: rgba(245, 158, 11, 0.15);
         }
 
         .scheduled,
         .other {
-          color: #087f5b;
-          background: #edf6ff;
+          color: var(--primary, #087f5b);
+          background: rgba(8, 127, 91, 0.15);
         }
 
         .loading,
         .error-state {
           padding: 50px 24px;
           text-align: center;
-          color: #71827c;
+          color: var(--muted, #71827c);
+          font-size: 14px;
         }
 
         .error-state {
-          color: #c92a2a;
+          color: var(--danger, #c92a2a);
         }
 
         .pagination {
@@ -300,11 +314,11 @@ export default function CampaignsPage() {
           justify-content: space-between;
           gap: 15px;
           padding: 12px 14px;
-          border-top: 1px solid #edf2f0;
+          border-top: 1px solid var(--border, #edf2f0);
         }
 
         .pagination-info {
-          color: #71827c;
+          color: var(--muted, #71827c);
           font-size: 14px;
         }
 
@@ -316,12 +330,13 @@ export default function CampaignsPage() {
         .pagination-button {
           min-width: 74px;
           padding: 9px 13px;
-          border: 1px solid #d5e3de;
+          border: 1px solid var(--border, #d5e3de);
           border-radius: 9px;
-          background: white;
-          color: #315048;
+          background: var(--card-bg, #ffffff);
+          color: var(--text, #315048);
           font-weight: 700;
           cursor: pointer;
+          transition: opacity 0.2s, background 0.2s, border-color 0.2s;
         }
 
         .pagination-button:disabled {

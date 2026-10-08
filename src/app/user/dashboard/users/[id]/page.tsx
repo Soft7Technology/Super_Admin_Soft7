@@ -176,8 +176,8 @@ export default function DashboardUserDetailsPage() {
     : [];
 
   return (
-    <div style={{ padding: "28px 28px 48px", background: t.bg, minHeight: "100%", transition: "background 0.3s ease" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}>
+    <div className="page-container" style={{ background: t.bg, minHeight: "100%", transition: "background 0.3s ease" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "18px", flexWrap: "wrap" }}>
         <div>
           <h1 style={{ fontWeight: 800, fontSize: "1.45rem", color: t.text, margin: 0, letterSpacing: "-0.02em" }}>
             User Details
@@ -226,13 +226,7 @@ export default function DashboardUserDetailsPage() {
             </div>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-              gap: "0",
-            }}
-          >
+          <div className="db-details-grid">
             {details.map(([label, value], index) => (
               <div
                 key={label}

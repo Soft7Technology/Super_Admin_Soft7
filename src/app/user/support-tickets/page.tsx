@@ -139,13 +139,11 @@ const getAvatarBg = (name: string) => {
 function KPI({
   label,
   value,
-  sub,
   icon,
   color,
 }: {
   label: string;
   value: string;
-  sub: string;
   icon: React.ReactNode;
   color: string;
 }) {
@@ -161,9 +159,6 @@ function KPI({
           <div className="st-kpi__accent-bar" style={{ background: color }} />
         </div>
       </div>
-      <span className="st-kpi__sub">
-        {sub}
-      </span>
     </div>
   );
 }
@@ -945,10 +940,10 @@ export default function SupportTickets() {
 
           {/* KPI grid */}
           <div className="st-kpi-grid">
-            <KPI label="Open Tickets"   value={String(openCount)}  sub={`${urgent} urgent`}        icon={<TicketIcon size={20} />}    color="#52a77d" />
-            <KPI label="In Progress"    value={String(inProgress)} sub="being handled"              icon={<Clock size={20} />}         color="#f59f00" />
-            <KPI label="Resolved (7d)"  value={String(resolved)}   sub="closed this week"           icon={<CheckCircle2 size={20} />}  color="#2fb344" />
-            <KPI label="Avg Response"   value="18m"                sub="across all tickets"         icon={<Zap size={20} />}           color="#087f5b" />
+            <KPI label="Open Tickets"   value={String(openCount)}  icon={<TicketIcon size={20} />}    color="#52a77d" />
+            <KPI label="In Progress"    value={String(inProgress)} icon={<Clock size={20} />}         color="#f59f00" />
+            <KPI label="Resolved (7d)"  value={String(resolved)}   icon={<CheckCircle2 size={20} />}  color="#2fb344" />
+            <KPI label="Avg Response"   value="18m"                icon={<Zap size={20} />}           color="#087f5b" />
           </div>
 
           {/* Main grid */}

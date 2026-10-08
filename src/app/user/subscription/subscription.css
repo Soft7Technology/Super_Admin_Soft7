@@ -229,7 +229,7 @@
 /* ─── KPI GRID ───────────────────────────────────────────── */
 .sb-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:26px; }
 .sb-kpi {
-  background: var(--sb-surf);
+  background: var(--kpi-bg, #eaf5ee);
 
   border: 1px solid var(--sb-border);
 
@@ -252,9 +252,8 @@
 
 .sb-kpi:hover {
   transform: translateY(-3px);
-
+  background: var(--kpi-hover, #e2f0e7);
   border-color: rgba(16,185,129,0.18);
-
   box-shadow: 0 12px 30px rgba(16,185,129,0.08);
 }
 .sb-kpi__orb   { position:absolute; top:-6px; right:-6px; width:56px; height:56px; border-radius:50%; pointer-events:none; }
@@ -491,7 +490,7 @@
 
 /* ─── HISTORY TAB ────────────────────────────────────────── */
 .sb-hist-kpi-grid  { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
-.sb-hist-kpi       { background:var(--sb-surf); border:1px solid var(--sb-border); border-radius:12px; padding:14px 16px; transition:background 0.3s, border-color 0.3s; }
+.sb-hist-kpi       { background:var(--kpi-bg, #eaf5ee); border:1px solid var(--sb-border); border-radius:12px; padding:14px 16px; transition:background 0.3s, border-color 0.3s; }
 .sb-hist-kpi__top  { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .sb-hist-kpi__lbl  { font-size:12px; color:var(--sb-muted); transition:color 0.3s; }
 .sb-hist-kpi__icon { font-size:16px; }

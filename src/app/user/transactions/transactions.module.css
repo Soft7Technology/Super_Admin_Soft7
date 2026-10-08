@@ -89,17 +89,18 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  background: var(--surf);
+  background: var(--kpi-bg, #eaf5ee);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px 20px;
   box-shadow: var(--shadow-card);
   margin-bottom: 24px;
   min-width: 280px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s;
 }
 
 .tx-balance-card:hover {
+  background: var(--kpi-hover, #e2f0e7);
   box-shadow: var(--shadow-hover);
 }
 
@@ -219,12 +220,14 @@
   border-radius: 12px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Table ─────────────────────────────────────────────────── */
 .tx-table {
   width: 100%;
+  min-width: 900px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
@@ -233,25 +236,25 @@
 
 /* ── Column widths ─────────────────────────────────────────── */
 .tx-table th:nth-child(1),
-.tx-table td:nth-child(1) { width: 14%; }
+.tx-table td:nth-child(1) { width: 140px; min-width: 140px; }
 
 .tx-table th:nth-child(2),
-.tx-table td:nth-child(2) { width: 11%; }
+.tx-table td:nth-child(2) { width: 130px; min-width: 130px; }
 
 .tx-table th:nth-child(3),
-.tx-table td:nth-child(3) { width: 9%; }
+.tx-table td:nth-child(3) { width: 110px; min-width: 110px; }
 
 .tx-table th:nth-child(4),
-.tx-table td:nth-child(4) { width: 15%; }
+.tx-table td:nth-child(4) { width: 140px; min-width: 140px; }
 
 .tx-table th:nth-child(5),
-.tx-table td:nth-child(5) { width: 12%; }
+.tx-table td:nth-child(5) { width: 120px; min-width: 120px; }
 
 .tx-table th:nth-child(6),
-.tx-table td:nth-child(6) { width: 12%; }
+.tx-table td:nth-child(6) { width: 120px; min-width: 120px; }
 
 .tx-table th:nth-child(7),
-.tx-table td:nth-child(7) { width: auto; }
+.tx-table td:nth-child(7) { width: auto; min-width: 180px; }
 
 /* ── Header ────────────────────────────────────────────────── */
 .tx-table thead tr {

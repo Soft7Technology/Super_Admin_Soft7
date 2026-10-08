@@ -120,7 +120,8 @@ export default function ActivityPage() {
         .full-list-page {
           min-height: 100vh;
           padding: 14px 18px;
-          background: #f4f8f6;
+          background: var(--bg, #f0f7f3);
+          color: var(--text, #1b2d27);
         }
 
         .full-list-container {
@@ -140,39 +141,48 @@ export default function ActivityPage() {
           border: 0;
           background: transparent;
           padding: 0;
-          color: #087f5b;
+          color: var(--primary, #087f5b);
           font-weight: 700;
           cursor: pointer;
           margin-bottom: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: opacity 0.2s;
+        }
+
+        .back-button:hover {
+          opacity: 0.8;
         }
 
         .page-header h1 {
           margin: 0;
-          color: #13231e;
+          color: var(--title-color, #13231e);
           font-size: 21px;
+          font-weight: 800;
         }
 
         .page-header p {
           margin: 7px 0 0;
-          color: #70807a;
+          color: var(--muted, #70807a);
         }
 
         .count-pill {
           padding: 9px 14px;
-          border: 1px solid #d8e7e1;
+          border: 1px solid var(--border, #d8e7e1);
           border-radius: 999px;
-          background: white;
-          color: #4f625b;
+          background: var(--card-bg, #ffffff);
+          color: var(--text-sub, #4f625b);
           font-weight: 700;
           white-space: nowrap;
         }
 
         .list-card {
           overflow: hidden;
-          border: 1px solid #e0ebe7;
+          border: 1px solid var(--border, #e0ebe7);
           border-radius: 16px;
-          background: white;
-          box-shadow: 0 5px 20px rgba(22, 54, 44, 0.06);
+          background: var(--card-bg, #ffffff);
+          box-shadow: var(--shadow-card, 0 5px 20px rgba(0, 0, 0, 0.06));
         }
 
         .activity-list {
@@ -184,7 +194,7 @@ export default function ActivityPage() {
           grid-template-columns: 28px 1fr;
           gap: 8px;
           padding: 7px 0;
-          border-bottom: 1px solid #e8efec;
+          border-bottom: 1px solid var(--border, #e8efec);
         }
 
         .activity-item:last-child {
@@ -197,10 +207,10 @@ export default function ActivityPage() {
           height: 26px;
           align-items: center;
           justify-content: center;
-          border: 1px solid #d7ebe4;
+          border: 1px solid var(--border, #d7ebe4);
           border-radius: 50%;
-          background: #eef9f5;
-          color: #087f5b;
+          background: var(--crm-primary-lt, rgba(8, 127, 91, 0.12));
+          color: var(--primary, #087f5b);
           font-weight: 800;
         }
 
@@ -217,20 +227,20 @@ export default function ActivityPage() {
         }
 
         .activity-title {
-          color: #1b2d27;
+          color: var(--title-color, #1b2d27);
           font-size: 10px;
           font-weight: 750;
         }
 
         .activity-description {
           margin: 3px 0 0;
-          color: #73837d;
+          color: var(--muted, #73837d);
           font-size: 10px;
           overflow-wrap: anywhere;
         }
 
         .activity-time {
-          color: #83918c;
+          color: var(--text-sub, #83918c);
           font-size: 10px;
           white-space: nowrap;
         }
@@ -256,29 +266,29 @@ export default function ActivityPage() {
         }
 
         .success {
-          color: #087f5b;
-          background: #e8f7f1;
+          color: var(--success, #087f5b);
+          background: rgba(16, 185, 129, 0.15);
         }
 
         .failed {
-          color: #d92d20;
-          background: #fff0ef;
+          color: var(--danger, #d92d20);
+          background: rgba(239, 68, 68, 0.15);
         }
 
         .other {
-          color: #087f5b;
-          background: #edf6ff;
+          color: var(--primary, #087f5b);
+          background: rgba(8, 127, 91, 0.15);
         }
 
         .loading,
         .error-state {
           padding: 50px 24px;
           text-align: center;
-          color: #71827c;
+          color: var(--muted, #71827c);
         }
 
         .error-state {
-          color: #c92a2a;
+          color: var(--danger, #c92a2a);
         }
 
         .pagination {
@@ -287,11 +297,11 @@ export default function ActivityPage() {
           justify-content: space-between;
           gap: 15px;
           padding: 12px 14px;
-          border-top: 1px solid #edf2f0;
+          border-top: 1px solid var(--border, #edf2f0);
         }
 
         .pagination-info {
-          color: #71827c;
+          color: var(--muted, #71827c);
           font-size: 10px;
         }
 
@@ -303,12 +313,13 @@ export default function ActivityPage() {
         .pagination-button {
           min-width: 74px;
           padding: 9px 13px;
-          border: 1px solid #d5e3de;
+          border: 1px solid var(--border, #d5e3de);
           border-radius: 9px;
-          background: white;
-          color: #315048;
+          background: var(--card-bg, #ffffff);
+          color: var(--text, #315048);
           font-weight: 700;
           cursor: pointer;
+          transition: opacity 0.2s, background 0.2s, border-color 0.2s;
         }
 
         .pagination-button:disabled {
