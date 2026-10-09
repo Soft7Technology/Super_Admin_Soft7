@@ -51,7 +51,7 @@ interface ConfirmState {
 
 const DOMAINS_API_BASE =
   process.env.NEXT_PUBLIC_DOMAINS_API_BASE ?? "/v1/super-admin";
-const REFRESH_INTERVAL_MS = 30000;
+const REFRESH_INTERVAL_MS = 300000;
 
 /* ============================================================
    API SERVICE LAYER

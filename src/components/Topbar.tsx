@@ -85,7 +85,7 @@ useEffect(() => {
 
   window.addEventListener("resize", handleResize);
 
-  const pollInterval = setInterval(fetchBalance, 30000);
+  const pollInterval = setInterval(fetchBalance, 300000);
 
   return () => {
     window.removeEventListener("resize", handleResize);

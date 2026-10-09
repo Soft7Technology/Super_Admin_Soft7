@@ -53,11 +53,7 @@ export function useCompanies() {
 // ── Users ────────────────────────────────────────────────────
 async function fetchUsers() {
   const headers = getHeaders();
-  const [regular, admins] = await Promise.all([
-    axiosInstance.get("/v1/admin/companies/user?role=user&page=1&limit=4", { headers, withCredentials: false }),
-    axiosInstance.get("/v1/admin/companies/user?role=admin", { headers, withCredentials: false })
-      .catch(() => ({ data: null })),
-  ]);
+  const response = await axiosInstance.get("/v1/admin/companies/user?page=1&limit=8", { headers, withCredentials: false }).catch(() => ({ data: null }));
 
   const flatten = (json: any): any[] => {
     if (Array.isArray(json)) return json;
@@ -67,7 +63,7 @@ async function fetchUsers() {
     return [];
   };
 
-  return [...flatten(regular.data), ...flatten(admins.data)];
+  return flatten(response.data);
 }
 
 export function useUsers() {

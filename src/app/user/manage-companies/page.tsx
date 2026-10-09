@@ -1107,11 +1107,9 @@ export default function ManageCompanies() {
     }
 
     try {
-      await Promise.all(
-        selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/super-admin/companies/${id}`),
-        ),
-      );
+      await axiosInstance.delete("/v1/super-admin/companies/bulk-delete", {
+        data: { company_ids: selectedCompanies },
+      });
 
       setSelectedCompanies([]);
       setSelectAll(false);
