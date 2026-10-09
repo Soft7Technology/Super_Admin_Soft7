@@ -123,10 +123,9 @@
 }
 @media (max-width: 1200px) { .mc-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px)  { .mc-kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
-@media (max-width: 400px)  { .mc-kpi-grid { grid-template-columns: 1fr; gap: 10px; } }
 
 .mc-kpi {
-  background: var(--kpi-bg, #eaf5ee);
+  background: var(--mc-surf);
   border: 1px solid var(--mc-border);
   border-radius: 12px;
   padding: 16px 18px;
@@ -135,16 +134,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s, background 0.2s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s;
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
 }
 .mc-kpi:hover {
   transform: translateY(-2px);
-  background: var(--kpi-hover, #e2f0e7);
   box-shadow: var(--shadow-hover);
-  border-color: rgba(8,127,91,0.25);
+  border-color: rgba(8,127,91,0.2);
 }
 .mc-kpi__left  { display: flex; align-items: center; gap: 14px; }
 .mc-kpi__icon  { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -321,6 +319,8 @@
 
 /* Company col */
 .mc-table th:nth-child(2), .mc-table td:nth-child(2) { min-width: 180px; }
+/* Email col expands to fill */
+.mc-table th:nth-child(3), .mc-table td:nth-child(3) { }
 /* Phone col */
 .mc-table th:nth-child(4), .mc-table td:nth-child(4) { white-space: nowrap; }
 /* Credit balance col */

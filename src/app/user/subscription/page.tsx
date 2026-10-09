@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import "./subscription.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 import Spinner from "@/components/ui/Spinner";
-import { toast } from "react-toastify";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
@@ -138,7 +137,7 @@ const serialiseExportValue = (value: unknown) => {
 
 const downloadExcel = (rows: SubRow[]) => {
   if (rows.length === 0) {
-    toast.info("No subscription data available to export.");
+    alert("No subscription data available to export.");
     return;
   }
 
@@ -1020,7 +1019,7 @@ function EditPlanModal({ plan, onClose, onSave }: { plan: any; onClose: () => vo
   const [saving,   setSaving]   = useState(false);
 
   const handleSave = async () => {
-    if (!name.trim() || !price) { toast.error("Plan name and price are required."); return; }
+    if (!name.trim() || !price) { alert("Plan name and price are required."); return; }
     setSaving(true);
     try {
       await onSave(String(plan.id), {
@@ -1112,11 +1111,11 @@ export default function Subscription() {
       };
       console.log("UPDATE PAYLOAD:", payload);
       await updateSubscriptionPlan(plan.id, payload);
-      toast.success("Plan updated successfully");
+      alert("Plan updated successfully");
       window.location.reload();
     } catch (error) {
       console.error("UPDATE ERROR:", error);
-      toast.error("Failed to update plan");
+      alert("Failed to update plan");
     }
   };
 
@@ -1135,11 +1134,11 @@ export default function Subscription() {
         features: plan.rawData?.features || {},
         description: plan.rawData?.description || "",
       });
-      toast.success("Plan disabled successfully");
+      alert("Plan disabled successfully");
       window.location.reload();
     } catch (error) {
       console.error("DISABLE ERROR:", error);
-      toast.error("Failed to disable plan");
+      alert("Failed to disable plan");
     }
   };
   const savePlan = async (p: CustomPlan) => {
@@ -1200,7 +1199,7 @@ export default function Subscription() {
       response.data
     );
 
-    toast.success("Plan created successfully");
+    alert("Plan created successfully");
 
     // Add locally
     setCustomPlans((prev) => [...prev, p]);
@@ -1213,7 +1212,7 @@ export default function Subscription() {
       error
     );
 
-    toast.error("Failed to create plan");
+    alert("Failed to create plan");
   }
 };
   const removePlan = (id: number) => setCustomPlans(prev=>prev.filter(p=>p.id!==id));
@@ -1439,12 +1438,12 @@ rawData: plan,
       {editPlan && <EditPlanModal plan={editPlan} onClose={()=>setEditPlan(null)} onSave={async (id, payload) => {
         try {
           await updateSubscriptionPlan(id, payload);
-          toast.success("Plan updated successfully");
+          alert("Plan updated successfully");
           setEditPlan(null);
           window.location.reload();
         } catch (err) {
           console.error("EDIT ERROR:", err);
-          toast.error("Failed to update plan");
+          alert("Failed to update plan");
         }
       }} />}
     </div>

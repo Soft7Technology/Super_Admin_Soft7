@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
@@ -1582,6 +1583,18 @@ const handleDelete = async (companyId: string) => {
           }}
         />
       )}
+
+      {/* TOAST */}
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="dark"
+      />
     </div>
   );
 }

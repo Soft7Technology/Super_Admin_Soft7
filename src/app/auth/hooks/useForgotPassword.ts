@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { AUTH_BASE, type ForgotStep } from "../types/auth.types";
 

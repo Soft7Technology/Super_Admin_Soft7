@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import "./manage-transaction.css";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { RefreshCw } from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
 import Spinner from "@/components/ui/Spinner";
@@ -457,6 +458,16 @@ export default function ManageTransactions() {
           onPageChange={(page) => setCurrentPage(page)}
         />
       )}
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme={isDark ? "dark" : "light"}
+      />
     </div>
   );
 }

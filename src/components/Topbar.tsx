@@ -21,7 +21,6 @@ import { useRouter, usePathname } from "next/navigation";
 import NotificationModal from "./NotificationModal";
 import { axiosInstance } from "@/lib/axiosInstance";
 import ProfileAvatar from "./ProfileAvatar";
-import { toast } from "react-toastify";
 
 export default function Topbar({
   title = "Dashboard",
@@ -153,8 +152,9 @@ useEffect(() => {
   const isCompact = winWidth <= 1300;
   const isNarrow  = winWidth <= 800;
   // Collapse to a two-row layout (logo/profile row + full-width search row)
-  // on screens <= 768px so the header controls never overlap page content.
-  const isStacked = winWidth <= 768;
+  // on smaller screens so the right-side icon cluster never overflows the
+  // fixed header height and overlaps the page content below it.
+  const isStacked = winWidth <= 700;
 
   // searchResults is now computed directly above from searchDirectory —
   // no state/API needed for it.
@@ -183,7 +183,7 @@ useEffect(() => {
         // minHeight + flexWrap lets the header grow instead of overlapping.
         minHeight: isMobile ? "64px" : "78px",
         height: isStacked ? "auto" : "78px",
-        background: t.topbarBg,
+        background: t.surface,
         borderBottom: `1px solid ${t.border}`,
         display: "flex",
         flexWrap: isStacked ? "wrap" : "nowrap",
@@ -376,7 +376,7 @@ useEffect(() => {
           marginLeft: "auto",
           display: "flex",
           alignItems: "center",
-          gap: winWidth < 400 ? "4px" : isMobile ? "6px" : "8px",
+          gap: isMobile ? "6px" : "8px",
           order: isStacked ? 2 : 0,
           flexShrink: 0,
         }}
@@ -491,17 +491,16 @@ useEffect(() => {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "5px",
-            padding: winWidth < 400 ? "0 6px" : isMobile ? "0 8px" : "0 12px",
+            gap: "6px",
+            padding: isMobile ? "0 8px" : "0 12px",
             height: isMobile ? "34px" : "40px",
-            minWidth: "auto",
-            maxWidth: winWidth < 400 ? "85px" : isMobile ? "110px" : "none",
+            minWidth: isMobile ? "auto" : "105px",
             borderRadius: isMobile ? "8px" : "10px",
             background: t.iconBox,
             border: `1px solid ${t.border}`,
             color: t.text,
             fontWeight: 600,
-            fontSize: winWidth < 400 ? "0.74rem" : isMobile ? "0.8rem" : "0.9rem",
+            fontSize: isMobile ? "0.8rem" : "0.9rem",
             cursor: "pointer",
             transition:
               "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
@@ -514,8 +513,8 @@ useEffect(() => {
             e.currentTarget.style.transform = "none";
           }}
         >
-          <Wallet size={winWidth < 400 ? 14 : isMobile ? 15 : 18} color="var(--primary, #087f5b)" style={{ flexShrink: 0 }} />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} suppressHydrationWarning>₹{creditBalance}</span>
+          <Wallet size={isMobile ? 15 : 18} color="var(--primary, #087f5b)" />
+          <span suppressHydrationWarning>₹{creditBalance}</span>
         </button>
 
         <button
@@ -843,7 +842,7 @@ useEffect(() => {
                         router.refresh();
                       }, 2000);
                     } else {
-                      toast.error(
+                      alert(
                         data.error ||
                           data.message ||
                           "Failed to perform database cleanup.",
@@ -856,7 +855,7 @@ useEffect(() => {
                       err.response?.data?.message ||
                       err.response?.data?.error ||
                       "An error occurred while cleaning up data.";
-                    toast.error(errMsg);
+                    alert(errMsg);
                     setConfirmRange(null);
                   } finally {
                     setIsDeleting(false);

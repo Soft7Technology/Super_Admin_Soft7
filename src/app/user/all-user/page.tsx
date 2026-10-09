@@ -29,7 +29,8 @@ import {
   UserCheck,
   Award,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AllUsers() {
   const [search, setSearch] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("sa_allusers_search") || "" : "");
@@ -677,6 +678,16 @@ export default function AllUsers() {
           onClose={() => setPasswordUser(null)}
         />
       )}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+      />
     </div>
   );
 }

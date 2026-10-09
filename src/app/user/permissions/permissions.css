@@ -80,7 +80,7 @@
 .pm-kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -97,22 +97,19 @@
 }
 
 .pm-kpi-card {
-  background: var(--kpi-bg, #eaf5ee);
+  background: var(--surf);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 18px 24px;
-  min-height: 84px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   box-shadow: var(--shadow-card);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s, border-color 0.2s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .pm-kpi-card:hover {
-  background: var(--kpi-hover, #e2f0e7);
-  border-color: rgba(8, 127, 91, 0.25);
-  box-shadow: 0 4px 12px rgba(8, 127, 91, 0.12);
+  box-shadow: var(--shadow-hover);
 }
 
 .pm-kpi-card__icon {
