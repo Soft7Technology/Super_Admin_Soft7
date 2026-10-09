@@ -142,7 +142,7 @@ export default function CompanyDetailsPage() {
   const [company, setCompany] = useState<CompanyDetails | null>(null);
   const [stats, setStats] = useState<OverviewStats>(EMPTY_STATS);
   const [activePlanLabel, setActivePlanLabel] = useState<string | null>(null);
-
+  const [editSubmitting, setEditSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -404,9 +404,63 @@ const handleStatusChange = async () => {
    }
  };
 
-  const handleEditProfile = () => {
+
+
+const handleEditProfile = async () => {
+  if (!company || !companyId || editSubmitting) return;
+
+  setEditSubmitting(true);
+
+  try {
+    const response = await axiosInstance.patch(
+      `/v1/super-admin/companies/${companyId}`,
+      {
+        name: company.name.trim(),
+        email: company.email.trim(),
+        phone: company.phone.trim(),
+        reason: "Company profile updated by super admin",
+      },
+    );
+
+    const updatedCompany = response.data?.data;
+
+    if (!updatedCompany) {
+      throw new Error("Updated company data was not returned.");
+    }
+
+    setCompany((current) =>
+      current
+        ? {
+            ...current,
+            name: updatedCompany.name ?? current.name,
+            email: updatedCompany.email ?? current.email,
+            phone: updatedCompany.phone ?? current.phone,
+            businessId: updatedCompany.business_id ?? current.businessId,
+            status:
+              String(updatedCompany.status).toLowerCase() === "suspended"
+                ? "suspended"
+                : "active",
+          }
+        : current,
+    );
+
     setShowEditModal(false);
-  };
+    showToast("Company profile updated successfully.", "success");
+  } catch (err: any) {
+    console.error("UPDATE COMPANY PROFILE ERROR =>", err);
+
+    showToast(
+      err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to update company profile.",
+      "error",
+    );
+  } finally {
+    setEditSubmitting(false);
+  }
+};
+
   const fetchCampaignsPreview = async () => {
     if (!companyId) return;
 
@@ -580,8 +634,14 @@ useEffect(() => {
             <div className="company-name-row">
               <h2>{company.name}</h2>
 
-              <span className={`status-badge ${String(company.status).toLowerCase()}`}>
-                {String(company.status).toLowerCase() === "active" ? "Active" : "Suspended"}
+              <span
+                className={`status-badge ${String(
+                  company.status,
+                ).toLowerCase()}`}
+              >
+                {String(company.status).toLowerCase() === "active"
+                  ? "Active"
+                  : "Suspended"}
               </span>
 
               <div className="company-profile-actions">
@@ -766,10 +826,26 @@ useEffect(() => {
 
               {/* Account totals */}
               <div className="kpi-grid kpi-grid-4">
-                <KpiCard title="Users" value={stats.users} icon={<Users size={18} />} />
-                <KpiCard title="Contacts" value={stats.contacts} icon={<UserCheck size={18} />} />
-                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} icon={<Layers size={18} />} />
-                <KpiCard title="Total Messages" value={stats.totalMessages} icon={<MessageSquare size={18} />} />
+                <KpiCard
+                  title="Users"
+                  value={stats.users}
+                  icon={<Users size={18} />}
+                />
+                <KpiCard
+                  title="Contacts"
+                  value={stats.contacts}
+                  icon={<UserCheck size={18} />}
+                />
+                <KpiCard
+                  title="Total Campaigns"
+                  value={stats.totalCampaigns}
+                  icon={<Layers size={18} />}
+                />
+                <KpiCard
+                  title="Total Messages"
+                  value={stats.totalMessages}
+                  icon={<MessageSquare size={18} />}
+                />
               </div>
 
               {/* Campaigns */}
@@ -779,7 +855,11 @@ useEffect(() => {
               </div>
 
               <div className="kpi-grid kpi-grid-3">
-                <KpiCard title="Total Campaigns" value={stats.totalCampaigns} icon={<Layers size={18} />} />
+                <KpiCard
+                  title="Total Campaigns"
+                  value={stats.totalCampaigns}
+                  icon={<Layers size={18} />}
+                />
                 <KpiCard
                   title="Completed"
                   value={stats.completedCampaigns}
@@ -813,7 +893,11 @@ useEffect(() => {
                   tone="success"
                   icon={<CheckCircle2 size={18} />}
                 />
-                <KpiCard title="Received" value={stats.receivedMessages} icon={<MessageSquare size={18} />} />
+                <KpiCard
+                  title="Received"
+                  value={stats.receivedMessages}
+                  icon={<MessageSquare size={18} />}
+                />
               </div>
             </div>
           )}
@@ -985,8 +1069,9 @@ useEffect(() => {
                 type="button"
                 className="primary-button"
                 onClick={handleEditProfile}
+                disabled={editSubmitting}
               >
-                Save Changes
+                {editSubmitting ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
