@@ -26,8 +26,7 @@ import {
   Users,
   Zap, ChevronDown, ArrowDown, Plus, Edit2, LogIn, Trash2,
 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { EditUserModal } from "../components/EditUserModal";
 import { ResetPasswordModal } from "../components/ResetPasswordModal";
@@ -647,7 +646,7 @@ export default function UserProfilePage() {
 
   return (
     <div className={`up-container ${isDark ? "dark" : ""}`}>
-      <ToastContainer position="top-right" autoClose={3000} />
+
 
       {/* ── HEADER ── */}
       <div className="up-header">

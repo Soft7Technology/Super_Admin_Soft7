@@ -8,7 +8,6 @@ import ProfileAvatar from "@/components/ProfileAvatar";
 import { EditUserModal } from "./EditUserModal";
 import { ResetPasswordModal } from "./ResetPasswordModal";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 interface DetailPanelProps {
   user: User;

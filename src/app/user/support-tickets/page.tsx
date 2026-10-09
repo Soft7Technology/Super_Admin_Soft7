@@ -9,7 +9,7 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import Spinner from "@/components/ui/Spinner";
 
 import ProfileAvatar from "@/components/ProfileAvatar";
-
+import { toast } from "react-toastify";
 import {
   Ticket as TicketIcon,
   Clock,
@@ -169,7 +169,6 @@ function KPI({
   label,
 
   value,
-
   icon,
 
   color,
@@ -177,7 +176,6 @@ function KPI({
   label: string;
 
   value: string;
-
   icon: React.ReactNode;
 
   color: string;
@@ -984,14 +982,15 @@ export default function SupportTickets() {
       if (selectedId === id) {
         await loadSingleTicket(id);
       }
+      toast.success(`Ticket status updated to ${status}`);
     } catch (error: any) {
       console.error("Status update failed:", error);
-
-      setApiError(
+      const errMsg =
         error?.response?.data?.message ||
           error?.response?.data?.error ||
-          "Failed to update ticket status.",
-      );
+          "Failed to update ticket status.";
+      setApiError(errMsg);
+      toast.error(errMsg);
     }
   };
 
@@ -1045,10 +1044,15 @@ export default function SupportTickets() {
         ),
       );
 
+      toast.success("Reply sent successfully");
       return { ok: true };
     } catch (error: any) {
       console.error("Reply API failed:", error);
-
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to send reply.";
+      toast.error(errMsg);
       return {
         ok: false,
 

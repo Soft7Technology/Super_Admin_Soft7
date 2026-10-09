@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { Download, MoreHorizontal, RefreshCw } from "lucide-react";
 
 import { axiosInstance } from "@/lib/axiosInstance";
-
 import "./audit-logs.css";
 
 interface ActivityLog {
@@ -322,7 +321,7 @@ useEffect(() => {
               <div style={{ textAlign: "center" }}>Description</div>
               <div style={{ textAlign: "right", paddingRight: 28 }}>Time</div>
             </div>
-            <div>
+            <div className="tbl-body">
               {loading ? (
                 Array.from({ length: Math.min(limit, 6) }).map((_, index) => (
                   <div className="row" key={index}>

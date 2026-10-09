@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { axiosInstance } from "@/lib/axiosInstance";
-import toast, { Toaster } from "react-hot-toast";
+import { toast, ToastContainer } from "react-toastify";
 
 import { LoginForm } from "./components/LoginForm";
 import { RegisterForm } from "./components/RegisterForm";
@@ -204,9 +204,9 @@ const domain_name = typeof window !== "undefined" ? window.location.hostname : "
       localStorage.setItem("credit_balance", String(creditBalance));
 
       if (data?.success !== false) {
+        toast.success("Logged in successfully");
         router.replace("/user/dashboard");
         queryClient.invalidateQueries({ queryKey: ["user-role"] });
-        toast.success("Logged in successfully");
       } else {
         setLoginErrors({ general: data?.message || "Login failed" });
       }
@@ -436,13 +436,6 @@ const domain_name = typeof window !== "undefined" ? window.location.hostname : "
 
   return (
     <>
-      <Toaster
-        position="top-center"
-        containerStyle={{
-          top: 5,
-        }}
-      />
-
       {authView === "login" ? (
         <LoginForm
           onSubmit={handleLogin}

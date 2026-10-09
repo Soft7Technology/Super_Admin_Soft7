@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { axiosInstance } from "@/lib/axiosInstance";
-import "./campaigns.css"
+
 interface Campaign {
   id: string;
   company_id: string;
@@ -139,6 +139,227 @@ export default function CampaignsPage() {
 
   return (
     <div className="full-list-page">
+      <style jsx>{`
+        .full-list-page {
+          min-height: 100vh;
+          padding: 24px 28px;
+          background: var(--bg, #f0f7f3);
+          color: var(--text, #1b2d27);
+        }
+
+        .full-list-container {
+          max-width: 100%;
+          margin: 0 auto;
+        }
+
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 22px;
+        }
+
+        .back-button {
+          border: 0;
+          background: transparent;
+          padding: 0;
+          color: var(--primary, #087f5b);
+          font-weight: 700;
+          cursor: pointer;
+          margin-bottom: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: opacity 0.2s;
+        }
+
+        .back-button:hover {
+          opacity: 0.8;
+        }
+
+        .page-header h1 {
+          margin: 0;
+          color: var(--title-color, #13231e);
+          font-size: 26px;
+          font-weight: 800;
+        }
+
+        .page-header p {
+          margin: 7px 0 0;
+          color: var(--muted, #70807a);
+          font-size: 14px;
+        }
+
+        .count-pill {
+          padding: 8px 14px;
+          border: 1px solid var(--border, #d8e7e1);
+          border-radius: 999px;
+          background: var(--card-bg, #ffffff);
+          color: var(--text-sub, #4f625b);
+          font-weight: 700;
+          white-space: nowrap;
+          font-size: 13px;
+        }
+
+        .list-card {
+          overflow: hidden;
+          border: 1px solid var(--border, #e0ebe7);
+          border-radius: 16px;
+          background: var(--card-bg, #ffffff);
+          box-shadow: var(--shadow-card, 0 5px 20px rgba(0, 0, 0, 0.06));
+        }
+
+        .table-wrapper {
+          width: 100%;
+          overflow-x: auto;
+        }
+
+        table {
+          width: 100%;
+          min-width: 0;
+          table-layout: fixed;
+          border-collapse: collapse;
+        }
+
+        th,
+        td {
+          padding: 12px 14px;
+          border-bottom: 1px solid var(--border, #edf2f0);
+          text-align: left;
+          white-space: nowrap;
+        }
+
+        th {
+          background: var(--surf2, #f7faf9);
+          color: var(--muted, #71827c);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          font-weight: 700;
+        }
+
+        td {
+          color: var(--text-sub, #4c5d57);
+          font-size: 13px;
+        }
+
+        tbody tr:hover {
+          background: var(--row-hover, rgba(8, 127, 91, 0.05));
+        }
+
+        .campaign-name {
+          display: block;
+          overflow: hidden;
+          color: var(--title-color, #182923);
+          font-weight: 700;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .status-badge::before {
+          content: "";
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+
+        .success {
+          color: var(--success, #087f5b);
+          background: rgba(16, 185, 129, 0.15);
+        }
+
+        .failed {
+          color: var(--danger, #d92d20);
+          background: rgba(239, 68, 68, 0.15);
+        }
+
+        .running {
+          color: var(--warn, #b77900);
+          background: rgba(245, 158, 11, 0.15);
+        }
+
+        .scheduled,
+        .other {
+          color: var(--primary, #087f5b);
+          background: rgba(8, 127, 91, 0.15);
+        }
+
+        .loading,
+        .error-state {
+          padding: 50px 24px;
+          text-align: center;
+          color: var(--muted, #71827c);
+          font-size: 14px;
+        }
+
+        .error-state {
+          color: var(--danger, #c92a2a);
+        }
+
+        .pagination {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          padding: 12px 14px;
+          border-top: 1px solid var(--border, #edf2f0);
+        }
+
+        .pagination-info {
+          color: var(--muted, #71827c);
+          font-size: 14px;
+        }
+
+        .pagination-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .pagination-button {
+          min-width: 74px;
+          padding: 9px 13px;
+          border: 1px solid var(--border, #d5e3de);
+          border-radius: 9px;
+          background: var(--card-bg, #ffffff);
+          color: var(--text, #315048);
+          font-weight: 700;
+          cursor: pointer;
+          transition: opacity 0.2s, background 0.2s, border-color 0.2s;
+        }
+
+        .pagination-button:disabled {
+          cursor: not-allowed;
+          opacity: 0.45;
+        }
+
+        @media (max-width: 700px) {
+          .full-list-page {
+            padding: 18px;
+          }
+
+          .page-header {
+            flex-direction: column;
+          }
+
+          .pagination {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
+      `}</style>
+
       <div className="full-list-container">
         <header className="page-header">
           <div>
