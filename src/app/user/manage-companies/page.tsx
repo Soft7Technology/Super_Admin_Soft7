@@ -1087,88 +1087,128 @@ export default function ManageCompanies() {
   // BULK DELETE
   // ─────────────────────────────────────────────────────────────────────────
 
-  const handleBulkDelete = async () => {
-    if (selectedCompanies.length === 0) {
-      return;
-    }
 
-    const result = await Swal.fire({
-      title: "Delete Selected Companies?",
-      text: "This action cannot be undone",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Delete",
-    });
+const handleBulkDelete = async () => {
+  if (selectedCompanies.length === 0) return;
 
-    if (!result.isConfirmed) {
-      return;
-    }
+  const result = await Swal.fire({
+    title: "Delete Selected Companies?",
+    text: `You are about to delete ${selectedCompanies.length} companies.`,
+    icon: "warning",
+    input: "textarea",
+    inputLabel: "Reason for deletion",
+    inputPlaceholder: "Enter the reason for deleting these companies...",
+    inputAttributes: {
+      maxlength: "500",
+    },
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Delete Selected",
+    cancelButtonText: "Cancel",
+    reverseButtons: true,
+    inputValidator: (value) => {
+      if (!value?.trim()) {
+        return "Please provide a reason for deletion.";
+      }
+      return null;
+    },
+  });
 
-    try {
-      await Promise.all(
-        selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/super-admin/companies/${id}`),
-        ),
-      );
+  if (!result.isConfirmed || !result.value?.trim()) return;
 
-      setSelectedCompanies([]);
-      setSelectAll(false);
+  try {
+    const reason = result.value.trim();
+    const idsToDelete = [...selectedCompanies];
 
-      toast.success(
-        `${selectedCompanies.length} companies deleted successfully`,
-      );
+    await Promise.all(
+      idsToDelete.map((id) =>
+        axiosInstance.delete(`/v1/super-admin/companies/${id}`, {
+          data: { reason },
+        }),
+      ),
+    );
 
-      await fetchCompanies();
-    } catch (error: any) {
-      console.error("BULK DELETE ERROR =>", error);
+    setSelectedCompanies([]);
+    setSelectAll(false);
 
-      toast.error(getApiError(error, "Failed to delete selected companies"));
-    }
-  };
+    toast.success(`${idsToDelete.length} companies deleted successfully`);
+
+    await fetchCompanies();
+  } catch (error: any) {
+    console.error("BULK DELETE ERROR =>", error);
+    toast.error(getApiError(error, "Failed to delete selected companies"));
+    await fetchCompanies();
+  }
+};
+
 
   // ─────────────────────────────────────────────────────────────────────────
   // DELETE
   // ─────────────────────────────────────────────────────────────────────────
 
-  const handleDelete = async (companyId: string) => {
-    const result = await Swal.fire({
-      title: "Delete Company?",
-      text: "This action cannot be undone",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Delete",
+
+const handleDelete = async (companyId: string) => {
+  const result = await Swal.fire({
+    title: "Delete Company?",
+    text: "This action cannot be undone. Please provide a reason.",
+    icon: "warning",
+    input: "textarea",
+    inputLabel: "Reason for deletion",
+    inputPlaceholder: "Enter the reason for deleting this company...",
+    inputAttributes: {
+      "aria-label": "Reason for deleting company",
+      maxlength: "500",
+    },
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Delete Company",
+    cancelButtonText: "Cancel",
+    reverseButtons: true,
+    focusCancel: true,
+    inputValidator: (value) => {
+      if (!value?.trim()) {
+        return "Please provide a reason for deletion.";
+      }
+      return null;
+    },
+  });
+
+  if (!result.isConfirmed || !result.value?.trim()) {
+    return;
+  }
+
+  try {
+    const endpoint = `/v1/super-admin/companies/${companyId}`;
+
+    const payload = {
+      reason: result.value.trim(),
+    };
+
+    console.log("DELETE COMPANY PAYLOAD =>", payload);
+
+    const { data } = await axiosInstance.delete(endpoint, {
+      data: payload,
     });
 
-    if (!result.isConfirmed) {
-      return;
+    console.log("DELETE COMPANY RESPONSE =>", data);
+
+    if (data?.success) {
+      toast.success("Company deleted successfully");
+      setViewTarget(null);
+      await fetchCompanies();
+    } else {
+      toast.error(
+        data?.message || data?.error?.message || "Failed to delete company",
+      );
     }
+  } catch (error: any) {
+    console.error("DELETE COMPANY ERROR =>", error);
+    toast.error(getApiError(error, "Failed to delete company"));
+  }
+};
 
-    try {
-      const endpoint = `/v1/super-admin/companies/${companyId}`;
-
-      console.log("DELETE URL =>", endpoint);
-
-      const { data } = await axiosInstance.delete(endpoint);
-
-      console.log("DELETE RESPONSE =>", data);
-
-      if (data?.success) {
-        toast.success("Company deleted successfully");
-
-        await fetchCompanies();
-      } else {
-        toast.error(data?.message || "Failed to delete company");
-      }
-    } catch (error: any) {
-      console.error("DELETE ERROR =>", error);
-
-      toast.error(getApiError(error, "Failed to delete company"));
-    }
-  };
 
   // ─────────────────────────────────────────────────────────────────────────
   // STATUS
