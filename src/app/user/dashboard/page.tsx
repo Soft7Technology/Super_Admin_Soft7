@@ -250,14 +250,13 @@ export default function DashboardPage() {
             fallbackUrl ? axiosInstance.get(fallbackUrl, config).catch(() => null) : null
           );
 
-        const [statsRes, usersRes, adminUsersRes, companiesRes, revRes, activityRes] =
+        const [statsRes, usersRes, companiesRes, revRes, activityRes] =
           await Promise.all([
             getOrFallback("/v1/super-admin/overview", DASHBOARD_API),
             getOrFallback(
-              `${USERS_API}?role=user&page=1&limit=50`,
+              `${USERS_API}?page=1&limit=50`,
               "/v1/super-admin/users?page=1&limit=50"
             ),
-            getOrFallback(`${USERS_API}?role=admin`),
             getOrFallback(
               COMPANIES_API,
               "/v1/super-admin/companies?page=1&limit=25&status=active"
@@ -342,7 +341,6 @@ export default function DashboardPage() {
         // ── 2. Users & Company User Counts ─────────────────────────
         const usersData = [
           ...recordsFromResponse(usersRes?.data),
-          ...recordsFromResponse(adminUsersRes?.data),
         ];
 
         const companyUserCounts: Record<string, number> = {};

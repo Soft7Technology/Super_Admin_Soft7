@@ -675,7 +675,7 @@ export default function SupportTickets() {
       if (!selectedId) {
         void loadTickets();
       }
-    }, 5000);
+    }, 300000);
 
     return () => clearInterval(interval);
   }, [selectedId]);
