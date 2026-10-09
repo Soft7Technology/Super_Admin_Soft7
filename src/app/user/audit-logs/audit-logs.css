@@ -631,7 +631,7 @@
   width: min(440px, 100%);
   background: var(--surf, #ffffff);
   border-left: 1px solid var(--border, #e6e8eb);
-  z-index: 50;
+  z-index: 9999;
   transform: translateX(100%);
   transition: transform 0.22s ease;
   padding: 24px;
@@ -646,7 +646,7 @@
   position: fixed;
   inset: 0;
   background: var(--overlay-bg, rgba(0,0,0,0.4));
-  z-index: 40;
+  z-index: 9998;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
@@ -838,4 +838,87 @@
   .al-page .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
   .al-page .bar   { gap: 8px; }
   .al-page .foot  { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+.crm-audit-drawer {
+  position: fixed;
+  z-index: 9999;
+}
+.crm-audit-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+}
+
+.crm-audit-drawer {
+  position: fixed;
+  z-index: 9999;
+}
+.crm-refresh-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d9e7e1;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #1f3a32;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(20, 50, 40, 0.08);
+  transition: all 0.2s ease;
+}
+
+.crm-refresh-btn:hover {
+  background: #f4f8f6;
+  border-color: #b9d8ca;
+}
+
+.crm-refresh-btn:active {
+  transform: scale(0.97);
+}
+.th,
+.activity-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 220px;
+  align-items: center;
+}
+
+.description-header,
+.description-cell {
+  text-align: center;
+}
+
+.time-header,
+.time-cell {
+  text-align: right;
+  padding-right: 28px;
+}
+.activity-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-success {
+  background: #e6f5ed;
+  color: #237a50;
+  border: 1px solid #c6e8d6;
+}
+
+.status-default {
+  background: #eef3f1;
+  color: #60736a;
+  border: 1px solid #d8e3df;
 }
