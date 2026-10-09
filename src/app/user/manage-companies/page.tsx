@@ -1316,7 +1316,7 @@ const handleDelete = async (companyId: string) => {
           label="Total Companies"
           value={String(pagination.total)}
           icon={<Building2 size={18} />}
-          color="#0891b2"
+          color="#087f5b"
         />
 
         <KPI
@@ -1325,7 +1325,7 @@ const handleDelete = async (companyId: string) => {
             companies.filter((company) => company.status === "ACTIVE").length,
           )}
           icon={<CheckCircle2 size={18} />}
-          color="#10b981"
+          color="#087f5b"
         />
 
         <KPI
@@ -1335,7 +1335,7 @@ const handleDelete = async (companyId: string) => {
               .length,
           )}
           icon={<Ban size={18} />}
-          color="#ef4444"
+          color="#087f5b"
         />
       </div>
 
@@ -1474,7 +1474,11 @@ const handleDelete = async (companyId: string) => {
 
                   <td>
                     <span className="mc-credit-badge">
-                      ₹{Number(company.creditBalance || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹
+                      {Number(company.creditBalance || 0).toLocaleString(
+                        "en-IN",
+                        { minimumFractionDigits: 2 },
+                      )}
                     </span>
                   </td>
 
