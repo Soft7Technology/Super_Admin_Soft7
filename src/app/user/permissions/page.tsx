@@ -65,7 +65,6 @@ interface ConfirmState {
 const DOMAINS_API_BASE =
   process.env.NEXT_PUBLIC_DOMAINS_API_BASE ?? "/v1/super-admin";
 
-const REFRESH_INTERVAL_MS = 30000;
 
 function getDomainApiError(error: unknown): string {
   if (error instanceof AxiosError) {
@@ -248,17 +247,9 @@ export default function PermissionsPage() {
     [debouncedSearch, statusFilter],
   );
 
-  useEffect(() => {
-    void loadRequests();
-
-    const interval = window.setInterval(
-      () => void loadRequests(true),
-      REFRESH_INTERVAL_MS,
-    );
-
-    return () => window.clearInterval(interval);
-  }, [loadRequests]);
-
+ useEffect(() => {
+   void loadRequests();
+ }, [loadRequests]);
   // Derived stats
 
   const stats = useMemo(() => {
@@ -649,7 +640,7 @@ export default function PermissionsPage() {
         </div>
 
         <div className="pm-table-footer">
-          <span>Auto-refreshes every 30s</span>
+          <span>Refresh to see the latest requests</span>
 
           <span>{visibleRequests.length} results shown</span>
         </div>
