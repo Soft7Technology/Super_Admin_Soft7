@@ -1137,7 +1137,6 @@ export default function SupportTickets() {
               icon={<X size={20} />}
               color="#64748b"
             />
-
           </div>
 
           {/* Main grid */}
@@ -1148,7 +1147,6 @@ export default function SupportTickets() {
             <div className="st-list-panel">
               <div className="st-filters st-filters-row">
                 {/* Search */}
-
                 <div className="st-search-wrap">
                   <span className="st-search-icon">
                     <Search size={15} />
@@ -1164,16 +1162,15 @@ export default function SupportTickets() {
                     placeholder="Search by ticket, subject, or company…"
                   />
                 </div>
-
                 {/* Status Segmented Tab Switcher */}
-
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
                     alignItems: "center",
                     flexWrap: "wrap",
                     gap: 12,
+                    flex: 1,
+                    minWidth: 0,
                   }}
                 >
                   <div className="st-tab-switcher">
@@ -1196,11 +1193,60 @@ export default function SupportTickets() {
                       ),
                     )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPage(1);
+                      void loadTickets(statusF);
+                    }}
+                    disabled={loading}
+                    aria-label="Refresh support tickets"
+                    title="Refresh tickets"
+                    style={{
+                      marginLeft: "auto",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 7,
+                      padding: "8px 12px",
+                      border: "1px solid var(--st-border)",
+                      borderRadius: 8,
+                      background: "var(--st-surf)",
+                      color: "var(--st-text)",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: loading ? "not-allowed" : "pointer",
+                      opacity: loading ? 0.65 : 1,
+                      whiteSpace: "nowrap",
+                      boxShadow: "none",
+                    }}
+                  >
+                    <RefreshCw
+                      size={14}
+                      style={
+                        loading
+                          ? {
+                              animation: "st-refresh-spin 0.9s linear infinite",
+                            }
+                          : undefined
+                      }
+                    />
+                    {loading ? "Refreshing…" : "Refresh"}
+                  </button>
 
                   {/* Count */}
 
                   <div className="st-count-group">
-                    <span className="st-filter-count">
+                    <span
+                      className="st-filter-count"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        boxShadow: "none",
+                        padding: 0,
+                        borderRadius: 0,
+                      }}
+                    >
                       {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
                     </span>
                   </div>
@@ -1299,7 +1345,6 @@ export default function SupportTickets() {
                       className="crm-card"
                       onClick={() => void loadSingleTicket(ticket.id)}
                     >
-
                       <div className="crm-card__header">
                         <div className="crm-card__identity">
                           <ProfileAvatar

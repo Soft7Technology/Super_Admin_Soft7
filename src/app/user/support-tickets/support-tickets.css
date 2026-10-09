@@ -2359,3 +2359,10 @@
     border-radius: 8px !important;
   }
 }
+  @keyframes st-refresh-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+.st-refresh-btn {
+  margin-left: 10px;
+}
