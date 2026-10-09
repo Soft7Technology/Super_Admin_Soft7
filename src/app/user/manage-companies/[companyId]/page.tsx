@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
 import "./company-details.css";
-import { useToast } from "@/components/ui/ToastProvider";
+import { toast } from "react-toastify";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import {
   ArrowLeft,
@@ -156,7 +156,6 @@ export default function CompanyDetailsPage() {
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
-  const { showToast } = useToast();
   useEffect(() => {
     if (!companyId) return;
 
@@ -332,21 +331,19 @@ const handleStatusChange = async () => {
         : current,
     );
 
-    showToast(
+    toast.success(
       isSuspending
         ? "Company suspended successfully."
         : "Company activated successfully.",
-      "success",
     );
   } catch (err: any) {
     console.error("COMPANY STATUS UPDATE ERROR =>", err);
 
-    showToast(
+    toast.error(
       err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
         "Failed to update company status.",
-      "error",
     );
   } finally {
     setStatusSubmitting(false);
@@ -378,9 +375,8 @@ const handleStatusChange = async () => {
        },
      );
 
-     showToast(
+     toast.success(
        `${amount.toLocaleString("en-IN")} credits added successfully.`,
-       "success",
      );
      setCreditAmount("");
      setShowCreditModal(false);
@@ -393,12 +389,13 @@ const handleStatusChange = async () => {
    } catch (err: any) {
      console.error("ADD CREDITS ERROR =>", err);
 
-     setError(
+     const errorMsg =
        err?.response?.data?.message ||
          err?.response?.data?.error ||
          err?.message ||
-         "Failed to add credits.",
-     );
+         "Failed to add credits.";
+     setError(errorMsg);
+     toast.error(errorMsg);
    } finally {
      setCreditSubmitting(false);
    }
@@ -600,7 +597,7 @@ useEffect(() => {
                   className="profile-action-btn"
                   onClick={() => {
                     navigator.clipboard?.writeText(window.location.href);
-                    showToast("Profile link copied.", "success");
+                    toast.success("Profile link copied.");
                   }}
                   aria-label="Share Profile"
                 >

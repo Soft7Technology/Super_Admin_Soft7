@@ -7,8 +7,7 @@ import "react-phone-input-2/lib/style.css";
 
 import { axiosInstance } from "@/lib/axiosInstance";
 
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 import {
   Eye,
@@ -630,16 +629,6 @@ export default function CreateCompanyPage() {
           </section>
         </form>
       </div>
-
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="dark"
-      />
     </div>
   );
 }

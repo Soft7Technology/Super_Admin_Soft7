@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "@/app/globals.css";
 import Spinner from "@/components/ui/Spinner";

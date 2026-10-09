@@ -21,6 +21,7 @@ import { useRouter, usePathname } from "next/navigation";
 import NotificationModal from "./NotificationModal";
 import { axiosInstance } from "@/lib/axiosInstance";
 import ProfileAvatar from "./ProfileAvatar";
+import { toast } from "react-toastify";
 
 export default function Topbar({
   title = "Dashboard",
@@ -842,7 +843,7 @@ useEffect(() => {
                         router.refresh();
                       }, 2000);
                     } else {
-                      alert(
+                      toast.error(
                         data.error ||
                           data.message ||
                           "Failed to perform database cleanup.",
@@ -855,7 +856,7 @@ useEffect(() => {
                       err.response?.data?.message ||
                       err.response?.data?.error ||
                       "An error occurred while cleaning up data.";
-                    alert(errMsg);
+                    toast.error(errMsg);
                     setConfirmRange(null);
                   } finally {
                     setIsDeleting(false);

@@ -5,7 +5,6 @@ import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import { useTheme, tokens } from "../../context/ThemeContext";
 import { useRedirectOnRefresh } from "../../hooks/useRedirectOnRefresh";
-import { Toaster } from "react-hot-toast";
 
 const pathMappings: Record<string, string> = {
   "/user/dashboard": "Dashboard",
@@ -71,33 +70,6 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
       className={isDark ? "dark" : "light"}
       style={{ minHeight: "100vh", background: "var(--crm-bg, var(--bg, #f4f6fa))" }}
     >
-      <Toaster
-        position="top-center"
-        gutter={0}
-        containerStyle={{
-          top: "20px",
-        }}
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: isDark ? "#0d1117" : "#ffffff",
-            color: isDark ? "#f8fafc" : "#111827",
-            border: "1px solid #10b981",
-            borderRadius: "12px",
-            padding: "18px 26px",
-            minWidth: "340px",
-            maxWidth: "460px",
-            justifyContent: "center",
-            fontSize: "18px",
-            fontWeight: "700",
-            textAlign: "center",
-            boxShadow: "0 18px 45px rgba(16, 185, 129, 0.22)",
-          },
-          success: {
-            icon: null,
-          },
-        }}
-      />
 
       {/* ✅ DESKTOP SIDEBAR */}
       {!isMobile && (

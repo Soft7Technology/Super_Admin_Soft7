@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { AUTH_BASE, type LoginPayload } from "../types/auth.types";
 
@@ -52,7 +52,7 @@ export function useLogin() {
       if (data?.success !== false) {
         router.replace("/user/dashboard");
         queryClient.invalidateQueries({ queryKey: ["user-role"] });
-       toast.success("Signed in successfully", { id: "login-success" });
+        toast.success("Signed in successfully");
       } else {
         setErrors({ general: data?.message || "Login failed" });
       }

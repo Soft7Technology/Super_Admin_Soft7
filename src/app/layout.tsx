@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Providers } from "./providers";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 export const metadata: Metadata = {
   title: "Soft7 Super Admin ",

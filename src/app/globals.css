@@ -1402,61 +1402,85 @@ a:hover {
   }
 }
 
-.global-toast-container {
-  position: fixed;
-  top: 80px;
-  right: 24px;
-  z-index: 999999;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ── TOAST NOTIFICATIONS (Centered & Theme-Matched) ── */
+:root {
+  --toastify-color-success: var(--crm-primary, #087f5b);
+  --toastify-icon-color-success: var(--crm-primary, #087f5b);
+  --toastify-color-progress-success: var(--crm-primary, #087f5b);
+  --toastify-color-error: var(--crm-red, #d63939);
+  --toastify-icon-color-error: var(--crm-red, #d63939);
+  --toastify-color-progress-error: var(--crm-red, #d63939);
+  --toastify-color-info: var(--crm-azure, #52a77d);
+  --toastify-icon-color-info: var(--crm-azure, #52a77d);
+  --toastify-color-progress-info: var(--crm-azure, #52a77d);
+  --toastify-color-warning: var(--crm-yellow, #f59f00);
+  --toastify-icon-color-warning: var(--crm-yellow, #f59f00);
+  --toastify-color-progress-warning: var(--crm-yellow, #f59f00);
 }
 
-.global-toast {
-  min-width: 320px;
-  max-width: 420px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  background: var(--surf, #ffffff);
-  color: var(--text, #1e293b);
-  border: 1px solid var(--border, #e6e8eb);
-  box-shadow: var(--shadow-modal, 0 8px 24px rgba(0, 0, 0, 0.12));
-
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  font-size: 15px;
-  font-weight: 600;
+.global-toast-container,
+.Toastify__toast-container--top-center {
+  top: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  max-width: 90vw !important;
+  z-index: 999999 !important;
 }
 
-.global-toast-icon {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 15px;
-  font-weight: 700;
+.global-toast,
+.Toastify__toast {
+  font-family: inherit !important;
+  border-radius: 12px !important;
+  padding: 12px 18px !important;
+  min-height: 48px !important;
+  background: var(--crm-card-bg, #ffffff) !important;
+  color: var(--crm-text, #1b2d27) !important;
+  border: 1px solid var(--crm-border, #dbe8e2) !important;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(8, 127, 91, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 10px !important;
 }
 
-.global-toast.success .global-toast-icon {
-  background: var(--crm-green-lt, rgba(47, 179, 68, 0.14));
-  color: var(--success, #2fb344);
+[data-theme="dark"] .Toastify__toast,
+.dark .Toastify__toast {
+  background: #17241e !important;
+  color: #e6f1ec !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.global-toast.error .global-toast-icon {
-  background: var(--crm-red-lt, rgba(214, 57, 57, 0.14));
-  color: var(--danger, #d63939);
+.Toastify__toast-body {
+  margin: 0 !important;
+  padding: 0 8px 0 4px !important;
+  font-size: 14.5px !important;
+  font-weight: 500 !important;
+  color: inherit !important;
 }
 
-.global-toast.info .global-toast-icon {
-  background: var(--crm-primary-lt, rgba(8, 127, 91, 0.12));
-  color: var(--primary, #087f5b);
+/* Status Icons & Progress Bar Lines */
+.Toastify__toast--success .Toastify__toast-icon svg { fill: var(--crm-primary, #087f5b) !important; }
+.Toastify__toast--error .Toastify__toast-icon svg { fill: var(--crm-red, #d63939) !important; }
+.Toastify__toast--info .Toastify__toast-icon svg { fill: var(--crm-azure, #52a77d) !important; }
+.Toastify__toast--warning .Toastify__toast-icon svg { fill: var(--crm-yellow, #f59f00) !important; }
+
+.Toastify__progress-bar {
+  height: 3px !important;
+  opacity: 1 !important;
+  border-radius: 0 0 12px 12px !important;
 }
+.Toastify__progress-bar--success { background: var(--crm-primary, #087f5b) !important; }
+.Toastify__progress-bar--error { background: var(--crm-red, #d63939) !important; }
+.Toastify__progress-bar--info { background: var(--crm-azure, #52a77d) !important; }
+.Toastify__progress-bar--warning { background: var(--crm-yellow, #f59f00) !important; }
+
+.Toastify__close-button {
+  color: var(--crm-muted, #6c8177) !important;
+  opacity: 0.65 !important;
+  align-self: center !important;
+}
+.Toastify__close-button:hover { opacity: 1 !important; color: inherit !important; }
+
+
 
 
