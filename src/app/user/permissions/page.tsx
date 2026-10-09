@@ -21,15 +21,13 @@ import "../all-user/all-user.css";
 
 interface DomainRequest {
   id: string;
-  user_id: string;
   company_id: string;
   domain_name: string;
-  cloudfare_hostname_id?: string | null;
+  hostname: string;
+  domain_type: string;
   status: string;
-  ssl_status?: string | null;
+  ssl_status: string;
   created_at: string;
-  updated_at: string;
-  domain_type?: string | null;
 }
 
 interface ApiEnvelope<T> {
@@ -46,7 +44,7 @@ interface ConfirmState {
 }
 
 const DOMAINS_API_BASE =
-  process.env.NEXT_PUBLIC_DOMAINS_API_BASE ?? "/v1/admin";
+  process.env.NEXT_PUBLIC_DOMAINS_API_BASE ?? "/v1/super-admin";
 const REFRESH_INTERVAL_MS = 30000;
 
 
@@ -84,34 +82,28 @@ function getDomainApiError(error: unknown): string {
 
 const domainService = {
   async getDomain(): Promise<DomainRequest[]> {
-  const response = await axiosInstance.get<ApiEnvelope<DomainRequest>>(
-    `${DOMAINS_API_BASE}/companies/company-domain`
-);
+    const response = await axiosInstance.get(
+      `${DOMAINS_API_BASE}/domains?page=1&limit=25`,
+    );
 
-const data = response.data.data;
+    const items = response.data?.data?.items;
 
-if (!data) {
-    return [];
-}
+    if (!Array.isArray(items)) {
+      return [];
+    }
 
-if (Array.isArray(data)) {
-    return data;
-}
-
-return [data];
+    return items;
   },
 
   async approveDomain(requestId: string): Promise<{ message: string }> {
-  const response = await axiosInstance.post<ApiEnvelope<unknown>>(
-    `${DOMAINS_API_BASE}/companies/${requestId}/domain/active`
-  );
+    const response = await axiosInstance.post<ApiEnvelope<unknown>>(
+      `${DOMAINS_API_BASE}/companies/${requestId}/domain/active`,
+    );
 
-  return {
-    message:
-      response.data?.message ??
-      "Domain approved successfully.",
-  };
-}
+    return {
+      message: response.data?.message ?? "Domain approved successfully.",
+    };
+  },
 };
 
 /* ============================================================
@@ -221,16 +213,13 @@ export default function PermissionsPage() {
   const visibleRequests = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return requests;
-    return requests.filter(
-      (item) =>
-        item.domain_name.toLowerCase().includes(query) ||
-        String(item.company_id || "")
-          .toLowerCase()
-          .includes(query) ||
-        String(item.user_id || "")
-          .toLowerCase()
-          .includes(query),
-    );
+   return requests.filter(
+     (item) =>
+       item.domain_name.toLowerCase().includes(query) ||
+       String(item.company_id || "")
+         .toLowerCase()
+         .includes(query),
+   );
   }, [requests, search]);
 
   const confirmActionHandler = useCallback(async () => {
@@ -328,7 +317,7 @@ export default function PermissionsPage() {
               <tr>
                 <th>DOMAIN NAME</th>
                 <th>COMPANY ID</th>
-                <th>REQUESTED BY</th>
+                
                 <th>STATUS</th>
                 <th>REQUESTED DATE</th>
                 <th style={{ width: 160 }}>ACTIONS</th>
@@ -337,7 +326,7 @@ export default function PermissionsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="au-empty">
                       <div className="au-empty__spinner" />
                       <p className="au-empty__title">Loading requests…</p>
@@ -346,7 +335,7 @@ export default function PermissionsPage() {
                 </tr>
               ) : visibleRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="au-empty">
                       <div className="au-empty__icon">🌐</div>
                       <p className="au-empty__title">
@@ -383,15 +372,7 @@ export default function PermissionsPage() {
                     >
                       {item.company_id || "—"}
                     </td>
-                    <td
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: 12,
-                        color: "var(--muted)",
-                      }}
-                    >
-                      {item.user_id || "—"}
-                    </td>
+                   
                     <td>
                       <DomainBadge status={item.status} />
                     </td>

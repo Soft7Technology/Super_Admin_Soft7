@@ -884,6 +884,13 @@ html[data-theme="dark"], body[data-theme="dark"] {
   gap: 10px;
   min-width: 0; /* allow flex child to shrink */
   overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.au-user-cell:hover .au-user-name {
+  color: #10b981;
+  text-decoration: underline;
 }
 
 .au-user-name {
@@ -894,6 +901,7 @@ html[data-theme="dark"], body[data-theme="dark"] {
   text-overflow: ellipsis;
   min-width: 0;
   flex: 1;
+  transition: color 0.15s ease;
 }
 
 /* Also truncate email cell */

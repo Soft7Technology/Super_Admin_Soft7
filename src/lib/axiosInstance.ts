@@ -16,7 +16,10 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use((config) => {
   let token =
     typeof window !== "undefined"
-      ? localStorage.getItem("console_access_token")
+      ? localStorage.getItem("superadminToken") ||
+        localStorage.getItem("console_access_token") ||
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("token")
       : null;
 
   if (token && token.startsWith('"') && token.endsWith('"')) {
