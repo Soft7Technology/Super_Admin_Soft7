@@ -259,7 +259,7 @@
 /* ─── KPI GRID (Consistent with Dashboard Theme) ─────────── */
 .st-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -335,7 +335,17 @@
   font-weight: 500;
   white-space: nowrap;
 }
+@media (max-width: 768px) {
+  .st-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
+@media (max-width: 480px) {
+  .st-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
 /* ─── MAIN GRID ──────────────────────────────────────────── */
 .st-main-grid       { display: grid; gap: 16px; align-items: start; }
 .st-main-grid--full { grid-template-columns: 1fr; }
