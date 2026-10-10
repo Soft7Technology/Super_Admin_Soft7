@@ -33,15 +33,35 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function AllUsers() {
-  const [search, setSearch] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("sa_allusers_search") || "" : "");
+  const [search, setSearch] = useState(() =>
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("sa_allusers_search") || ""
+      : "",
+  );
   const [debouncedSearch, setDebouncedSearch] = useState(search);
-  const [status, setStatus] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("sa_allusers_status") || "ALL" : "ALL");
-  const [role, setRole] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("sa_allusers_role") || "ALL" : "ALL");
+  const [status, setStatus] = useState(() =>
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("sa_allusers_status") || "ALL"
+      : "ALL",
+  );
+  const [role, setRole] = useState(() =>
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("sa_allusers_role") || "ALL"
+      : "ALL",
+  );
   const [sort, setSort] = useState("name");
   const [detail, setDetail] = useState<User | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(() => typeof window !== "undefined" ? parseInt(sessionStorage.getItem("sa_allusers_page") || "1") : 1);
-  const [rowsPerPage, setRowsPerPage] = useState(() => typeof window !== "undefined" ? parseInt(sessionStorage.getItem("sa_allusers_rows") || "25") : 25);
+  const [currentPage, setCurrentPage] = useState(() =>
+    typeof window !== "undefined"
+      ? parseInt(sessionStorage.getItem("sa_allusers_page") || "1")
+      : 1,
+  );
+  const [rowsPerPage, setRowsPerPage] = useState(() =>
+    typeof window !== "undefined"
+      ? parseInt(sessionStorage.getItem("sa_allusers_rows") || "25")
+      : 25,
+  );
   const [selectedCompanyId, setSelectedCompanyId] = useState(() => {
     if (typeof window !== "undefined") {
       return sessionStorage.getItem("sa_selected_company_id") || "";
@@ -64,7 +84,7 @@ export default function AllUsers() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Inline action states
+
   const [editUser, setEditUser] = useState<User | null>(null);
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [suspendingId, setSuspendingId] = useState<string | null>(null);
@@ -104,7 +124,7 @@ export default function AllUsers() {
   const totalPages = Math.max(
     1,
     pagination?.totalPages ??
-    Math.ceil((pagination?.total ?? users.length) / rowsPerPage),
+      Math.ceil((pagination?.total ?? users.length) / rowsPerPage),
   );
 
   const handleCompanyChange = (companyId: string) => {
@@ -115,7 +135,7 @@ export default function AllUsers() {
       } else {
         sessionStorage.removeItem("sa_selected_company_id");
       }
-    } catch { }
+    } catch {}
     setCurrentPage(1);
     setSelectedUsers([]);
     setDetail(null);
@@ -123,13 +143,17 @@ export default function AllUsers() {
 
   const handleClearCompanyFilter = () => {
     setSelectedCompanyId("");
-    try { sessionStorage.removeItem("sa_selected_company_id"); } catch { }
+    try {
+      sessionStorage.removeItem("sa_selected_company_id");
+    } catch {}
     setCurrentPage(1);
     setSelectedUsers([]);
     setDetail(null);
   };
 
-  const selectedCompany = companies.find((company) => company.id === selectedCompanyId);
+  const selectedCompany = companies.find(
+    (company) => company.id === selectedCompanyId,
+  );
 
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
@@ -193,6 +217,7 @@ export default function AllUsers() {
       setSuspendingId(null);
     }
   };
+
   const handleDeleteUser = async (user: User) => {
     try {
       setDeletingId(user.id);
@@ -212,6 +237,7 @@ export default function AllUsers() {
       setDeletingId(null);
     }
   };
+
   // Reset to page 1 whenever filters change
   const handleStatusChange = (value: string) => {
     setStatus(value);
@@ -231,6 +257,22 @@ export default function AllUsers() {
   const handleSortChange = (value: string) => {
     setSort(value);
     setCurrentPage(1);
+  };
+
+  // ── UI helpers ──
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+  const cacheUser = (user: User) => {
+    try {
+      sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
+      sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
+    } catch {}
   };
 
   return (
@@ -261,7 +303,9 @@ export default function AllUsers() {
               </button>
             )}
             <h1 className="au-header__title">
-              {selectedCompany ? `Users of ${selectedCompany.name}` : "All Users"}
+              {selectedCompany
+                ? `Users of ${selectedCompany.name}`
+                : "All Users"}
             </h1>
           </div>
           {!selectedCompany && (
@@ -350,126 +394,226 @@ export default function AllUsers() {
 
       {/* Grid */}
       <div
-        className={`au-main-grid ${detail ? "au-main-grid--panel" : "au-main-grid--full"
-          }`}
+        className={`au-main-grid ${
+          detail ? "au-main-grid--panel" : "au-main-grid--full"
+        }`}
       >
-
-        <div className="au-tbl au-tbl-scroll au-desktop-only">
-          <div className="au-th">
-            <div>
-              <input type="checkbox" checked={sortedUsers.length > 0 && selectedUsers.length === sortedUsers.length} onChange={handleSelectAll} />
+        {/* Desktop table + pagination */}
+        <div className="au-desktop-only au-desktop-wrap">
+          <div className="au-tbl">
+            {/* Header */}
+            <div className="au-th">
+              <div>
+                <input
+                  type="checkbox"
+                  checked={
+                    sortedUsers.length > 0 &&
+                    selectedUsers.length === sortedUsers.length
+                  }
+                  onChange={handleSelectAll}
+                />
+              </div>
+              <div>User</div>
+              <div>Email</div>
+              <div>Phone</div>
+              <div>Role</div>
+              <div>Plan</div>
+              <div>Actions</div>
             </div>
-            
+
+            {/* Body */}
             {loading ? (
-               <div style={{ padding: '32px 0', textAlign: 'center' }}>
-                 <Spinner variant="center" size="lg" color="primary" text="Loading users..." />
-               </div>
+              <div className="au-tbl-state">
+                <Spinner
+                  variant="center"
+                  size="lg"
+                  color="primary"
+                  text="Loading users..."
+                />
+              </div>
             ) : sortedUsers.length === 0 ? (
-               <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--muted)' }}>
-                 No users match your filters
-               </div>
+              <div className="au-tbl-state au-tbl-state--muted">
+                No users match your filters
+              </div>
             ) : (
-              sortedUsers.map(user => (
+              sortedUsers.map((user) => (
                 <div className="au-row" key={user.id}>
                   <div>
-                    <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => handleSelectUser(user.id)} />
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.includes(user.id)}
+                      onChange={() => handleSelectUser(user.id)}
+                    />
                   </div>
-                  
+
                   <div className="au-usr">
-                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem("user_" + user.id, JSON.stringify(user)); } catch {} }} className="au-av" style={{ background: !user.av || user.av === '#10b981' || user.av === '#00a67d' ? 'var(--crm-primary, #206bc4)' : user.av }}>
-                      {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    <Link
+                      href={`/user/all-user/${user.id}`}
+                      onClick={() => cacheUser(user)}
+                      className="au-av"
+                    >
+                      {getInitials(user.name)}
                     </Link>
-                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem("user_" + user.id, JSON.stringify(user)); } catch {} }} className="au-un">
-                      {user.name}
-                    </Link>
+                    <div className="au-usr__text">
+                      <Link
+                        href={`/user/all-user/${user.id}`}
+                        onClick={() => cacheUser(user)}
+                        className="au-un"
+                      >
+                        {user.name}
+                      </Link>
+                      <Badge status={user.status} />
+                    </div>
                   </div>
-                  
-                  <div className="au-cell-muted">{user.email}</div>
+
+                  <div className="au-cell-muted" title={user.email}>
+                    {user.email}
+                  </div>
                   <div className="au-cell-muted">{user.phone || "-"}</div>
-                  
+
                   <div>
-                    <span className="au-badge-role" style={{ color: roleColor(user.role) }}>{user.role}</span>
+                    <span
+                      className="au-badge-role"
+                      style={{ color: roleColor(user.role) }}
+                    >
+                      {user.role}
+                    </span>
                   </div>
-                  
+
                   <div>
-                    <span className="au-badge-plan"><Award size={14} color={planColor(user.plan)} /> {user.plan}</span>
+                    <span className="au-badge-plan">
+                      <Award size={14} color={planColor(user.plan)} />{" "}
+                      {user.plan}
+                    </span>
                   </div>
-                  
-                  <div>
-                    <Badge status={user.status} />
-                  </div>
-                  
+
                   <div className="au-action-group">
-                    <button className="au-action-btn" title="View Details" onClick={() => setDetail(user)}><Eye size={15} /></button>
-                    <button className="au-action-btn au-action-btn--edit" title="Edit User" onClick={() => setEditUser(user)}><Pencil size={15} /></button>
-                    <button className="au-action-btn au-action-btn--key" title="Reset Password" onClick={() => setPasswordUser(user)}><KeyRound size={15} /></button>
+                    <button
+                      className="au-action-btn"
+                      title="View Details"
+                      onClick={() => setDetail(user)}
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button
+                      className="au-action-btn au-action-btn--edit"
+                      title="Edit User"
+                      onClick={() => setEditUser(user)}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      className="au-action-btn au-action-btn--key"
+                      title="Reset Password"
+                      onClick={() => setPasswordUser(user)}
+                    >
+                      <KeyRound size={15} />
+                    </button>
                     {user.status === "SUSPENDED" ? (
-                      <button className="au-action-btn au-action-btn--restore" title="Restore Account" disabled={suspendingId === user.id} onClick={() => handleSuspendToggle(user)}><ShieldCheck size={15} /></button>
+                      <button
+                        className="au-action-btn au-action-btn--restore"
+                        title="Restore Account"
+                        disabled={suspendingId === user.id}
+                        onClick={() => handleSuspendToggle(user)}
+                      >
+                        <ShieldCheck size={15} />
+                      </button>
                     ) : (
-                      <button className="au-action-btn au-action-btn--suspend" title="Suspend User" disabled={suspendingId === user.id} onClick={() => handleSuspendToggle(user)}><ShieldOff size={15} /></button>
+                      <button
+                        className="au-action-btn au-action-btn--suspend"
+                        title="Suspend User"
+                        disabled={suspendingId === user.id}
+                        onClick={() => handleSuspendToggle(user)}
+                      >
+                        <ShieldOff size={15} />
+                      </button>
                     )}
-                    <button className="au-action-btn au-action-btn--delete" title="Delete User" disabled={deletingId === user.id} onClick={() => handleDeleteUser(user)}><Trash2 size={15} /></button>
+                    <button
+                      className="au-action-btn au-action-btn--delete"
+                      title="Delete User"
+                      disabled={deletingId === user.id}
+                      onClick={() => handleDeleteUser(user)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 </div>
               ))
             )}
           </div>
 
-          {loading ? (
-            <div style={{ padding: '32px 0', textAlign: 'center' }}>
-              <Spinner variant="center" size="lg" color="primary" text="Loading users..." />
-            </div>
-          ) : sortedUsers.length === 0 ? (
-            <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--muted)' }}>
-              No users match your filters
-            </div>
-          ) : (
-            sortedUsers.map(user => (
-              <div className="au-row" key={user.id}>
-                <div>
-                  <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => handleSelectUser(user.id)} />
-                </div>
-
-                <div className="au-usr">
-                  <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user)); sessionStorage.setItem("sa_selected_user", JSON.stringify(user)); } catch { } }} className="au-av" style={{ background: !user.av || user.av === '#10b981' || user.av === '#00a67d' ? 'var(--crm-primary, #206bc4)' : user.av }}>
-                    {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </Link>
-                  <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user)); sessionStorage.setItem("sa_selected_user", JSON.stringify(user)); } catch { } }} className="au-un">
-                    {user.name}
-                  </Link>
-                </div>
-
-                <div className="au-cell-muted">{user.email}</div>
-                <div className="au-cell-muted">{user.phone || "-"}</div>
-
-                <div>
-                  <span className="au-badge-role" style={{ color: roleColor(user.role) }}>{user.role}</span>
-                </div>
-
-                <div>
-                  <span className="au-badge-plan"><Award size={14} color={planColor(user.plan)} /> {user.plan}</span>
-                </div>
-
-                <div>
-                  <Badge status={user.status} />
-                </div>
-
-                <div className="au-action-group">
-                  <button className="au-action-btn" title="View Details" onClick={() => setDetail(user)}><Eye size={15} /></button>
-                  <button className="au-action-btn au-action-btn--edit" title="Edit User" onClick={() => setEditUser(user)}><Pencil size={15} /></button>
-                  <button className="au-action-btn au-action-btn--key" title="Reset Password" onClick={() => setPasswordUser(user)}><KeyRound size={15} /></button>
-                  {user.status === "SUSPENDED" ? (
-                    <button className="au-action-btn au-action-btn--restore" title="Restore Account" disabled={suspendingId === user.id} onClick={() => handleSuspendToggle(user)}><ShieldCheck size={15} /></button>
-                  ) : (
-                    <button className="au-action-btn au-action-btn--suspend" title="Suspend User" disabled={suspendingId === user.id} onClick={() => handleSuspendToggle(user)}><ShieldOff size={15} /></button>
+          {/* Pagination */}
+          <div className="au-foot">
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <div>
+                Showing{" "}
+                <b>
+                  {Math.min(
+                    (currentPage - 1) * rowsPerPage + 1,
+                    pagination?.total || users.length,
                   )}
-                  <button className="au-action-btn au-action-btn--delete" title="Delete User" disabled={deletingId === user.id} onClick={() => handleDeleteUser(user)}><Trash2 size={15} /></button>
-                </div>
+                  -
+                  {Math.min(
+                    currentPage * rowsPerPage,
+                    pagination?.total || users.length,
+                  )}
+                </b>{" "}
+                of <b>{pagination?.total || users.length}</b> users
               </div>
-            ))
-          )}
-        </div>
+            </div>
 
+            <div className="au-pg">
+              <button
+                className="text-btn"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Prev
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(
+                  (p) =>
+                    p === 1 ||
+                    p === totalPages ||
+                    Math.abs(p - currentPage) <= 1,
+                )
+                .map((p, i, arr) => (
+                  <span key={p} className="au-pg__item">
+                    {i > 0 && arr[i - 1] !== p - 1 && (
+                      <span className="au-pg__dots">...</span>
+                    )}
+                    <button
+                      className={`num-btn ${currentPage === p ? "on" : ""}`}
+                      onClick={() => setCurrentPage(p)}
+                    >
+                      {p}
+                    </button>
+                  </span>
+                ))}
+
+              <button
+                className="text-btn"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Mobile Cards View (<= 768px) */}
         <div className="au-mobile-cards">
@@ -485,12 +629,17 @@ export default function AllUsers() {
                       onChange={() => handleSelectUser(user.id)}
                       className="au-user-card__checkbox"
                     />
-                    <Link href={`/user/all-user/${user.id}`} onClick={() => { try { sessionStorage.setItem("user_" + user.id, JSON.stringify(user)); } catch {} }} className="au-user-card__link"
+                    <Link
+                      href={`/user/all-user/${user.id}`}
+                      onClick={() => cacheUser(user)}
+                      className="au-user-card__link"
                     >
                       <ProfileAvatar name={user.name} size={36} />
                       <div className="au-user-card__name-wrap">
                         <span className="au-user-card__name">{user.name}</span>
-                        <span className="au-user-card__email">{user.email}</span>
+                        <span className="au-user-card__email">
+                          {user.email}
+                        </span>
                       </div>
                     </Link>
                   </div>
@@ -500,11 +649,13 @@ export default function AllUsers() {
                   </div>
                 </div>
 
-                {/* Meta details: Phone, Role, Plan, Joined */}
+                {/* Meta details: Phone, Role, Plan */}
                 <div className="au-user-card__details">
                   <div className="au-user-card__detail-row">
                     <span className="au-user-card__detail-label">Phone</span>
-                    <span className="au-user-card__detail-val">{user.phone || "—"}</span>
+                    <span className="au-user-card__detail-val">
+                      {user.phone || "—"}
+                    </span>
                   </div>
 
                   <div className="au-user-card__detail-row">
@@ -536,7 +687,6 @@ export default function AllUsers() {
                       {user.plan}
                     </span>
                   </div>
-
                 </div>
 
                 {/* Bottom Actions Toolbar */}
@@ -617,36 +767,6 @@ export default function AllUsers() {
           )}
         </div>
 
-        {/* Pagination */}
-
-        {/* Pagination */}
-        <div className="au-foot au-desktop-only">
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-            <div>
-              Showing <b>{Math.min((currentPage - 1) * rowsPerPage + 1, pagination?.total || users.length)}-{Math.min(currentPage * rowsPerPage, pagination?.total || users.length)}</b> of <b>{pagination?.total || users.length}</b> users
-            </div>
-          </div>
-
-          <div className="au-pg">
-            <button className="text-btn" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Prev</button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1).map((p, i, arr) => (
-              <span key={p} style={{ display: 'flex', alignItems: 'center' }}>
-                {i > 0 && arr[i - 1] !== p - 1 && <span style={{ margin: '0 4px', color: 'var(--muted)' }}>...</span>}
-                <button className={`num-btn ${currentPage === p ? 'on' : ''}`} onClick={() => setCurrentPage(p)}>{p}</button>
-              </span>
-            ))}
-
-            <button className="text-btn" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
-          </div>
-        </div>
-
         {/* Detail panel (view only - no action buttons) */}
         {detail && (
           <DetailPanel
@@ -691,9 +811,3 @@ export default function AllUsers() {
     </div>
   );
 }
-
-
-
-
-
-
