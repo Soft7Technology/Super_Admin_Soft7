@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useTheme, tokens } from "../../context/ThemeContext";
+import ProfileAvatar from "../ProfileAvatar";
 
 const ST: Record<string,{bg:string;color:string;dot:string}> = {
   Active:   {bg:"rgba(34,197,94,0.12)",  color:"#16a34a", dot:"#4ade80"},
@@ -8,7 +9,7 @@ const ST: Record<string,{bg:string;color:string;dot:string}> = {
   Trial:    {bg:"rgba(251,191,36,0.12)", color:"#d97706", dot:"#fbbf24"},
 };
 const DATA = [
-  {id:"1",name:"Acme Corp",   ini:"AC",col:"linear-gradient(135deg,#3b5bdb,#6741d9)",status:"Active",  plan:"Enterprise",users:320},
+  {id:"1",name:"Acme Corp",   ini:"AC",col:"linear-gradient(135deg,#087f5b,#6741d9)",status:"Active",  plan:"Enterprise",users:320},
   {id:"2",name:"Nexus Ltd",   ini:"NX",col:"linear-gradient(135deg,#0ca678,#2f9e44)",status:"Active",  plan:"Pro",       users:148},
   {id:"3",name:"SkyLine Inc", ini:"SK",col:"linear-gradient(135deg,#f59f00,#e67700)",status:"Trial",   plan:"Starter",   users:42 },
   {id:"4",name:"Vertex Co",   ini:"VT",col:"linear-gradient(135deg,#e03131,#c92a2a)",status:"Inactive",plan:"Basic",     users:87 },
@@ -50,7 +51,7 @@ function Row({ co, last, t }: any) {
       style={{ borderBottom:last?"none":`1px solid ${t.border}`, background:hov?t.rowHover:"transparent", transition:"background 0.12s", cursor:"pointer" }}>
       <td style={{ padding:"13px 20px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-          <div style={{ width:"30px", height:"30px", borderRadius:"8px", background:co.col, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.68rem", color:"#fff", flexShrink:0 }}>{co.ini}</div>
+          <ProfileAvatar name={co.name} initials={co.ini} size={30} />
           <span style={{ fontWeight:600, color:t.textSub }}>{co.name}</span>
         </div>
       </td>

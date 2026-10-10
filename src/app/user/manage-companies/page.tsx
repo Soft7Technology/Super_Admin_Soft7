@@ -1,37 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { ChangeEvent, CSSProperties } from "react";
+import type { ChangeEvent, CSSProperties, ReactNode } from "react";
 import "./manage-companies.css";
-
+import { useEffect, useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import ProfileAvatar from "@/components/ProfileAvatar";
 import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
 import {
-  Eye,
-  EyeOff,
   AlertCircle,
-  Search,
+  Ban,
   Building2,
   CheckCircle2,
-  Ban,
-  FlaskConical,
+  Eye,
   Pencil,
+  Search,
   Trash2,
-  CreditCard,
-  Plus,
-  X,
+  Wallet,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
+
+const AVATAR_COLORS = [
+  "#087f5b",
+  "#52a77d",
+  "#2fb344",
+  "#ae3ec9",
+  "#f59f00",
+  "#17a2b8",
+  "#6366f1",
+  "#ec4899",
+];
+
+function getAvatarBg(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 const COMPANIES_API = "/v1/super-admin/companies";
 const ITEMS_PER_PAGE = 25;
@@ -74,7 +86,7 @@ interface RawCompany {
   deleted_at: string | null;
 }
 
-type Status = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "TRIAL";
+type Status = "ACTIVE" | "SUSPENDED";
 
 type Plan = "Starter" | "Basic" | "Pro" | "Enterprise";
 
@@ -85,7 +97,6 @@ interface Company {
   phone: string;
   domain: string;
   businessId: string;
-  col: string;
   status: Status;
   plan: Plan;
   users: number;
@@ -100,34 +111,14 @@ interface Company {
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AVATAR_COLORS = [
-  "#6C5CE7",
-  "#0d9462",
-  "#f59e0b",
-  "#3b82f6",
-  "#ec4899",
-  "#14b871",
-  "#8b5cf6",
-  "#ef4444",
-];
 
-function avatarColor(id: string) {
-  let hash = 0;
 
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 function normaliseStatus(raw: string): Status {
   const map: Record<string, Status> = {
     active: "ACTIVE",
-    inactive: "INACTIVE",
     suspend: "SUSPENDED",
     suspended: "SUSPENDED",
-    trial: "TRIAL",
   };
 
   return map[raw?.toLowerCase()] ?? "ACTIVE";
@@ -153,7 +144,6 @@ function enrichCompany(raw: RawCompany): Company {
     phone: raw.phone || "—",
     domain: raw.domain || email.split("@")[1] || "—",
     businessId: raw.business_id || "",
-    col: avatarColor(String(raw.id)),
     status: normaliseStatus(raw.status),
     plan: "Starter",
     users: 0,
@@ -213,16 +203,12 @@ function ErrorBanner({
 const STATUS_COLORS: Record<Status, string> = {
   ACTIVE: "#10b981",
   SUSPENDED: "#ef4444",
-  INACTIVE: "#6b7280",
-  TRIAL: "#f59e0b",
 };
-
 
 const STATUS_DOT_COLORS: Record<Status, string> = {
   ACTIVE: "#10b981", // green
   SUSPENDED: "#ef4444", // red
-  INACTIVE: "#3b82f6", // blue
-  TRIAL: "#f59e0b", // amber
+
 };
 
 function Badge({ status }: { status: Status }) {
@@ -235,50 +221,7 @@ function Badge({ status }: { status: Status }) {
   );
 }
 
-function StatusDropdown({
-  company,
-  onStatusChange,
-}: {
-  company: Company;
-  onStatusChange: (id: string, status: "ACTIVE" | "SUSPENDED") => void;
-}) {
-  const dotColor = STATUS_DOT_COLORS[company.status];
 
-  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value as Status;
-
-    if (newStatus === company.status) return;
-
-    if (newStatus === "ACTIVE" || newStatus === "SUSPENDED") {
-      onStatusChange(company.id, newStatus);
-    } else {
-      toast.info("Switching directly to Inactive/Trial isn't supported here.");
-    }
-
-    e.target.value = company.status;
-  };
-
-  return (
-    <span className="mc-status-inline">
-      <span
-        className="mc-status-dot"
-        style={{ background: dotColor }}
-        aria-hidden="true"
-      />
-
-      <select
-        className="mc-status-dropdown"
-        value={company.status}
-        onChange={handleChange}
-        onClick={(e) => e.stopPropagation()}
-        title="Change status"
-      >
-        <option value="ACTIVE">Active</option>
-        <option value="SUSPENDED">Suspended</option>
-      </select>
-    </span>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGINATION
@@ -335,7 +278,9 @@ function Pagination({
 
         {pages.map((page, index) =>
           page === "..." ? (
-            <span key={`ellipsis-${index}`} className="mc-pagination__dots">…</span>
+            <span key={`ellipsis-${index}`} className="mc-pagination__ellipsis">
+              …
+            </span>
           ) : (
             <button
               key={page}
@@ -375,20 +320,21 @@ function KPI({
 }: {
   label: string;
   value: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   color: string;
 }) {
   return (
     <div className="mc-kpi">
-      <div className="mc-kpi__left">
-        <span className="mc-kpi__icon" style={{ background: `${color}18`, color }}>
-          {icon}
-        </span>
-        <div className="mc-kpi__info">
-          <div className="mc-kpi__label">{label}</div>
-          <div className="mc-kpi__value">{value}</div>
-          <div className="mc-kpi__accent-bar" style={{ background: color }} />
-        </div>
+      <div
+        className="mc-kpi__icon"
+        style={{ background: `${color}1f`, color }}
+      >
+        {icon}
+      </div>
+
+      <div className="mc-kpi__info">
+        <span className="mc-kpi__label">{label}</span>
+        <span className="mc-kpi__value">{value}</span>
       </div>
     </div>
   );
@@ -547,8 +493,8 @@ function CompanyModal({
             <div className="mc-modal__sub">Update {company.name}</div>
           </div>
 
-          <button className="mc-modal__close" onClick={onClose} aria-label="Close">
-            <X size={16} />
+          <button className="mc-modal__close" onClick={onClose}>
+            ×
           </button>
         </div>
 
@@ -693,19 +639,9 @@ function CompanyDetailModal({
               alignItems: "center",
             }}
           >
-            <div
-              className="mc-detail__logo"
-              style={{
-                background: company.col,
-                width: 52,
-                height: 52,
-              }}
-            >
-              {getCompanyInitials(company.name)}
-            </div>
+            <ProfileAvatar name={company.name} size={52} />
 
             <div>
-              <div className="mc-detail__name">{company.name}</div>
               <div className="mc-detail__domain">{company.email}</div>
 
               <div style={{ marginTop: 6 }}>
@@ -714,8 +650,8 @@ function CompanyDetailModal({
             </div>
           </div>
 
-          <button type="button" className="mc-modal__close" onClick={onClose} aria-label="Close">
-            <X size={16} />
+          <button type="button" className="mc-modal__close" onClick={onClose}>
+            ×
           </button>
         </div>
 
@@ -724,12 +660,11 @@ function CompanyDetailModal({
         <div className="mc-detail__metrics">
           {(
             [
-              ["Domain", company.domain || "—", "var(--mc-title)"],
-              ["Phone", company.phone || "—", "var(--mc-title)"],
-              ["Business ID", company.businessId || "—", "var(--mc-title)"],
-              ["Plan", company.plan || "Starter", "var(--mc-title)"],
+              ["Domain", company.domain, "var(--mc-accent2)"],
+              ["Phone", company.phone, "var(--mc-success)"],
+              ["Business ID", company.businessId || "—", "var(--mc-accent2)"],
               ["Credit Balance", `₹${company.creditBalance}`, "var(--mc-warn)"],
-              ["Member Since", company.createdAt || "—", "var(--mc-title)"],
+              ["Member Since", company.createdAt, "var(--mc-accent2)"],
             ] as [string, string, string][]
           ).map(([label, value, color]) => (
             <div key={label} className="mc-detail__cell">
@@ -769,7 +704,7 @@ function CompanyDetailModal({
               onEdit(company);
             }}
           >
-            <Pencil size={14} /> Edit Company
+            ✏️ Edit Company
           </button>
 
           <button
@@ -788,7 +723,7 @@ function CompanyDetailModal({
               onClose();
             }}
           >
-            <Trash2 size={14} /> Delete
+            🗑️ Delete
           </button>
 
           {company.status !== "SUSPENDED" ? (
@@ -800,7 +735,7 @@ function CompanyDetailModal({
                 onClose();
               }}
             >
-              <Ban size={14} /> Suspend
+              ⛔ Suspend
             </button>
           ) : (
             <button
@@ -811,7 +746,7 @@ function CompanyDetailModal({
                 onClose();
               }}
             >
-              <CheckCircle2 size={14} /> Restore
+              ✅ Restore
             </button>
           )}
         </div>
@@ -900,8 +835,8 @@ function AddCreditModal({
             <div className="mc-modal__sub">Top up {company.name}'s balance</div>
           </div>
 
-          <button type="button" className="mc-modal__close" onClick={onClose} aria-label="Close">
-            <X size={16} />
+          <button type="button" className="mc-modal__close" onClick={onClose}>
+            ×
           </button>
         </div>
 
@@ -989,6 +924,7 @@ function AddCreditModal({
 
 export default function ManageCompanies() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [filter, setFilter] = useState<"ALL" | Status>("ALL");
 
@@ -1016,6 +952,15 @@ export default function ManageCompanies() {
     useState<CompaniesPagination>(DEFAULT_PAGINATION);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setCurrentPage(1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [search]);
   // ─────────────────────────────────────────────────────────────────────────
   // FETCH COMPANIES
   // ─────────────────────────────────────────────────────────────────────────
@@ -1032,6 +977,10 @@ export default function ManageCompanies() {
 
       if (filter !== "ALL") {
         params.status = filter.toLowerCase();
+      }
+
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
       }
 
       const companiesRes = await axiosInstance.get(COMPANIES_API, {
@@ -1098,47 +1047,19 @@ export default function ManageCompanies() {
 
   useEffect(() => {
     fetchCompanies();
-  }, [filter, currentPage]);
+  }, [filter, currentPage, debouncedSearch]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // SEARCH / FILTER
   // ─────────────────────────────────────────────────────────────────────────
 
-  const FILTERS: ("ALL" | Status)[] = [
-    "ALL",
-    "ACTIVE",
-    "SUSPENDED",
-    "INACTIVE",
-  ];
-
-  const query = search.trim().toLowerCase();
-
-  const filtered = companies.filter((company) => {
-    const emailDomain = company.email.includes("@")
-      ? company.email.split("@").pop() ?? ""
-      : "";
-
-    const searchable = [
-      company.name,
-      company.email,
-      emailDomain,
-      company.domain,
-      company.businessId,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return (
-      (filter === "ALL" || company.status === filter) &&
-      (!query || searchable.includes(query))
-    );
-  });
+  const FILTERS: ("ALL" | Status)[] = ["ALL", "ACTIVE", "SUSPENDED"];
 
   const totalPages = Math.max(1, pagination.totalPages);
 
   const safePage = Math.min(currentPage, totalPages);
 
-  const paginatedCompanies = filtered;
+  const paginatedCompanies = companies;
 
   // ─────────────────────────────────────────────────────────────────────────
   // SELECTION
@@ -1156,7 +1077,7 @@ export default function ManageCompanies() {
     if (selectAll) {
       setSelectedCompanies([]);
     } else {
-      setSelectedCompanies(filtered.map((company) => company.id));
+      setSelectedCompanies(companies.map((company) => company.id));
     }
 
     setSelectAll(!selectAll);
@@ -1186,11 +1107,9 @@ export default function ManageCompanies() {
     }
 
     try {
-      await Promise.all(
-        selectedCompanies.map((id) =>
-          axiosInstance.delete(`/v1/super-admin/companies/${id}`),
-        ),
-      );
+      await axiosInstance.delete("/v1/super-admin/companies/bulk-delete", {
+        data: { company_ids: selectedCompanies },
+      });
 
       setSelectedCompanies([]);
       setSelectAll(false);
@@ -1344,47 +1263,37 @@ export default function ManageCompanies() {
           className="mc-btn mc-btn--primary"
           onClick={() => router.push("/user/manage-companies/create")}
         >
-          <Plus size={16} />
           Create Company
         </button>
       </div>
 
-      {/* KPIs */}
+      {/* STATS */}
 
       <div className="mc-kpi-grid">
         <KPI
           label="Total Companies"
           value={String(pagination.total)}
-          icon={<Building2 size={20} />}
-          color="#206bc4"
+          icon={<Building2 size={18} />}
+          color="#0891b2"
         />
 
         <KPI
-          label="Active"
+          label="Active Companies"
           value={String(
             companies.filter((company) => company.status === "ACTIVE").length,
           )}
-          icon={<CheckCircle2 size={20} />}
-          color="#2fb344"
+          icon={<CheckCircle2 size={18} />}
+          color="#10b981"
         />
 
         <KPI
-          label="Suspended"
+          label="Suspended Companies"
           value={String(
             companies.filter((company) => company.status === "SUSPENDED")
               .length,
           )}
-          icon={<Ban size={20} />}
-          color="#d63939"
-        />
-
-        <KPI
-          label="On Trial"
-          value={String(
-            companies.filter((company) => company.status === "TRIAL").length,
-          )}
-          icon={<FlaskConical size={20} />}
-          color="#f59f00"
+          icon={<Ban size={18} />}
+          color="#ef4444"
         />
       </div>
 
@@ -1392,13 +1301,15 @@ export default function ManageCompanies() {
 
       <div className="mc-filter-bar mc-filter-bar-top">
         <div className="mc-search-wrap mc-search-wrap-small">
-          <span className="mc-search-icon"><Search size={15} /></span>
+          <span className="mc-search-icon">
+            <Search size={15} />
+          </span>
 
           <input
             className="mc-search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email, domain or business ID…"
+            placeholder="Search by name, email or phone…"
             autoComplete="off"
           />
         </div>
@@ -1452,253 +1363,129 @@ export default function ManageCompanies() {
       {loading ? (
         <div className="mc-empty">Loading companies…</div>
       ) : fetchError ? (
-        <div className="mc-empty" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-          <AlertCircle size={16} style={{ color: "var(--danger)" }} />
-          <span>{fetchError}</span>
-        </div>
-      ) : filtered.length === 0 ? (
+        <div className="mc-empty">⚠️ {fetchError}</div>
+      ) : companies.length === 0 ? (
         <div className="mc-empty">
-          No companies found. Start by adding one.
+          No companies found. Start by adding one 🚀
         </div>
       ) : (
-        <>
-          {/* Desktop Table View */}
-          <div className="mc-table-wrapper crm-desktop-table">
-            <table className="mc-table">
-              <thead>
-                <tr>
-                  <th className="mc-th-check">
-                    <input
-                      type="checkbox"
-                      checked={selectAll}
-                      onChange={handleSelectAll}
-                    />
-                  </th>
+        <div className="mc-table-wrapper">
+          <table className="mc-table">
+            <thead>
+              <tr>
+                <th className="mc-th-check">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                  />
+                </th>
 
-                  <th>COMPANY</th>
+                <th>COMPANY</th>
 
-                  <th>EMAIL</th>
+                <th>EMAIL</th>
 
-                  <th>PHONE</th>
+                <th>PHONE</th>
 
-                  <th>BUSINESS ID</th>
+                <th>CREDIT BALANCE</th>
 
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
+                <th style={{ textAlign: "center" }}>ACTIONS</th>
+              </tr>
+            </thead>
 
-              <tbody>
-                {paginatedCompanies.map((company) => (
-                  <tr key={company.id}>
-                    <td className="mc-td-check">
-                      <input
-                        type="checkbox"
-                        checked={selectedCompanies.includes(company.id)}
-                        onChange={() => handleSelectCompany(company.id)}
-                      />
-                    </td>
-
-                    <td>
-                      <div className="mc-company-cell">
-                        <div
-                          className="mc-company-avatar"
-                          style={{
-                            background: company.col,
-                          }}
-                        >
-                          {company.name.slice(0, 2).toUpperCase()}
-                        </div>
-
-                        <div className="mc-company-info">
-                          <button
-                            type="button"
-                            className="company-name-link"
-                            title={company.name}
-                            onClick={() =>
-                              router.push(`/user/manage-companies/${company.id}`)
-                            }
-                          >
-                            {company.name}
-                          </button>
-
-                          <div className="mc-company-status">
-                            <StatusDropdown
-                              company={company}
-                              onStatusChange={handleStatusChange}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td title={company.email}>{company.email}</td>
-
-                    <td>{company.phone}</td>
-
-                    <td>{company.businessId || "—"}</td>
-
-                    <td>
-                      <div className="mc-actions">
-                        <button
-                          type="button"
-                          className="mc-action-btn"
-                          onClick={() =>
-                            router.push(`/user/manage-companies/${company.id}`)
-                          }
-                          title="View"
-                        >
-                          <Eye size={14} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="mc-action-btn"
-                          onClick={() => openView(company)}
-                          title="Edit"
-                        >
-                          <Pencil size={14} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="mc-action-btn credit"
-                          onClick={() => setCreditCompany(company)}
-                          title="Add Credit"
-                        >
-                          <CreditCard size={14} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="mc-action-btn delete"
-                          onClick={() => handleDelete(company.id)}
-                          title="Delete"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards View (<= 768px) - matches All Users architecture */}
-          <div className="crm-mobile-cards">
-            {paginatedCompanies.map((company) => (
-              <div key={company.id} className="crm-card">
-                {/* Header row: Checkbox, Avatar, Name & Email, Status Badge */}
-                <div className="crm-card__header">
-                  <div className="crm-card__identity">
+            <tbody>
+              {paginatedCompanies.map((company) => (
+                <tr key={company.id}>
+                  <td className="mc-td-check">
                     <input
                       type="checkbox"
                       checked={selectedCompanies.includes(company.id)}
                       onChange={() => handleSelectCompany(company.id)}
-                      className="crm-card__checkbox"
-                      style={{
-                        cursor: "pointer",
-                        accentColor: "var(--accent)",
-                        width: "16px",
-                        height: "16px",
-                        flexShrink: 0,
-                      }}
                     />
-                    <Link
-                      href={`/user/manage-companies/${company.id}`}
-                      className="crm-card__link"
-                    >
-                      <div
-                        className="crm-card__avatar"
-                        style={{
-                          background: company.col,
-                        }}
+                  </td>
+
+                  <td>
+                    <div className="mc-company-cell">
+                      <ProfileAvatar name={company.name} size={36} />
+                      <div className="mc-company-info">
+                        <button
+                          type="button"
+                          className="company-name-link"
+                          title={company.name}
+                          onClick={() =>
+                            router.push(`/user/manage-companies/${company.id}`)
+                          }
+                        >
+                          {company.name}
+                        </button>
+
+                        <div className="mc-company-status">
+                          <Badge status={company.status} />
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td title={company.email}>{company.email || "—"}</td>
+
+                  <td>{company.phone || "—"}</td>
+
+                  <td>
+                    <span className="mc-credit-badge">
+                      ₹{Number(company.creditBalance || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="mc-actions">
+                      <button
+                        type="button"
+                        className="mc-action-btn"
+                        onClick={() =>
+                          router.push(`/user/manage-companies/${company.id}`)
+                        }
+                        title="View Details"
+                        aria-label="View company"
                       >
-                        {company.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="crm-card__text">
-                        <span className="crm-card__title">{company.name}</span>
-                        <span className="crm-card__sub">{company.email}</span>
-                      </div>
-                    </Link>
-                  </div>
+                        <Eye size={15} />
+                      </button>
 
-                  <div className="crm-card__badge">
-                    <Badge status={company.status} />
-                  </div>
-                </div>
+                      <button
+                        type="button"
+                        className="mc-action-btn"
+                        onClick={() => openEdit(company)}
+                        title="Edit Company"
+                        aria-label="Edit company"
+                      >
+                        <Pencil size={15} />
+                      </button>
 
-                {/* Meta details: Phone, Business ID, Plan, Balance */}
-                <div className="crm-card__details">
-                  <div className="crm-card__detail-row">
-                    <span className="crm-card__detail-label">Phone</span>
-                    <span className="crm-card__detail-val">{company.phone || "—"}</span>
-                  </div>
+                      <button
+                        type="button"
+                        className="mc-action-btn credit"
+                        onClick={() => setCreditCompany(company)}
+                        title="Add Credit"
+                        aria-label="Add credit"
+                      >
+                        <Wallet size={15} />
+                      </button>
 
-                  <div className="crm-card__detail-row">
-                    <span className="crm-card__detail-label">Business ID</span>
-                    <span className="crm-card__detail-val">{company.businessId || "—"}</span>
-                  </div>
-
-                  <div className="crm-card__detail-row">
-                    <span className="crm-card__detail-label">Plan</span>
-                    <span className="crm-card__detail-val">{company.plan || "Starter"}</span>
-                  </div>
-
-                  <div className="crm-card__detail-row">
-                    <span className="crm-card__detail-label">Balance</span>
-                    <span className="crm-card__detail-val">${company.creditBalance || "0.00"}</span>
-                  </div>
-                </div>
-
-                {/* Bottom Actions Toolbar */}
-                <div className="crm-card__actions">
-                  <button
-                    type="button"
-                    className="crm-card__action-btn"
-                    onClick={() =>
-                      router.push(`/user/manage-companies/${company.id}`)
-                    }
-                    title="View"
-                  >
-                    <Eye size={14} />
-                    <span>View</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="crm-card__action-btn"
-                    onClick={() => openView(company)}
-                    title="Edit"
-                  >
-                    <Pencil size={14} />
-                    <span>Edit</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="crm-card__action-btn"
-                    onClick={() => setCreditCompany(company)}
-                    title="Add Credit"
-                  >
-                    <CreditCard size={14} />
-                    <span>Credit</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="crm-card__action-btn crm-card__action-btn--delete"
-                    onClick={() => handleDelete(company.id)}
-                    title="Delete"
-                  >
-                    <Trash2 size={14} />
-                    <span>Delete</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+                      <button
+                        type="button"
+                        className="mc-action-btn delete"
+                        onClick={() => handleDelete(company.id)}
+                        title="Delete Company"
+                        aria-label="Delete company"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* PAGINATION */}

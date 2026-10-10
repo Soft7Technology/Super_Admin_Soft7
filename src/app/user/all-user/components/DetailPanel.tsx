@@ -4,6 +4,7 @@ import { useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { User, STATUS_DOT, roleColor, planColor } from "../types";
 import { Badge } from "./Badge";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { EditUserModal } from "./EditUserModal";
 import { ResetPasswordModal } from "./ResetPasswordModal";
 import { toast } from "react-toastify";
@@ -82,22 +83,7 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
             {/* Identity */}
             <div className="au-panel__identity">
               <div className="au-panel__avatar-wrap">
-                <div
-                  className="au-avatar au-avatar--68"
-                  style={{
-                    background:
-                      !user.av || user.av === "#10b981" || user.av === "#00a67d"
-                        ? "var(--crm-primary, #206bc4)"
-                        : user.av,
-                  }}
-                >
-                  {user.name
-                    .split(" ")
-                    .map((n: string) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
+                <ProfileAvatar name={user.name} size={68} />
                 <div
                   className={`au-status-dot au-status-dot--panel ${
                     STATUS_DOT[user.status] ?? "au-status-dot--other"
@@ -177,7 +163,7 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
                       [
                         ["messages",  userStats?.messages  ?? 0, "#10b981", "Messages Sent"],
                         ["campaigns", userStats?.campaigns ?? 0, "#6366f1", "Campaigns"],
-                        ["contacts",  userStats?.contacts  ?? 0, "#3b82f6", "Contacts"],
+                        ["contacts",  userStats?.contacts  ?? 0, "#159765", "Contacts"],
                         ["templates", userStats?.templates ?? 0, "#f59e0b", "Templates"],
                         ["delivered", userStats?.delivered ?? 0, "#34d399", "Delivered"],
                         ["failed",    userStats?.failed    ?? 0, "#ef4444", "Failed"],

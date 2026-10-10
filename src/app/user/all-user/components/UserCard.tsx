@@ -1,3 +1,4 @@
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { User, STATUS_DOT, roleColor, planColor } from "../types";
 import { Badge } from "./Badge";
 
@@ -33,22 +34,7 @@ export function UserCard({
       <div className="au-card__top">
         <div className="au-card__identity">
           <div className="au-avatar-wrap">
-            <div
-              className="au-avatar au-avatar--44"
-              style={{
-                background:
-                  !user.av || user.av === "#10b981" || user.av === "#00a67d"
-                    ? "var(--crm-primary, #206bc4)"
-                    : user.av,
-              }}
-            >
-              {user.name
-                .split(" ")
-                .map((n: string) => n[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
+            <ProfileAvatar name={user.name} size={44} />
             <div
               className={`au-status-dot au-status-dot--card ${
                 STATUS_DOT[user.status] ?? "au-status-dot--other"

@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useTheme, tokens } from "../../../context/ThemeContext";
+import ProfileAvatar from "@/components/ProfileAvatar";
 
 interface LogEntry {
   id: string;
@@ -185,24 +186,7 @@ export default function AllActivityPage() {
                     {/* Content */}
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
                       {/* Avatar */}
-                      <div
-                        style={{
-                          width: `${avatarSize}px`,
-                          height: `${avatarSize}px`,
-                          borderRadius: "50%",
-                          background: s.bg,
-                          color: s.color,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: isSmall ? "13px" : "15px",
-                          fontWeight: 800,
-                          flexShrink: 0,
-                          border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
-                        }}
-                      >
-                        {getInitials(log.actor)}
-                      </div>
+                      <ProfileAvatar name={log.actor} size={avatarSize} fontSize={isSmall ? "13px" : "15px"} />
 
                       {/* Text */}
                       <div style={{ flex: 1, marginTop: "-2px" }}>

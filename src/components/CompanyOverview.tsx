@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useTheme, tokens } from "../context/ThemeContext";
 import { Users } from "lucide-react";
+import Spinner from "./ui/Spinner";
+import ProfileAvatar from "./ProfileAvatar";
 
 interface Company {
   id:     string;
@@ -105,7 +107,7 @@ export default function CompanyOverview({
             onClick={onViewAll}
             style={{
               fontSize: viewAllSize,
-              color: "var(--crm-primary, #206bc4)",
+              color: "var(--crm-primary, #087f5b)",
               cursor: "pointer",
               fontWeight: 600,
               display: "flex",
@@ -129,9 +131,7 @@ export default function CompanyOverview({
       </div>
 
       {loading ? (
-        <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: bodyFont }}>
-          Loading...
-        </div>
+        <Spinner variant="center" size="md" color="primary" text="Loading companies..." />
       ) : error ? (
         <div style={{ padding: "30px", textAlign: "center", color: "var(--crm-muted, #94a3b8)", fontSize: bodyFont }}>
           {error}
@@ -318,23 +318,7 @@ function Row({
       {/* Company Name + Avatar */}
       <td style={{ padding: cellPad, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-          <div
-            style={{
-              width: `${avatarSize}px`,
-              height: `${avatarSize}px`,
-              borderRadius: "6px",
-              background: co.col,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 800,
-              fontSize: avatarFont,
-              color: "#fff",
-              flexShrink: 0,
-            }}
-          >
-            {co.ini}
-          </div>
+          <ProfileAvatar name={co.name} initials={co.ini} size={avatarSize} fontSize={avatarFont} />
           <span
             style={{
               fontWeight: 600,

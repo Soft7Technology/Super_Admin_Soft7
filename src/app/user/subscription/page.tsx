@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./subscription.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import Spinner from "@/components/ui/Spinner";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
@@ -108,10 +109,10 @@ const HISTORY: Transaction[] = [];
 
 const TYPE_COLOR: Record<TxnType, string> = {
   New:"#00CBA4", Renewal:"#A29BFE", Upgrade:"#FDCB6E",
-  Failed:"#FF6B6B", Trial:"#74B9FF", Refund:"#FD79A8",
+  Failed:"#FF6B6B", Trial:"#52a77d", Refund:"#FD79A8",
 };
 const ICON_OPTIONS  = ["🌱","🚀","⚡","🏆","💎","🔥","🌟","🎯","🛡️","🧩"];
-const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#74B9FF","#FD79A8","#00B894","#E17055","#0984e3"];
+const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#52a77d","#FD79A8","#00B894","#E17055","#087f5b"];
 
 // ─── PLAN COLOR MAP ───────────────────────────────────────────────────────────
 const PLAN_COLORS: Record<string, string> = {
@@ -563,8 +564,13 @@ const mrr = monthlyPlans.reduce(
             <span className="sb-sub-table__head-count">{active.length} active</span>
           </div>
           {loading && (
-            <div style={{ padding:"24px", textAlign:"center", color:"var(--sb-muted)", fontSize:13 }}>
-              Loading subscriptions…
+            <div style={{ padding:"40px 16px" }}>
+              <Spinner
+                variant="center"
+                size="md"
+                color="primary"
+                text="Loading subscriptions…"
+              />
             </div>
           )}
           {!loading && subs.length === 0 && (
@@ -1071,7 +1077,7 @@ function EditPlanModal({ plan, onClose, onSave }: { plan: any; onClose: () => vo
         <div className="sb-modal__footer">
           <button className="sb-btn sb-btn--ghost" onClick={onClose}>Cancel</button>
           <button className="sb-btn sb-btn--primary" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : "✓ Save Changes"}
+            {saving ? <Spinner size="sm" text="Saving…" color="white" /> : "✓ Save Changes"}
           </button>
         </div>
       </div>

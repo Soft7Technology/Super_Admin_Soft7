@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet, Download, Check } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "@/app/globals.css";
 import styles from "./transactions.module.css";
+import Spinner from "@/components/ui/Spinner";
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Transaction {
@@ -148,6 +149,53 @@ function extractErrorMessage(err: unknown): string {
   return "Failed to load transactions.";
 }
 
+function exportToCSV(txList: Transaction[]) {
+  const headers = [
+    "ID",
+    "Date",
+    "Company Name",
+    "User Email",
+    "Type",
+    "Reference Type",
+    "Reference ID",
+    "Amount",
+    "Balance Before",
+    "Balance After",
+    "Description",
+  ];
+
+  const escape = (val: unknown) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+
+  const rows = txList.map((tx) =>
+    [
+      tx.id,
+      tx.created_at,
+      tx.company_name ?? "",
+      tx.email ?? "",
+      tx.type,
+      tx.reference_type ?? "",
+      tx.reference_id ?? "",
+      tx.amount,
+      tx.balance_before,
+      tx.balance_after,
+      tx.description ?? "",
+    ]
+      .map(escape)
+      .join(",")
+  );
+
+  const csv = [headers.map((h) => escape(h)).join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 /* ── Component ─────────────────────────────────────────────── */
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -157,7 +205,9 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [page, setPage] = useState(1);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [exportDone, setExportDone] = useState(false);
 
   /* ── Fetch ─────────────────────────────────────────────────── */
   const fetchTransactions = useCallback(
@@ -214,7 +264,7 @@ useEffect(() => {
 
   fetchBalance();
 
-  const interval = setInterval(fetchBalance, 30000);
+  const interval = setInterval(fetchBalance, 300000);
 
   return () => clearInterval(interval);
 }, []);
@@ -256,15 +306,52 @@ useEffect(() => {
 
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
+  /* ── Export CSV ────────────────────────────────────────────── */
+  const handleExportCSV = () => {
+    if (safeTransactions.length === 0) return;
+    setExporting(true);
+    setTimeout(() => {
+      exportToCSV(safeTransactions);
+      setExporting(false);
+      setExportDone(true);
+      setTimeout(() => setExportDone(false), 2500);
+    }, 400);
+  };
+
   /* ── Render ──────────────────────────────────────────────── */
   return (
-    <div className={styles["tx-page"]}>
+    <div className={`${styles["tx-page"]} tx-page`}>
      {/* Header */}
       <div className={styles["tx-page__header"]}>
-        <h1 className={styles["tx-page__title"]}>Transaction History</h1>
-        <p className={styles["tx-page__subtitle"]}>
-          Track all credit and debit activity in one place
-        </p>
+        <div>
+          <h1 className={styles["tx-page__title"]}>Transaction History</h1>
+          <p className={styles["tx-page__subtitle"]}>
+            Track all credit and debit activity in one place
+          </p>
+        </div>
+        <div className={styles["tx-header__right"]}>
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting || safeTransactions.length === 0}
+            className={`${styles["tx-btn-export"]} ${
+              exportDone ? styles["tx-btn-export--done"] : ""
+            }`}
+          >
+            {exporting ? (
+              <Spinner size="sm" text="Exporting…" />
+            ) : exportDone ? (
+              <>
+                <Check size={14} />
+                <span>Downloaded</span>
+              </>
+            ) : (
+              <>
+                <Download size={14} />
+                <span>Export</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Wallet Balance Card */}
@@ -277,9 +364,9 @@ useEffect(() => {
             Current Wallet Balance
           </span>
           {balanceLoading ? (
-            <span
-              className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-            />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", height: "26px" }}>
+              <Spinner size="xs" color="primary" />
+            </span>
           ) : (
             <span className={styles["tx-balance-card__amount"]}>
               ₹{walletBalance !== null ? formatCurrency(walletBalance) : "—"}
@@ -346,47 +433,19 @@ useEffect(() => {
             </tr>
           </thead>
           <tbody>
-            {/* Loading skeletons */}
-            {loading &&
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={`skeleton-${i}`}>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--lg"]}`}
-                    />
-                  </td>
-                </tr>
-              ))}
+            {/* Loading Modern Ring Spinner */}
+            {loading && (
+              <tr>
+                <td colSpan={7} style={{ padding: "40px 0" }}>
+                  <Spinner
+                    variant="center"
+                    size="lg"
+                    color="primary"
+                    text="Loading transactions..."
+                  />
+                </td>
+              </tr>
+            )}
 
             {/* Error */}
             {!loading && error && (

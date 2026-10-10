@@ -7,7 +7,7 @@ const SEV: Record<string, { bg: string; color: string; icon: React.ReactNode }> 
   success: { bg: "rgba(47,179,68,0.12)", color: "#2fb344", icon: <CheckCircle2 size={15} /> },
   warn:    { bg: "rgba(245,159,0,0.12)", color: "#f59f00", icon: <AlertTriangle size={15} /> },
   danger:  { bg: "rgba(214,57,57,0.12)", color: "#d63939", icon: <AlertCircle size={15} /> },
-  info:    { bg: "rgba(32,107,196,0.12)", color: "#206bc4", icon: <Info size={15} /> },
+  info:    { bg: "rgba(8, 127, 91,0.12)", color: "#087f5b", icon: <Info size={15} /> },
 };
 
 const LOGS = [

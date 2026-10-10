@@ -10,7 +10,7 @@ const DATA = [
 export default function SubscriptionChart() {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
-  const color = isDark ? "#4dabf7" : "#2563eb";
+  const color = isDark ? "#52a77d" : "#087f5b";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<{x:number;y:number;l:string;v:number}|null>(null);

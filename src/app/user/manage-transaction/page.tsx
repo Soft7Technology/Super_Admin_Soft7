@@ -7,6 +7,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { RefreshCw } from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
+import Spinner from "@/components/ui/Spinner";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
@@ -401,7 +402,14 @@ export default function ManageTransactions() {
             <tbody>
               {loading ? (
                 <tr className="tx-empty-row">
-                  <td colSpan={7}>Loading transactions…</td>
+                  <td colSpan={7} style={{ padding: "40px 0" }}>
+                    <Spinner
+                      variant="center"
+                      size="lg"
+                      color="primary"
+                      text="Loading transactions…"
+                    />
+                  </td>
                 </tr>
               ) : paginated.length === 0 ? (
                 <tr className="tx-empty-row">

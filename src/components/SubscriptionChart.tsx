@@ -128,7 +128,7 @@ function tooltipLabel(rawDate: string, groupBy: GroupUnit): string {
 export default function SubscriptionChart() {
   const { isDark } = useTheme();
   const t = isDark ? tokens.dark : tokens.light;
-  const color = isDark ? "#4dabf7" : "#2563eb";
+  const color = isDark ? "#52a77d" : "#087f5b";
 
   const { range, setRange, data, loading, error } = useSubscriptionAnalytics("1year");
 

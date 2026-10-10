@@ -3,7 +3,6 @@
 import {
   Check,
   CircleAlert,
-  Loader2,
   RefreshCw,
   ShieldCheck,
   ShieldAlert,
@@ -18,6 +17,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
 import "@/app/globals.css";
+import Spinner from "@/components/ui/Spinner";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import "./permissions.css";
 
 /* ============================================================
@@ -50,7 +51,7 @@ interface ConfirmState {
 
 const DOMAINS_API_BASE =
   process.env.NEXT_PUBLIC_DOMAINS_API_BASE ?? "/v1/super-admin";
-const REFRESH_INTERVAL_MS = 30000;
+const REFRESH_INTERVAL_MS = 300000;
 
 /* ============================================================
    API SERVICE LAYER
@@ -165,7 +166,7 @@ function domainInitials(domain?: string | null) {
 }
 
 const AVATAR_GRADIENTS = [
-  "linear-gradient(135deg, #206bc4, #4299e1)",
+  "linear-gradient(135deg, #087f5b, #52a77d)",
   "linear-gradient(135deg, #2fb344, #48bb78)",
   "linear-gradient(135deg, #f59f00, #ed8936)",
   "linear-gradient(135deg, #ae3ec9, #9f7aea)",
@@ -316,7 +317,7 @@ export default function PermissionsPage() {
         <div className="pm-kpi-card">
           <div
             className="pm-kpi-card__icon"
-            style={{ background: "rgba(32, 107, 196, 0.12)", color: "var(--primary, #206bc4)" }}
+            style={{ background: "rgba(8, 127, 91, 0.12)", color: "var(--primary, #087f5b)" }}
           >
             <Globe size={22} />
           </div>
@@ -439,10 +440,13 @@ export default function PermissionsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={5}>
-                    <div className="pm-empty">
-                      <div className="pm-spinner" />
-                      <p className="pm-empty__title">Loading domain requests…</p>
-                      <p className="pm-empty__desc">Connecting to domain service</p>
+                    <div className="pm-empty" style={{ padding: "40px 0" }}>
+                      <Spinner
+                        variant="center"
+                        size="lg"
+                        color="primary"
+                        text="Loading domain requests…"
+                      />
                     </div>
                   </td>
                 </tr>
@@ -467,14 +471,7 @@ export default function PermissionsPage() {
                   <tr key={item.id}>
                     <td>
                       <div className="pm-domain-cell">
-                        <div
-                          className="pm-avatar"
-                          style={{
-                            background: domainAvatarColor(item.domain_name ?? ""),
-                          }}
-                        >
-                          {domainInitials(item.domain_name ?? "")}
-                        </div>
+                        <ProfileAvatar name={item.domain_name} size={36} />
                         <div className="pm-domain-info">
                           <span className="pm-domain-name">{item.domain_name}</span>
                           <span className="pm-domain-type">
@@ -512,7 +509,7 @@ export default function PermissionsPage() {
                           aria-label="Approve domain"
                         >
                           {processingDomain === item.domain_name ? (
-                            <Loader2 size={15} className="animate-spin" />
+                            <Spinner size="xs" />
                           ) : (
                             <Check size={15} />
                           )}
@@ -622,10 +619,7 @@ export default function PermissionsPage() {
                 }`}
               >
                 {processingDomain === confirmState.request.domain_name ? (
-                  <>
-                    <Loader2 size={15} className="animate-spin" />
-                    <span>Processing…</span>
-                  </>
+                  <Spinner size="sm" text="Processing…" />
                 ) : confirmState.action === "approve" ? (
                   <>
                     <ShieldCheck size={15} />

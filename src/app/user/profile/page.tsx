@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./profile.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import Spinner from "@/components/ui/Spinner";
 import {
   User,
   ShieldCheck,
@@ -14,7 +15,6 @@ import {
   Camera,
   Save,
   Check,
-  Loader2,
   Lock,
   Building2,
   AlertTriangle,
@@ -79,7 +79,7 @@ function useSave() {
 function SaveBtn({ onClick, saving, saved }: { onClick: () => void; saving: boolean; saved: boolean }) {
   return (
     <button onClick={onClick} className={`pf-btn-save ${saved ? "pf-btn-save--saved" : ""}`}>
-      {saving ? <><Loader2 size={14} className="pf-spin" /> Saving…</> : saved ? <><Check size={14} /> Saved!</> : <><Save size={14} /> Save Changes</>}
+      {saving ? <Spinner size="sm" text="Saving…" /> : saved ? <><Check size={14} /> Saved!</> : <><Save size={14} /> Save Changes</>}
     </button>
   );
 }
@@ -136,7 +136,7 @@ function HeroCard({
         <div className="pf-hero__top-row">
           <div className="pf-avatar-wrap">
             <div className={`pf-avatar ${uploading ? "pf-avatar--uploading" : ""}`}>
-              {uploading ? <Loader2 size={24} className="pf-spin" /> : (avatarEmoji ?? initials)}
+              {uploading ? <Spinner size="md" color="white" /> : (avatarEmoji ?? initials)}
             </div>
             <div className="pf-avatar__online" />
             <div className="pf-avatar__upload-overlay" onClick={onUpload} title="Upload photo">
@@ -484,7 +484,7 @@ function SecurityTab({ profile }: { profile: ProfileData | null }) {
             {pwdErr && <div className="pf-pwd-err">{pwdErr}</div>}
             <div className="pf-btn-row">
               <button type="submit" className={`pf-btn-pwd ${pwdSaved ? "pf-btn-pwd--saved" : ""}`}>
-                {pwdSaving ? <><Loader2 size={14} className="pf-spin" /> Updating…</> : pwdSaved ? <><Check size={14} /> Updated!</> : <><Lock size={14} /> Update Password</>}
+                {pwdSaving ? <Spinner size="sm" text="Updating…" /> : pwdSaved ? <><Check size={14} /> Updated!</> : <><Lock size={14} /> Update Password</>}
               </button>
             </div>
           </form>
@@ -537,10 +537,10 @@ function ActivityTab() {
   const [activities, setActivities] = useState<any[]>([
     { icon: <Building2 size={16} />, color: "#2fb344", action: "Created company",        detail: "Orbit Analytics",              time: "2 mins ago",  date: "Mar 11, 2026", badge: "CREATE",   badgeCol: "#2fb344" },
     { icon: <AlertCircle size={16} />, color: "#d63939", action: "Suspended company",      detail: "Delta Forge (overdue payment)", time: "2 hrs ago",   date: "Mar 11, 2026", badge: "SUSPEND",  badgeCol: "#d63939" },
-    { icon: <Sliders size={16} />, color: "#4299e1", action: "Updated plan pricing",   detail: "Starter plan ₹399 → ₹499",     time: "5 hrs ago",   date: "Mar 11, 2026", badge: "UPDATE",   badgeCol: "#4299e1" },
+    { icon: <Sliders size={16} />, color: "#52a77d", action: "Updated plan pricing",   detail: "Starter plan ₹399 → ₹499",     time: "5 hrs ago",   date: "Mar 11, 2026", badge: "UPDATE",   badgeCol: "#52a77d" },
     { icon: <ShieldCheck size={16} />, color: "#f59f00", action: "Changed password",       detail: "Account security updated",     time: "Yesterday",   date: "Mar 10, 2026", badge: "SECURITY", badgeCol: "#f59f00" },
-    { icon: <Download size={16} />, color: "#206bc4", action: "Exported audit logs",    detail: "12 admin accounts CSV",        time: "Yesterday",   date: "Mar 10, 2026", badge: "EXPORT",   badgeCol: "#206bc4" },
-    { icon: <User size={16} />, color: "#4299e1", action: "Updated user role",      detail: "Carlos Mendes → Manager",      time: "2 days ago",  date: "Mar 9, 2026",  badge: "UPDATE",   badgeCol: "#4299e1" },
+    { icon: <Download size={16} />, color: "#087f5b", action: "Exported audit logs",    detail: "12 admin accounts CSV",        time: "Yesterday",   date: "Mar 10, 2026", badge: "EXPORT",   badgeCol: "#087f5b" },
+    { icon: <User size={16} />, color: "#52a77d", action: "Updated user role",      detail: "Carlos Mendes → Manager",      time: "2 days ago",  date: "Mar 9, 2026",  badge: "UPDATE",   badgeCol: "#52a77d" },
   ]);
 
   useEffect(() => {
@@ -566,9 +566,9 @@ function ActivityTab() {
           const mapped = raw.map((a: any) => {
             const type = (a.type || a.action || a.event || "").toLowerCase();
             let icon: React.ReactNode = <Activity size={16} />;
-            let color = "#206bc4";
+            let color = "#087f5b";
             let badge = "ACTION";
-            let badgeCol = "#206bc4";
+            let badgeCol = "#087f5b";
 
             if (type.includes("create") || type.includes("add")) {
               icon = <Building2 size={16} />; color = "#2fb344"; badge = "CREATE"; badgeCol = "#2fb344";
@@ -577,7 +577,7 @@ function ActivityTab() {
             } else if (type.includes("security") || type.includes("password") || type.includes("auth")) {
               icon = <ShieldCheck size={16} />; color = "#f59f00"; badge = "SECURITY"; badgeCol = "#f59f00";
             } else if (type.includes("update") || type.includes("edit")) {
-              icon = <Sliders size={16} />; color = "#4299e1"; badge = "UPDATE"; badgeCol = "#4299e1";
+              icon = <Sliders size={16} />; color = "#52a77d"; badge = "UPDATE"; badgeCol = "#52a77d";
             }
 
             const dStr = a.created_at || a.createdAt || a.time || "";
@@ -607,8 +607,8 @@ function ActivityTab() {
   }, []);
 
   const stats = [
-    { label: "Actions (30d)",     value: String(activities.length), icon: <BarChart3 size={18} />, color: "#206bc4" },
-    { label: "Logins (30d)",      value: "31",  icon: <KeyRound size={18} />, color: "#4299e1" },
+    { label: "Actions (30d)",     value: String(activities.length), icon: <BarChart3 size={18} />, color: "#087f5b" },
+    { label: "Logins (30d)",      value: "31",  icon: <KeyRound size={18} />, color: "#52a77d" },
     { label: "Exports",           value: "12",  icon: <Download size={18} />, color: "#f59f00" },
     { label: "Companies Created", value: "8",   icon: <Building2 size={18} />, color: "#2fb344" },
   ];

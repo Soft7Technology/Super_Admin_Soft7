@@ -6,18 +6,14 @@
 .pm-root {
   font-family: inherit;
   background: var(--bg);
+  min-height: 100vh;
   width: 100%;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 24px 32px 60px;
+  max-width: 100%;
+  margin: 0;
   color: var(--text);
+  transition: background 0.3s ease, color 0.3s ease;
   box-sizing: border-box;
-}
-
-@media (max-width: 900px) {
-  .pm-root {
-    padding: 20px 16px 40px;
-  }
+  overflow-x: hidden;
 }
 
 /* ── Header ── */
@@ -212,7 +208,7 @@
 
 .pm-search-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.15);
+  box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.15);
 }
 
 .pm-search-input::placeholder {
@@ -252,9 +248,9 @@
 }
 
 .pm-tab-btn--active {
-  background: var(--crm-primary, #206bc4) !important;
+  background: var(--crm-primary, #087f5b) !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(32, 107, 196, 0.28);
+  box-shadow: 0 2px 6px rgba(8, 127, 91, 0.28);
 }
 
 .pm-tab-count {
@@ -528,7 +524,7 @@
 .pm-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(32, 107, 196, 0.15);
+  border: 3px solid rgba(8, 127, 91, 0.15);
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: pm-spin 0.8s linear infinite;
@@ -674,12 +670,12 @@
 .pm-btn--primary {
   background: var(--primary);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(32, 107, 196, 0.3);
+  box-shadow: 0 4px 12px rgba(8, 127, 91, 0.3);
 }
 
 .pm-btn--primary:hover:not(:disabled) {
-  background: #1a569d;
-  box-shadow: 0 6px 16px rgba(32, 107, 196, 0.4);
+  background: #056344;
+  box-shadow: 0 6px 16px rgba(8, 127, 91, 0.4);
   transform: translateY(-1px);
 }
 
@@ -700,10 +696,6 @@
 }
 
 @media (max-width: 768px) {
-  .pm-root {
-    padding: 16px 12px 40px;
-  }
-
   .pm-header {
     flex-direction: column;
     align-items: stretch;

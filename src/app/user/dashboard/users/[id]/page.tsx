@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTheme, tokens } from "../../../../../context/ThemeContext";
+import ProfileAvatar from "@/components/ProfileAvatar";
 
 interface UserDetails {
   id: string;
@@ -218,23 +219,7 @@ export default function DashboardUserDetailsPage() {
       ) : user ? (
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: "14px", overflow: "hidden" }}>
           <div style={{ padding: "18px 20px", borderBottom: `1px solid ${t.border}`, display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "10px",
-                background: "linear-gradient(135deg,#3b5bdb,#6741d9)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: "0.8rem",
-                flexShrink: 0,
-              }}
-            >
-              {toInitials(user.name)}
-            </div>
+            <ProfileAvatar name={user.name} src={user.image} size={40} />
             <div>
               <div style={{ fontSize: "0.95rem", fontWeight: 700, color: t.text }}>{user.name}</div>
               <div style={{ fontSize: "0.8rem", color: t.textMuted }}>{user.email}</div>
