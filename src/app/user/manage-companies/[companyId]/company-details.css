@@ -419,13 +419,13 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: 22px;
+  margin: 20px 24px 0 24px;
   background: var(--cd-surf2);
   border: 1px solid var(--cd-border);
   border-radius: 10px;
   padding: 4px;
   width: fit-content;
-  max-width: 100%;
+  max-width: calc(100% - 48px);
   overflow-x: auto;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
@@ -1123,6 +1123,8 @@
   }
 
   .company-tabs {
+    margin: 16px 16px 0 16px;
+    max-width: calc(100% - 32px);
     overflow-x: auto;
   }
 
