@@ -10,7 +10,6 @@ import ProfileAvatar from "@/components/ProfileAvatar";
 import {
   ArrowLeft,
   Pencil,
-  Share2,
   PauseCircle,
   CheckCircle2,
   Layers,
@@ -147,7 +146,6 @@ export default function CompanyDetailsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showPlanModal, setShowPlanModal] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
 
   const [creditAmount, setCreditAmount] = useState("");
@@ -243,8 +241,12 @@ export default function CompanyDetailsPage() {
     };
 
     const loadCompany = async () => {
-      await fetchCompany();
-      await refreshCompanyCredits();
+      try {
+        await fetchCompany();
+        await refreshCompanyCredits();
+      } catch (loadErr) {
+        console.error("LOAD COMPANY ERROR =>", loadErr);
+      }
     };
 
     loadCompany();
@@ -293,7 +295,6 @@ export default function CompanyDetailsPage() {
       }
     } catch (err: any) {
       console.error("GET COMPANY CREDITS ERROR =>", err);
-      throw err;
     }
   };
 
@@ -643,31 +644,6 @@ useEffect(() => {
                   ? "Active"
                   : "Suspended"}
               </span>
-
-              <div className="company-profile-actions">
-                <button
-                  type="button"
-                  className="profile-action-btn"
-                  onClick={() => setShowEditModal(true)}
-                  aria-label="Edit Profile"
-                >
-                  <Pencil size={13} />
-                  <span>Edit Profile</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="profile-action-btn"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(window.location.href);
-                    showToast("Profile link copied.", "success");
-                  }}
-                  aria-label="Share Profile"
-                >
-                  <Share2 size={13} />
-                  <span>Share Profile</span>
-                </button>
-              </div>
             </div>
 
             <p className="company-email">{company.email || "—"}</p>
@@ -743,14 +719,14 @@ useEffect(() => {
               <button
                 type="button"
                 className="quick-action-item"
-                onClick={() => setShowPlanModal(true)}
+                onClick={() => setShowEditModal(true)}
               >
                 <span className="quick-action-icon">
-                  <Layers size={16} />
+                  <Pencil size={16} />
                 </span>
 
                 <span className="quick-action-text">
-                  <strong>Change Plan</strong>
+                  <strong>Edit Profile</strong>
                 </span>
 
                 <ChevronRight size={16} className="quick-action-arrow" />
@@ -1078,56 +1054,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* ============================================================= */}
-      {/* CHANGE PLAN MODAL */}
-      {/* ============================================================= */}
-
-      {showPlanModal && (
-        <div className="modal-overlay">
-          <div className="modal-card small">
-            <div className="modal-header">
-              <div>
-                <h3>Change Plan</h3>
-                <p>Select a new plan for this company.</p>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setShowPlanModal(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="plan-options">
-              {["Starter", "Professional", "Enterprise"].map((plan) => (
-                <button
-                  type="button"
-                  key={plan}
-                  className={
-                    company.plan === plan
-                      ? "plan-option selected"
-                      : "plan-option"
-                  }
-                  onClick={() => {
-                    setCompany({
-                      ...company,
-                      plan,
-                    });
-
-                    setShowPlanModal(false);
-                  }}
-                >
-                  <strong>{plan}</strong>
-
-                  {company.plan === plan && <span>Current</span>}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ============================================================= */}
       {/* ADD CREDITS MODAL */}
