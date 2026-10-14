@@ -1,0 +1,144 @@
+/* =============================================================================
+   BASE — element defaults only (no classes, no feature selectors).
+   ========================================================================== */
+
+@layer base {
+  /* SuperAdmin runs without Tailwind preflight: form controls inherit the
+     page font (as the original SuperAdmin globals intended). */
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  html {
+    accent-color: var(--color-primary);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-family-sans);
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-text);
+    font-weight: 600;
+    letter-spacing: -0.011em;
+  }
+  h1 {
+    font: var(--type-page-title);
+    letter-spacing: var(--tracking-tight);
+  }
+  h2 {
+    font: var(--type-section-title);
+  }
+  h3 {
+    font: var(--type-card-title);
+  }
+  p {
+    line-height: 1.55;
+  }
+
+  ::selection {
+    background: rgba(var(--color-primary-rgb), 0.24);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-text-muted);
+    opacity: 1;
+  }
+
+  /* One focus treatment for every form control in the product */
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]):focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-ring);
+  }
+
+  button,
+  [role="button"],
+  a {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /* Quiet scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border: 2px solid transparent;
+    border-radius: var(--radius-full);
+    background-clip: padding-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}

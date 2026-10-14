@@ -1,0 +1,104 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background-color: var(--color-overlay);
+    backdrop-filter: blur(2px);
+    animation: fadeIn var(--duration-base) var(--ease-out);
+  }
+  .panel {
+    display: flex;
+    width: 100%;
+    max-height: min(90vh, 56rem);
+    flex-direction: column;
+    background-color: var(--color-surface-raised);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--elevation-xl);
+    outline: none;
+    animation: popIn var(--duration-slow) var(--ease-out);
+  }
+  .sm {
+    max-width: 26rem;
+  }
+  .md {
+    max-width: 32rem;
+  }
+  .lg {
+    max-width: 42rem;
+  }
+  .xl {
+    max-width: 56rem;
+  }
+  .full {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-6) var(--space-4);
+  }
+  .title {
+    font: var(--type-section-title);
+    color: var(--color-text);
+  }
+  .description {
+    margin-top: 2px;
+    font: var(--type-secondary);
+    color: var(--color-text-muted);
+  }
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 var(--space-6) var(--space-5);
+  }
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-muted);
+    border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+  }
+
+  @media (max-width: 639px) {
+    .overlay {
+      align-items: flex-end;
+      padding: 0;
+    }
+    .panel {
+      max-width: none;
+      max-height: 92vh;
+      border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes popIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.title, .description) {
+    margin: 0;
+  }
+}

@@ -1,0 +1,117 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .container {
+    width: 100%;
+    overflow-x: auto;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+  }
+  .table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+  }
+  .th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.625rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface-muted);
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+  }
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+  .sortable:hover {
+    color: var(--color-text);
+  }
+  .sortIcon {
+    display: inline-flex;
+    margin-left: 0.25rem;
+    vertical-align: middle;
+    opacity: 0.6;
+  }
+  .sorted .sortIcon {
+    color: var(--color-primary-text);
+    opacity: 1;
+  }
+  .td {
+    padding: 0.75rem 1rem;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border-subtle);
+    white-space: nowrap;
+    transition: background-color var(--motion-fast);
+  }
+  .row:last-child .td {
+    border-bottom: 0;
+  }
+  .row:hover .td {
+    background-color: var(--color-surface-hover);
+  }
+  .clickable {
+    cursor: pointer;
+  }
+  .left {
+    text-align: left;
+  }
+  .center {
+    text-align: center;
+  }
+  .right {
+    text-align: right;
+  }
+  .skeletonRow .td {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  .empty {
+    padding: 0;
+  }
+
+  /* .native — the same look for plain <table> markup (th/td without classes).
+     Used by page modules via "composes: native from …Table.module.css". */
+  .native {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+  }
+  .native th {
+    padding: 0.625rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface-muted);
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+  }
+  .native td {
+    padding: 0.75rem 1rem;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border-subtle);
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: background-color var(--motion-fast);
+  }
+  .native tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .native tbody tr:hover td {
+    background-color: var(--color-surface-hover);
+  }
+  .native input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--color-primary);
+  }
+}

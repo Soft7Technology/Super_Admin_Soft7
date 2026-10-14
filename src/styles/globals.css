@@ -1,0 +1,20 @@
+/* =============================================================================
+   GLOBAL STYLESHEET — entry point only (identical architecture to WA_ADMIN /
+   WA_DASHBOARD).
+
+   Design tokens ........ tokens.css          (single source of truth, BLUE brand)
+   Tailwind mapping ..... tailwind-theme.css  (tokens → utilities)
+   Element defaults ..... base.css
+   Third-party widgets .. vendor.css
+
+   Component styles live next to their components (components/ui/*,
+   components/shell/*, app/user/*). Do not add component or page CSS here.
+   ========================================================================== */
+
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./tailwind-theme.css";
+@import "./base.css";
+@import "./vendor.css";
+
+@custom-variant dark (&:where(.dark, .dark *));

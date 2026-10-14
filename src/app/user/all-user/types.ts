@@ -1,3 +1,5 @@
+import type { BadgeVariant } from "@/components/ui/Badge";
+
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 export interface User {
   id: string;
@@ -27,38 +29,36 @@ export interface UserStats {
 }
 
 // ─── LOOKUP MAPS ──────────────────────────────────────────────────────────────
-export const STATUS_CSS: Record<string, string> = {
-  ACTIVE:    "au-badge--active",
-  INACTIVE:  "au-badge--inactive",
-  SUSPENDED: "au-badge--suspended",
-  PENDING:   "au-badge--pending",
+
+export const STATUS_VARIANT: Record<string, BadgeVariant> = {
+  ACTIVE:    "success",
+  INACTIVE:  "neutral",
+  SUSPENDED: "error",
+  PENDING:   "warning",
 };
 
-export const STATUS_DOT: Record<string, string> = {
-  ACTIVE:    "au-status-dot--active",
-  INACTIVE:  "au-status-dot--other",
-  SUSPENDED: "au-status-dot--suspended",
-  PENDING:   "au-status-dot--other",
+const PLAN_VARIANT: Record<string, BadgeVariant> = {
+  Enterprise: "primary",
+  Pro:        "primary",
+  Basic:      "warning",
+  Starter:    "info",
 };
 
-const PLAN_COLOR: Record<string, string> = {
-  Enterprise: "#10b981",
-  Pro:        "#6366f1",
-  Basic:      "#f59e0b",
-  Starter:    "#34d399",
+const ROLE_VARIANT: Record<string, BadgeVariant> = {
+  Admin: "primary",
+  User:  "neutral",
 };
 
-const ROLE_COLOR: Record<string, string> = {
-  Admin: "#10b981",
-  User:  "#64748b",
-};
-
-export function planColor(plan: string): string {
-  return PLAN_COLOR[plan] ?? "#94a3b8";
+export function statusVariant(status: string): BadgeVariant {
+  return STATUS_VARIANT[status] ?? "neutral";
 }
 
-export function roleColor(role: string): string {
-  return ROLE_COLOR[role] ?? "#94a3b8";
+export function planVariant(plan: string): BadgeVariant {
+  return PLAN_VARIANT[plan] ?? "neutral";
+}
+
+export function roleVariant(role: string): BadgeVariant {
+  return ROLE_VARIANT[role] ?? "neutral";
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────

@@ -1,0 +1,309 @@
+/* =============================================================================
+   DESIGN TOKENS — the single source of truth for WA_ADMIN.
+
+   No other stylesheet or component may define color values. Components
+   consume these variables (directly or through the Tailwind utilities
+   defined in tailwind-theme.css).
+
+   Same semantic names and structure as WA_DASHBOARD's tokens.css, so both
+   products share one design language — but the BRAND here is BLUE. The
+   dashboard resolves the same names to green; the two apps never share a
+   primary value.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ── Brand (blue) ──────────────────────────────────────────────────────────
+     --color-primary         solid fills (buttons, selected chips); carries
+                             white labels at ≥ 4.5:1.
+     --color-brand           the vivid brand: progress, charts, indicators.
+     --color-primary-text    brand as text/icon on surfaces (≥ 4.5:1).
+     light / lighter / soft  tints for selected rows, hover, soft borders.
+     ───────────────────────────────────────────────────────────────────────── */
+  /* Source variables (--brand-*) are written by src/theme (the Theme Editor)
+     from ONE chosen color; the fallbacks are the default blue admin brand. */
+  --tint: var(--brand-tint, #2563eb);
+  --color-primary: var(--brand-light, #2563eb);
+  --color-primary-rgb: var(--brand-light-rgb, 37, 99, 235);
+  --color-primary-foreground: var(--brand-light-fg, #ffffff);
+  --color-primary-text: var(--brand-light-text, #1d4ed8);
+  --color-brand: var(--brand-light-accent, #3b82f6);
+  --color-primary-hover: color-mix(in oklab, var(--color-primary) 88%, black);
+  --color-primary-active: color-mix(in oklab, var(--color-primary) 78%, black);
+  --color-primary-dark: color-mix(in oklab, var(--color-primary) 66%, black);
+  --color-primary-light: color-mix(in oklab, var(--color-brand) 14%, var(--color-surface));
+  --color-primary-lighter: color-mix(in oklab, var(--color-brand) 7%, var(--color-surface));
+  --color-primary-soft: color-mix(in oklab, var(--color-brand) 34%, var(--color-surface));
+  --color-primary-ring: color-mix(in oklab, var(--color-brand) 40%, transparent);
+
+  /* ── Semantic (fixed; independent of the brand) ────────────────────────── */
+  --semantic-success: #22c55e;
+  --semantic-error: #ef4444;
+  --semantic-warning: #f59e0b;
+  --semantic-info: #0ea5e9;
+
+  --color-success: var(--success-600);
+  --color-success-bg: var(--success-50);
+  --color-success-border: var(--success-200);
+  --color-success-rgb: 34, 197, 94;
+  --color-success-foreground: #ffffff;
+  --color-error: var(--error-600);
+  --color-error-bg: var(--error-50);
+  --color-error-border: var(--error-200);
+  --color-error-rgb: 239, 68, 68;
+  --color-error-foreground: #ffffff;
+  --color-warning: var(--warning-700);
+  --color-warning-bg: var(--warning-50);
+  --color-warning-border: var(--warning-200);
+  --color-warning-rgb: 245, 158, 11;
+  --color-warning-foreground: #1a1206;
+  --color-info: var(--info-700);
+  --color-info-bg: var(--info-50);
+  --color-info-border: var(--info-200);
+  --color-info-rgb: 14, 165, 233;
+  --color-info-foreground: #ffffff;
+
+  --success-50: color-mix(in oklab, var(--semantic-success) 8%, white);
+  --success-100: color-mix(in oklab, var(--semantic-success) 15%, white);
+  --success-200: color-mix(in oklab, var(--semantic-success) 28%, white);
+  --success-300: color-mix(in oklab, var(--semantic-success) 46%, white);
+  --success-400: color-mix(in oklab, var(--semantic-success) 72%, white);
+  --success-500: var(--semantic-success);
+  --success-600: color-mix(in oklab, var(--semantic-success) 82%, black);
+  --success-700: color-mix(in oklab, var(--semantic-success) 66%, black);
+
+  --error-50: color-mix(in oklab, var(--semantic-error) 7%, white);
+  --error-100: color-mix(in oklab, var(--semantic-error) 14%, white);
+  --error-200: color-mix(in oklab, var(--semantic-error) 27%, white);
+  --error-300: color-mix(in oklab, var(--semantic-error) 45%, white);
+  --error-400: color-mix(in oklab, var(--semantic-error) 72%, white);
+  --error-500: var(--semantic-error);
+  --error-600: color-mix(in oklab, var(--semantic-error) 86%, black);
+  --error-700: color-mix(in oklab, var(--semantic-error) 70%, black);
+
+  --warning-50: color-mix(in oklab, var(--semantic-warning) 8%, white);
+  --warning-100: color-mix(in oklab, var(--semantic-warning) 16%, white);
+  --warning-200: color-mix(in oklab, var(--semantic-warning) 30%, white);
+  --warning-300: color-mix(in oklab, var(--semantic-warning) 50%, white);
+  --warning-400: color-mix(in oklab, var(--semantic-warning) 76%, white);
+  --warning-500: var(--semantic-warning);
+  --warning-600: color-mix(in oklab, var(--semantic-warning) 84%, black);
+  --warning-700: color-mix(in oklab, var(--semantic-warning) 66%, black);
+
+  --info-50: color-mix(in oklab, var(--semantic-info) 7%, white);
+  --info-100: color-mix(in oklab, var(--semantic-info) 14%, white);
+  --info-200: color-mix(in oklab, var(--semantic-info) 27%, white);
+  --info-300: color-mix(in oklab, var(--semantic-info) 45%, white);
+  --info-400: color-mix(in oklab, var(--semantic-info) 72%, white);
+  --info-500: var(--semantic-info);
+  --info-600: color-mix(in oklab, var(--semantic-info) 86%, black);
+  --info-700: color-mix(in oklab, var(--semantic-info) 66%, black);
+
+  /* ── Neutral ───────────────────────────────────────────────────────────── */
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+  --neutral-950: #0b0c0d;
+
+  /* Light hierarchy: white canvas → white bordered cards (--color-surface)
+     → lighter inner surfaces (--color-surface-muted) → blue accents.
+     Sidebar, header, panels, inputs, popovers and modals stay white so the
+     page never turns into one blue block. */
+  --color-background: #ffffff;
+  --color-sidebar: #ffffff;
+  --color-header: #ffffff;
+  --color-panel: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-elevated: var(--color-surface-raised);
+  --color-surface-hover: color-mix(in oklab, var(--tint) 5%, #f4f6f9);
+  --color-surface-active: color-mix(in oklab, var(--tint) 11%, #eef1f6);
+  --color-surface-muted: color-mix(in oklab, var(--tint) 3%, #f8f9fb);
+  --color-input: #ffffff;
+  --color-nav-hover: color-mix(in oklab, var(--color-text) 5%, transparent);
+  --color-overlay: rgba(10, 15, 26, 0.45);
+  --color-inverse: var(--neutral-900);
+  --color-inverse-foreground: #ffffff;
+
+  --color-border: color-mix(in oklab, var(--tint) 5%, #e3e6eb);
+  --color-border-subtle: color-mix(in oklab, var(--tint) 3%, #ebedf1);
+  --color-border-strong: color-mix(in oklab, var(--tint) 7%, #cdd3db);
+
+  --color-text: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #5f6774;
+  --color-text-disabled: #9ca3af;
+
+  /* ── Component roles (aliases, not new values) ─────────────────────────── */
+  --color-input-border: var(--color-border);
+  --color-accent-icon: var(--color-brand);
+
+  --color-sidebar-text: var(--color-text-secondary);
+  --color-sidebar-icon: var(--color-text-muted);
+  --color-sidebar-hover: var(--color-nav-hover);
+  --color-sidebar-active-bg: var(--color-primary-light);
+  --color-sidebar-active-text: var(--color-primary-text);
+  --color-sidebar-active-icon: var(--color-sidebar-active-text);
+  --color-sidebar-active-indicator: var(--color-brand);
+
+  --color-header-text: var(--color-text);
+  --color-header-icon: var(--color-text-muted);
+
+  /* ── Visualization (derived from the brand) ────────────────────────────── */
+  --chart-1: var(--color-brand);
+  --chart-2: color-mix(in oklab, var(--color-brand) 60%, black);
+  --chart-3: color-mix(in oklab, var(--color-brand) 45%, white);
+  --chart-4: var(--neutral-500);
+  --chart-5: var(--neutral-300);
+  --chart-6: color-mix(in oklab, var(--color-brand) 35%, var(--neutral-700));
+
+  /* ── Typography ────────────────────────────────────────────────────────── */
+  --font-family-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --type-page-title: 600 1.5rem/2rem var(--font-family-sans);
+  --type-section-title: 600 1.0625rem/1.5rem var(--font-family-sans);
+  --type-card-title: 600 0.9375rem/1.375rem var(--font-family-sans);
+  --type-body: 400 0.875rem/1.375rem var(--font-family-sans);
+  --type-secondary: 400 0.8125rem/1.25rem var(--font-family-sans);
+  --type-label: 500 0.8125rem/1.25rem var(--font-family-sans);
+  --type-meta: 400 0.75rem/1rem var(--font-family-sans);
+  --tracking-tight: -0.02em;
+  --tracking-eyebrow: 0.06em;
+
+  /* ── Spacing (4px grid) & layout ───────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --layout-sidebar-width: 15.5rem;
+  --layout-sidebar-collapsed: 4.25rem;
+  --layout-topbar-height: 4rem;
+  --layout-content-max: 80rem;
+
+  /* ── Radius ────────────────────────────────────────────────────────────── */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 14px;
+  --radius-3xl: 18px;
+  --radius-full: 999px;
+
+  /* ── Elevation ─────────────────────────────────────────────────────────── */
+  --elevation-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --elevation-sm: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.05);
+  --elevation-md: 0 4px 8px -2px rgba(16, 24, 40, 0.07), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
+  --elevation-lg: 0 12px 20px -6px rgba(16, 24, 40, 0.1), 0 4px 8px -4px rgba(16, 24, 40, 0.04);
+  --elevation-xl: 0 20px 32px -8px rgba(16, 24, 40, 0.14), 0 8px 12px -6px rgba(16, 24, 40, 0.05);
+
+  /* ── Z-index ───────────────────────────────────────────────────────────── */
+  --z-sticky: 20;
+  --z-header: 40;
+  --z-dropdown: 50;
+  --z-overlay: 1000;
+  --z-modal: 1010;
+  --z-popover: 1020;
+  --z-toast: 1100;
+  --z-tooltip: 1200;
+
+  /* ── Motion ────────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+  --motion-fast: var(--duration-fast) var(--ease-out);
+  --motion-normal: var(--duration-base) var(--ease-out);
+  --motion-slow: var(--duration-slow) var(--ease-emphasized);
+}
+
+/* =============================================================================
+   DARK — black/charcoal surfaces with blue accents; designed, not inverted.
+   ========================================================================== */
+html.dark,
+.dark {
+  color-scheme: dark;
+
+  /* Fill stays a deep blue so white labels keep ≥ 4.5:1; text/indicators use
+     a lifted blue that reads on near-black. */
+  --color-primary: var(--brand-dark, #2563eb);
+  --color-primary-rgb: var(--brand-dark-rgb, 37, 99, 235);
+  --color-primary-foreground: var(--brand-dark-fg, #ffffff);
+  --color-primary-text: var(--brand-dark-text, #60a5fa);
+  --color-brand: color-mix(in oklab, var(--color-primary) 82%, white);
+  --color-primary-hover: color-mix(in oklab, var(--color-primary) 86%, white);
+  --color-primary-active: color-mix(in oklab, var(--color-primary) 76%, white);
+  --color-primary-dark: color-mix(in oklab, var(--color-primary) 72%, black);
+  --color-primary-light: color-mix(in oklab, var(--color-brand) 18%, var(--color-surface));
+  --color-primary-lighter: color-mix(in oklab, var(--color-brand) 9%, var(--color-surface));
+  --color-primary-soft: color-mix(in oklab, var(--color-brand) 38%, var(--color-surface));
+  --color-primary-ring: color-mix(in oklab, var(--color-brand) 50%, transparent);
+
+  --color-success: var(--success-400);
+  --color-success-bg: rgba(var(--color-success-rgb), 0.12);
+  --color-success-border: rgba(var(--color-success-rgb), 0.28);
+  --color-error: var(--error-400);
+  --color-error-bg: rgba(var(--color-error-rgb), 0.12);
+  --color-error-border: rgba(var(--color-error-rgb), 0.3);
+  --color-warning: var(--warning-400);
+  --color-warning-bg: rgba(var(--color-warning-rgb), 0.12);
+  --color-warning-border: rgba(var(--color-warning-rgb), 0.3);
+  --color-info: var(--info-400);
+  --color-info-bg: rgba(var(--color-info-rgb), 0.12);
+  --color-info-border: rgba(var(--color-info-rgb), 0.3);
+
+  /* canvas → sidebar/header/cards → raised (popover/modal) */
+  --color-background: #0b0c0d;
+  --color-sidebar: #141617;
+  --color-header: #141617;
+  --color-panel: #141617;
+  --color-surface: #141617;
+  --color-surface-raised: #1a1c1e;
+  --color-surface-elevated: var(--color-surface-raised);
+  --color-surface-hover: #1c1f22;
+  --color-surface-active: #24272b;
+  --color-surface-muted: #101213;
+  --color-input: #101213;
+  --color-overlay: rgba(0, 0, 0, 0.62);
+  --color-inverse: #eceef0;
+  --color-inverse-foreground: #141617;
+
+  --color-border: #26292d;
+  --color-border-subtle: #1d2023;
+  --color-border-strong: #353a3f;
+
+  --color-text: #eceef0;
+  --color-text-secondary: #b6bbc1;
+  --color-text-muted: #878e96;
+  --color-text-disabled: #5b6168;
+
+  --chart-2: color-mix(in oklab, var(--color-brand) 55%, white);
+  --chart-3: color-mix(in oklab, var(--color-brand) 45%, black);
+  --chart-4: var(--neutral-400);
+  --chart-5: var(--neutral-700);
+  --chart-6: color-mix(in oklab, var(--color-brand) 40%, var(--neutral-400));
+
+  --elevation-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --elevation-md: 0 4px 10px -2px rgba(0, 0, 0, 0.5);
+  --elevation-lg: 0 12px 24px -6px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --elevation-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}

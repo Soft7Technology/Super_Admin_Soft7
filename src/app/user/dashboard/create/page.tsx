@@ -2,7 +2,13 @@
 
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";          // ← ADD
-import { useTheme, tokens } from "../../../../context/ThemeContext";
+import { ArrowLeft, Building2, Image as ImageIcon, Save, UploadCloud, UserCog, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader } from "@/components/ui/Card";
+import Input from "@/components/ui/Input";
 import { uploadToCloudinary } from "../../../../lib/cloudinary";
 
 interface FileState {
@@ -11,11 +17,8 @@ interface FileState {
   dragging: boolean;
 }
 const empty = (): FileState => ({ file: null, preview: null, dragging: false });
-type Tok = typeof tokens.dark | typeof tokens.light;
 
 export default function AddCompanyPage() {
-  const { isDark } = useTheme();
-  const t: Tok = isDark ? tokens.dark : tokens.light;
   const router = useRouter();                          // ← ADD
 
   const [name,    setName]    = useState("");
@@ -120,130 +123,98 @@ export default function AddCompanyPage() {
     router.push("/user/dashboard");
   };
 
-  /* ─── colours ──────────────────────────────────────── */
-  const C = {
-    pageBg:   isDark ? "#070b14"  : "#f1f5f9",
-    cardBg:   isDark ? "#0d1117"  : "#ffffff",
-    border:   isDark ? "#1c2333"  : "#e2e8f0",
-    heading:  isDark ? "#f1f5f9"  : "#0f172a",
-    label:    isDark ? "#e2e8f0"  : "#1e293b",
-    hint:     isDark ? "#94a3b8"  : "#64748b",
-    inputBg:  isDark ? "#161b27"  : "#f8fafc",
-    inputClr: isDark ? "#e2e8f0"  : "#1e293b",
-    divider:  isDark ? "#1c2333"  : "#f0f4f8",
-    dropText: isDark ? "#94a3b8"  : "#475569",
-    dropSub:  isDark ? "#4b5563"  : "#94a3b8",
-    prevBox:  isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-    prevLbl:  isDark ? "#6b7280"  : "#94a3b8",
+  /** Clear a field's error as soon as it is edited (unchanged behavior). */
+  const clearError = (key: string) => {
+    if (errors[key]) setErrors((p) => ({ ...p, [key]: "" }));
   };
 
   return (
-    <div style={{ minHeight: "100%", padding: "36px 24px 64px", background: C.pageBg, fontFamily: "'DM Sans', 'Segoe UI', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", transition: "background .3s" }}>
+    <PageContainer width="narrow">
+      <Button variant="ghost" size="sm" className="-ml-2 mb-3" leftIcon={<ArrowLeft size={15} />} onClick={handleCancel}>
+        Back to Dashboard
+      </Button>
+      <PageHeader title="Add Company" description="Register a new company on the platform." />
 
-      {/* ── Header ── */}
-      <div style={{ width: "100%", maxWidth: 660, marginBottom: 24 }}>
-        {/* Back link */}
-        <button
-          onClick={() => router.push("/user/dashboard")}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 16, background: "none", border: "none", cursor: "pointer", color: C.hint, fontSize: "0.82rem", fontFamily: "'DM Sans', 'Segoe UI', sans-serif", padding: 0 }}
-        >
-          
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12,  background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0, boxShadow: "none" }}>🏢</div>
-          <h1 style={{ margin: 0, fontWeight: 800, fontSize: "1.55rem", color: C.heading, letterSpacing: "-0.02em" }}>Add Company</h1>
-        </div>
-        <p style={{ margin: 0, paddingLeft: 56, fontSize: "0.875rem", color: C.hint }}>Register a new company on the platform.</p>
-      </div>
-
-      {/* ── Toast ── */}
       {saved && (
-        <div style={{ width: "100%", maxWidth: 660, marginBottom: 18, padding: "12px 18px", borderRadius: 10, background: "rgba(34,197,94,.12)", border: "1px solid rgba(34,197,94,.3)", color: "#16a34a", fontSize: "0.875rem", fontWeight: 600 }}>
-          ✓ Company saved! Returning to dashboard...
-        </div>
+        <Alert variant="success" className="mb-4" message="Company saved! Returning to dashboard..." />
       )}
 
-      {/* ── Card ── */}
-      <div style={{ width: "100%", maxWidth: 660, background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden", boxShadow: isDark ? "0 8px 36px rgba(0,0,0,.45)" : "0 8px 36px rgba(0,0,0,.09)", transition: "background .3s,border-color .3s" }}>
-
-        {/* stripe */}
-        <div style={{ height: 4, background: "linear-gradient(90deg,#059669,#10b981,#34d399)" }} />
-
-        <div style={{ padding: "32px 36px 36px" }}>
-
-          {/* Company Info */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <TextInput label="Company Name" required value={name} onChange={(e: any) => { setName(e.target.value); if (errors.name) setErrors(p => ({...p, name: ""})); }} error={errors.name} C={C} placeholder="e.g. Acme Corporation" />
-            <TextInput label="Company Email" required value={email} onChange={(e: any) => { setEmail(e.target.value); if (errors.email) setErrors(p => ({...p, email: ""})); }} error={errors.email} C={C} placeholder="hello@acme.com" type="email" />
-            <TextInput label="Company Phone" required value={phone} onChange={(e: any) => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({...p, phone: ""})); }} error={errors.phone} C={C} placeholder="e.g. +1 234 567 890" />
-            <TextInput label="Business ID" value={businessId} onChange={(e: any) => setBusinessId(e.target.value)} C={C} placeholder="e.g. BIZ-123" />
-            <TextInput label="Webhook URL" value={webhookUrl} onChange={(e: any) => setWebhookUrl(e.target.value)} C={C} placeholder="https://..." />
-            <TextInput label="Initial Credit" value={initialCredit} onChange={(e: any) => setInitialCredit(e.target.value)} C={C} placeholder="1000" type="number" />
+      <div className="space-y-4">
+        <Card>
+          <CardHeader icon={Building2} title="Company Information" divided />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Company Name" required value={name} error={errors.name} placeholder="e.g. Acme Corporation"
+              onChange={(e) => { setName(e.target.value); clearError("name"); }} />
+            <Input label="Company Email" required type="email" value={email} error={errors.email} placeholder="hello@acme.com"
+              onChange={(e) => { setEmail(e.target.value); clearError("email"); }} />
+            <Input label="Company Phone" required value={phone} error={errors.phone} placeholder="e.g. +1 234 567 890"
+              onChange={(e) => { setPhone(e.target.value); clearError("phone"); }} />
+            <Input label="Business ID" value={businessId} placeholder="e.g. BIZ-123" onChange={(e) => setBusinessId(e.target.value)} />
+            <Input label="Webhook URL" value={webhookUrl} placeholder="https://..." onChange={(e) => setWebhookUrl(e.target.value)} />
+            <Input label="Initial Credit" type="number" value={initialCredit} placeholder="1000" onChange={(e) => setInitialCredit(e.target.value)} />
           </div>
+        </Card>
 
-          <div style={{ height: 1, background: C.divider, margin: "10px 0 26px" }} />
-
-          {/* Admin User */}
-          <h3 style={{ margin: "0 0 16px", fontSize: "1.05rem", color: C.heading }}>Admin User Details</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <TextInput label="Admin Name" required value={adminName} onChange={(e: any) => { setAdminName(e.target.value); if (errors.adminName) setErrors(p => ({...p, adminName: ""})); }} error={errors.adminName} C={C} placeholder="Admin Name" />
-            <TextInput label="Admin Email" required value={adminEmail} onChange={(e: any) => { setAdminEmail(e.target.value); if (errors.adminEmail) setErrors(p => ({...p, adminEmail: ""})); }} error={errors.adminEmail} C={C} placeholder="admin@acme.com" type="email" />
-            <TextInput label="Admin Password" required value={adminPassword} onChange={(e: any) => { setAdminPassword(e.target.value); if (errors.adminPassword) setErrors(p => ({...p, adminPassword: ""})); }} error={errors.adminPassword} C={C} placeholder="••••••••" type="password" />
+        <Card>
+          <CardHeader icon={UserCog} title="Admin User Details" divided />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Admin Name" required value={adminName} error={errors.adminName} placeholder="Admin Name"
+              onChange={(e) => { setAdminName(e.target.value); clearError("adminName"); }} />
+            <Input label="Admin Email" required type="email" value={adminEmail} error={errors.adminEmail} placeholder="admin@acme.com"
+              onChange={(e) => { setAdminEmail(e.target.value); clearError("adminEmail"); }} />
+            <Input label="Admin Password" required type="password" value={adminPassword} error={errors.adminPassword} placeholder="••••••••"
+              onChange={(e) => { setAdminPassword(e.target.value); clearError("adminPassword"); }} />
           </div>
+        </Card>
 
-          <div style={{ height: 1, background: C.divider, margin: "10px 0 26px" }} />
-
-          {/* Logo */}
-          <div style={{ marginBottom: 26 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, fontSize: "0.9rem", color: C.label }}>Company Logo</span>
-              <span style={{ color: "#f87171" }}>*</span>
+        <Card>
+          <CardHeader icon={ImageIcon} title="Branding" divided />
+          <div className="space-y-6">
+            <div>
+              <p className="text-[0.8125rem] font-medium text-foreground">
+                Company Logo <span className="text-error">*</span>
+              </p>
+              <p className="mb-3 mt-0.5 text-xs text-muted-foreground">PNG, JPG, SVG up to 5MB · Recommended 200×200px</p>
+              <Zone
+                state={logo} label="logo" previewSize={80} error={!!errors.logo}
+                inputRef={logoRef} accept="image/*"
+                onChange={(e) => { onFileChange(e, setLogo); clearError("logo"); }}
+                onDrop={(e) => { onDrop(e, setLogo); clearError("logo"); }}
+                onDragOver={(e) => { e.preventDefault(); setLogo((p) => ({ ...p, dragging: true })); }}
+                onDragLeave={() => setLogo((p) => ({ ...p, dragging: false }))}
+                onRemove={() => { setLogo(empty()); if (logoRef.current) logoRef.current.value = ""; }}
+              />
+              {errors.logo && <p className="mt-1.5 text-xs text-error" role="alert">{errors.logo}</p>}
             </div>
-            <p style={{ margin: "2px 0 12px", fontSize: "0.75rem", color: C.hint }}>PNG, JPG, SVG up to 5MB · Recommended 200×200px</p>
-            <Zone
-              state={logo} C={C} isDark={isDark} label="logo" icon="🏢" previewSize={80} error={!!errors.logo}
-              inputRef={logoRef} accept="image/*"
-              onChange={e => { onFileChange(e, setLogo); if (errors.logo) setErrors(p => ({ ...p, logo: "" })); }}
-              onDrop={e   => { onDrop(e, setLogo);       if (errors.logo) setErrors(p => ({ ...p, logo: "" })); }}
-              onDragOver={e  => { e.preventDefault(); setLogo(p => ({ ...p, dragging: true })); }}
-              onDragLeave={() => setLogo(p  => ({ ...p, dragging: false }))}
-              onRemove={() => { setLogo(empty()); if (logoRef.current) logoRef.current.value = ""; }}
-            />
-            {errors.logo && <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: "#f87171" }}>⚠ {errors.logo}</p>}
-          </div>
 
-          <div style={{ height: 1, background: C.divider, marginBottom: 26 }} />
-
-          {/* Favicon */}
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, fontSize: "0.9rem", color: C.label }}>Favicon</span>
-              <span style={{ fontSize: "0.72rem", color: C.hint }}>(optional)</span>
+            <div>
+              <p className="text-[0.8125rem] font-medium text-foreground">
+                Favicon <span className="font-normal text-muted-foreground">(optional)</span>
+              </p>
+              <p className="mb-3 mt-0.5 text-xs text-muted-foreground">ICO, PNG up to 1MB · Recommended 32×32px</p>
+              <Zone
+                state={favicon} label="favicon" previewSize={48} error={false}
+                inputRef={faviconRef} accept=".ico,image/png,image/x-icon"
+                onChange={(e) => onFileChange(e, setFavicon)}
+                onDrop={(e) => onDrop(e, setFavicon)}
+                onDragOver={(e) => { e.preventDefault(); setFavicon((p) => ({ ...p, dragging: true })); }}
+                onDragLeave={() => setFavicon((p) => ({ ...p, dragging: false }))}
+                onRemove={() => { setFavicon(empty()); if (faviconRef.current) faviconRef.current.value = ""; }}
+              />
             </div>
-            <p style={{ margin: "2px 0 12px", fontSize: "0.75rem", color: C.hint }}>ICO, PNG up to 1MB · Recommended 32×32px</p>
-            <Zone
-              state={favicon} C={C} isDark={isDark} label="favicon" icon="🌐" previewSize={48} error={false}
-              inputRef={faviconRef} accept=".ico,image/png,image/x-icon"
-              onChange={e => onFileChange(e, setFavicon)}
-              onDrop={e   => onDrop(e, setFavicon)}
-              onDragOver={e  => { e.preventDefault(); setFavicon(p => ({ ...p, dragging: true })); }}
-              onDragLeave={() => setFavicon(p => ({ ...p, dragging: false }))}
-              onRemove={() => { setFavicon(empty()); if (faviconRef.current) faviconRef.current.value = ""; }}
-            />
           </div>
+        </Card>
 
-          {/* Buttons */}
-          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-            {/* ── Cancel → back to dashboard ── */}
-            <BtnCancel onClick={handleCancel} C={C} />
-            <BtnSave   onClick={handleSave}   saving={saving} />
-          </div>
-
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} isLoading={saving} leftIcon={<Save size={15} />}>
+            Save Company
+          </Button>
         </div>
       </div>
-
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -256,168 +227,68 @@ interface ZoneProps {
   onDragLeave: () => void;
   onRemove: () => void;
   inputRef: React.MutableRefObject<HTMLInputElement | null>;
-  accept: string; label: string; icon: string;
-  isDark: boolean; error: boolean; previewSize: number;
-  C: Record<string, string>;
+  accept: string;
+  label: string;
+  error: boolean;
+  previewSize: number;
 }
 
-function Zone({ state, onChange, onDrop, onDragOver, onDragLeave, onRemove, inputRef, accept, label, icon, isDark, error, previewSize, C }: ZoneProps) {
-  const zoneBorder = error ? "#f87171" : state.dragging ? "#3b5bdb" : C.border;
-  const zoneBg     = state.dragging ? (isDark ? "rgba(59,91,219,.1)" : "rgba(59,91,219,.05)") : (isDark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)");
-
+function Zone({ state, onChange, onDrop, onDragOver, onDragLeave, onRemove, inputRef, accept, label, error, previewSize }: ZoneProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-      <div onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave} onClick={() => inputRef.current?.click()}
-        style={{ flex: 1, minWidth: 200, minHeight: 110, border: `2px dashed ${zoneBorder}`, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", background: zoneBg, transition: "all .2s" }}>
-        <span style={{ fontSize: "1.8rem", opacity: .5 }}>📂</span>
-        <div style={{ textAlign: "center" }}>
-          <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600, color: C.dropText }}>
-            Drag & drop or <span style={{ color: "#34c38a", textDecoration: "underline" }}>choose file</span>
-          </p>
-          <p style={{ margin: "3px 0 0", fontSize: "0.72rem", color: C.dropSub }}>for {label}</p>
-        </div>
-        <input ref={inputRef} type="file" accept={accept} onChange={onChange} style={{ display: "none" }} />
+    <div className="flex flex-wrap items-center gap-5">
+      <div
+        role="button"
+        tabIndex={0}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
+        className={cn(
+          "flex min-h-[110px] min-w-[200px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 text-center transition-colors",
+          error
+            ? "border-error bg-error-bg"
+            : state.dragging
+              ? "border-primary bg-primary-lighter"
+              : "border-border-strong bg-surface-muted hover:border-primary-soft hover:bg-primary-lighter",
+        )}
+      >
+        <UploadCloud size={22} className="text-muted-foreground" />
+        <p className="text-[0.8125rem] font-medium text-secondary-foreground">
+          Drag & drop or <span className="text-primary-text underline">choose file</span>
+        </p>
+        <p className="text-xs text-muted-foreground">for {label}</p>
+        <input ref={inputRef} type="file" accept={accept} onChange={onChange} className="hidden" />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: "0.68rem", fontWeight: 700, color: C.prevLbl, letterSpacing: "0.08em", textTransform: "uppercase" }}>Preview</span>
-        <div style={{ width: previewSize + 20, height: previewSize + 20, borderRadius: previewSize <= 48 ? 9 : 14, border: `1.5px solid ${C.border}`, background: C.prevBox, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", transition: "all .3s" }}>
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-[0.6875rem] font-medium uppercase tracking-wider text-muted-foreground">Preview</span>
+        <div
+          className="relative flex items-center justify-center overflow-hidden rounded-lg border border-border bg-surface-muted"
+          style={{ width: previewSize + 20, height: previewSize + 20 }}
+        >
           {state.preview ? (
             <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={state.preview} alt="preview" style={{ width: previewSize, height: previewSize, objectFit: "contain" }} />
-              <button onClick={e => { e.stopPropagation(); onRemove(); }}
-                style={{ position: "absolute", top: 4, right: 4, width: 18, height: 18, borderRadius: "50%", background: "rgba(239,68,68,.9)", border: "none", color: "#fff", fontSize: "0.5rem", cursor: "pointer", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <button
+                type="button"
+                aria-label={`Remove ${label}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove();
+                }}
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-error text-error-foreground"
+              >
+                <X size={11} />
+              </button>
             </>
           ) : (
-            <span style={{ fontSize: previewSize <= 48 ? "1.4rem" : "2rem", opacity: .15 }}>{icon}</span>
+            <ImageIcon size={previewSize <= 48 ? 18 : 26} className="text-disabled-foreground" />
           )}
         </div>
-        {state.file && <span style={{ fontSize: "0.68rem", color: C.hint, maxWidth: 110, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{state.file.name}</span>}
+        {state.file && <span className="max-w-[110px] truncate text-center text-[0.6875rem] text-muted-foreground">{state.file.name}</span>}
       </div>
-    </div>
-  );
-}
-
-/* ── Buttons ─────────────────────────────────────────────────── */
-function BtnCancel({
-  onClick,
-  C,
-}: {
-  onClick: () => void;
-  C: Record<string, string>;
-}) {
-  const [hov, setHov] = useState(false);
-
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        padding: "10px 26px",
-        borderRadius: 10,
-        fontSize: "0.875rem",
-        fontWeight: 600,
-        cursor: "pointer",
-        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-        background: hov
-          ? "rgba(16,185,129,0.08)"
-          : "transparent",
-        border: `1.5px solid ${
-          hov ? "#10b981" : C.border
-        }`,
-        color: hov ? "#10b981" : C.label,
-        transition: "all .18s ease",
-      }}
-    >
-      Cancel
-    </button>
-  );
-}
-
-function BtnSave({
-  onClick,
-  saving,
-}: {
-  onClick: () => void;
-  saving: boolean;
-}) {
-  const [hov, setHov] = useState(false);
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={saving}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        padding: "10px 28px",
-        borderRadius: 10,
-        fontSize: "0.875rem",
-        fontWeight: 700,
-        cursor: saving ? "not-allowed" : "pointer",
-        border: "none",
-        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        transition: "all .18s ease",
-
-        background: saving
-          ? "#4b5563"
-          : hov
-          ? "linear-gradient(135deg,#059669,#10b981)"
-          : "linear-gradient(135deg,#10b981,#34d399)",
-
-        boxShadow: saving
-          ? "none"
-          : hov
-          ? "0 10px 24px rgba(16,185,129,0.35)"
-          : "0 6px 18px rgba(16,185,129,0.24)",
-
-        transform: hov && !saving
-          ? "translateY(-1px)"
-          : "translateY(0)",
-      }}
-    >
-      {saving ? (
-        <>
-          <span
-            style={{
-              width: 13,
-              height: 13,
-              borderRadius: "50%",
-              border: "2px solid rgba(255,255,255,.3)",
-              borderTop: "2px solid #fff",
-              display: "inline-block",
-              animation: "spin .8s linear infinite",
-            }}
-          />
-          Saving...
-        </>
-      ) : (
-        <>💾 Save Company</>
-      )}
-    </button>
-  );
-}
-
-/* ── Text Input ──────────────────────────────────────────────── */
-function TextInput({ label, required = false, type = "text", placeholder, value, onChange, error, C }: any) {
-  const [focus, setFocus] = useState(false);
-  return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
-        <span style={{ fontWeight: 700, fontSize: "0.9rem", color: C.label }}>{label}</span>
-        {required && <span style={{ color: "#f87171" }}>*</span>}
-      </div>
-      <input
-        type={type} placeholder={placeholder} value={value}
-        onChange={onChange} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
-        style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 9, border: `1.5px solid ${error ? "#f87171" : focus ? "#3b5bdb" : C.border}`, background: C.inputBg, color: C.inputClr, fontSize: "0.9rem", fontFamily: "'Inter', sans-serif", outline: "none", transition: "border .2s" }}
-      />
-      {error && <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "#f87171" }}>⚠ {error}</p>}
     </div>
   );
 }

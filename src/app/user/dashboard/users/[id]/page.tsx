@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTheme, tokens } from "../../../../../context/ThemeContext";
+import { ArrowLeft, User as UserIcon } from "lucide-react";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Alert from "@/components/ui/Alert";
+import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 
 interface UserDetails {
   id: string;
@@ -43,15 +51,6 @@ interface UserDetailsResponse {
   error?: string | null;
 }
 
-function toInitials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -74,8 +73,6 @@ function boolText(value: boolean) {
 export default function DashboardUserDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
 
   const userId = useMemo(() => {
     const raw = params?.id;
@@ -175,101 +172,43 @@ export default function DashboardUserDetailsPage() {
     : [];
 
   return (
-    <div style={{ padding: "28px 28px 48px", background: t.bg, minHeight: "100%", transition: "background 0.3s ease" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: "1.45rem", color: t.text, margin: 0, letterSpacing: "-0.02em" }}>
-            User Details
-          </h1>
-          <p style={{ margin: "6px 0 0", fontSize: "0.875rem", color: t.textMuted }}>
-            Complete information for selected user.
-          </p>
-        </div>
-
-        <button
-          onClick={handleBack}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "7px",
-            padding: "9px 14px",
-            borderRadius: "9px",
-            border: `1px solid ${t.border}`,
-            background: t.surface,
-            color: t.textSub,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          ← Back
-        </button>
-      </div>
+    <PageContainer>
+      <Button variant="ghost" size="sm" className="-ml-2 mb-3" leftIcon={<ArrowLeft size={15} />} onClick={handleBack}>
+        Back
+      </Button>
+      <PageHeader title="User Details" description="Complete information for selected user." />
 
       {loading ? (
-        <div style={{ padding: "24px", borderRadius: "14px", border: `1px solid ${t.border}`, background: t.surface, color: t.textMuted }}>
-          Loading user details...
-        </div>
+        <Skeleton className="h-96 w-full rounded-xl" />
       ) : error ? (
-        <div style={{ padding: "24px", borderRadius: "14px", border: `1px solid ${t.border}`, background: t.surface, color: t.textMuted }}>
-          {error}
-        </div>
+        <Alert variant="error" message={error} />
       ) : user ? (
-        <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: "14px", overflow: "hidden" }}>
-          <div style={{ padding: "18px 20px", borderBottom: `1px solid ${t.border}`, display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "10px",
-                background: "linear-gradient(135deg,#3b5bdb,#6741d9)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: "0.8rem",
-                flexShrink: 0,
-              }}
-            >
-              {toInitials(user.name)}
+        <Card padding="none" className="overflow-hidden">
+          <div className="flex items-center gap-3 border-b border-border-subtle px-5 py-4">
+            <Avatar name={user.name} src={user.image} size="md" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-foreground">{user.name}</p>
+              <p className="truncate text-[0.8125rem] text-muted-foreground">{user.email}</p>
             </div>
-            <div>
-              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: t.text }}>{user.name}</div>
-              <div style={{ fontSize: "0.8rem", color: t.textMuted }}>{user.email}</div>
-            </div>
+            <Badge variant={user.isActive ? "success" : "neutral"} dot>
+              {user.status}
+            </Badge>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-              gap: "0",
-            }}
-          >
-            {details.map(([label, value], index) => (
-              <div
-                key={label}
-                style={{
-                  padding: "14px 20px",
-                  borderTop: index < 2 ? "none" : `1px solid ${t.border}`,
-                  borderRight: index % 2 === 0 ? `1px solid ${t.border}` : "none",
-                }}
-              >
-                <div style={{ fontSize: "0.7rem", letterSpacing: "0.08em", color: t.textFaint, fontWeight: 700, marginBottom: "6px" }}>
-                  {label.toUpperCase()}
-                </div>
-                <div style={{ fontSize: "0.88rem", color: t.textSub, fontWeight: 500 }}>{value}</div>
+          <dl className="grid grid-cols-1 gap-px bg-border-subtle sm:grid-cols-2">
+            {details.map(([label, value]) => (
+              <div key={label} className="bg-surface px-5 py-3">
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd className="mt-0.5 break-words text-sm text-foreground">{value}</dd>
               </div>
             ))}
-          </div>
-        </div>
+          </dl>
+        </Card>
       ) : (
-        <div style={{ padding: "24px", borderRadius: "14px", border: `1px solid ${t.border}`, background: t.surface, color: t.textMuted }}>
-          User not found.
-        </div>
+        <Card padding="none">
+          <EmptyState icon={<UserIcon size={20} />} title="User not found." />
+        </Card>
       )}
-    </div>
+    </PageContainer>
   );
 }

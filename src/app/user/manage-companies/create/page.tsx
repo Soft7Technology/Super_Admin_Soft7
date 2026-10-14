@@ -10,12 +10,22 @@ import { axiosInstance } from "@/lib/axiosInstance";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, Building2, Eye, EyeOff, Plus, UserCog } from "lucide-react";
 
-import "../manage-companies.css";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader } from "@/components/ui/Card";
+import Field from "@/components/ui/Field";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/Textarea";
+import { useTheme } from "@/context/ThemeContext";
+import { phoneButtonStyle, phoneDropdownStyle, phoneInputStyle } from "../phoneInputStyles";
 
 export default function CreateCompanyPage() {
   const router = useRouter();
+  const { isDark } = useTheme();
+
 
   // Company
   const [name, setName] = useState("");
@@ -187,346 +197,170 @@ export default function CreateCompanyPage() {
   };
 
   return (
-    <div className="mc-root">
-      {/* HEADER */}
-      <div className="mc-header">
-        <div>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "transparent",
-              border: "none",
-              color: "var(--mc-muted)",
-              cursor: "pointer",
-              padding: 0,
-              marginBottom: 10,
-              fontSize: 13,
-            }}
-          >
-            <ArrowLeft size={16} />
-            Back to Companies
-          </button>
-
-          <h1 className="mc-header__title">Create Company</h1>
-
-          <p className="mc-header__sub">
-            Create a new company and its administrator.
-          </p>
-        </div>
-      </div>
-
-      <div
-        style={{
-          maxWidth: 1000,
-          margin: "0 auto",
-        }}
+    <PageContainer width="narrow">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 mb-3"
+        leftIcon={<ArrowLeft size={15} />}
+        onClick={() => router.back()}
       >
-        {err && (
-          <div
-            className="mc-error-banner"
-            role="alert"
-            style={{ marginBottom: 20 }}
-          >
-            <AlertCircle size={18} className="mc-error-banner__icon" />
+        Back to Companies
+      </Button>
+      <PageHeader
+        title="Create Company"
+        description="Create a new company and its administrator."
+      />
 
-            <span className="mc-error-banner__text">{err}</span>
+      {err && (
+        <Alert
+          variant="error"
+          className="mb-4"
+          message={err}
+          onClose={() => setErr(null)}
+        />
+      )}
 
-            <button
-              type="button"
-              className="mc-error-banner__close"
-              onClick={() => setErr(null)}
-            >
-              ×
-            </button>
-          </div>
-        )}
-
+      <div className="space-y-4">
         {/* COMPANY DETAILS */}
-        <div
-          className="mc-modal"
-          style={{
-            width: "100%",
-            maxWidth: "none",
-          }}
-        >
-          <div className="mc-modal__header">
-            <div>
-              <div className="mc-modal__title">Company Details</div>
+        <Card>
+          <CardHeader
+            icon={Building2}
+            title="Company Details"
+            description="Enter the basic company information."
+            divided
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Company Name"
+              required
+              placeholder="Example Company"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-              <div className="mc-modal__sub">
-                Enter the basic company information.
-              </div>
-            </div>
-          </div>
+            <Input
+              label="Company Email"
+              required
+              type="email"
+              placeholder="company@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-          <div className="mc-modal__body">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: 18,
-              }}
-            >
-              <div className="mc-field">
-                <div className="mc-field__label">COMPANY NAME *</div>
-
-                <input
-                  className="mc-input"
-                  placeholder="Example Company"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">COMPANY EMAIL *</div>
-
-                <input
-                  className="mc-input"
-                  type="email"
-                  placeholder="company@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">COMPANY PHONE *</div>
-
-                <PhoneInput
-                  country="in"
-                  value={phone}
-                  onChange={setPhone}
-                  enableSearch
-                  searchPlaceholder="Search country..."
-                  placeholder="Enter phone number"
-                  isValid={(value) => {
-                    const valid = value.replace(/\D/g, "").length >= 10;
-                    setPhoneValid(valid);
-                    return valid;
-                  }}
-                  inputStyle={{
-                    width: "100%",
-                    height: "48px",
-                    background: "#12182b",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px",
-                    paddingLeft: "55px",
-                  }}
-                  buttonStyle={{
-                    background: "#12182b",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px 0 0 10px",
-                  }}
-                  dropdownStyle={{
-                    background: "#1b2338",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    maxHeight: "250px",
-                  }}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">BUSINESS ID *</div>
-
-                <input
-                  className="mc-input"
-                  placeholder="BUSINESS123"
-                  value={businessId}
-                  onChange={(e) => setBusinessId(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="mc-field">
-              <div className="mc-field__label">REASON *</div>
-
-              <textarea
-                className="mc-input"
-                placeholder="Approved company onboarding"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={4}
-                style={{
-                  resize: "vertical",
-                  minHeight: 100,
+            <Field label="Company Phone" required>
+              <PhoneInput
+                country="in"
+                value={phone}
+                onChange={setPhone}
+                enableSearch
+                searchPlaceholder="Search country..."
+                placeholder="Enter phone number"
+                isValid={(value) => {
+                  const valid = value.replace(/\D/g, "").length >= 10;
+                  setPhoneValid(valid);
+                  return valid;
                 }}
+                inputStyle={phoneInputStyle}
+                buttonStyle={phoneButtonStyle}
+                dropdownStyle={phoneDropdownStyle}
               />
-            </div>
+            </Field>
+
+            <Input
+              label="Business ID"
+              required
+              placeholder="BUSINESS123"
+              value={businessId}
+              onChange={(e) => setBusinessId(e.target.value)}
+            />
+
+            <Textarea
+              wrapperClassName="sm:col-span-2"
+              label="Reason"
+              required
+              placeholder="Approved company onboarding"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              className="min-h-[100px] resize-y"
+            />
           </div>
-        </div>
+        </Card>
 
         {/* COMPANY ADMIN */}
-        <div
-          className="mc-modal"
-          style={{
-            width: "100%",
-            maxWidth: "none",
-            marginTop: 20,
-          }}
-        >
-          <div className="mc-modal__header">
-            <div>
-              <div className="mc-modal__title">Company Admin</div>
+        <Card>
+          <CardHeader
+            icon={UserCog}
+            title="Company Admin"
+            description="Create the administrator account for this company."
+            divided
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Admin Name"
+              required
+              placeholder="Company Admin"
+              value={adminName}
+              onChange={(e) => setAdminName(e.target.value)}
+            />
 
-              <div className="mc-modal__sub">
-                Create the administrator account for this company.
-              </div>
-            </div>
-          </div>
+            <Input
+              label="Admin Email"
+              required
+              type="email"
+              placeholder="admin@example.com"
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+            />
 
-          <div className="mc-modal__body">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: 18,
-              }}
-            >
-              <div className="mc-field">
-                <div className="mc-field__label">ADMIN NAME *</div>
+            <Field label="Admin Phone" required>
+              <PhoneInput
+                country="in"
+                value={adminPhone}
+                onChange={setAdminPhone}
+                enableSearch
+                searchPlaceholder="Search country..."
+                placeholder="Enter phone number"
+                isValid={(value) => {
+                  const valid = value.replace(/\D/g, "").length >= 10;
+                  setAdminPhoneValid(valid);
+                  return valid;
+                }}
+                inputStyle={phoneInputStyle}
+                buttonStyle={phoneButtonStyle}
+                dropdownStyle={phoneDropdownStyle}
+              />
+            </Field>
 
-                <input
-                  className="mc-input"
-                  placeholder="Company Admin"
-                  value={adminName}
-                  onChange={(e) => setAdminName(e.target.value)}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">ADMIN EMAIL *</div>
-
-                <input
-                  className="mc-input"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">ADMIN PHONE *</div>
-
-                <PhoneInput
-                  country="in"
-                  value={adminPhone}
-                  onChange={setAdminPhone}
-                  enableSearch
-                  searchPlaceholder="Search country..."
-                  placeholder="Enter phone number"
-                  isValid={(value) => {
-                    const valid = value.replace(/\D/g, "").length >= 10;
-                    setAdminPhoneValid(valid);
-                    return valid;
-                  }}
-                  inputStyle={{
-                    width: "100%",
-                    height: "48px",
-                    background: "#12182b",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px",
-                    paddingLeft: "55px",
-                  }}
-                  buttonStyle={{
-                    background: "#12182b",
-                    border: "1px solid #2c3657",
-                    borderRadius: "10px 0 0 10px",
-                  }}
-                  dropdownStyle={{
-                    background: "#1b2338",
-                    color: "#fff",
-                    border: "1px solid #2c3657",
-                    maxHeight: "250px",
-                  }}
-                />
-              </div>
-
-              <div className="mc-field">
-                <div className="mc-field__label">PASSWORD *</div>
-
-                <div
-                  style={{
-                    position: "relative",
-                  }}
+            <Input
+              label="Password"
+              required
+              type={showPassword ? "text" : "password"}
+              placeholder="Min 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              rightIcon={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="pointer-events-auto flex items-center text-muted-foreground hover:text-foreground"
                 >
-                  <input
-                    className="mc-input"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{
-                      paddingRight: 48,
-                    }}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      border: "none",
-                      background: "transparent",
-                      color: "#9ca3af",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="mc-modal__divider" />
-
-            <div
-              className="mc-modal__actions"
-              style={{
-                justifyContent: "flex-end",
-              }}
-            >
-              <button
-                type="button"
-                className="mc-btn mc-btn--ghost"
-                onClick={() => router.back()}
-                style={{
-                  width: "auto",
-                  minWidth: 100,
-                  padding: "9px 16px",
-                  flex: "0 0 auto",
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                className="mc-btn mc-btn--primary"
-                onClick={handleSubmit}
-                disabled={saving}
-                style={{
-                  width: "auto",
-                  minWidth: 130,
-                  padding: "9px 16px",
-                  flex: "0 0 auto",
-                }}
-              >
-                {saving ? "Creating…" : "Create Company"}
-              </button>
-            </div>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              }
+            />
           </div>
+        </Card>
+
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => router.back()}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} isLoading={saving} leftIcon={<Plus size={15} />}>
+            Create Company
+          </Button>
         </div>
       </div>
 
@@ -537,8 +371,8 @@ export default function CreateCompanyPage() {
         newestOnTop
         closeOnClick
         pauseOnHover
-        theme="dark"
+        theme={isDark ? "dark" : "light"}
       />
-    </div>
+    </PageContainer>
   );
 }

@@ -1,5 +1,11 @@
 "use client";
 
+import { Search } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import Input from "@/components/ui/Input";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import Select from "@/components/ui/Select";
+
 interface FilterBarProps {
   search: string;
   onSearchChange: (value: string) => void;
@@ -19,6 +25,11 @@ interface FilterBarProps {
 const STATUS_FILTERS = ["ALL", "ACTIVE", "INACTIVE", "SUSPENDED"];
 const ROLE_FILTERS   = ["ALL", "Admin", "User"];
 
+const SORT_OPTIONS = [
+  { value: "name", label: "Name A–Z" },
+  { value: "msgs", label: "Most Messages" },
+];
+
 export function FilterBar({
   search, onSearchChange,
   status, onStatusChange,
@@ -28,65 +39,55 @@ export function FilterBar({
   rightSlot,
 }: FilterBarProps) {
   return (
-    <div className="au-filter-bar">
-      {/* Search */}
-      <div className="au-search-wrap">
-        <span className="mc-search-icon">🔍</span>
-        <input
-          className="au-search-input"
+    <Card padding="sm" className="mb-4">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Search */}
+        <Input
+          wrapperClassName="min-w-0 flex-[1_1_14rem]"
+          leftIcon={<Search size={15} />}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search name, email, domain..."
+          aria-label="Search users"
         />
-      </div>
 
-      {/* Status pills */}
-      <div className="au-filter-group">
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => onStatusChange(f)}
-            className={`au-filter-pill ${status === f ? "au-filter-pill--active" : ""}`}
-          >
-            {f === "ALL" ? "All" : f[0] + f.slice(1).toLowerCase()}
-          </button>
-        ))}
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status */}
+          <SegmentedControl
+            aria-label="Filter by status"
+            value={status}
+            onChange={onStatusChange}
+            options={STATUS_FILTERS.map((f) => ({
+              value: f,
+              label: f === "ALL" ? "All" : f[0] + f.slice(1).toLowerCase(),
+            }))}
+          />
 
-      {/* Role pills */}
-      <div className="au-filter-group">
-        {ROLE_FILTERS.map((r) => (
-          <button
-            key={r}
-            onClick={() => onRoleChange(r)}
-            className={`au-filter-pill au-filter-pill--role ${role === r ? "au-filter-pill--active" : ""}`}
-          >
-            {r === "ALL" ? "All Roles" : r}
-          </button>
-        ))}
-      </div>
+          {/* Role */}
+          <SegmentedControl
+            aria-label="Filter by role"
+            value={role}
+            onChange={onRoleChange}
+            options={ROLE_FILTERS.map((r) => ({ value: r, label: r === "ALL" ? "All Roles" : r }))}
+          />
 
-      {/* Sort */}
-      <select
-        className="au-sort-select"
-        value={sort}
-        onChange={(e) => onSortChange(e.target.value)}
-      >
-        <option value="name">Name A–Z</option>
-        <option value="msgs">Most Messages</option>
-      </select>
+          {/* Sort */}
+          <Select
+            aria-label="Sort users"
+            wrapperClassName="w-44"
+            value={sort}
+            onChange={(e) => onSortChange(e.target.value)}
+            options={SORT_OPTIONS}
+          />
+        </div>
 
-      <span className="au-filter-count">
-        {loading ? "…" : `${count} users`}
-      </span>
-
-      {/* Select All / bulk-delete toolbar — pushed to the far right of the
-          same row, right after the users count */}
-      {rightSlot && (
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
+        <div className="flex items-center gap-3">
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            {loading ? "…" : `${count} users`}
+          </span>
           {rightSlot}
         </div>
-      )}
-    </div>
+      </div>
+    </Card>
   );
 }

@@ -3,8 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { axiosInstance } from "@/lib/axiosInstance";
-import "./all-user.css";
-import { User, UserStats, roleColor, planColor } from "./types";
+import { User, UserStats, planVariant, roleVariant } from "./types";
 
 import { Badge } from "./components/Badge";
 import { useUsers } from "./hooks/useUsers";
@@ -17,14 +16,31 @@ import {
   Eye,
   Pencil,
   KeyRound,
+  Shield,
   ShieldOff,
   ShieldCheck,
+  Star,
   Trash2,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Alert from "@/components/ui/Alert";
+import Avatar from "@/components/ui/Avatar";
+import KitBadge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
+import IconButton from "@/components/ui/IconButton";
+import Pagination from "@/components/ui/Pagination";
+import Table from "@/components/ui/Table";
+import type { Column } from "@/components/ui/Table";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function AllUsers() {
+  const { isDark } = useTheme();
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
   const [role, setRole] = useState("ALL");
@@ -205,45 +221,127 @@ export default function AllUsers() {
     setCurrentPage(1);
   };
 
-  return (
-    <div className="au-root">
-      {/* Header */}
-      <div className="au-header">
-        <div>
-          <h1 className="au-header__title">All Users</h1>
-          <p className="au-header__subtitle">
-            All platform users across every company
-          </p>
+  const allSelected = sortedUsers.length > 0 && selectedUsers.length === sortedUsers.length;
+
+  const columns: Column<User>[] = [
+    {
+      key: "select",
+      width: "48px",
+      header: <Checkbox aria-label="Select all users" checked={allSelected} onChange={handleSelectAll} />,
+      render: (user) => (
+        <Checkbox
+          aria-label={`Select ${user.name}`}
+          checked={selectedUsers.includes(user.id)}
+          onChange={() => handleSelectUser(user.id)}
+        />
+      ),
+    },
+    {
+      key: "name",
+      header: "User",
+      render: (user) => (
+        <Link
+          href={`/user/all-user/${user.id}`}
+          onClick={() => {
+            try {
+              sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
+              sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
+            } catch {}
+          }}
+          className="group flex max-w-[12rem] items-center gap-3"
+          title={`View profile of ${user.name}`}
+        >
+          <Avatar name={user.name} size="sm" />
+          <span className="truncate font-medium text-foreground group-hover:text-primary-text group-hover:underline">
+            {user.name}
+          </span>
+        </Link>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email",
+      render: (user) => <span className="block max-w-[15rem] truncate text-secondary-foreground">{user.email}</span>,
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      render: (user) => <span className="tabular-nums text-secondary-foreground">{user.phone || "-"}</span>,
+    },
+    {
+      key: "role",
+      header: "Role",
+      render: (user) => <KitBadge variant={roleVariant(user.role)}>{user.role}</KitBadge>,
+    },
+    {
+      key: "plan",
+      header: "Plan",
+      render: (user) => <KitBadge variant={planVariant(user.plan)}>{user.plan}</KitBadge>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (user) => <Badge status={user.status} />,
+    },
+    {
+      key: "joined",
+      header: "Joined",
+      render: (user) => <span className="text-muted-foreground">{user.joined}</span>,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      render: (user) => (
+        <div className="flex items-center justify-end gap-1">
+          <IconButton size="sm" aria-label="View Details" icon={<Eye size={15} />} onClick={() => setDetail(user)} />
+          <IconButton size="sm" aria-label="Edit User" icon={<Pencil size={15} />} onClick={() => setEditUser(user)} />
+          <IconButton size="sm" aria-label="Reset Password" icon={<KeyRound size={15} />} onClick={() => setPasswordUser(user)} />
+          {user.status === "SUSPENDED" ? (
+            <IconButton
+              size="sm"
+              aria-label="Restore Account"
+              icon={<ShieldCheck size={15} />}
+              className="text-success hover:bg-success-bg"
+              disabled={suspendingId === user.id}
+              onClick={() => handleSuspendToggle(user)}
+            />
+          ) : (
+            <IconButton
+              size="sm"
+              aria-label="Suspend User"
+              icon={<ShieldOff size={15} />}
+              className="text-warning hover:bg-warning-bg"
+              disabled={suspendingId === user.id}
+              onClick={() => handleSuspendToggle(user)}
+            />
+          )}
+          <IconButton
+            size="sm"
+            aria-label="Delete User"
+            icon={<Trash2 size={15} />}
+            className="text-error hover:bg-error-bg"
+            disabled={deletingId === user.id}
+            onClick={() => handleDeleteUser(user)}
+          />
         </div>
-      </div>
+      ),
+    },
+  ];
+
+  return (
+    <PageContainer>
+      <PageHeader title="All Users" description="All platform users across every company" />
 
       {/* KPIs */}
-      <div className="au-kpi-grid">
-        <KPI
-          label="Total Users"
-          value={stats.totalUsers.toLocaleString()}
-          icon="👥"
-          color="#2bc386"
-        />
-        <KPI
-          label="Active Users"
-          value={stats.activeUsers.toLocaleString()}
-          icon="✅"
-          color="#34d399"
-        />
-        <KPI
-          label="Admin Users"
-          value={stats.adminUsers.toLocaleString()}
-          icon="🛡"
-          color="#6366f1"
-        />
-        <KPI
-          label="Premium Users"
-          value={stats.premiumUsers.toLocaleString()}
-          icon="⭐"
-          color="#f59e0b"
-        />
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KPI label="Total Users" value={stats.totalUsers.toLocaleString()} icon={<Users size={18} />} />
+        <KPI label="Active Users" value={stats.activeUsers.toLocaleString()} icon={<UserCheck size={18} />} tone="success" />
+        <KPI label="Admin Users" value={stats.adminUsers.toLocaleString()} icon={<Shield size={18} />} tone="info" />
+        <KPI label="Premium Users" value={stats.premiumUsers.toLocaleString()} icon={<Star size={18} />} tone="warning" />
       </div>
+
+      {error && <Alert variant="error" className="mb-4" message={error} />}
 
       {/* Filters, with Select All / bulk-delete pinned to the right of the same row */}
       <FilterBar
@@ -258,246 +356,46 @@ export default function AllUsers() {
         count={filteredUsers.length}
         loading={loading}
         rightSlot={
-          <div
-            className="au-selection-toolbar"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              margin: 0,
-              padding: 0,
-            }}
-          >
+          <div className="flex items-center gap-3">
             {selectedUsers.length > 0 && (
-              <button
-                className="au-btn au-btn--danger au-btn--bulk-delete"
-                onClick={handleDeleteSelected}
-              >
+              <Button variant="danger" size="sm" leftIcon={<Trash2 size={14} />} onClick={handleDeleteSelected}>
                 Delete Selected ({selectedUsers.length})
-              </button>
+              </Button>
             )}
-            <label className="au-select-all" style={{ margin: 0 }}>
-              <input
-                type="checkbox"
-                checked={
-                  sortedUsers.length > 0 &&
-                  selectedUsers.length === sortedUsers.length
-                }
-                onChange={handleSelectAll}
-              />
-              Select All
-            </label>
+            <Checkbox label="Select All" checked={allSelected} onChange={handleSelectAll} />
           </div>
         }
       />
 
-      {/* Grid */}
-      <div
-        className={`au-main-grid ${
-          detail ? "au-main-grid--panel" : "au-main-grid--full"
-        }`}
-      >
-        <div className="au-table-wrapper">
-          <table className="au-table">
-            <thead>
-              <tr>
-                <th style={{ width: "50px" }}>
-                  <input
-                    type="checkbox"
-                    checked={
-                      sortedUsers.length > 0 &&
-                      selectedUsers.length === sortedUsers.length
-                    }
-                    onChange={handleSelectAll}
-                  />
-                </th>
-                <th style={{ width: "180px", maxWidth: "180px" }}>USER</th>
-                <th style={{ width: "240px", maxWidth: "240px" }}>EMAIL</th>
-                <th style={{ width: "150px" }}>PHONE</th>
-                <th style={{ width: "100px" }}>ROLE</th>
-                <th style={{ width: "120px" }}>PLAN</th>
-                <th style={{ width: "120px" }}>STATUS</th>
-                <th style={{ width: "120px" }}>JOINED</th>
-                <th style={{ width: "260px", minWidth: "260px" }}>ACTIONS</th>
-              </tr>
-            </thead>
+      <Table
+        columns={columns}
+        data={sortedUsers}
+        rowKey={(user) => user.id}
+        loading={loading}
+        emptyMessage="No users match your filters"
+      />
 
-            <tbody>
-              {sortedUsers.length > 0 ? (
-                sortedUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.id)}
-                        onChange={() => handleSelectUser(user.id)}
-                      />
-                    </td>
+      {/* Pagination */}
+      <Pagination
+        className="mt-4"
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={pagination?.total}
+        itemsPerPage={rowsPerPage}
+        showInfo
+        onPageChange={(page) => {
+          if (!loading) setCurrentPage(page);
+        }}
+      />
 
-                  <td>
-                    <Link
-                      href={`/user/all-user/${user.id}`}
-                      onClick={() => {
-                        try {
-                          sessionStorage.setItem(`user_${user.id}`, JSON.stringify(user));
-                          sessionStorage.setItem("sa_selected_user", JSON.stringify(user));
-                        } catch {}
-                      }}
-                      className="au-user-cell"
-                      title={`View profile of ${user.name}`}
-                    >
-                      <div className="au-avatar au-avatar--table" style={{ background: user.av }}>
-                        {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </div>
-                      <span className="au-user-name">{user.name}</span>
-                    </Link>
-                  </td>
-
-                    <td>{user.email}</td>
-                    <td>{user.phone || "-"}</td>
-
-                    <td>
-                      <span
-                        className="au-chip"
-                        style={{
-                          background: `${roleColor(user.role)}15`,
-                          color: roleColor(user.role),
-                        }}
-                      >
-                        {user.role}
-                      </span>
-                    </td>
-
-                    <td>
-                      <span
-                        className="au-chip"
-                        style={{
-                          background: `${planColor(user.plan)}15`,
-                          color: planColor(user.plan),
-                        }}
-                      >
-                        {user.plan}
-                      </span>
-                    </td>
-
-                    <td>
-                      <Badge status={user.status} />
-                    </td>
-
-                    <td>{user.joined}</td>
-
-                    {/* ── ACTION BUTTONS COLUMN ── */}
-                    <td>
-                      <div className="au-action-group">
-                        {/* View Details */}
-                        <button
-                          className="au-action-btn"
-                          title="View Details"
-                          onClick={() => setDetail(user)}
-                        >
-                          <Eye size={15} />
-                        </button>
-
-                        {/* Edit User */}
-                        <button
-                          className="au-action-btn au-action-btn--edit"
-                          title="Edit User"
-                          onClick={() => setEditUser(user)}
-                        >
-                          <Pencil size={15} />
-                        </button>
-
-                        {/* Reset Password */}
-                        <button
-                          className="au-action-btn au-action-btn--key"
-                          title="Reset Password"
-                          onClick={() => setPasswordUser(user)}
-                        >
-                          <KeyRound size={15} />
-                        </button>
-
-                        {/* Suspend / Restore */}
-                        {user.status === "SUSPENDED" ? (
-                          <button
-                            className="au-action-btn au-action-btn--restore"
-                            title="Restore Account"
-                            disabled={suspendingId === user.id}
-                            onClick={() => handleSuspendToggle(user)}
-                          >
-                            <ShieldCheck size={15} />
-                          </button>
-                        ) : (
-                          <button
-                            className="au-action-btn au-action-btn--suspend"
-                            title="Suspend User"
-                            disabled={suspendingId === user.id}
-                            onClick={() => handleSuspendToggle(user)}
-                          >
-                            <ShieldOff size={15} />
-                          </button>
-                        )}
-
-                        {/* Delete */}
-                        <button
-                          className="au-action-btn au-action-btn--delete"
-                          title="Delete User"
-                          disabled={deletingId === user.id}
-                          onClick={() => handleDeleteUser(user)}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={9}
-                    style={{
-                      textAlign: "center",
-                      padding: "32px 0",
-                      color: "#6b7280",
-                    }}
-                  >
-                    {loading
-                      ? "Loading users..."
-                      : "No users match your filters"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          {/* Pagination */}
-          <div className="au-pagination">
-            <button
-              disabled={currentPage <= 1 || loading}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            >
-              Previous
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              disabled={currentPage >= totalPages || loading}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-
-        {/* Detail panel (view only — no action buttons) */}
-        {detail && (
-          <DetailPanel
-            user={detail}
-            onClose={() => setDetail(null)}
-            onRefresh={refresh}
-          />
-        )}
-      </div>
+      {/* Detail panel (view only — no action buttons) */}
+      {detail && (
+        <DetailPanel
+          user={detail}
+          onClose={() => setDetail(null)}
+          onRefresh={refresh}
+        />
+      )}
 
       {/* Edit modal */}
       {editUser && (
@@ -528,8 +426,8 @@ export default function AllUsers() {
         closeOnClick
         pauseOnHover
         draggable
-        theme="light"
+        theme={isDark ? "dark" : "light"}
       />
-    </div>
+    </PageContainer>
   );
 }

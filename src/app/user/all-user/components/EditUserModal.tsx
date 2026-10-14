@@ -4,6 +4,9 @@ import { useState } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { User } from "../types";
 import { toast } from "react-toastify";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
 
 interface EditUserModalProps {
   user: User;
@@ -19,9 +22,9 @@ export function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) 
 
   const handleUpdateUser = async () => {
     if (!name || !email || !phone) {
-  toast.error("All fields are required");
-  return;
-}
+      toast.error("All fields are required");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -34,82 +37,46 @@ export function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) 
         },
       );
 
-     if (data.success) {
-  
-  onUpdated({ name, email, phone });
-  onClose();
-} else {
-       toast.error(data.message || "Failed to update user");
+      if (data.success) {
+        onUpdated({ name, email, phone });
+        onClose();
+      } else {
+        toast.error(data.message || "Failed to update user");
       }
     } catch (error: any) {
-  console.error("Update User Error:", error);
+      console.error("Update User Error:", error);
 
-  toast.error(
-    error?.response?.data?.message ||
-    "Something went wrong"
-  );
-} finally {
+      toast.error(
+        error?.response?.data?.message ||
+        "Something went wrong"
+      );
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="au-overlay" onClick={onClose}>
-      <div className="au-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="au-modal__header">
-          <div>
-            <div className="au-modal__title">Edit User</div>
-            <div className="au-modal__sub">Update user details</div>
-          </div>
-          <button className="au-modal__close" onClick={onClose}>×</button>
-        </div>
-
-        <div className="au-modal__body">
-          <div className="au-field">
-            <div className="au-field__label">NAME</div>
-            <input
-              type="text"
-              className="au-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-
-          <div className="au-field">
-            <div className="au-field__label">EMAIL</div>
-            <input
-              type="email"
-              className="au-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="au-field">
-            <div className="au-field__label">PHONE</div>
-            <input
-              type="text"
-              className="au-input"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="au-modal__actions">
-          <button
-            className="au-btn au-btn--primary"
-            onClick={handleUpdateUser}
-            disabled={loading}
-          >
-            {loading ? "Updating..." : "Update User"}
-          </button>
-          <button className="au-btn au-btn--ghost" onClick={onClose}>
+    <Modal
+      isOpen
+      onClose={onClose}
+      title="Edit User"
+      description="Update user details"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-        </div>
+          </Button>
+          <Button onClick={handleUpdateUser} isLoading={loading}>
+            Update User
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input label="Name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input label="Phone" type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
-      
-    </div>
+    </Modal>
   );
 }

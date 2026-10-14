@@ -2,9 +2,9 @@
 
 import {
   Check,
-  CircleAlert,
   LoaderCircle,
   RefreshCw,
+  Search,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -12,8 +12,19 @@ import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axiosInstance";
-//import { KPI } from "../all-user/components/KPI";
-import "../all-user/all-user.css";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Alert from "@/components/ui/Alert";
+import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
+import type { BadgeVariant } from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import IconButton from "@/components/ui/IconButton";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import Table from "@/components/ui/Table";
+import type { Column } from "@/components/ui/Table";
+
 
 /* ============================================================
    TYPES
@@ -126,53 +137,22 @@ function normalizeStatus(status?: string | null) {
     .toLowerCase();
 }
 
-function domainBadgeClass(status?: string | null) {
+function domainBadgeVariant(status?: string | null): BadgeVariant {
   const normalized = normalizeStatus(status);
-  if (normalized === "active" || normalized === "approved")
-    return "au-badge--active";
-  if (normalized === "pending") return "au-badge--pending";
-  if (normalized === "failed" || normalized === "rejected")
-    return "au-badge--suspended";
-  return "au-badge--inactive";
+  if (normalized === "active" || normalized === "approved") return "success";
+  if (normalized === "pending") return "warning";
+  if (normalized === "failed" || normalized === "rejected") return "error";
+  return "neutral";
 }
 
 function DomainBadge({ status }: { status?: string | null }) {
   const normalized = normalizeStatus(status);
   const label = normalized[0].toUpperCase() + normalized.slice(1);
   return (
-    <span className={`au-badge ${domainBadgeClass(status)}`}>
-      <span className="au-badge__dot" />
+    <Badge variant={domainBadgeVariant(status)} dot>
       {label}
-    </span>
+    </Badge>
   );
-}
-function domainInitials(domain?: string | null) {
-  const value = domain ?? "";
-
-  const parts = value.replace(/^www\./, "").split(".")[0] ?? "";
-
-  return parts.slice(0, 2).toUpperCase() || "--";
-}
-
-function domainAvatarColor(domain?: string | null) {
-  const value = domain ?? "";
-
-  let hash = 0;
-
-  for (let i = 0; i < value.length; i++) {
-    hash = value.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  const colors = [
-    "#10b981",
-    "#6366f1",
-    "#f59e0b",
-    "#3b82f6",
-    "#ec4899",
-    "#8b5cf6",
-  ];
-
-  return colors[Math.abs(hash) % colors.length];
 }
 
 /* ============================================================
@@ -180,6 +160,7 @@ function domainAvatarColor(domain?: string | null) {
    ============================================================ */
 
 export default function PermissionsPage() {
+
   const [requests, setRequests] = useState<DomainRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -248,265 +229,154 @@ export default function PermissionsPage() {
     }
   }, [confirmState, loadRequests]);
 
+  const columns: Column<DomainRequest>[] = [
+    {
+      key: "domain_name",
+      header: "Domain Name",
+      render: (item) => (
+        <div className="flex items-center gap-3">
+          <Avatar name={item.domain_name.replace(/^www\./, "")} size="sm" />
+          <span className="font-medium text-foreground">{item.domain_name}</span>
+        </div>
+      ),
+    },
+    {
+      key: "company_id",
+      header: "Company ID",
+      render: (item) => <span className="font-mono text-xs text-muted-foreground">{item.company_id || "—"}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (item) => <DomainBadge status={item.status} />,
+    },
+    {
+      key: "created_at",
+      header: "Requested Date",
+      render: (item) => <span className="text-muted-foreground">{formatDate(item.created_at)}</span>,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      width: "160px",
+      render: (item) => {
+        const busy = processingDomain === item.domain_name;
+        return (
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1">
+              <IconButton
+                size="sm"
+                aria-label="Approve domain"
+                className="text-success hover:bg-success-bg"
+                icon={busy ? <LoaderCircle size={15} className="animate-spin" /> : <Check size={15} />}
+                disabled={busy}
+                onClick={() => setConfirmState({ request: item, action: "approve" })}
+              />
+              <IconButton
+                size="sm"
+                aria-label="Reject domain"
+                className="text-error hover:bg-error-bg"
+                icon={<X size={15} />}
+                disabled={busy}
+                onClick={() => {
+                  toast("Reject API not available yet");
+                }}
+              />
+            </div>
+            {rowErrors[item.domain_name] && (
+              <p className="text-[0.6875rem] text-error">{rowErrors[item.domain_name]}</p>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  const confirmBusy = confirmState ? processingDomain === confirmState.request.domain_name : false;
+
   return (
-    <div className="au-root">
-      <div className="au-header">
-        <div>
-          <h1 className="au-header__title">Permissions</h1>
-          <p className="au-header__subtitle">
-            Review incoming custom domain requests
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void loadRequests()}
-          disabled={loading}
-          className="au-btn au-btn--ghost"
-          style={{
-            width: "auto",
-            padding: "10px 18px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Permissions"
+        description="Review incoming custom domain requests"
+        actions={
+          <Button
+            variant="secondary"
+            onClick={() => void loadRequests()}
+            disabled={loading}
+            leftIcon={<RefreshCw size={15} className={loading ? "animate-spin" : undefined} />}
+          >
+            Refresh
+          </Button>
+        }
+      />
 
-      {error && (
-        <div
-          role="alert"
-          className="au-kpi-card"
-          style={{
-            marginBottom: 20,
-            borderColor: "rgba(255,107,107,0.35)",
-            background: "rgba(255,107,107,0.06)",
-            color: "var(--danger)",
-            display: "flex",
-            gap: 10,
-            alignItems: "flex-start",
-          }}
-        >
-          <CircleAlert className="h-4 w-4 shrink-0" style={{ marginTop: 2 }} />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <Alert variant="error" className="mb-4" message={error} />}
 
-      <div className="au-filter-bar">
-        <div className="au-search-wrap">
-          <span className="mc-search-icon">🔍</span>
-          <input
-            className="au-search-input"
+      <Card padding="sm" className="mb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Input
+            wrapperClassName="sm:max-w-sm sm:flex-1"
+            leftIcon={<Search size={15} />}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search domain, company, or requester..."
+            aria-label="Search domain requests"
           />
+          <span className="text-sm text-muted-foreground">
+            {loading ? "…" : `${visibleRequests.length} requests`}
+          </span>
         </div>
+      </Card>
 
-        <span className="au-filter-count">
-          {loading ? "…" : `${visibleRequests.length} requests`}
-        </span>
+      <Table
+        columns={columns}
+        data={visibleRequests}
+        rowKey={(item) => item.id}
+        loading={loading}
+        emptyMessage="No pending permission requests"
+        emptyDescription="New requests will appear here after the next refresh."
+      />
+
+      <div className="mt-3 flex items-center justify-between text-[0.8125rem] text-muted-foreground">
+        <span>Auto-refreshes every 30s</span>
+        <span>{visibleRequests.length} shown</span>
       </div>
 
-      <div className="au-main-grid au-main-grid--full">
-        <div className="au-table-wrapper">
-          <table className="au-table">
-            <thead>
-              <tr>
-                <th>DOMAIN NAME</th>
-                <th>COMPANY ID</th>
-                
-                <th>STATUS</th>
-                <th>REQUESTED DATE</th>
-                <th style={{ width: 160 }}>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5}>
-                    <div className="au-empty">
-                      <div className="au-empty__spinner" />
-                      <p className="au-empty__title">Loading requests…</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : visibleRequests.length === 0 ? (
-                <tr>
-                  <td colSpan={5}>
-                    <div className="au-empty">
-                      <div className="au-empty__icon">🌐</div>
-                      <p className="au-empty__title">
-                        No pending permission requests
-                      </p>
-                      <p className="au-empty__desc">
-                        New requests will appear here after the next refresh.
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                visibleRequests.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="au-user-cell">
-                        <div
-                          className="au-avatar au-avatar--table"
-                          style={{
-                            background: domainAvatarColor(item.domain_name ?? ""),
-                          }}
-                        >
-                         {domainInitials(item.domain_name ?? "")}
-                        </div>
-                        <span className="au-user-name">{item.domain_name}</span>
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: 12,
-                        color: "var(--muted)",
-                      }}
-                    >
-                      {item.company_id || "—"}
-                    </td>
-                   
-                    <td>
-                      <DomainBadge status={item.status} />
-                    </td>
-                    <td>{formatDate(item.created_at)}</td>
-                    <td>
-                      <div className="au-action-group">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setConfirmState({
-                              request: item,
-                              action: "approve",
-                            })
-                          }
-                          disabled={processingDomain === item.domain_name}
-                          className="au-action-btn au-action-btn--restore"
-                          title="Approve domain"
-                        >
-                          {processingDomain === item.domain_name ? (
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check size={15} />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            toast("Reject API not available yet");
-                          }}
-                          disabled={processingDomain === item.domain_name}
-                          className="au-action-btn au-action-btn--delete"
-                          title="Reject domain"
-                        >
-                          <X size={15} />
-                        </button>
-                      </div>
-                      {rowErrors[item.domain_name] && (
-                        <p
-                          style={{
-                            marginTop: 6,
-                            fontSize: 11,
-                            color: "var(--danger)",
-                          }}
-                        >
-                          {rowErrors[item.domain_name]}
-                        </p>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          <div className="au-pagination">
-            <span style={{ fontSize: 13, color: "var(--muted)" }}>
-              Auto-refreshes every 30s
-            </span>
-            <span style={{ fontSize: 13, color: "var(--muted)" }}>
-              {visibleRequests.length} shown
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {confirmState && (
-        <div className="au-overlay">
-          <div
-            className="au-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-title"
-          >
-            <div className="au-modal__header">
-              <div>
-                <h2 id="confirm-title" className="au-modal__title">
-                  Approve Domain
-                </h2>
-                <p className="au-modal__sub">
-                  This will{" "}
-                  {confirmState.action === "approve"
-                    ? "approve and activate"
-                    : "reject"}{" "}
-                  <strong>{confirmState.request.domain_name}</strong>.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setConfirmState(null)}
-                aria-label="Close confirmation"
-                className="au-modal__close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="au-modal__actions">
-              <button
-                type="button"
-                onClick={() => setConfirmState(null)}
-                className="au-btn au-btn--ghost"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmActionHandler()}
-                disabled={processingDomain === confirmState.request.domain_name}
-                className={`au-btn ${
-                  confirmState.action === "approve"
-                    ? "au-btn--primary"
-                    : "au-btn--danger"
-                }`}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                {processingDomain === confirmState.request.domain_name ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : confirmState.action === "approve" ? (
-                  <ShieldCheck size={16} />
-                ) : (
-                  <X size={16} />
-                )}
-                {confirmState.action === "approve"
-                  ? "Approve Domain"
-                  : "Reject Domain"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <Modal
+        isOpen={confirmState !== null}
+        onClose={() => setConfirmState(null)}
+        size="sm"
+        title="Approve Domain"
+        description={
+          confirmState ? (
+            <>
+              This will {confirmState.action === "approve" ? "approve and activate" : "reject"}{" "}
+              <strong className="text-foreground">{confirmState.request.domain_name}</strong>.
+            </>
+          ) : null
+        }
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmState(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant={confirmState?.action === "reject" ? "danger" : "primary"}
+              isLoading={confirmBusy}
+              leftIcon={confirmState?.action === "reject" ? <X size={16} /> : <ShieldCheck size={16} />}
+              onClick={() => void confirmActionHandler()}
+            >
+              {confirmState?.action === "reject" ? "Reject Domain" : "Approve Domain"}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-secondary-foreground">
+          The domain will be activated for the requesting company.
+        </p>
+      </Modal>
+    </PageContainer>
   );
 }

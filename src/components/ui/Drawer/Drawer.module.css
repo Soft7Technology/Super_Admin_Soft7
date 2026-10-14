@@ -1,0 +1,82 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    background-color: var(--color-overlay);
+    animation: fadeIn var(--duration-base) var(--ease-out);
+  }
+  .panel {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: calc(var(--z-modal) + 1);
+    display: flex;
+    width: min(var(--drawer-width, 24rem), 100vw);
+    flex-direction: column;
+    background-color: var(--color-surface-raised);
+    color: var(--color-text);
+    box-shadow: var(--elevation-xl);
+    outline: none;
+  }
+  .right {
+    right: 0;
+    border-left: 1px solid var(--color-border);
+    animation: slideFromRight var(--duration-slow) var(--ease-out);
+  }
+  .left {
+    left: 0;
+    border-right: 1px solid var(--color-border);
+    animation: slideFromLeft var(--duration-slow) var(--ease-out);
+  }
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .title {
+    font: var(--type-section-title);
+  }
+  .description {
+    margin-top: 2px;
+    font: var(--type-secondary);
+    color: var(--color-text-muted);
+  }
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-5);
+  }
+  .footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes slideFromRight {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes slideFromLeft {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.title, .description) {
+    margin: 0;
+  }
+}

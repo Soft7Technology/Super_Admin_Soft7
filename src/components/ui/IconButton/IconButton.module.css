@@ -1,0 +1,89 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .iconButton {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    background: transparent;
+    transition: background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+  }
+  .iconButton:hover:not(:disabled) {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+  .iconButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-primary-ring);
+  }
+  .iconButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .active,
+  .active:hover:not(:disabled) {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-text);
+  }
+
+  .outlined {
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+  }
+  .solid {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+  .solid:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+    color: var(--color-primary-foreground);
+  }
+
+  .sm {
+    width: 2rem;
+    height: 2rem;
+  }
+  .md {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  .lg {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .round {
+    border-radius: var(--radius-full);
+  }
+
+  .badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    min-width: 1rem;
+    height: 1rem;
+    padding: 0 0.25rem;
+    border-radius: var(--radius-full);
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1rem;
+    text-align: center;
+    color: var(--color-primary-foreground);
+    background-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+  .dot {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--radius-full);
+    background-color: var(--color-error);
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+}

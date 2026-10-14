@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { KeyRound, Pencil } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
-import { User, STATUS_DOT, roleColor, planColor } from "../types";
+import { User, planVariant, roleVariant } from "../types";
 import { Badge } from "./Badge";
 import { EditUserModal } from "./EditUserModal";
 import { ResetPasswordModal } from "./ResetPasswordModal";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Avatar from "@/components/ui/Avatar";
+import KitBadge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import Skeleton from "@/components/ui/Skeleton";
+import Tabs from "@/components/ui/Tabs";
+import { cn } from "@/lib/utils";
 
 interface DetailPanelProps {
   user: User;
@@ -62,131 +70,86 @@ export function DetailPanel({ user, onClose, onRefresh }: DetailPanelProps) {
     if (key === "stats") fetchUserStats();
   };
 
+  const infoRows: [string, string][] = [
+    ["Company",    user.company],
+    ["Plan",       user.plan],
+    ["Phone",      user.phone || "—"],
+    ["Joined",     user.joined],
+    ["Last Login", user.login],
+  ];
+
+  const statCells: [string, number, string, string][] = [
+    ["messages",  userStats?.messages  ?? 0, "text-primary-text", "Messages Sent"],
+    ["campaigns", userStats?.campaigns ?? 0, "text-primary-text", "Campaigns"],
+    ["contacts",  userStats?.contacts  ?? 0, "text-primary-text", "Contacts"],
+    ["templates", userStats?.templates ?? 0, "text-warning",      "Templates"],
+    ["delivered", userStats?.delivered ?? 0, "text-success",      "Delivered"],
+    ["failed",    userStats?.failed    ?? 0, "text-error",        "Failed"],
+  ];
+
+  const infoContent = (
+    <div>
+      <dl className="divide-y divide-border-subtle overflow-hidden rounded-lg border border-border-subtle">
+        {infoRows.map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between gap-4 bg-surface px-4 py-2.5">
+            <dt className="text-[0.8125rem] text-muted-foreground">{label}</dt>
+            <dd className="truncate text-sm font-medium text-foreground">
+              {label === "Plan" ? <KitBadge variant={planVariant(value)}>{value}</KitBadge> : value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button leftIcon={<Pencil size={15} />} onClick={() => setEditOpen(true)}>
+          Edit User
+        </Button>
+        <Button variant="secondary" leftIcon={<KeyRound size={15} />} onClick={() => setPasswordOpen(true)}>
+          Reset Password
+        </Button>
+      </div>
+    </div>
+  );
+
+  const statsContent = (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {statCells.map(([key, val, color, lbl]) =>
+        statsLoading ? (
+          <Skeleton key={key} className="h-[4.5rem] w-full rounded-lg" />
+        ) : (
+          <div key={key} className="rounded-lg border border-border-subtle bg-surface-muted px-3 py-3 text-center">
+            <div className={cn("text-xl font-semibold tabular-nums", color)}>{val}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">{lbl}</div>
+          </div>
+        ),
+      )}
+    </div>
+  );
+
   return (
     <>
-      <div className="au-overlay" onClick={onClose}>
-        <div
-          className="au-modal au-modal--detail"
-          style={{ maxWidth: "520px", width: "100%", maxHeight: "85vh", overflowY: "auto" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="au-modal__header">
-            <div>
-              <div className="au-modal__title">User Details</div>
-              <div className="au-modal__sub">{user.email}</div>
-            </div>
-            <button className="au-modal__close" onClick={onClose}>×</button>
-          </div>
-
-          <div className="au-modal__body">
-            {/* Identity */}
-            <div className="au-panel__identity">
-              <div className="au-panel__avatar-wrap">
-                <div className="au-avatar au-avatar--68" style={{ background: user.av }}>
-                  {user.name
-                    .split(" ")
-                    .map((n: string) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-                <div
-                  className={`au-status-dot au-status-dot--panel ${
-                    STATUS_DOT[user.status] ?? "au-status-dot--other"
-                  }`}
-                />
-              </div>
-              <div className="au-panel__name">{user.name}</div>
-              <div className="au-panel__email">{user.email}</div>
-              <div className="au-panel__badges">
-                <Badge status={user.status} />
-                <span
-                  className="au-role-chip"
-                  style={{ background: `${roleColor(user.role)}18`, color: roleColor(user.role) }}
-                >
-                  {user.role}
-                </span>
-                {user.pro && <span className="au-pro-badge--lg">PRO</span>}
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="au-panel__tabs">
-              {(["info", "stats"] as const).map((k) => (
-                <button
-                  key={k}
-                  onClick={() => handleTabChange(k)}
-                  className={`au-panel__tab ${tab === k ? "au-panel__tab--active" : ""}`}
-                >
-                  {k[0].toUpperCase() + k.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {/* Info tab */}
-            {tab === "info" && (
-              <div>
-                {(
-                  [
-                    ["Company",    user.company,      ""],
-                    ["Plan",       user.plan,         "plan"],
-                    ["Phone",      user.phone || "—", ""],
-                    ["Joined",     user.joined,       ""],
-                    ["Last Login", user.login,        ""],
-                  ] as [string, string, string][]
-                ).map(([label, value, type]) => (
-                  <div key={label} className="au-info-row">
-                    <span className="au-info-row__label">{label}</span>
-                    <span
-                      className="au-info-row__value"
-                      style={type === "plan" ? { color: planColor(value) } : undefined}
-                    >
-                      {value}
-                    </span>
-                  </div>
-                ))}
-
-                {/* Action buttons */}
-                <div className="au-modal__actions" style={{ marginTop: "1rem" }}>
-                  <button className="au-btn au-btn--primary" onClick={() => setEditOpen(true)}>
-                    Edit User
-                  </button>
-                  <button className="au-btn au-btn--ghost" onClick={() => setPasswordOpen(true)}>
-                    Reset Password
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Stats tab */}
-            {tab === "stats" && (
-              <div className="au-stats-grid">
-                {statsLoading ? (
-                  <div className="au-empty__title">Loading stats...</div>
-                ) : (
-                  <>
-                    {(
-                      [
-                        ["messages",  userStats?.messages  ?? 0, "#10b981", "Messages Sent"],
-                        ["campaigns", userStats?.campaigns ?? 0, "#6366f1", "Campaigns"],
-                        ["contacts",  userStats?.contacts  ?? 0, "#3b82f6", "Contacts"],
-                        ["templates", userStats?.templates ?? 0, "#f59e0b", "Templates"],
-                        ["delivered", userStats?.delivered ?? 0, "#34d399", "Delivered"],
-                        ["failed",    userStats?.failed    ?? 0, "#ef4444", "Failed"],
-                      ] as [string, number, string, string][]
-                    ).map(([key, val, color, lbl]) => (
-                      <div key={key} className="au-stats-cell">
-                        <div className="au-stats-cell__val" style={{ color }}>{val}</div>
-                        <div className="au-stats-cell__lbl">{lbl}</div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
+      <Modal isOpen onClose={onClose} title="User Details" description={user.email}>
+        {/* Identity */}
+        <div className="mb-5 flex flex-col items-center text-center">
+          <Avatar name={user.name} size="xl" />
+          <p className="mt-3 text-base font-semibold text-foreground">{user.name}</p>
+          <p className="text-[0.8125rem] text-muted-foreground">{user.email}</p>
+          <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+            <Badge status={user.status} />
+            <KitBadge variant={roleVariant(user.role)}>{user.role}</KitBadge>
+            {user.pro && <KitBadge variant="warning">PRO</KitBadge>}
           </div>
         </div>
-      </div>
+
+        <Tabs
+          activeTab={tab}
+          onChange={(id) => handleTabChange(id as "info" | "stats")}
+          tabs={[
+            { id: "info", label: "Info", content: infoContent },
+            { id: "stats", label: "Stats", content: statsContent },
+          ]}
+        />
+      </Modal>
 
       {editOpen && (
         <EditUserModal

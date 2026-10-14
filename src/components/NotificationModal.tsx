@@ -1,7 +1,9 @@
 "use client";
-import React, { useState } from "react";
-import { useTheme, tokens } from "../context/ThemeContext";
-import { Trash2, Check, CheckCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Bell, Check, CheckCheck, CheckCircle2, Info, Trash2, XCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import Checkbox from "@/components/ui/Checkbox";
+import { cn } from "@/lib/utils";
 
 interface Notification {
   id: number;
@@ -12,16 +14,26 @@ interface Notification {
   type: "info" | "success" | "warning" | "error";
 }
 
+const TYPE_META: Record<Notification["type"], { icon: LucideIcon; tone: string }> = {
+  info:    { icon: Info,          tone: "bg-info-bg text-info" },
+  success: { icon: CheckCircle2,  tone: "bg-success-bg text-success" },
+  warning: { icon: AlertTriangle, tone: "bg-warning-bg text-warning" },
+  error:   { icon: XCircle,       tone: "bg-error-bg text-error" },
+};
+
+/**
+ * Notifications popover — same surface as WA_Admin's topbar notifications.
+ * Anchored by the topbar's relative wrapper; the topbar handles outside-click.
+ * Stays mounted while closed so read/delete state survives toggling.
+ */
 export default function NotificationModal({
   isOpen,
-  onClose,
+  onUnreadChange,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onUnreadChange?: (count: number) => void;
 }) {
-  const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
-
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
@@ -66,7 +78,11 @@ export default function NotificationModal({
   ]);
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
+
+  const unread = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    onUnreadChange?.(unread);
+  }, [unread, onUnreadChange]);
 
   const handleSelectAll = () => {
     if (selectedIds.length === notifications.length) {
@@ -104,462 +120,122 @@ export default function NotificationModal({
     setSelectedIds([]);
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "success":
-        return "#10b981";
-      case "error":
-        return "#f03e3e";
-      case "warning":
-        return "#fb923c";
-      case "info":
-      default:
-        return "#3b82f6";
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "success":
-        return "✓";
-      case "error":
-        return "⚠";
-      case "warning":
-        return "!";
-      case "info":
-      default:
-        return "ℹ";
-    }
-  };
-
   if (!isOpen) return null;
 
+  const allSelected = notifications.length > 0 && selectedIds.length === notifications.length;
+
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0, 0, 0, 0.4)",
-          zIndex: 999,
-          animation: "fadeIn 0.2s ease-out",
-        }}
-      />
-
-      {/* Modal */}
-      <div
-        style={{
-          position: "fixed",
-          top: "70px",
-          right: "24px",
-          width: "420px",
-          maxHeight: "calc(100vh - 100px)",
-          background: isDark ? tokens.dark.surface : tokens.light.surface,
-          border: `1px solid ${isDark ? tokens.dark.border : tokens.light.border}`,
-          borderRadius: "16px",
-          boxShadow:
-            "0 20px 60px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.1)",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          animation: "slideDown 0.3s ease-out",
-          "@media (max-width: 768px)": {
-            width: "calc(100vw - 32px)",
-            right: "16px",
-          },
-        } as React.CSSProperties}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: "16px",
-            borderBottom: `1px solid ${isDark ? tokens.dark.border : tokens.light.border}`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "16px",
-              fontWeight: 700,
-              color: isDark ? tokens.dark.text : tokens.light.text,
-              margin: 0,
-            }}
-          >
-            Notifications ({notifications.length})
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "20px",
-              cursor: "pointer",
-              color: isDark ? tokens.dark.textFaint : tokens.light.textFaint,
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Action Bar */}
-        <div
-          style={{
-            padding: "12px 16px",
-            display: "flex",
-            gap: "8px",
-            borderBottom: `1px solid ${isDark ? tokens.dark.border : tokens.light.border}`,
-            alignItems: "center",
-          }}
-        >
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={selectedIds.length === notifications.length}
-              onChange={handleSelectAll}
-              style={{
-                width: "18px",
-                height: "18px",
-                cursor: "pointer",
-              }}
-            />
-            <span
-              style={{
-                fontSize: "13px",
-                color: isDark ? tokens.dark.textSub : tokens.light.textSub,
-              }}
-            >
-              Select All
-            </span>
-          </label>
-
-          <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-            <button
-              onClick={handleMarkAllAsRead}
-              title="Mark all as read"
-              style={{
-                background: isDark ? tokens.dark.iconBox : tokens.light.iconBox,
-                border: `1px solid ${isDark ? tokens.dark.border : tokens.light.border}`,
-                borderRadius: "8px",
-                width: "36px",
-                height: "36px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: isDark ? tokens.dark.textMuted : tokens.light.textMuted,
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  isDark ? tokens.dark.border : tokens.light.border;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = isDark
-                  ? tokens.dark.iconBox
-                  : tokens.light.iconBox;
-              }}
-            >
-              <CheckCheck size={18} />
-            </button>
-
-            {selectedIds.length > 0 && (
-              <button
-                onClick={handleDeleteSelected}
-                title={`Delete ${selectedIds.length} selected`}
-                style={{
-                  background: "rgba(240, 62, 62, 0.1)",
-                  border: "1px solid rgba(240, 62, 62, 0.3)",
-                  borderRadius: "8px",
-                  width: "36px",
-                  height: "36px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  color: "#f03e3e",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "rgba(240, 62, 62, 0.2)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "rgba(240, 62, 62, 0.1)";
-                }}
-              >
-                <Trash2 size={18} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Notifications List */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "8px",
-          }}
-        >
-          {notifications.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "200px",
-                color: isDark ? tokens.dark.textMuted : tokens.light.textMuted,
-                fontSize: "14px",
-              }}
-            >
-              No notifications
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  padding: "12px",
-                  borderRadius: "10px",
-                  marginBottom: "6px",
-                  background: notification.read
-                    ? "transparent"
-                    : isDark
-                      ? "rgba(59, 130, 246, 0.08)"
-                      : "rgba(59, 130, 246, 0.05)",
-                  border: `1px solid ${notification.read ? "transparent" : isDark ? "rgba(59, 130, 246, 0.2)" : "rgba(59, 130, 246, 0.15)"}`,
-                  transition: "all 0.2s",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  setHoveredId(notification.id);
-                  (e.currentTarget as HTMLElement).style.background = isDark
-                    ? tokens.dark.iconBox
-                    : tokens.light.iconBox;
-                }}
-                onMouseLeave={(e) => {
-                  setHoveredId(null);
-                  (e.currentTarget as HTMLElement).style.background =
-                    notification.read
-                      ? "transparent"
-                      : isDark
-                        ? "rgba(59, 130, 246, 0.08)"
-                        : "rgba(59, 130, 246, 0.05)";
-                }}
-              >
-                {/* Checkbox Placeholder/Container - Show only on hover or when selected */}
-               {/* Checkbox Placeholder - always reserve space, show checkbox on hover/selected */}
-                <div
-                  style={{
-                    width: "18px",
-                    height: "18px",
-                    flexShrink: 0,
-                    marginTop: "2px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    visibility: (hoveredId === notification.id || selectedIds.includes(notification.id)) ? "visible" : "hidden", // ✅ visibility instead of conditional render
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(notification.id)}
-                    onChange={() => handleSelectNotification(notification.id)}
-                    style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-
-                {/* Type Icon */}
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "8px",
-                    background: getTypeColor(notification.type),
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    fontSize: "16px",
-                    flexShrink: 0,
-                  }}
-                >
-                  {getTypeIcon(notification.type)}
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: notification.read ? 500 : 700,
-                      color: isDark ? tokens.dark.text : tokens.light.text,
-                      marginBottom: "4px",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {notification.title}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: isDark ? tokens.dark.textSub : tokens.light.textSub,
-                      marginBottom: "6px",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {notification.message}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: isDark
-                        ? tokens.dark.textMuted
-                        : tokens.light.textMuted,
-                    }}
-                  >
-                    {notification.timestamp}
-                  </div>
-                </div>
-
-                {/* Actions */}
-               {/* Actions - always visible */}
-<div
-  style={{
-    display: "flex",
-    gap: "4px",
-    flexShrink: 0,
-    alignItems: "center", 
-    minWidth: "fit-content",
-  }}
-  onClick={(e) => e.stopPropagation()}
->
-  {!notification.read ? (
-    <button
-      onClick={() => handleMarkAsRead(notification.id)}
-      title="Mark as read"
-      style={{
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        color: isDark ? tokens.dark.accent : tokens.light.accent,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "28px",  
-        height: "28px",
-        borderRadius: "6px",
-        transition: "all 0.2s",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.2)";
-        (e.currentTarget as HTMLButtonElement).style.background = "rgba(59,130,246,0.1)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-        (e.currentTarget as HTMLButtonElement).style.background = "none";
-      }}
-    >
-      <Check size={16} />   {/* 1 tick = unread */}
-    </button>
-  ) : (
     <div
-      style={{
-        width: "28px",
-        height: "28px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#10b981",  
-      }}
-      title="Read"
+      role="dialog"
+      aria-label="Notifications"
+      className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
     >
-      <CheckCheck size={16} />   {/* 2 ticks = read */}
-    </div>
-  )}
-
-  <button
-    onClick={() => handleDeleteNotification(notification.id)}
-    title="Delete"
-    style={{
-      background: "none",
-      border: "none",
-      cursor: "pointer",
-      color: isDark ? tokens.dark.textMuted : tokens.light.textMuted,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: "28px",
-      height: "28px",
-      borderRadius: "6px",
-      transition: "all 0.2s",
-    }}
-    onMouseEnter={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.color = "#f03e3e";
-      (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.2)";
-    }}
-    onMouseLeave={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.color = isDark
-        ? tokens.dark.textMuted
-        : tokens.light.textMuted;
-      (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-    }}
-  >
-    <Trash2 size={16} />
-  </button>
-</div>
-              </div>
-            ))
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[0.9375rem] font-semibold text-foreground">Notifications</h3>
+          {notifications.length > 0 && (
+            <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-primary-text">
+              {notifications.length}
+            </span>
           )}
         </div>
+        {notifications.length > 0 && (
+          <button
+            type="button"
+            onClick={handleMarkAllAsRead}
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-primary-text hover:bg-primary-lighter"
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            <span>Mark all as read</span>
+          </button>
+        )}
       </div>
 
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @media (max-width: 768px) {
-          [style*="position: fixed"][style*="right: 24px"] {
-            width: calc(100vw - 32px);
-            right: 16px;
-          }
-        }
-      `}</style>
-    </>
+      {/* Selection bar */}
+      {notifications.length > 0 && (
+        <div className="flex items-center justify-between border-b border-border-subtle px-4 py-2">
+          <Checkbox label="Select All" checked={allSelected} onChange={handleSelectAll} />
+          {selectedIds.length > 0 && (
+            <button
+              type="button"
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-error hover:bg-error-bg"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete ({selectedIds.length})
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* List */}
+      <div className="max-h-[22rem] divide-y divide-border-subtle overflow-y-auto">
+        {notifications.length > 0 ? (
+          notifications.map((n) => {
+            const meta = TYPE_META[n.type] ?? TYPE_META.info;
+            const Icon = meta.icon;
+            return (
+              <div
+                key={n.id}
+                className={cn(
+                  "flex items-start gap-3 px-4 py-3 transition-colors",
+                  n.read ? "opacity-75 hover:bg-surface-hover hover:opacity-100" : "bg-primary-lighter hover:bg-surface-hover",
+                )}
+              >
+                <Checkbox
+                  aria-label={`Select ${n.title}`}
+                  checked={selectedIds.includes(n.id)}
+                  onChange={() => handleSelectNotification(n.id)}
+                  className="mt-1"
+                />
+                <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", meta.tone)}>
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.8125rem] font-semibold text-foreground">{n.title}</p>
+                  <p className="mt-0.5 text-[0.8125rem] leading-snug text-secondary-foreground">{n.message}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{n.timestamp}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  {n.read ? (
+                    <span className="p-1 text-primary-text" title="Read">
+                      <CheckCheck className="h-4 w-4" />
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkAsRead(n.id)}
+                      title="Mark as read"
+                      aria-label="Mark as read"
+                      className="rounded-md p-1 text-muted-foreground hover:bg-surface-active hover:text-primary-text"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteNotification(n.id)}
+                    title="Delete"
+                    aria-label="Delete notification"
+                    className="rounded-md p-1 text-muted-foreground hover:bg-error-bg hover:text-error"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary-light text-primary-text">
+              <Bell className="h-5 w-5" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">No notifications</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">You are all caught up!</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

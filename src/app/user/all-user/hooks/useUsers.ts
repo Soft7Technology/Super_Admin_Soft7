@@ -127,7 +127,7 @@ function mapExternalUser(u: any): User {
 
     plan,
 
-    av: "#10b981",
+    av: "var(--color-brand)",
 
     login: timeAgo(u.last_login_at || u.updated_at || null),
 

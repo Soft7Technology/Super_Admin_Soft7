@@ -1,9 +1,21 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import { AlertTriangle, RefreshCw, Wallet } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
-import styles from "./transactions.module.css";
+import { PageContainer, PageHeader } from "@/components/layout";
+import KpiCard from "@/components/admin/KpiCard";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import PaginationControl from "@/components/ui/Pagination";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import Skeleton from "@/components/ui/Skeleton";
+import Table from "@/components/ui/Table";
+import type { Column } from "@/components/ui/Table";
+import { cn } from "@/lib/utils";
+
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Transaction {
@@ -255,255 +267,142 @@ useEffect(() => {
 
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
+  const columns: Column<Transaction>[] = [
+    {
+      key: "created_at",
+      header: "Date",
+      render: (tx) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(tx.created_at)}</span>,
+    },
+    {
+      key: "company_name",
+      header: "Company",
+      render: (tx) => <span className="font-medium text-foreground">{tx.company_name ?? "—"}</span>,
+    },
+    {
+      key: "type",
+      header: "Type",
+      render: (tx) => (
+        <Badge variant={tx.type === "credit" ? "success" : "error"} dot className="capitalize">
+          {tx.type}
+        </Badge>
+      ),
+    },
+    {
+      key: "reference_type",
+      header: "Reference",
+      render: (tx) => <span className="text-secondary-foreground">{formatReferenceType(tx.reference_type)}</span>,
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      align: "right",
+      render: (tx) => {
+        const isCredit = tx.type === "credit";
+        return (
+          <span className={cn("font-semibold tabular-nums", isCredit ? "text-success" : "text-error")}>
+            {isCredit ? "+" : "−"}₹{formatCurrency(Math.abs(Number(tx.amount)))}
+          </span>
+        );
+      },
+    },
+    {
+      key: "balance_after",
+      header: "Balance After",
+      align: "right",
+      render: (tx) => <span className="tabular-nums text-foreground">₹{formatCurrency(tx.balance_after)}</span>,
+    },
+    {
+      key: "description",
+      header: "Description",
+      render: (tx) => (
+        <span className="block max-w-xs truncate text-secondary-foreground" title={tx.description}>
+          {tx.description}
+        </span>
+      ),
+    },
+  ];
+
   /* ── Render ──────────────────────────────────────────────── */
   return (
-    <div className={styles["tx-page"]}>
-     {/* Header */}
-      <div className={styles["tx-page__header"]}>
-        <h1 className={styles["tx-page__title"]}>Transaction History</h1>
-        <p className={styles["tx-page__subtitle"]}>
-          Track all credit and debit activity in one place
-        </p>
+    <PageContainer>
+      <PageHeader title="Transaction History" description="Track all credit and debit activity in one place" />
+
+      {/* Wallet balance */}
+      <div className="mb-6 max-w-sm">
+        <KpiCard
+          label="Current Wallet Balance"
+          value={
+            balanceLoading ? (
+              <Skeleton className="h-7 w-32 rounded-md" />
+            ) : (
+              `₹${walletBalance !== null ? formatCurrency(walletBalance) : "—"}`
+            )
+          }
+          icon={<Wallet size={18} />}
+        />
       </div>
 
-      {/* Wallet Balance Card */}
-      <div className={styles["tx-balance-card"]}>
-        <div className={styles["tx-balance-card__icon"]}>
-          <Wallet size={20} />
-        </div>
-        <div className={styles["tx-balance-card__info"]}>
-          <span className={styles["tx-balance-card__label"]}>
-            Current Wallet Balance
-          </span>
-          {balanceLoading ? (
-            <span
-              className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-            />
-          ) : (
-            <span className={styles["tx-balance-card__amount"]}>
-              ₹{walletBalance !== null ? formatCurrency(walletBalance) : "—"}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className={styles["tx-toolbar"]}>
-        <div
-          className={styles["tx-segment"]}
-          role="tablist"
+      {/* Filter + count */}
+      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <SegmentedControl<FilterType>
           aria-label="Filter by type"
-        >
-          {FILTERS.map((opt) => (
-            <button
-              key={opt.value}
-              role="tab"
-              aria-selected={filter === opt.value}
-              className={`${styles["tx-segment__btn"]} ${
-                filter === opt.value ? styles["tx-segment__btn--active"] : ""
-              }`}
-              onClick={() => handleFilterChange(opt.value)}
-            >
-              {opt.value !== "all" && (
+          value={filter}
+          onChange={handleFilterChange}
+          options={FILTERS.map((opt) => ({
+            value: opt.value,
+            label: opt.label,
+            icon:
+              opt.value === "all" ? undefined : (
                 <span
-                  className={`${styles["tx-segment__dot"]} ${
-                    opt.value === "credit"
-                      ? styles["tx-segment__dot--credit"]
-                      : styles["tx-segment__dot--debit"]
-                  }`}
+                  className={cn("h-1.5 w-1.5 rounded-full", opt.value === "credit" ? "bg-success" : "bg-error")}
+                  aria-hidden
                 />
-              )}
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
+              ),
+          }))}
+        />
         {!loading && !error && pagination && (
-          <span className={styles["tx-count"]}>
-            {pagination.total} transaction
-            {pagination.total !== 1 ? "s" : ""}
-          </span>
+          <p className="text-sm text-muted-foreground">
+            {pagination.total} transaction{pagination.total !== 1 ? "s" : ""}
+          </p>
         )}
       </div>
 
-      {/* Table card */}
-      <div className={styles["tx-table-wrap"]}>
-        <table className={styles["tx-table"]}>
-          <thead>
-            <tr>
-              <th>
-                <span className={styles["th-sort"]}>
-                  Date <ArrowUpDown size={11} />
-                </span>
-              </th>
-              <th>Company</th>
-              <th>Type</th>
-              <th>Reference</th>
-              <th>Amount</th>
-              <th>Balance After</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Loading skeletons */}
-            {loading &&
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={`skeleton-${i}`}>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--md"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--sm"]}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.skeleton} ${styles["skeleton--lg"]}`}
-                    />
-                  </td>
-                </tr>
-              ))}
-
-            {/* Error */}
-            {!loading && error && (
-              <tr>
-                <td colSpan={7}>
-                  <div className={styles["tx-empty"]}>
-                    <div className={styles["tx-empty__text"]}>
-                      Could not load transactions
-                    </div>
-                    <div className={styles["tx-empty__hint"]}>{error}</div>
-                    <button
-                      className={styles["tx-retry"]}
-                      onClick={() => fetchTransactions(filter, page)}
-                    >
-                      Try again
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            )}
-
-            {/* Empty */}
-            {!loading && !error && safeTransactions.length === 0 && (
-              <tr>
-                <td colSpan={7}>
-                  <div className={styles["tx-empty"]}>
-                    <div className={styles["tx-empty__text"]}>
-                      No {filter !== "all" ? filter : ""} transactions found
-                    </div>
-                    {filter !== "all" && (
-                      <div className={styles["tx-empty__hint"]}>
-                        Try switching the filter to "All"
-                      </div>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            )}
-
-            {/* Rows */}
-            {!loading &&
-              !error &&
-              safeTransactions.map((tx) => {
-                const isCredit = tx.type === "credit";
-                const amount = Number(tx.amount);
-                return (
-                  <tr key={tx.id}>
-                    <td className={styles["td-date"]}>
-                      {formatDate(tx.created_at)}
-                    </td>
-                    <td className={styles["td-company"]}>
-                      {tx.company_name ?? "—"}
-                    </td>
-                    <td>
-                      <span
-                        className={`${styles.badge} ${
-                          isCredit
-                            ? styles["badge--credit"]
-                            : styles["badge--debit"]
-                        }`}
-                      >
-                        {tx.type}
-                      </span>
-                    </td>
-                    <td className={styles["td-ref"]}>
-                      {formatReferenceType(tx.reference_type)}
-                    </td>
-                    <td
-                      className={`${styles["td-amount"]} ${
-                        isCredit
-                          ? styles["td-amount--credit"]
-                          : styles["td-amount--debit"]
-                      }`}
-                    >
-                      {isCredit ? "+" : "−"}₹{formatCurrency(Math.abs(amount))}
-                    </td>
-                    <td className={styles["td-balance"]}>
-                      ₹{formatCurrency(tx.balance_after)}
-                    </td>
-                    <td className={styles["td-desc"]} title={tx.description}>
-                      {tx.description}
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      </div>
+      {error && !loading ? (
+        <Card padding="none">
+          <EmptyState
+            icon={<AlertTriangle size={20} />}
+            title="Could not load transactions"
+            description={error}
+            action={
+              <Button variant="secondary" leftIcon={<RefreshCw size={15} />} onClick={() => fetchTransactions(filter, page)}>
+                Try again
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <Table
+          columns={columns}
+          data={safeTransactions}
+          rowKey={(tx) => tx.id}
+          loading={loading}
+          emptyMessage={`No ${filter !== "all" ? filter : ""} transactions found`}
+          emptyDescription={filter !== "all" ? 'Try switching the filter to "All"' : undefined}
+        />
+      )}
 
       {/* Pagination */}
       {!loading && !error && pagination && pagination.totalPages > 1 && (
-        <div className={styles["tx-pagination"]}>
-          <span className={styles["tx-pagination__info"]}>
-            Page {pagination.page} of {pagination.totalPages} &nbsp;·&nbsp;{" "}
-            {pagination.total} total
-          </span>
-          <div className={styles["tx-pagination__controls"]}>
-            <button
-              className={styles["tx-pagination__btn"]}
-              disabled={!pagination.hasPreviousPage}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={16} />
-              Prev
-            </button>
-            <button
-              className={styles["tx-pagination__btn"]}
-              disabled={!pagination.hasNextPage}
-              onClick={() => setPage((p) => p + 1)}
-              aria-label="Next page"
-            >
-              Next
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <PaginationControl
+          className="mt-4"
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.total}
+          itemsPerPage={pagination.limit}
+          showInfo
+          onPageChange={setPage}
+        />
       )}
-    </div>
+    </PageContainer>
   );
 }

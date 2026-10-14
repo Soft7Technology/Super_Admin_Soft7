@@ -1,8 +1,54 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import "./subscription.css";
+import type { ReactNode } from "react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Ban,
+  BarChart3,
+  Check,
+  CreditCard,
+  Download,
+  FileText,
+  History as History_,
+  Hourglass,
+  MessageCircle,
+  PauseCircle,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Send,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  Wallet,
+  X,
+  XCircle,
+} from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { PageContainer, PageHeader } from "@/components/layout";
+import KpiCard from "@/components/admin/KpiCard";
+import type { KpiTone } from "@/components/admin/KpiCard";
+import Alert from "@/components/ui/Alert";
+import KitBadge from "@/components/ui/Badge";
+import type { BadgeVariant } from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import IconButton from "@/components/ui/IconButton";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import KitSelect from "@/components/ui/Select";
+import Skeleton from "@/components/ui/Skeleton";
+import Switch from "@/components/ui/Switch";
+import Table from "@/components/ui/Table";
+import type { Column } from "@/components/ui/Table";
+import Tabs from "@/components/ui/Tabs";
+import { cn } from "@/lib/utils";
+
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const EXTERNAL_API =
@@ -94,31 +140,31 @@ interface CustomPlan  { id:number; name:string; price:number; yearPrice:number; 
 
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const INIT_SUBS: SubRow[] = [
-  { id:"1", company:"Acme Corp", logo:"AC", col:"#6C5CE7", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
+  { id:"1", company:"Acme Corp", logo:"AC", col:"var(--color-brand)", plan:"Enterprise", status:"ACTIVE", start:"Jan 1, 2026", end:"Dec 31, 2026", amt:7999, users:320, seats:500 },
 ];
 
 const INIT_PLANS: PlanRow[] = [
-  { id:1, name:"Starter",    price:499,  yearPrice:399,  icon:"🌱", col:"#00CBA4", users:"5",  wa:"1", msgs:"1K",  extra:["Email Support","Basic Reports","1 Chatbot"] },
-  { id:2, name:"Basic",      price:999,  yearPrice:799,  icon:"🚀", col:"#FDCB6E", users:"15", wa:"2", msgs:"5K",  extra:["Priority Support","Advanced Reports","5 Chatbots","Campaigns"] },
-  { id:3, name:"Pro",        price:2499, yearPrice:1999, icon:"⚡", col:"#6C5CE7", users:"50", wa:"5", msgs:"25K", popular:true, extra:["24/7 Support","AI Assistant","Unlimited Chatbots","Flows","Custom Branding"] },
-  { id:4, name:"Enterprise", price:7999, yearPrice:6399, icon:"🏆", col:"#A29BFE", users:"∞", wa:"∞", msgs:"∞",  extra:["Dedicated Manager","SLA 99.9%","Custom Integration","White Label","SSO"] },
+  { id:1, name:"Starter",    price:499,  yearPrice:399,  icon:"🌱", col:"var(--color-brand)", users:"5",  wa:"1", msgs:"1K",  extra:["Email Support","Basic Reports","1 Chatbot"] },
+  { id:2, name:"Basic",      price:999,  yearPrice:799,  icon:"🚀", col:"var(--color-warning)", users:"15", wa:"2", msgs:"5K",  extra:["Priority Support","Advanced Reports","5 Chatbots","Campaigns"] },
+  { id:3, name:"Pro",        price:2499, yearPrice:1999, icon:"⚡", col:"var(--color-brand)", users:"50", wa:"5", msgs:"25K", popular:true, extra:["24/7 Support","AI Assistant","Unlimited Chatbots","Flows","Custom Branding"] },
+  { id:4, name:"Enterprise", price:7999, yearPrice:6399, icon:"🏆", col:"var(--color-brand)", users:"∞", wa:"∞", msgs:"∞",  extra:["Dedicated Manager","SLA 99.9%","Custom Integration","White Label","SSO"] },
 ];
 
 const HISTORY: Transaction[] = [];
 
 const TYPE_COLOR: Record<TxnType, string> = {
-  New:"#00CBA4", Renewal:"#A29BFE", Upgrade:"#FDCB6E",
-  Failed:"#FF6B6B", Trial:"#74B9FF", Refund:"#FD79A8",
+  New:"var(--color-brand)", Renewal:"var(--color-brand)", Upgrade:"var(--color-warning)",
+  Failed:"var(--color-error)", Trial:"var(--color-brand)", Refund:"var(--color-error)",
 };
 const ICON_OPTIONS  = ["🌱","🚀","⚡","🏆","💎","🔥","🌟","🎯","🛡️","🧩"];
-const COLOR_OPTIONS = ["#6C5CE7","#00CBA4","#FDCB6E","#A29BFE","#FF6B6B","#74B9FF","#FD79A8","#00B894","#E17055","#0984e3"];
+const COLOR_OPTIONS = ["var(--color-brand)","var(--color-brand)","var(--color-warning)","var(--color-brand)","var(--color-error)","var(--color-brand)","var(--color-error)","var(--color-brand)","var(--color-error)","var(--color-brand)"];
 
 // ─── PLAN COLOR MAP ───────────────────────────────────────────────────────────
 const PLAN_COLORS: Record<string, string> = {
-  starter:    "#00CBA4",
-  basic:      "#FDCB6E",
-  pro:        "#6C5CE7",
-  enterprise: "#A29BFE",
+  starter:    "var(--color-brand)",
+  basic:      "var(--color-warning)",
+  pro:        "var(--color-brand)",
+  enterprise: "var(--color-brand)",
 };
 
 const escapeExcelCell = (value: unknown) =>
@@ -219,7 +265,27 @@ const downloadExcel = (rows: SubRow[]) => {
   URL.revokeObjectURL(url);
 };
 
-// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
+/// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
+const SUB_STATUS_VARIANT: Record<SubStatus, BadgeVariant> = {
+  ACTIVE: "success",
+  TRIAL: "info",
+  EXPIRED: "neutral",
+  SUSPENDED: "error",
+  CANCELLED: "error",
+};
+
+const PLAN_VARIANT: Record<PlanName, BadgeVariant> = {
+  Starter: "info",
+  Basic: "warning",
+  Pro: "primary",
+  Enterprise: "primary",
+};
+
+const TXN_VARIANT: Record<TxnType, BadgeVariant> = {
+  New: "primary", Renewal: "primary", Upgrade: "warning",
+  Failed: "error", Trial: "info", Refund: "error",
+};
+
 function Badge({ status }: { status: SubStatus }) {
   const labels: Record<SubStatus, string> = {
     ACTIVE: "Active",
@@ -230,28 +296,28 @@ function Badge({ status }: { status: SubStatus }) {
   };
 
   return (
-    <span className={`sb-badge sb-badge--${status}`}>
-      <span className="sb-badge__dot" />
+    <KitBadge variant={SUB_STATUS_VARIANT[status]} dot>
       {labels[status]}
-    </span>
+    </KitBadge>
   );
 }
 
 function PlanChip({ plan }: { plan: PlanName }) {
-  return <span className={`sb-plan-chip sb-plan-chip--${plan}`}>{plan}</span>;
+  return <KitBadge variant={PLAN_VARIANT[plan]}>{plan}</KitBadge>;
 }
 
-function KPI({ label,value,delta,icon,color,up=true }:{ label:string; value:string; delta?:string; icon:string; color:string; up?:boolean }) {
+/** Monogram tile tinted with the plan's own (data-driven) accent color. */
+function PlanMark({ col, children, size = "md" }: { col: string; children: ReactNode; size?: "sm" | "md" }) {
   return (
-    <div className="sb-kpi">
-      <div className="sb-kpi__orb" style={{ background:`${color}10` }} />
-      <div className="sb-kpi__top">
-        <span className="sb-kpi__label">{label}</span>
-        <div className="sb-kpi__icon" style={{ background:`${color}18` }}>{icon}</div>
-      </div>
-      <div className="sb-kpi__value">{value}</div>
-      {delta && <div className={`sb-kpi__delta ${up?"sb-kpi__delta--up":"sb-kpi__delta--dn"}`}>{up?"↑":"↓"} {delta}</div>}
-    </div>
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-lg font-semibold",
+        size === "sm" ? "h-8 w-8 text-xs" : "h-10 w-10 text-base",
+      )}
+      style={{ background: `color-mix(in oklab, ${col} 14%, transparent)`, color: col }}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -260,31 +326,50 @@ function Inp({ label,value,onChange,placeholder,type="text",error,prefix }:{
   placeholder?:string; type?:string; error?:string; prefix?:string;
 }) {
   return (
-    <div className="sb-field">
-      <div className="sb-field__label">{label}</div>
-      <div className="sb-input-wrap">
-        {prefix && <span className="sb-input-prefix">{prefix}</span>}
-        <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-          className={`sb-input ${prefix?"sb-input--prefix":""} ${error?"sb-input--err":""}`} />
+    <Input
+      label={label}
+      type={type}
+      value={value}
+      onChange={e=>onChange(e.target.value)}
+      placeholder={placeholder}
+      error={error}
+      leftIcon={prefix ? <span className="text-xs">{prefix}</span> : undefined}
+    />
+  );
+}
+
+function Tog({ on, setOn, label }:{ on:boolean; setOn:(v:boolean)=>void; label?: string }) {
+  return <Switch checked={on} onCheckedChange={setOn} aria-label={label ?? (on ? "Enabled" : "Disabled")} />;
+}
+
+function ToggleRow({ title, desc, on, setOn }: { title: string; desc: string; on: boolean; setOn: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-border-subtle bg-surface-muted px-4 py-3">
+      <div>
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>
       </div>
-      {error && <div className="sb-field__error">{error}</div>}
+      <Tog on={on} setOn={setOn} label={title} />
     </div>
   );
 }
 
-function Tog({ on, setOn }:{ on:boolean; setOn:(v:boolean)=>void }) {
+function LimitsGrid({ items }: { items: [ReactNode, string, string][] }) {
   return (
-    <button
-      type="button"
-      className={`sb-toggle ${on?"sb-toggle--on":""}`}
-      onClick={()=>setOn(!on)}
-      aria-pressed={on}
-      aria-label={on ? "Enabled" : "Disabled"}
-    >
-      <div className="sb-toggle__knob" />
-    </button>
+    <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-border-subtle bg-border-subtle">
+      {items.map(([ic, v, l]) => (
+        <div key={l} className="bg-surface px-2 py-2 text-center">
+          <div className="flex items-center justify-center gap-1 text-sm font-semibold text-foreground">{ic} {v}</div>
+          <div className="text-[0.6875rem] text-muted-foreground">{l}</div>
+        </div>
+      ))}
+    </div>
   );
 }
+
+const SectionLabel = ({ children }: { children: ReactNode }) => (
+  <p className="mb-2 text-[0.6875rem] font-medium uppercase tracking-wider text-muted-foreground">{children}</p>
+);
 
 // ─── CREATE PLAN MODAL ────────────────────────────────────────────────────────
 function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:CustomPlan)=>void }) {
@@ -296,7 +381,7 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
   const [wa,      setWa]      = useState("");
   const [msgs,    setMsgs]    = useState("");
   const [icon,    setIcon]    = useState("🌱");
-  const [col,     setCol]     = useState("#6C5CE7");
+  const [col,     setCol]     = useState("var(--color-brand)");
   const [popular, setPopular] = useState(false);
   const [feats,   setFeats]   = useState(["","",""]);
   const [errors,  setErrors]  = useState<Record<string,string>>({});
@@ -328,201 +413,197 @@ function CreatePlanModal({ onClose, onSave }:{ onClose:()=>void; onSave:(p:Custo
   const STEPS = ["Basic Info","Limits","Features"];
 
   if(done) return (
-    <div className="sb-success-overlay">
-      <div className="sb-success-card">
-        <div className="sb-success-icon">✓</div>
-        <div className="sb-success-title">Plan Created!</div>
-        <div className="sb-success-desc">
-          <span style={{ color:col, fontWeight:700 }}>{icon} {name}</span> is now live in your plan list.
-        </div>
+    <Modal isOpen onClose={onClose} size="sm" showCloseButton={false}>
+      <div className="flex flex-col items-center py-4 text-center">
+        <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-success-bg text-success">
+          <Check size={24} />
+        </span>
+        <p className="text-lg font-semibold text-foreground">Plan Created!</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          <span className="font-semibold" style={{ color: col }}>{icon} {name}</span> is now live in your plan list.
+        </p>
       </div>
-    </div>
+    </Modal>
   );
 
   return (
-    <div className="sb-modal-overlay" onClick={onClose}>
-      <div className="sb-modal" onClick={e=>e.stopPropagation()}>
-        <div className="sb-modal__header">
-          <div className="sb-modal__top">
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <div className="sb-modal__icon">✦</div>
-              <div>
-                <div className="sb-modal__title">Create New Plan</div>
-                <div className="sb-modal__step">Step {step} of 3 — {STEPS[step-1]}</div>
-              </div>
-            </div>
-            <button className="sb-modal__close" onClick={onClose}>×</button>
-          </div>
-          <div className="sb-progress">
-            {STEPS.map((s,i)=>(
-              <div key={s} className="sb-progress__item">
-                <div className={`sb-progress__bar ${i<step?"sb-progress__bar--done":""}`} />
-                <div className={`sb-progress__label ${i+1===step?"sb-progress__label--active":i<step?"sb-progress__label--done":""}`}>{s}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="sb-modal__body">
-          {step===1 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:15 }}>
-              <Inp label="PLAN NAME" value={name} onChange={setName} placeholder="e.g. Growth, Teams, Scale…" error={errors.name} />
-              <div className="sb-form-grid-2">
-                <Inp label="MONTHLY PRICE (₹)" value={price} onChange={setPrice} placeholder="2499" type="number" prefix="₹" error={errors.price} />
-                <Inp label="YEARLY DISCOUNT (%)" value={yearPct} onChange={setYearPct} placeholder="20" type="number" />
-              </div>
-              {mp>0 && (
-                <div className="sb-price-preview">
-                  <span className="sb-price-preview__label">Annual billing price / mo</span>
-                  <span className="sb-price-preview__val">₹{ap.toLocaleString()} <span className="sb-price-preview__note">({yearPct}% off)</span></span>
-                </div>
-              )}
-              <div>
-                <div className="sb-field__label" style={{ marginBottom:8 }}>PLAN ICON</div>
-                <div className="sb-icon-grid">
-                  {ICON_OPTIONS.map(ic=>(
-                    <button key={ic} onClick={()=>setIcon(ic)} className={`sb-icon-btn ${icon===ic?"sb-icon-btn--active":""}`}>{ic}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="sb-field__label" style={{ marginBottom:8 }}>ACCENT COLOR</div>
-                <div className="sb-color-grid">
-                  {COLOR_OPTIONS.map(c=>(
-                    <button key={c} onClick={()=>setCol(c)} className={`sb-color-swatch ${col===c?"sb-color-swatch--active":""}`}
-                      style={{ background:c, outlineColor:c, outlineStyle:col===c?"solid":"none", outlineWidth:col===c?2:0, outlineOffset:2 }} />
-                  ))}
-                </div>
-              </div>
-              <div className="sb-toggle-row">
-                <div>
-                  <div className="sb-toggle-row__title">Mark as Popular ★</div>
-                  <div className="sb-toggle-row__desc">Shows "Most Popular" banner on plan card.</div>
-                </div>
-                <Tog on={popular} setOn={setPopular} />
-              </div>
-              {name && (
-                <div className="sb-live-preview" style={{ borderColor:`${col}40`, border:`1px solid ${col}40` }}>
-                  <div className="sb-live-preview__label">LIVE PREVIEW</div>
-                  <div className="sb-live-preview__row">
-                    <div className="sb-live-preview__icon" style={{ background:`${col}22` }}>{icon}</div>
-                    <div>
-                      <div className="sb-live-preview__name">
-                        {name}
-                        {popular && <span className="sb-live-preview__popular">POPULAR</span>}
-                      </div>
-                      <div className="sb-live-preview__price">
-                        <span className="sb-live-preview__amt">₹{mp.toLocaleString()}</span>
-                        <span className="sb-live-preview__per">/mo</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {step===2 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-              <div style={{ fontSize:12, color:"var(--sb-muted)" }}>
-                Set usage limits for <span style={{ color:"var(--sb-accent2)", fontWeight:700 }}>{name||"this plan"}</span>.
-                Use <code className="sb-code">∞</code> for unlimited.
-              </div>
-              <div className="sb-form-grid-3">
-                <Inp label="👥 MAX USERS"    value={users} onChange={setUsers} placeholder="50 or ∞"  error={errors.users} />
-                <Inp label="💬 WA ACCOUNTS"  value={wa}    onChange={setWa}    placeholder="5 or ∞"   error={errors.wa}   />
-                <Inp label="📨 MSGS / MONTH" value={msgs}  onChange={setMsgs}  placeholder="25K or ∞" error={errors.msgs} />
-              </div>
-              {(users||wa||msgs) && (
-                <div className="sb-limits-preview">
-                  <div className="sb-limits-preview__lbl">LIMITS PREVIEW</div>
-                  <div className="sb-limits-grid">
-                    {([["👥",users||"—","users"],["💬",wa||"—","WA accts"],["📨",msgs||"—","msgs/mo"]] as [string,string,string][]).map(([ic,v,l])=>(
-                      <div key={l} className="sb-limit-cell">
-                        <div className="sb-limit-cell__val">{ic} {v}</div>
-                        <div className="sb-limit-cell__key">{l}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="sb-feat-toggles">
-                {([
-                  ["AI Assistant","AI-powered chat assistance",aiOn,setAiOn],
-                  ["Custom Branding","Logo & color customization",brandOn,setBrandOn],
-                  ["API Access","REST API for integrations",apiOn,setApiOn],
-                  ["Priority Support","Faster response SLA",suppOn,setSuppOn],
-                ] as [string,string,boolean,(v:boolean)=>void][]).map(([lbl,desc,val,setter])=>(
-                  <div key={lbl} className="sb-feat-toggle">
-                    <div>
-                      <div className="sb-feat-toggle__title">{lbl}</div>
-                      <div className="sb-feat-toggle__desc">{desc}</div>
-                    </div>
-                    <Tog on={val} setOn={setter} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step===3 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:13 }}>
-              <div style={{ fontSize:12, color:"var(--sb-muted)" }}>
-                Feature bullets shown on <span style={{ color:"var(--sb-accent2)", fontWeight:700 }}>{name||"the plan"}</span> card.
-              </div>
-              <div className="sb-feat-bullets">
-                {feats.map((f,i)=>(
-                  <div key={i} className="sb-feat-bullet">
-                    <span className="sb-feat-bullet__check" style={{ color:col }}>✓</span>
-                    <input value={f} onChange={e=>{const c=[...feats];c[i]=e.target.value;setFeats(c);}}
-                      placeholder={`Feature ${i+1}…`} className="sb-feat-input" />
-                    {feats.length>1 && <button className="sb-btn-remove" onClick={()=>setFeats(f=>f.filter((_,idx)=>idx!==i))}>×</button>}
-                  </div>
-                ))}
-              </div>
-              <button className="sb-btn-add-feat" onClick={()=>setFeats(f=>[...f,""])}>+ Add Feature</button>
-              <div className="sb-final-preview" style={{ border:`1px solid ${col}35` }}>
-                {popular && <div className="sb-plan-card__popular-banner">★ MOST POPULAR</div>}
-                <div className="sb-final-preview__inner">
-                  <div className="sb-final-preview__lbl">FINAL PREVIEW</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-                    <div className="sb-live-preview__icon" style={{ background:`${col}22` }}>{icon}</div>
-                    <div>
-                      <div style={{ fontSize:14, fontWeight:800, color:"var(--sb-title)" }}>{name||"Plan Name"}</div>
-                      <div className="sb-live-preview__price">
-                        <span className="sb-live-preview__amt">₹{mp.toLocaleString()}</span>
-                        <span className="sb-live-preview__per">/mo</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="sb-limits-grid" style={{ marginBottom:12 }}>
-                    {([["👥",users||"—","users"],["💬",wa||"—","WA"],["📨",msgs||"—","msgs"]] as [string,string,string][]).map(([ic,v,l])=>(
-                      <div key={l} className="sb-limit-cell"><div className="sb-limit-cell__val">{ic} {v}</div><div className="sb-limit-cell__key">{l}</div></div>
-                    ))}
-                  </div>
-                  {feats.filter(f=>f.trim()).map(f=>(
-                    <div key={f} className="sb-final-preview__feat">
-                      <span style={{ color:col }}>✓</span>{f}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="sb-modal__footer">
-          <button className="sb-btn sb-btn--ghost" onClick={step>1?back:onClose}>{step===1?"Cancel":"← Back"}</button>
-          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-            <span className="sb-modal__step-count">{step} / 3</span>
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="lg"
+      title="Create New Plan"
+      description={`Step ${step} of 3 — ${STEPS[step-1]}`}
+      footer={
+        <div className="flex w-full items-center justify-between gap-2">
+          <Button variant="secondary" onClick={step>1?back:onClose} leftIcon={step>1 ? <ArrowLeft size={15} /> : undefined}>
+            {step===1?"Cancel":"Back"}
+          </Button>
+          <div className="flex items-center gap-3">
+            <span className="text-xs tabular-nums text-muted-foreground">{step} / 3</span>
             {step<3
-              ? <button className="sb-btn sb-btn--primary" onClick={next}>Next →</button>
-              : <button className="sb-btn sb-btn--primary" onClick={handleSave}>✓ Create Plan</button>
+              ? <Button onClick={next} rightIcon={<ArrowRight size={15} />}>Next</Button>
+              : <Button onClick={handleSave} leftIcon={<Check size={15} />}>Create Plan</Button>
             }
           </div>
         </div>
-      </div>
-    </div>
+      }
+    >
+      {/* Progress */}
+      <ol className="mb-5 grid grid-cols-3 gap-2" aria-label="Progress">
+        {STEPS.map((s,i)=>(
+          <li key={s} aria-current={i+1===step ? "step" : undefined}>
+            <div className={cn("h-1 rounded-full", i<step ? "bg-primary" : "bg-surface-muted")} />
+            <p className={cn("mt-1.5 text-xs", i+1===step ? "font-semibold text-primary-text" : i<step ? "text-secondary-foreground" : "text-muted-foreground")}>{s}</p>
+          </li>
+        ))}
+      </ol>
+
+      {step===1 && (
+        <div className="space-y-4">
+          <Inp label="Plan Name" value={name} onChange={setName} placeholder="e.g. Growth, Teams, Scale…" error={errors.name} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Inp label="Monthly Price (₹)" value={price} onChange={setPrice} placeholder="2499" type="number" prefix="₹" error={errors.price} />
+            <Inp label="Yearly Discount (%)" value={yearPct} onChange={setYearPct} placeholder="20" type="number" />
+          </div>
+          {mp>0 && (
+            <div className="flex items-center justify-between rounded-lg border border-border-subtle bg-surface-muted px-4 py-2.5 text-[0.8125rem]">
+              <span className="text-muted-foreground">Annual billing price / mo</span>
+              <span className="font-semibold tabular-nums text-foreground">₹{ap.toLocaleString()} <span className="font-normal text-success">({yearPct}% off)</span></span>
+            </div>
+          )}
+          <div>
+            <SectionLabel>Plan Icon</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {ICON_OPTIONS.map(ic=>(
+                <button
+                  key={ic}
+                  type="button"
+                  onClick={()=>setIcon(ic)}
+                  aria-pressed={icon===ic}
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-lg border text-lg transition-colors",
+                    icon===ic ? "border-primary bg-primary-lighter" : "border-border bg-surface hover:bg-surface-hover",
+                  )}
+                >
+                  {ic}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <SectionLabel>Accent Color</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_OPTIONS.map((c, i)=>(
+                <button
+                  key={`${c}-${i}`}
+                  type="button"
+                  onClick={()=>setCol(c)}
+                  aria-label={`Accent color ${i + 1}`}
+                  aria-pressed={col===c}
+                  className={cn("h-7 w-7 rounded-full ring-offset-2 ring-offset-surface transition-shadow", col===c && "ring-2 ring-primary")}
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+          </div>
+          <ToggleRow title="Mark as Popular ★" desc={`Shows "Most Popular" banner on plan card.`} on={popular} setOn={setPopular} />
+          {name && (
+            <div className="rounded-lg border p-4" style={{ borderColor: `color-mix(in oklab, ${col} 30%, transparent)` }}>
+              <SectionLabel>Live Preview</SectionLabel>
+              <div className="flex items-center gap-3">
+                <PlanMark col={col}>{icon}</PlanMark>
+                <div>
+                  <p className="flex items-center gap-2 font-semibold text-foreground">
+                    {name}
+                    {popular && <KitBadge variant="warning" size="sm">POPULAR</KitBadge>}
+                  </p>
+                  <p className="text-sm"><span className="font-semibold tabular-nums text-foreground">₹{mp.toLocaleString()}</span><span className="text-muted-foreground">/mo</span></p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {step===2 && (
+        <div className="space-y-4">
+          <p className="text-[0.8125rem] text-muted-foreground">
+            Set usage limits for <span className="font-semibold text-primary-text">{name||"this plan"}</span>.
+            Use <code className="rounded bg-surface-muted px-1 font-mono text-foreground">∞</code> for unlimited.
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Inp label="Max Users"    value={users} onChange={setUsers} placeholder="50 or ∞"  error={errors.users} />
+            <Inp label="WA Accounts"  value={wa}    onChange={setWa}    placeholder="5 or ∞"   error={errors.wa}   />
+            <Inp label="Msgs / Month" value={msgs}  onChange={setMsgs}  placeholder="25K or ∞" error={errors.msgs} />
+          </div>
+          {(users||wa||msgs) && (
+            <div>
+              <SectionLabel>Limits Preview</SectionLabel>
+              <LimitsGrid items={[[<Users key="u" size={13} />,users||"—","users"],[<MessageCircle key="w" size={13} />,wa||"—","WA accts"],[<Send key="m" size={13} />,msgs||"—","msgs/mo"]]} />
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {([
+              ["AI Assistant","AI-powered chat assistance",aiOn,setAiOn],
+              ["Custom Branding","Logo & color customization",brandOn,setBrandOn],
+              ["API Access","REST API for integrations",apiOn,setApiOn],
+              ["Priority Support","Faster response SLA",suppOn,setSuppOn],
+            ] as [string,string,boolean,(v:boolean)=>void][]).map(([lbl,desc,val,setter])=>(
+              <ToggleRow key={lbl} title={lbl} desc={desc} on={val} setOn={setter} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step===3 && (
+        <div className="space-y-4">
+          <p className="text-[0.8125rem] text-muted-foreground">
+            Feature bullets shown on <span className="font-semibold text-primary-text">{name||"the plan"}</span> card.
+          </p>
+          <div className="space-y-2">
+            {feats.map((f,i)=>(
+              <div key={i} className="flex items-center gap-2">
+                <Check size={15} className="shrink-0" style={{ color: col }} />
+                <Input
+                  wrapperClassName="flex-1"
+                  aria-label={`Feature ${i+1}`}
+                  value={f}
+                  onChange={e=>{const c=[...feats];c[i]=e.target.value;setFeats(c);}}
+                  placeholder={`Feature ${i+1}…`}
+                />
+                {feats.length>1 && (
+                  <IconButton size="sm" aria-label={`Remove feature ${i+1}`} icon={<X size={14} />} onClick={()=>setFeats(f=>f.filter((_,idx)=>idx!==i))} />
+                )}
+              </div>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" leftIcon={<Plus size={14} />} onClick={()=>setFeats(f=>[...f,""])}>Add Feature</Button>
+          <div className="overflow-hidden rounded-lg border" style={{ borderColor: `color-mix(in oklab, ${col} 30%, transparent)` }}>
+            {popular && <div className="bg-primary py-1 text-center text-[0.6875rem] font-semibold tracking-wide text-primary-foreground">★ MOST POPULAR</div>}
+            <div className="p-4">
+              <SectionLabel>Final Preview</SectionLabel>
+              <div className="mb-3 flex items-center gap-3">
+                <PlanMark col={col}>{icon}</PlanMark>
+                <div>
+                  <p className="font-semibold text-foreground">{name||"Plan Name"}</p>
+                  <p className="text-sm"><span className="font-semibold tabular-nums text-foreground">₹{mp.toLocaleString()}</span><span className="text-muted-foreground">/mo</span></p>
+                </div>
+              </div>
+              <div className="mb-3">
+                <LimitsGrid items={[[<Users key="u" size={13} />,users||"—","users"],[<MessageCircle key="w" size={13} />,wa||"—","WA"],[<Send key="m" size={13} />,msgs||"—","msgs"]]} />
+              </div>
+              <ul className="space-y-1.5">
+                {feats.filter(f=>f.trim()).map(f=>(
+                  <li key={f} className="flex items-center gap-2 text-[0.8125rem] text-secondary-foreground">
+                    <Check size={14} style={{ color: col }} />{f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -554,211 +635,151 @@ const mrr = monthlyPlans.reduce(
 );
   const exp    = subs.filter(s=>s.status!=="ACTIVE");
 
+  const distribution = Object.values(
+    subs.reduce((acc: Record<string, { name: string; count: number; revenue: number; color: string }>, sub) => {
+      const key = sub.company;
+      if (!acc[key]) acc[key] = { name: sub.company, count: 0, revenue: 0, color: sub.col };
+      acc[key].count += 1;
+      acc[key].revenue += sub.amt;
+      return acc;
+    }, {}),
+  );
+
   return (
-    <div className="sb-overview">
-      <div>
-        <div className="sb-sub-table">
-          <div className="sb-sub-table__head">
-            <span className="sb-sub-table__head-title">All Subscriptions</span>
-            <span className="sb-sub-table__head-count">{active.length} active</span>
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="min-w-0 space-y-4">
+        <Card padding="none" className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border-subtle px-5 py-4">
+            <h3 className="text-[0.9375rem] font-semibold text-foreground">All Subscriptions</h3>
+            <KitBadge variant="success">{active.length} active</KitBadge>
           </div>
           {loading && (
-            <div style={{ padding:"24px", textAlign:"center", color:"var(--sb-muted)", fontSize:13 }}>
-              Loading subscriptions…
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
             </div>
           )}
           {!loading && subs.length === 0 && (
-            <div style={{ padding:"24px", textAlign:"center", color:"var(--sb-muted)", fontSize:13 }}>
-              No subscriptions found.
-            </div>
+            <EmptyState compact icon={<CreditCard size={20} />} title="No subscriptions found." />
           )}
-          {!loading && subs.map(s=>(
-            <div key={s.id} className={`sb-sub-row ${sel?.id===s.id?"sb-sub-row--active":""}`}
-              onClick={()=>setSel(sel?.id===s.id?null:s)}>
-              <div className="sb-sub-row__logo" style={{ background:s.col }}>{s.logo}</div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div className="sb-sub-row__name">{s.company}</div>
-                <div className="sb-sub-row__meta">Renews on {s.end} · {s.users}/{s.seats} seats</div>
-              </div>
-              <span className={`sb-plan-chip sb-plan-chip--${s.plan}`} style={{ marginRight:6, fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700, background:`var(--sb-plan-${s.plan.toLowerCase()})18` }}>{s.plan}</span>
-              <Badge status={s.status} />
-              <div className="sb-sub-row__amount">{s.amt>0?`₹${s.amt.toLocaleString()}`:"Free"}</div>
-            </div>
-          ))}
-        </div>
+          {!loading && subs.length > 0 && (
+            <ul className="divide-y divide-border-subtle">
+              {subs.map(s=>{
+                const selected = sel?.id===s.id;
+                return (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      onClick={()=>setSel(selected?null:s)}
+                      aria-pressed={selected}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-5 py-3 text-left transition-colors",
+                        selected ? "bg-primary-lighter" : "hover:bg-surface-hover",
+                      )}
+                    >
+                      <PlanMark col={s.col} size="sm">{s.logo}</PlanMark>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{s.company}</p>
+                        <p className="truncate text-xs text-muted-foreground">Renews on {s.end} · {s.users}/{s.seats} seats</p>
+                      </div>
+                      <span className="hidden sm:inline-flex"><PlanChip plan={s.plan} /></span>
+                      <Badge status={s.status} />
+                      <span className="w-20 text-right text-sm font-semibold tabular-nums text-foreground">{s.amt>0?`₹${s.amt.toLocaleString()}`:"Free"}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
 
         {sel && (
-          <div className="sb-detail">
-            <div className="sb-detail__top">
-              <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-                <div className="sb-detail__logo" style={{ background:sel.col, width:44, height:44 }}>{sel.logo}</div>
-                <div>
-                  <div className="sb-detail__name">{sel.company}</div>
-                  <div className="sb-detail__dates">{sel.start} → {sel.end}</div>
-                </div>
-              </div>
-              <button className="sb-btn-close-det" onClick={()=>setSel(null)}>×</button>
+          <Card>
+            <CardHeader
+              title={
+                <span className="flex items-center gap-3">
+                  <PlanMark col={sel.col}>{sel.logo}</PlanMark>
+                  <span>
+                    <span className="block">{sel.company}</span>
+                    <span className="block text-xs font-normal text-muted-foreground">{sel.start} → {sel.end}</span>
+                  </span>
+                </span>
+              }
+              action={<IconButton size="sm" aria-label="Close details" icon={<X size={15} />} onClick={()=>setSel(null)} />}
+            />
+            <dl className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border-subtle bg-border-subtle sm:grid-cols-4">
+              <div className="bg-surface px-4 py-3"><dt className="text-xs text-muted-foreground">Plan</dt><dd className="mt-1"><PlanChip plan={sel.plan} /></dd></div>
+              <div className="bg-surface px-4 py-3"><dt className="text-xs text-muted-foreground">Amount</dt><dd className="mt-0.5 text-sm font-semibold tabular-nums text-success">{sel.amt>0?`₹${sel.amt.toLocaleString()}`:"Free"}</dd></div>
+              <div className="bg-surface px-4 py-3"><dt className="text-xs text-muted-foreground">Seats</dt><dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{sel.users}/{sel.seats}</dd></div>
+              <div className="bg-surface px-4 py-3"><dt className="text-xs text-muted-foreground">Status</dt><dd className="mt-1"><Badge status={sel.status} /></dd></div>
+            </dl>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" leftIcon={<Pencil size={14} />} onClick={() => onUpdatePlan(sel)}>Update Plan</Button>
+              <Button size="sm" variant="secondary" leftIcon={<PauseCircle size={14} />}>Pause</Button>
+              <Button size="sm" variant="danger" leftIcon={<Ban size={14} />}>Cancel</Button>
             </div>
-            <div className="sb-detail__grid">
-              {([
-                ["Plan",  sel.plan,                                              `var(--sb-plan-${sel.plan.toLowerCase()})`],
-                ["Amount",sel.amt>0?`₹${sel.amt.toLocaleString()}`:"Free",      "var(--sb-success)"],
-                ["Seats", `${sel.users}/${sel.seats}`,                           "var(--sb-accent2)"],
-                ["Status",sel.status[0]+sel.status.slice(1).toLowerCase(),       `var(--sb-status-${sel.status.toLowerCase()}-col)`],
-              ] as [string,string,string][]).map(([l,v,c])=>(
-                <div key={l} className="sb-detail__cell">
-                  <div className="sb-detail__cell-key">{l.toUpperCase()}</div>
-                  <div className="sb-detail__cell-val" style={{ color:c }}>{v}</div>
-                </div>
-              ))}
-            </div>
-            <div className="sb-detail__actions">
-             <button
-  className="sb-btn sb-btn--primary sb-btn--small"
- onClick={() => onUpdatePlan(sel)}
->
-  ✏️ Update Plan
-</button>
-              <button className="sb-btn sb-btn--ghost sb-btn--small">⏸ Pause</button>
-              <button className="sb-btn sb-btn--danger sb-btn--small">⛔ Cancel</button>
-            </div>
-          </div>
+          </Card>
         )}
       </div>
 
-      <div className="sb-sidebar">
-        <div className="sb-mrr-card">
-          <div className="sb-mrr-card__label">MONTHLY RECURRING REVENUE</div>
-          <div className="sb-mrr-card__value">₹{mrr.toLocaleString()}</div>
-          <div className="sb-mrr-card__delta">↑ +12% vs last month</div>
-          <div className="sb-mrr-card__grid">
-            {([["ARR",`₹${(mrr*12).toLocaleString()}`,"var(--sb-accent2)"],[
-  "ARPU",
-  `₹${
-    monthlyPlans.length > 0
-      ? Math.round(
-          mrr / monthlyPlans.length
-        ).toLocaleString()
-      : 0
-  }`,
-  "var(--sb-warn)"
-]] as [string,string,string][]).map(([l,v,c])=>(
-              <div key={l} className="sb-mrr-card__cell">
-                <div className="sb-mrr-card__cell-key">{l}</div>
-                <div className="sb-mrr-card__cell-val" style={{ color:c }}>{v}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="space-y-4">
+        <Card>
+          <SectionLabel>Monthly Recurring Revenue</SectionLabel>
+          <p className="text-2xl font-semibold tabular-nums text-foreground">₹{mrr.toLocaleString()}</p>
+          <p className="mt-1 flex items-center gap-1 text-xs font-medium text-success"><TrendingUp size={13} /> +12% vs last month</p>
+          <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border-subtle bg-border-subtle">
+            <div className="bg-surface px-3 py-2.5">
+              <dt className="text-xs text-muted-foreground">ARR</dt>
+              <dd className="mt-0.5 text-sm font-semibold tabular-nums text-primary-text">₹{(mrr*12).toLocaleString()}</dd>
+            </div>
+            <div className="bg-surface px-3 py-2.5">
+              <dt className="text-xs text-muted-foreground">ARPU</dt>
+              <dd className="mt-0.5 text-sm font-semibold tabular-nums text-warning">
+                ₹{monthlyPlans.length > 0 ? Math.round(mrr / monthlyPlans.length).toLocaleString() : 0}
+              </dd>
+            </div>
+          </dl>
+        </Card>
 
-        <div className="sb-dist-card">
-  <div className="sb-dist-card__title">
-    Plan Distribution
-  </div>
-
-  {subs.length === 0 ? (
-    <div
-      style={{
-        padding: "20px",
-        textAlign: "center",
-        color: "#888",
-      }}
-    >
-      No Plans Found
-    </div>
-  ) : (
-    Object.values(
-      subs.reduce((acc: any, sub) => {
-        const key = sub.company;
-
-        if (!acc[key]) {
-          acc[key] = {
-            name: sub.company,
-            count: 0,
-            revenue: 0,
-            color: sub.col,
-          };
-        }
-
-        acc[key].count += 1;
-        acc[key].revenue += sub.amt;
-
-        return acc;
-      }, {})
-    ).map((item: any) => (
-      <div
-        key={item.name}
-        className="sb-dist-row"
-      >
-        <div className="sb-dist-row__top">
-<span
-  className="sb-dist-row__name"
-  style={{
-    fontWeight: 600,
-    maxWidth: "140px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  }}
->
-  {item.name}
-</span>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-            }}
-          >
-            <span className="sb-dist-row__count">
-              {item.count} co.
-            </span>
-
-            <span
-              className="sb-dist-row__rev"
-              style={{
-                color: item.color,
-              }}
-            >
-              ₹{item.revenue.toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        <div className="sb-dist-bar-bg">
-          <div
-            className="sb-dist-bar-fill"
-            style={{
-              width: `${Math.min(
-                item.count * 20,
-                100
-              )}%`,
-              background: item.color,
-            }}
-          />
-        </div>
-      </div>
-    ))
-  )}
-</div>
+        <Card>
+          <CardHeader title="Plan Distribution" />
+          {subs.length === 0 ? (
+            <p className="py-4 text-center text-[0.8125rem] text-muted-foreground">No Plans Found</p>
+          ) : (
+            <div className="space-y-3">
+              {distribution.map(item => (
+                <div key={item.name}>
+                  <div className="mb-1 flex items-center justify-between gap-2 text-[0.8125rem]">
+                    <span className="max-w-[9rem] truncate font-medium text-foreground">{item.name}</span>
+                    <span className="flex gap-2">
+                      <span className="text-muted-foreground">{item.count} co.</span>
+                      <span className="font-semibold tabular-nums" style={{ color: item.color }}>₹{item.revenue.toLocaleString()}</span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                    <div className="h-full rounded-full" style={{ width: `${Math.min(item.count * 20, 100)}%`, background: item.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
 
         {exp.length>0 && (
-          <div className="sb-exp-card">
-            <div className="sb-exp-card__head">
-              <span>⚠️</span>
-              <span className="sb-exp-card__title">Expiring Soon</span>
-            </div>
-            {exp.map(s=>(
-              <div key={s.id} className="sb-exp-row">
-                <div className="sb-exp-row__logo" style={{ background:s.col }}>{s.logo}</div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div className="sb-exp-row__name">{s.company}</div>
-                  <div className="sb-exp-row__end">Ends {s.end}</div>
-                </div>
-                <Badge status={s.status} />
-              </div>
-            ))}
-          </div>
+          <Card className="border-warning-border">
+            <CardHeader icon={AlertTriangle} title="Expiring Soon" />
+            <ul className="space-y-3">
+              {exp.map(s=>(
+                <li key={s.id} className="flex items-center gap-3">
+                  <PlanMark col={s.col} size="sm">{s.logo}</PlanMark>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{s.company}</p>
+                    <p className="text-xs text-muted-foreground">Ends {s.end}</p>
+                  </div>
+                  <Badge status={s.status} />
+                </li>
+              ))}
+            </ul>
+          </Card>
         )}
       </div>
     </div>
@@ -782,7 +803,6 @@ function Plans({
   onDisablePlan:(plan:any)=>void;
 }) {
   const [billing, setBilling] = useState<"MONTHLY"|"YEARLY">("MONTHLY");
-  const [editId,  setEditId]  = useState<number|null>(null);
   const apiPlans = subs.map((s) => ({
   id: s.id,
   name: s.company,
@@ -794,93 +814,90 @@ function Plans({
   wa: "-",
   msgs: String(s.seats),
   popular: false,
-  extra: [],
+  extra: [] as string[],
 }));
 
-  const renderCard = (p: PlanRow|CustomPlan, isCustom=false) => {
+  const renderCard = (p: PlanRow|CustomPlan|(typeof apiPlans)[number], isCustom=false) => {
     const price    = billing==="YEARLY" ? p.yearPrice : p.price;
-    const isEdit   = editId===p.id;
     const subCount = 1;
     return (
-      <div key={p.id} className={`sb-plan-card ${p.popular?"sb-plan-card--popular":""}`}>
-        {p.popular && <div className="sb-plan-card__popular-banner">★ MOST POPULAR</div>}
-        <div className="sb-plan-card__body">
-          <div className="sb-plan-card__top">
-            <div className="sb-plan-card__icon" style={{ background:`${p.col}20` }}>{p.icon}</div>
-            <span className="sb-plan-card__badge" style={{ background:isCustom?"rgba(0,203,164,0.12)":`${p.col}18`, color:isCustom?"var(--sb-success)":p.col }}>
-              {isCustom?"✦ New":`${subCount} cos`}
-            </span>
+      <Card
+        key={p.id}
+        padding="none"
+        className={cn("flex flex-col overflow-hidden", p.popular && "border-primary ring-1 ring-primary")}
+      >
+        {p.popular && <div className="bg-primary py-1 text-center text-[0.6875rem] font-semibold tracking-wide text-primary-foreground">★ MOST POPULAR</div>}
+        <div className="flex flex-1 flex-col p-5">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <PlanMark col={p.col}>{p.icon}</PlanMark>
+            {isCustom ? <KitBadge variant="success">✦ New</KitBadge> : <KitBadge>{subCount} cos</KitBadge>}
           </div>
-          <div className="sb-plan-card__name">{p.name}</div>
-          <div className="sb-plan-card__price">
-            <span className="sb-plan-card__amt">₹{price.toLocaleString()}</span>
-            <span className="sb-plan-card__per">/mo</span>
-          </div>
+          <p className="font-semibold text-foreground">{p.name}</p>
+          <p className="mt-1">
+            <span className="text-2xl font-semibold tabular-nums text-foreground">₹{price.toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground">/mo</span>
+          </p>
           {billing==="YEARLY"&&!isCustom&&(
-            <div className="sb-plan-card__save">Save ₹{(((p as PlanRow).price-p.yearPrice)*12).toLocaleString()}/yr</div>
+            <p className="mt-0.5 text-xs font-medium text-success">Save ₹{((p.price-p.yearPrice)*12).toLocaleString()}/yr</p>
           )}
-          <div className="sb-plan-card__div" />
-          <div className="sb-plan-card__limits">
-            {([["👥",p.users,"users"],["💬",p.wa,"WA"],["📨",p.msgs,"msgs"]] as [string,string,string][]).map(([ic,v,l])=>(
-              <div key={l} className="sb-plan-card__lim">
-                <div className="sb-plan-card__lim-val">{ic} {v}</div>
-                <div className="sb-plan-card__lim-key">{l}</div>
-              </div>
+          <div className="my-4 border-t border-border-subtle" />
+          <LimitsGrid items={[[<Users key="u" size={13} />,p.users,"users"],[<MessageCircle key="w" size={13} />,p.wa,"WA"],[<Send key="m" size={13} />,p.msgs,"msgs"]]} />
+          <ul className="mt-3 space-y-1.5">
+            {p.extra.slice(0,3).map(f=>(
+              <li key={f} className="flex items-center gap-2 text-[0.8125rem] text-secondary-foreground">
+                <Check size={14} className="shrink-0" style={{ color: p.col }} />{f}
+              </li>
             ))}
-          </div>
-          {p.extra.slice(0,3).map(f=>(
-            <div key={f} className="sb-plan-card__feat">
-              <span style={{ color:p.col }}>✓</span>{f}
-            </div>
-          ))}
-          {p.extra.length>3&&<div className="sb-plan-card__more">+{p.extra.length-3} more</div>}
-          <div className="sb-plan-card__actions">
+          </ul>
+          {p.extra.length>3&&<p className="mt-1.5 text-xs text-muted-foreground">+{p.extra.length-3} more</p>}
+          <div className="mt-auto flex gap-2 pt-4">
             {isCustom ? (
               <>
-                <button className="sb-btn sb-btn--ghost sb-btn--small" style={{ flex:1 }}>✏️ Edit</button>
-                <button className="sb-btn sb-btn--danger sb-btn--small" style={{ flex:1 }} onClick={()=>onRemoveCustom(p.id)}>Remove</button>
+                <Button variant="secondary" size="sm" className="flex-1" leftIcon={<Pencil size={14} />}>Edit</Button>
+                <Button variant="danger" size="sm" className="flex-1" onClick={()=>onRemoveCustom(p.id as number)}>Remove</Button>
               </>
             ) : (
               <>
-                <button onClick={()=>onEditPlan(p)} style={{ flex:1 }}
-                  className="sb-btn sb-btn--small sb-btn--ghost">✏️ Edit</button>
-                <button className="sb-btn sb-btn--danger sb-btn--small" style={{ flex:1 }}
-                  onClick={()=>onDisablePlan(p)}>Disable</button>
+                <Button variant="secondary" size="sm" className="flex-1" leftIcon={<Pencil size={14} />} onClick={()=>onEditPlan(p)}>Edit</Button>
+                <Button variant="danger" size="sm" className="flex-1" onClick={()=>onDisablePlan(p)}>Disable</Button>
               </>
             )}
           </div>
         </div>
-      </div>
+      </Card>
     );
   };
 
   return (
-    <div>
-      <div className="sb-billing-toggle">
-        <span className="sb-billing-toggle__label">Billing Cycle:</span>
-        <div className="sb-billing-group">
-          {(["MONTHLY","YEARLY"] as const).map(b=>(
-            <button key={b} onClick={()=>setBilling(b)} className={`sb-billing-btn ${billing===b?"sb-billing-btn--active":""}`}>
-              {b==="YEARLY" ? <><span>Yearly </span><span className="sb-billing-save">−20%</span></> : "Monthly"}
-            </button>
-          ))}
-        </div>
-       <span className="sb-billing-toggle__count">
-  {apiPlans.length}
-  plans active
-</span>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-muted-foreground">Billing Cycle:</span>
+        <SegmentedControl<"MONTHLY"|"YEARLY">
+          aria-label="Billing cycle"
+          value={billing}
+          onChange={setBilling}
+          options={[
+            { value: "MONTHLY", label: "Monthly" },
+            { value: "YEARLY", label: <span className="flex items-center gap-1.5">Yearly <KitBadge variant="success" size="sm">−20%</KitBadge></span> },
+          ]}
+        />
+        <span className="text-sm text-muted-foreground sm:ml-auto">{apiPlans.length} plans active</span>
       </div>
-     <div className="sb-plans-grid">
-  {apiPlans.map((p:any)=>
-    renderCard(p,false)
-  )}
-</div>
-      {customPlans.length>0 && <div className="sb-plans-grid--custom">{customPlans.map(p=>renderCard(p,true))}</div>}
-      <div className="sb-cta-dashed" onClick={onOpenModal}>
-        <div className="sb-cta-dashed__icon">➕</div>
-        <div className="sb-cta-dashed__title">Create New Plan</div>
-        <div className="sb-cta-dashed__desc">Add a custom pricing plan for specific company needs.</div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {apiPlans.map(p => renderCard(p, false))}
       </div>
+      {customPlans.length>0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{customPlans.map(p=>renderCard(p,true))}</div>
+      )}
+      <button
+        type="button"
+        onClick={onOpenModal}
+        className="flex w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border-strong bg-surface-muted px-6 py-8 text-center transition-colors hover:border-primary-soft hover:bg-primary-lighter"
+      >
+        <span className="mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary-lighter text-primary-text"><Plus size={18} /></span>
+        <span className="text-sm font-semibold text-foreground">Create New Plan</span>
+        <span className="text-[0.8125rem] text-muted-foreground">Add a custom pricing plan for specific company needs.</span>
+      </button>
     </div>
   );
 }
@@ -915,89 +932,61 @@ const rev =
     (a,h)=>a+h.amount,
     0
   );
-  return (
-    <div className="sb-history">
-      <div className="sb-hist-kpi-grid">
-        {([
-  [
-    "Total Revenue",
-    `₹${rev.toLocaleString()}`,
-    "var(--sb-success)",
-    "💰",
-  ],
-  [
-    "Transactions",
-    String(historyRows.length),
-    "var(--sb-accent2)",
-    "📄",
-  ],
-  [
-    "Failed",
-    "0",
-    "#FF6B6B",
-    "❌",
-  ],
-  [
-    "Refunded",
-    "0",
-    "#FDCB6E",
-    "↩️",
-  ],
-] as [string, string, string, string][]).map(([l, v, c, ic]) => (
-          <div key={l} className="sb-hist-kpi">
-            <div className="sb-hist-kpi__top">
-              <span className="sb-hist-kpi__lbl">{l}</span>
-              <span className="sb-hist-kpi__icon">{ic}</span>
-            </div>
-            <div className="sb-hist-kpi__val" style={{ color: c }}>
-              {v}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="sb-hist-filters">
-        <span className="sb-hist-label">Filter:</span>
-        {["ALL","New","Renewal","Upgrade","Failed","Trial","Refund"].map(t=>(
-          <button key={t} onClick={()=>setTf(t)} className={`sb-hist-pill ${tf===t?"sb-hist-pill--active":""}`}>{t}</button>
-        ))}
-      </div>
-      <div className="sb-hist-table">
-        <div className="sb-hist-table__head">
-          {["Company","Plan","Amount","Date","Type","Status"].map(h=>(
-            <div key={h} className="sb-hist-table__hcell">{h.toUpperCase()}</div>
-          ))}
+
+  const columns: Column<Transaction>[] = [
+    {
+      key: "company",
+      header: "Company",
+      render: h => (
+        <div className="flex items-center gap-3">
+          <PlanMark col={h.col} size="sm">{h.logo}</PlanMark>
+          <span className="font-medium text-foreground">{h.company}</span>
         </div>
-        {filtered.map(h=>(
-          <div key={h.id} className="sb-hist-row">
-            <div className="sb-hist-row__co">
-              <div className="sb-hist-row__logo" style={{ background:h.col }}>{h.logo}</div>
-              <div className="sb-hist-row__name">{h.company}</div>
-            </div>
-            <span className={`sb-plan-chip sb-plan-chip--${h.plan}`} style={{ fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:700 }}>{h.plan}</span>
-            <div className="sb-hist-row__amt">{h.amount>0?`₹${h.amount.toLocaleString()}`:"Free"}</div>
-            <div className="sb-hist-row__date">{h.date}</div>
-           <span
-  className="sb-type-chip"
-  style={{
-    background: `${TYPE_COLOR[h.type as TxnType]}18`,
-    color: TYPE_COLOR[h.type as TxnType],
-  }}
->
-  {h.type}
-</span>
-            <span className={`sb-txn-chip sb-txn-chip--${h.status}`}>
-              <span className="sb-txn-chip__dot" />{h.status[0]+h.status.slice(1).toLowerCase()}
-            </span>
-          </div>
-        ))}
-        {filtered.length===0 && (
-          <div className="sb-hist-empty">
-            <div className="sb-hist-empty__icon">🔍</div>
-            <div className="sb-hist-empty__title">No transactions found</div>
-            <div className="sb-hist-empty__desc">Try a different filter.</div>
-          </div>
-        )}
+      ),
+    },
+    { key: "plan", header: "Plan", render: h => <PlanChip plan={h.plan} /> },
+    { key: "amount", header: "Amount", align: "right", render: h => <span className="font-semibold tabular-nums text-foreground">{h.amount>0?`₹${h.amount.toLocaleString()}`:"Free"}</span> },
+    { key: "date", header: "Date", render: h => <span className="text-muted-foreground">{h.date}</span> },
+    { key: "type", header: "Type", render: h => <KitBadge variant={TXN_VARIANT[h.type]}>{h.type}</KitBadge> },
+    {
+      key: "status",
+      header: "Status",
+      render: h => (
+        <KitBadge variant={h.status === "SUCCESS" ? "success" : h.status === "FAILED" ? "error" : "warning"} dot>
+          {h.status[0]+h.status.slice(1).toLowerCase()}
+        </KitBadge>
+      ),
+    },
+  ];
+
+  const histKpis: { label: string; value: string; icon: ReactNode; tone: KpiTone }[] = [
+    { label: "Total Revenue", value: `₹${rev.toLocaleString()}`, icon: <Wallet size={18} />, tone: "success" },
+    { label: "Transactions", value: String(historyRows.length), icon: <FileText size={18} />, tone: "primary" },
+    { label: "Failed", value: "0", icon: <XCircle size={18} />, tone: "error" },
+    { label: "Refunded", value: "0", icon: <RotateCcw size={18} />, tone: "warning" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        {histKpis.map(k => <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} tone={k.tone} />)}
       </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-muted-foreground">Filter:</span>
+        <SegmentedControl<string>
+          aria-label="Filter by transaction type"
+          value={tf}
+          onChange={setTf}
+          options={["ALL","New","Renewal","Upgrade","Failed","Trial","Refund"].map(t => ({ value: t, label: t === "ALL" ? "All" : t }))}
+        />
+      </div>
+      <Table
+        columns={columns}
+        data={filtered}
+        rowKey={h => h.id}
+        emptyMessage="No transactions found"
+        emptyDescription="Try a different filter."
+      />
     </div>
   );
 }
@@ -1030,52 +1019,33 @@ function EditPlanModal({ plan, onClose, onSave }: { plan: any; onClose: () => vo
   };
 
   return (
-    <div className="sb-modal-overlay" onClick={onClose}>
-      <div className="sb-modal" onClick={e => e.stopPropagation()}>
-        <div className="sb-modal__header">
-          <div className="sb-modal__top">
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div className="sb-modal__icon">✏️</div>
-              <div>
-                <div className="sb-modal__title">Edit Plan</div>
-                <div className="sb-modal__step">Update plan details</div>
-              </div>
-            </div>
-            <button className="sb-modal__close" onClick={onClose}>×</button>
-          </div>
+    <Modal
+      isOpen
+      onClose={onClose}
+      title="Edit Plan"
+      description="Update plan details"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} isLoading={saving} leftIcon={<Check size={15} />}>Save Changes</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Inp label="Plan Name" value={name} onChange={setName} placeholder="Plan name" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Inp label="Price (₹)" value={price} onChange={setPrice} placeholder="2499" type="number" prefix="₹" />
+          <KitSelect
+            label="Billing Cycle"
+            value={billing}
+            onChange={e => setBilling(e.target.value)}
+            options={[{ value: "Monthly", label: "Monthly" }, { value: "Yearly", label: "Yearly" }]}
+          />
         </div>
-        <div className="sb-modal__body">
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Inp label="PLAN NAME" value={name} onChange={setName} placeholder="Plan name" />
-            <div className="sb-form-grid-2">
-              <Inp label="PRICE (₹)" value={price} onChange={setPrice} placeholder="2499" type="number" prefix="₹" />
-              <div className="sb-field">
-                <div className="sb-field__label">BILLING CYCLE</div>
-                <select value={billing} onChange={e => setBilling(e.target.value)}
-                  className="sb-input" style={{ cursor: "pointer" }}>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Yearly">Yearly</option>
-                </select>
-              </div>
-            </div>
-            <Inp label="DESCRIPTION" value={desc} onChange={setDesc} placeholder="Optional description" />
-            <div className="sb-toggle-row">
-              <div>
-                <div className="sb-toggle-row__title">Active</div>
-                <div className="sb-toggle-row__desc">Make this plan available to users.</div>
-              </div>
-              <Tog on={active} setOn={setActive} />
-            </div>
-          </div>
-        </div>
-        <div className="sb-modal__footer">
-          <button className="sb-btn sb-btn--ghost" onClick={onClose}>Cancel</button>
-          <button className="sb-btn sb-btn--primary" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : "✓ Save Changes"}
-          </button>
-        </div>
+        <Inp label="Description" value={desc} onChange={setDesc} placeholder="Optional description" />
+        <ToggleRow title="Active" desc="Make this plan available to users." on={active} setOn={setActive} />
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1275,12 +1245,12 @@ else {
   // Proper plan color
   const planColor =
     planType === "Basic"
-      ? "#FDCB6E"
+      ? "var(--color-warning)"
       : planType === "Pro"
-      ? "#6C5CE7"
+      ? "var(--color-brand)"
       : planType === "Enterprise"
-      ? "#A29BFE"
-      : "#00CBA4";
+      ? "var(--color-brand)"
+      : "var(--color-brand)";
 
   return {
   id: String(plan.id),
@@ -1356,55 +1326,74 @@ rawData: plan,
     alive = false;
   };
 }, []);
-  return (
-    <div className="sb-root">
-      <div className="sb-header">
-        <div>
-          <h1 className="sb-header__title">Subscription</h1>
-          <p className="sb-header__sub">Plans, billing, and company subscription management.</p>
-        </div>
-        <div className="sb-header__btns">
-          <button
-            className="sb-btn sb-btn--export"
-            onClick={() => downloadExcel(subs)}
-            disabled={loading || subs.length === 0}
-          >
-            ⬇ Export
-          </button>
-          <button className="sb-btn sb-btn--primary" onClick={openModal}>+ Create Plan</button>
-        </div>
-      </div>
+  const monthlyRevenue = subs
+    .filter(s => s.status === "ACTIVE" && s.rawData?.billing_cycle === "Monthly")
+    .reduce((a, s) => a + s.amt, 0);
 
-      <div className="sb-kpi-grid">
-        <KPI
+  const TAB_ITEMS = [
+    { id: "overview", label: "Overview", icon: <BarChart3 size={15} /> },
+    { id: "plans", label: "Plans", icon: <CreditCard size={15} /> },
+    { id: "history", label: "History", icon: <History_ size={15} /> },
+  ];
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Subscription"
+        description="Plans, billing, and company subscription management."
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              leftIcon={<Download size={15} />}
+              onClick={() => downloadExcel(subs)}
+              disabled={loading || subs.length === 0}
+            >
+              Export
+            </Button>
+            <Button leftIcon={<Plus size={15} />} onClick={openModal}>Create Plan</Button>
+          </>
+        }
+      />
+
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
           label="Active Subscriptions"
           value={loading ? "…" : String(activeCount)}
-          delta="Live data"
-          icon="💳"
-          color="#6C5CE7"
+          hint="Live data"
+          icon={<CreditCard size={18} />}
         />
-        <KPI label="Monthly Revenue"  value={loading ? "…" : `₹${subs
-.filter(
-  s =>
-    s.status === "ACTIVE" &&
-    s.rawData?.billing_cycle === "Monthly"
-)
-.reduce((a,s)=>a+s.amt,0).toLocaleString()}`} delta="vs last month" icon="📈" color="#00CBA4" up />
-        <KPI label="On Trial"         value={loading ? "…" : String(subs.filter(s=>s.status==="TRIAL").length)}     delta="expiring soon" icon="⏳" color="#FDCB6E" />
-        <KPI label="Churned (30d)"    value={loading ? "…" : String(subs.filter(s=>s.status==="CANCELLED"||s.status==="EXPIRED").length)} delta="vs last month" icon="📉" color="#FF6B6B" up={false} />
+        <KpiCard
+          label="Monthly Revenue"
+          value={loading ? "…" : `₹${monthlyRevenue.toLocaleString()}`}
+          hint="vs last month"
+          icon={<TrendingUp size={18} />}
+          tone="success"
+        />
+        <KpiCard
+          label="On Trial"
+          value={loading ? "…" : String(subs.filter(s=>s.status==="TRIAL").length)}
+          hint="expiring soon"
+          icon={<Hourglass size={18} />}
+          tone="warning"
+        />
+        <KpiCard
+          label="Churned (30d)"
+          value={loading ? "…" : String(subs.filter(s=>s.status==="CANCELLED"||s.status==="EXPIRED").length)}
+          hint="vs last month"
+          icon={<TrendingDown size={18} />}
+          tone="error"
+        />
       </div>
 
-      {error && (
-        <div style={{ margin:"0 0 16px", padding:"10px 14px", borderRadius:8, background:"rgba(255,107,107,0.1)", border:"1px solid rgba(255,107,107,0.3)", color:"#FF6B6B", fontSize:13 }}>
-          ⚠ {error}
-        </div>
-      )}
+      {error && <Alert variant="error" className="mb-4" message={error} />}
 
-      <div className="sb-tabs">
-        {([ ["overview","📊 Overview"],["plans","💳 Plans"],["history","🕐 History"] ] as [string,string][]).map(([k,l])=>(
-          <button key={k} onClick={()=>setTab(k as typeof tab)} className={`sb-tab ${tab===k?"sb-tab--active":""}`}>{l}</button>
-        ))}
-      </div>
+      <Tabs
+        className="mb-4"
+        activeTab={tab}
+        onChange={id => setTab(id as typeof tab)}
+        tabs={TAB_ITEMS}
+      />
 
       {tab==="overview" && <Overview
   subs={subs}
@@ -1440,6 +1429,6 @@ rawData: plan,
           alert("Failed to update plan");
         }
       }} />}
-    </div>
+    </PageContainer>
   );
 }

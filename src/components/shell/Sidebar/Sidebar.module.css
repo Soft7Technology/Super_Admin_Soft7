@@ -1,0 +1,380 @@
+@layer theme, base, components, utilities;
+@layer components {
+  .sidebar {
+    position: relative;
+    z-index: var(--z-header);
+    display: flex;
+    height: 100%;
+    width: var(--layout-sidebar-width);
+    flex-shrink: 0;
+    flex-direction: column;
+    background-color: var(--color-sidebar);
+    border-right: 1px solid var(--color-border);
+    transition: width var(--motion-slow);
+  }
+  .collapsed {
+    width: var(--layout-sidebar-collapsed);
+  }
+
+  /* ── Brand header ── */
+  .brand {
+    display: flex;
+    height: var(--layout-topbar-height);
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .collapsed .brand {
+    justify-content: center;
+    padding: 0;
+  }
+  .brandCollapsedButton {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--color-border-subtle);
+    cursor: pointer;
+    transition: background-color var(--motion-fast);
+  }
+  .brandCollapsedButton:hover {
+    background-color: var(--color-sidebar-hover);
+  }
+  .brandCollapsedButton:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-primary-ring);
+  }
+  .logoHoverIcon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: color-mix(in oklab, var(--color-inverse) 72%, transparent);
+    color: var(--color-inverse-foreground);
+    border-radius: inherit;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity var(--motion-fast), transform var(--motion-fast);
+    pointer-events: none;
+  }
+  .brandCollapsedButton:hover .logoHoverIcon {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .logo {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.125rem;
+    height: 2.125rem;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    font-weight: 700;
+    font-size: 0.9375rem;
+  }
+  .logoImage {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+  .brand:not(.brandCollapsedButton) .logo {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.125rem;
+  }
+  .brandName {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .brandLink {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-3);
+    text-decoration: none;
+  }
+  /* Same height as the 2.75rem brand tile. logo-dark.png is a wide wordmark (fit whole);
+     logo-light.png is a square canvas with the wordmark centered (crop its middle band). */
+  .brandLogo {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: 2.75rem;
+    min-width: 0;
+    object-fit: contain;
+    object-position: left center;
+  }
+  .brandLogo[src$="logo-light.png"] {
+    width: 7.5rem;
+    object-fit: cover;
+  }
+  .collapseButton {
+    margin-left: auto;
+  }
+  .collapsed .collapseButton {
+    display: none;
+  }
+
+  /* ── Navigation ── */
+  .nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--space-3) var(--space-3) var(--space-4);
+  }
+  .section + .section {
+    margin-top: var(--space-5);
+  }
+  .sectionTitle {
+    padding: 0 var(--space-3) var(--space-2);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+  .collapsed .sectionTitle {
+    height: 1px;
+    margin: 0 var(--space-2) var(--space-3);
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--color-border-subtle);
+    color: transparent;
+  }
+  .list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 2.375rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-sidebar-text);
+    text-align: left;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color var(--motion-fast), color var(--motion-fast);
+  }
+  .collapsed .item {
+    justify-content: center;
+    padding: 0;
+  }
+  .item:hover {
+    background-color: var(--color-sidebar-hover);
+    color: var(--color-sidebar-text);
+  }
+  .item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary-ring);
+  }
+  .icon {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--color-sidebar-icon);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+  .item:hover .icon {
+    color: var(--color-sidebar-text);
+  }
+  .label {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .collapsed .label,
+  .collapsed .chevron {
+    display: none;
+  }
+  .chevron {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+  .groupOpen .chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Active: primary tint + primary text/icon + indicator bar */
+  .active,
+  .active:hover {
+    background-color: var(--color-sidebar-active-bg);
+    color: var(--color-sidebar-active-text);
+    font-weight: 600;
+  }
+  .active .icon,
+  .active:hover .icon {
+    color: var(--color-sidebar-active-icon);
+  }
+  .active::before {
+    content: "";
+    position: absolute;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    left: calc(var(--space-3) * -1);
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background-color: var(--color-sidebar-active-indicator);
+    animation: indicatorIn var(--motion-normal);
+  }
+  @keyframes indicatorIn {
+    from {
+      transform: scaleY(0.3);
+      opacity: 0;
+    }
+  }
+  .groupActive .icon {
+    color: var(--color-sidebar-active-icon);
+  }
+  .groupActive {
+    color: var(--color-text);
+  }
+
+  .locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .locked:hover {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+  }
+  .lockIcon {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+  }
+  .collapsed .lockIcon {
+    display: none;
+  }
+
+  /* Sub-items */
+  .subList {
+    list-style: none;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 2px 0 var(--space-1) 1.375rem;
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--color-border);
+  }
+  .collapsed .subList {
+    display: none;
+  }
+  .subItem {
+    display: flex;
+    height: 2rem;
+    align-items: center;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    color: var(--color-sidebar-icon);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color var(--motion-fast), color var(--motion-fast);
+  }
+  .subItem:hover {
+    background-color: var(--color-sidebar-hover);
+    color: var(--color-sidebar-text);
+  }
+  .subActive,
+  .subActive:hover {
+    background-color: var(--color-sidebar-active-bg);
+    color: var(--color-sidebar-active-text);
+    font-weight: 600;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    flex-shrink: 0;
+    padding: var(--space-3);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .expandButton {
+    display: none;
+  }
+  .collapsed .expandButton {
+    display: flex;
+    margin-top: 2px;
+  }
+
+  /* Floating label for collapsed mode (escapes the scroll container) */
+  .floatingLabel {
+    position: fixed;
+    z-index: var(--z-tooltip);
+    padding: 0.3125rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-inverse);
+    color: var(--color-inverse-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: var(--elevation-md);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  /* ── Mobile: off-canvas ── */
+  .backdrop {
+    display: none;
+  }
+  @media (max-width: 1023px) {
+    .sidebar {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: var(--z-modal);
+      width: min(var(--layout-sidebar-width), 85vw);
+      box-shadow: var(--elevation-xl);
+      transform: translateX(-100%);
+      transition: transform var(--duration-slow) var(--ease-out);
+    }
+    .collapsed {
+      width: min(var(--layout-sidebar-width), 85vw);
+    }
+    .mobileOpen {
+      transform: translateX(0);
+    }
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: calc(var(--z-modal) - 1);
+      display: block;
+      background-color: var(--color-overlay);
+    }
+    .collapseButton {
+      display: none;
+    }
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.label) {
+    margin: 0;
+  }
+}

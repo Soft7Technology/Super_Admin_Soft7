@@ -1,0 +1,78 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .root {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-1);
+  }
+  .info {
+    font: var(--type-secondary);
+    color: var(--color-text-muted);
+  }
+  .info strong {
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-left: auto;
+  }
+  .page,
+  .step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+  .step {
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+    padding: 0 0.625rem;
+  }
+  .page:hover:not(:disabled),
+  .step:hover:not(:disabled) {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+  .page[aria-current="page"] {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-text);
+  }
+  .step:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .ellipsis {
+    min-width: 1.5rem;
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+  .pages {
+    display: none;
+    align-items: center;
+    gap: 2px;
+  }
+  @media (min-width: 768px) {
+    .pages {
+      display: flex;
+    }
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.info) {
+    margin: 0;
+  }
+}

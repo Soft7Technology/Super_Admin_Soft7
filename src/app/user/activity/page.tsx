@@ -1,6 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { useTheme, tokens } from "../../../context/ThemeContext";
+import React from "react";
+import { cn } from "@/lib/utils";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Avatar from "@/components/ui/Avatar";
+import { Card } from "@/components/ui/Card";
 
 interface LogEntry {
   id: string;
@@ -11,32 +14,14 @@ interface LogEntry {
   dayGroup: string;
 }
 
-const SEV: Record<string, { bg: string; color: string; icon: string }> = {
-  success: { bg: "rgba(16,185,129,0.14)", color: "#059669", icon: "v" },
-  warn: { bg: "rgba(251,191,36,0.1)", color: "#d97706", icon: "!" },
-  danger: { bg: "rgba(239,68,68,0.1)", color: "#dc2626", icon: "x" },
-  info: { bg: "rgba(16,185,129,0.12)", color: "#10b981", icon: "i" },
+/* Severity → timeline dot */
+const SEV_DOT: Record<string, string> = {
+  success: "bg-success",
+  warning: "bg-warning",
+  warn: "bg-warning",
+  danger: "bg-error",
+  info: "bg-primary",
 };
-
-function useWindowWidth() {
-  const [width, setWidth] = useState<number>(1024);
-  useEffect(() => {
-    const handleResize = () => setWidth(window.innerWidth);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  return width;
-}
-
-function getInitials(name: string) {
-  if (!name) return "U";
-  const parts = name.split(" ");
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
 
 const DUMMY_ACTIVITIES: LogEntry[] = [
   // Today
@@ -57,170 +42,50 @@ const DUMMY_ACTIVITIES: LogEntry[] = [
 ];
 
 export default function AllActivityPage() {
-  const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
-  const width = useWindowWidth();
-  const isMobile = width <= 768;
-  const isSmall = width <= 1000;
-  const isMedium = width <= 1300;
-
-  const msgFont = isSmall ? "0.85rem" : isMedium ? "0.95rem" : "1.05rem";
-  const metaFont = isSmall ? "0.75rem" : isMedium ? "0.82rem" : "0.88rem";
-  const avatarSize = isSmall ? 36 : isMedium ? 42 : 48;
-  const dotSize = isSmall ? 12 : 14;
-
-  const themeGreen = "#10b981";
-
-  // Group the dummy data by dayGroup
+  // Group the activity by dayGroup
   const groupsObj = DUMMY_ACTIVITIES.reduce((acc, log) => {
-    if (!acc[log.dayGroup]) {
-      acc[log.dayGroup] = [];
-    }
+    if (!acc[log.dayGroup]) acc[log.dayGroup] = [];
     acc[log.dayGroup].push(log);
     return acc;
   }, {} as Record<string, LogEntry[]>);
 
-  const groups = Object.keys(groupsObj).map(key => ({
-    title: key,
-    items: groupsObj[key],
-  }));
+  const groups = Object.keys(groupsObj).map((key) => ({ title: key, items: groupsObj[key] }));
 
   return (
-    <div
-      style={{
-        padding: isMobile ? "16px" : isSmall ? "24px 22px 36px" : isMedium ? "28px 30px 44px" : "36px 38px 56px",
-        background: t.bg,
-        minHeight: "100%",
-        transition: "background 0.3s ease",
-      }}
-    >
-      <div style={{ marginBottom: "32px" }}>
-        <h1
-          style={{
-            fontWeight: 800,
-            fontSize: isMobile ? "1.35rem" : isSmall ? "1.45rem" : isMedium ? "1.65rem" : "2rem",
-            color: t.text,
-            margin: 0,
-            letterSpacing: "-0.025em",
-            transition: "color 0.3s",
-          }}
-        >
-          All Activity
-        </h1>
-        <p
-          style={{
-            fontSize: isSmall ? "0.8rem" : isMedium ? "0.85rem" : "0.95rem",
-            color: isDark ? t.textMuted : "#64748b",
-            margin: isSmall ? "4px 0 0" : "7px 0 0",
-            transition: "color 0.3s",
-          }}
-        >
-          A complete timeline of all events across the platform.
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader title="All Activity" description="A complete timeline of all events across the platform." />
 
-      <div
-        style={{
-          background: isDark ? "rgba(15,17,32,0.85)" : "#ffffff",
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-          borderRadius: isSmall ? "12px" : "16px",
-          padding: isSmall ? "20px" : "32px",
-          boxShadow: isDark ? "0 2px 10px rgba(0,0,0,0.22)" : "0 1px 8px rgba(0,0,0,0.06)",
-        }}
-      >
-        {groups.map((group, groupIdx) => (
-          <div key={group.title} style={{ marginBottom: groupIdx === groups.length - 1 ? "0" : "32px" }}>
-            <h2
-              style={{
-                fontSize: isSmall ? "1rem" : "1.15rem",
-                fontWeight: 800,
-                color: t.text,
-                marginBottom: "20px",
-                marginTop: "0",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {group.title}
-            </h2>
-
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {group.items.map((log, i) => {
-                const isLastInGroup = i === group.items.length - 1;
-                const isLastOverall = groupIdx === groups.length - 1 && isLastInGroup;
-                const s = SEV[log.sev] ?? SEV["info"];
-
-                return (
-                  <div key={log.id} style={{ position: "relative", paddingLeft: isSmall ? "32px" : "40px", paddingBottom: isLastInGroup ? "0" : "28px" }}>
-                    {/* Vertical Line */}
-                    {!isLastOverall && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: isSmall ? "5px" : "6px",
-                          top: `${dotSize + 6}px`,
-                          bottom: isLastInGroup ? "-32px" : "-6px",
-                          width: "2px",
-                          background: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
-                          zIndex: 1,
-                        }}
-                      />
-                    )}
-
-                    {/* Dot */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "0",
-                        top: "6px",
-                        width: `${dotSize}px`,
-                        height: `${dotSize}px`,
-                        borderRadius: "50%",
-                        background: themeGreen,
-                        border: `2px solid ${isDark ? "rgba(15,17,32,1)" : "#ffffff"}`,
-                        zIndex: 2,
-                        boxShadow: `0 0 0 2px ${isDark ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.1)"}`,
-                      }}
+      <Card padding="lg">
+        <div className="space-y-8">
+          {groups.map((group) => (
+            <section key={group.title}>
+              <h2 className="mb-4 text-[0.9375rem] font-semibold text-foreground">{group.title}</h2>
+              <ol className="relative space-y-5 border-l border-border pl-6">
+                {group.items.map((log) => (
+                  <li key={log.id} className="relative">
+                    <span
+                      className={cn(
+                        "absolute -left-[1.84rem] top-1.5 h-3 w-3 rounded-full ring-4 ring-surface",
+                        SEV_DOT[log.sev] ?? "bg-primary",
+                      )}
+                      aria-hidden
                     />
-
-                    {/* Content */}
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
-                      {/* Avatar */}
-                      <div
-                        style={{
-                          width: `${avatarSize}px`,
-                          height: `${avatarSize}px`,
-                          borderRadius: "50%",
-                          background: s.bg,
-                          color: s.color,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: isSmall ? "13px" : "15px",
-                          fontWeight: 800,
-                          flexShrink: 0,
-                          border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
-                        }}
-                      >
-                        {getInitials(log.actor)}
-                      </div>
-
-                      {/* Text */}
-                      <div style={{ flex: 1, marginTop: "-2px" }}>
-                        <div style={{ fontSize: msgFont, color: t.textSub, fontWeight: 600, lineHeight: 1.4 }}>
-                          {log.msg}
-                        </div>
-                        <div style={{ fontSize: metaFont, color: t.textFaint, marginTop: "6px", fontWeight: 500 }}>
+                    <div className="flex items-start gap-3">
+                      <Avatar name={log.actor} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground">{log.msg}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {log.time} · {log.actor}
-                        </div>
+                        </p>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ))}
+        </div>
+      </Card>
+    </PageContainer>
   );
 }

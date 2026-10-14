@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTheme } from "../../../../context/ThemeContext";
-import "./user-profile.css";
+import { useTheme } from "@/context/ThemeContext";
 import {
   ArrowLeft,
   Mail,
@@ -17,6 +16,8 @@ import {
   MessageSquare,
   AlertCircle,
   UserCheck,
+  UserX,
+  Layers,
   TrendingUp,
   Zap,
   CheckCircle2,
@@ -24,9 +25,24 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { PageContainer, PageHeader } from "@/components/layout";
+import KpiCard from "@/components/admin/KpiCard";
+import type { KpiTone } from "@/components/admin/KpiCard";
+import Avatar from "@/components/ui/Avatar";
+import KitBadge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import type { ButtonVariant } from "@/components/ui/Button";
+import { Card, CardHeader } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import Modal from "@/components/ui/Modal";
+import Skeleton from "@/components/ui/Skeleton";
+import Tabs from "@/components/ui/Tabs";
+import { cn } from "@/lib/utils";
+import { Badge } from "../components/Badge";
 import { EditUserModal } from "../components/EditUserModal";
 import { ResetPasswordModal } from "../components/ResetPasswordModal";
-import { User as UserType } from "../types";
+import { User as UserType, planVariant, roleVariant } from "../types";
+
 
 // ─── TYPES & CONFIGS ────────────────────────────────────────────────────────
 interface UserProfileDetails {
@@ -329,15 +345,16 @@ export default function UserProfilePage() {
   };
 
   // Pre-configured arrays for clean rendering
-  const topStats = [
-    { label: "Total Campaigns", val: stats.totalCampaigns, icon: Folder, color: "#ec4899" },
-    { label: "Total Contacts", val: stats.totalContacts, icon: Users, color: "#3b82f6" },
-    { label: "Messages Sent", val: stats.messagesSent, icon: Send, color: "#f97316" },
-    { label: "Messages Delivered", val: stats.messagesDelivered, icon: MessageSquare, color: "#10b981" },
-    { label: "Failed Messages", val: stats.failedMessages, icon: Send, color: "#f43f5e", rotate: true },
+  const topStats: { label: string; val: number; icon: typeof Folder; tone?: KpiTone; rotate?: boolean }[] = [
+    { label: "Total Campaigns", val: stats.totalCampaigns, icon: Folder },
+    { label: "Total Contacts", val: stats.totalContacts, icon: Users, tone: "info" },
+    { label: "Messages Sent", val: stats.messagesSent, icon: Send, tone: "warning" },
+    { label: "Messages Delivered", val: stats.messagesDelivered, icon: MessageSquare, tone: "success" },
+    { label: "Failed Messages", val: stats.failedMessages, icon: Send, tone: "error", rotate: true },
   ];
 
   const overviewMetrics = [
+
     { label: "Total Campaigns", val: stats.totalCampaigns },
     { label: "Total Contacts", val: stats.totalContacts },
     { label: "Unique Contacts", val: stats.uniqueContacts },
@@ -349,16 +366,17 @@ export default function UserProfilePage() {
     { label: "Failed Messages", val: stats.failedMessages },
   ];
 
-  const quickActions = [
+  const quickActions: { label: string; icon: typeof Folder; variant: ButtonVariant; onClick: () => void }[] = [
     {
       label: "Reset Password",
       icon: KeyRound,
-      cls: "up-quick-btn--reset",
+      variant: "secondary",
       onClick: () => setIsResetPasswordOpen(true),
     },
     {
       label: "Suspend User",
-      cls: "up-quick-btn--suspend",
+      icon: UserX,
+      variant: "danger",
       onClick: () => {
         if (window.confirm(`Are you sure you want to suspend ${user?.name}?`)) {
           updateUserData({ status: "SUSPENDED" }, "User suspended successfully");
@@ -368,7 +386,7 @@ export default function UserProfilePage() {
     {
       label: "Activate User",
       icon: UserCheck,
-      cls: "up-quick-btn--activate",
+      variant: "secondary",
       onClick: () => {
         if (window.confirm(`Are you sure you want to activate ${user?.name}?`)) {
           updateUserData({ status: "ACTIVE" }, "User activated successfully");
@@ -377,7 +395,8 @@ export default function UserProfilePage() {
     },
     {
       label: "Update Plan",
-      cls: "up-quick-btn--plan",
+      icon: Layers,
+      variant: "primary",
       onClick: () => {
         setSelectedPlan(user?.plan || "Starter");
         setIsPlanModalOpen(true);
@@ -386,6 +405,7 @@ export default function UserProfilePage() {
   ];
 
   const modalUserObject: UserType | null = user
+
     ? {
         id: user.id,
         name: user.name,
@@ -396,7 +416,7 @@ export default function UserProfilePage() {
         company: user.company,
         companyDomain: user.companyDomain,
         plan: user.plan,
-        av: "#10b981",
+        av: "var(--color-brand)",
         login: "Recently",
         joined: formatDate(user.createdAt),
         msgs: stats.totalMessages,
@@ -406,71 +426,203 @@ export default function UserProfilePage() {
       }
     : null;
 
-  const initials =
-    user?.name
-      ?.trim()
-      .split(/\s+/)
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "U";
+  const tabContent = (() => {
+    if (!user) return null;
 
-  return (
-    <div className={`up-container ${isDark ? "dark" : ""}`}>
-      <ToastContainer position="top-right" autoClose={3000} />
-
-      {/* ── HEADER ── */}
-      <div className="up-header">
-        <button className="up-back-btn" onClick={handleBack} title="Back to All Users">
-          <ArrowLeft size={20} />
-          <span>User Profile</span>
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="up-loader-box">
-          <div className="up-spinner" />
-          <p>Loading user details...</p>
+    if (activeTab === "Overview") {
+      return (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {overviewMetrics.map((m) => (
+            <div key={m.label} className="rounded-lg border border-border-subtle bg-surface-muted px-4 py-3">
+              <p className="text-xs text-muted-foreground">{m.label}</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{m.val}</p>
+            </div>
+          ))}
         </div>
-      ) : error || !user ? (
-        <div className="up-hero-card" style={{ textAlign: "center", padding: "48px 24px" }}>
-          <AlertCircle size={44} style={{ color: "#ef4444", margin: "0 auto 12px" }} />
-          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>
-            {error || "User Not Found"}
-          </h2>
-          <p style={{ color: "var(--up-muted)", marginBottom: "20px" }}>
-            Could not retrieve profile information for user ID {userId}.
+      );
+    }
+
+    if (activeTab === "Activity Log") {
+      return (
+        <div>
+          <h4 className="mb-4 text-[0.9375rem] font-semibold text-foreground">Activity & Audit History</h4>
+          <ul className="space-y-2 text-sm text-secondary-foreground">
+            <li>• User account created on {formatDate(user.createdAt)}</li>
+            <li>
+              • Last updated on {formatDate(user.updatedAt)} ({timeAgo(user.updatedAt)})
+            </li>
+            <li>
+              • Current account status: <Badge status={user.status} />
+            </li>
+          </ul>
+        </div>
+      );
+    }
+
+    if (activeTab === "Campaigns") {
+      return (
+        <div>
+          <h4 className="mb-2 text-[0.9375rem] font-semibold text-foreground">User Campaigns</h4>
+          <p className="text-sm text-secondary-foreground">
+            Total Campaigns launched: <span className="font-semibold text-foreground">{stats.totalCampaigns}</span>
           </p>
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-            <button className="up-btn-share" onClick={loadUserData}>
-              Try Again
-            </button>
-            <button className="up-btn-edit" onClick={handleBack}>
-              Back to All Users
-            </button>
+          {stats.totalCampaigns === 0 && (
+            <EmptyState
+              compact
+              className="mt-4"
+              icon={<Folder size={20} />}
+              title="No active or past campaigns recorded for this user yet."
+            />
+          )}
+        </div>
+      );
+    }
+
+    const currentPlanKey = user.plan || "Free";
+    const planInfo = PLAN_META[currentPlanKey] || PLAN_META["Free"];
+    const usages = [
+      { label: "Contact", count: stats.totalContacts, max: planInfo.maxContacts },
+      { label: "Campaign", count: stats.totalCampaigns, max: planInfo.maxCampaigns },
+    ];
+
+    return (
+      <div className="space-y-5">
+        <div className="rounded-lg border border-border-subtle bg-surface-muted p-4">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">{planInfo.title}</h3>
+              <p className="text-[0.8125rem] text-muted-foreground">{planInfo.sub}</p>
+            </div>
+            <KitBadge variant="success" dot>
+              Active
+            </KitBadge>
+          </div>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-muted-foreground">Start Date</dt>
+              <dd className="mt-0.5 text-sm font-medium text-foreground">{formatPlanDateTime(user.createdAt)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">End Date</dt>
+              <dd className="mt-0.5 text-sm font-medium text-foreground">{formatPlanDateTime(user.createdAt, 10)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        {/* Usage Statistics */}
+        <div>
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <TrendingUp size={16} className="text-primary-text" /> Usage Statistics
+          </p>
+          <div className="space-y-4">
+            {usages.map((u) => {
+              const pct = Math.min(100, u.max > 0 ? (u.count / u.max) * 100 : 0);
+              return (
+                <div key={u.label}>
+                  <div className="mb-1.5 flex justify-between text-[0.8125rem]">
+                    <span className="text-secondary-foreground">{u.label}</span>
+                    <span className="font-medium tabular-nums text-foreground">
+                      {u.count} / {u.max}
+                    </span>
+                  </div>
+                  <div
+                    className="h-2 overflow-hidden rounded-full bg-surface-muted"
+                    role="progressbar"
+                    aria-label={`${u.label} usage`}
+                    aria-valuenow={Math.round(pct)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
+
+        {/* Plan Features */}
+        <div>
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Zap size={16} className="text-primary-text" /> Plan Features
+          </p>
+          <ul className="space-y-2">
+            {planInfo.features.map((feat, i) => (
+              <li key={i} className="flex items-center gap-2 text-[0.8125rem] text-secondary-foreground">
+                <CheckCircle2 size={15} className="shrink-0 text-success" />
+                {feat}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <Button
+          className="w-full"
+          onClick={() => {
+            setSelectedPlan(user.plan || "Starter");
+            setIsPlanModalOpen(true);
+          }}
+        >
+          Upgrade / Change Plan
+        </Button>
+      </div>
+    );
+  })();
+
+  return (
+    <PageContainer>
+      <ToastContainer position="top-right" autoClose={3000} theme={isDark ? "dark" : "light"} />
+
+      <Button variant="ghost" size="sm" className="-ml-2 mb-3" leftIcon={<ArrowLeft size={15} />} onClick={handleBack}>
+        Back to All Users
+      </Button>
+      <PageHeader title="User Profile" description="Account details, usage and quick actions for this user." />
+
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-44 w-full rounded-xl" />
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-80 w-full rounded-xl" />
+        </div>
+      ) : error || !user ? (
+        <Card padding="none">
+          <EmptyState
+            icon={<AlertCircle size={20} />}
+            title={error || "User Not Found"}
+            description={`Could not retrieve profile information for user ID ${userId}.`}
+            action={
+              <div className="flex justify-center gap-3">
+                <Button variant="secondary" onClick={loadUserData}>
+                  Try Again
+                </Button>
+                <Button onClick={handleBack}>Back to All Users</Button>
+              </div>
+            }
+          />
+        </Card>
       ) : (
         <>
-          {/* ── HERO BANNER CARD ── */}
-          <div className="up-hero-card">
-            <div className="up-hero-top">
-              <div className="up-hero-user-info">
-                <div className="up-hero-avatar">{initials}</div>
-
-                <div className="up-hero-meta">
-                  <div className="up-hero-title-row">
-                    <span className="up-hero-name">{user.name || "User"}</span>
-                    <span className="up-hero-badge">{user.role?.toLowerCase() || "user"}</span>
+          {/* ── HERO CARD ── */}
+          <Card padding="none" className="mb-4 overflow-hidden">
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-4">
+                <Avatar name={user.name || "User"} size="xl" />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="truncate text-lg font-semibold text-foreground">{user.name || "User"}</h2>
+                    <KitBadge variant={roleVariant(user.role)}>{user.role || "User"}</KitBadge>
                   </div>
-
-                  <div className="up-hero-contact-row">
-                    <span className="up-hero-contact-item">
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[0.8125rem] text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
                       <Mail size={14} />
                       {user.email || "No email"}
                     </span>
                     {user.phone && (
-                      <span className="up-hero-contact-item">
+                      <span className="flex items-center gap-1.5">
                         <Phone size={14} />
                         {user.phone}
                       </span>
@@ -479,269 +631,115 @@ export default function UserProfilePage() {
                 </div>
               </div>
 
-              <div className="up-hero-actions">
-                <button className="up-btn-share" onClick={handleShareProfile} title="Share Profile">
-                  <Share2 size={15} />
-                  <span>Share Profile</span>
-                </button>
-                <button
-                  className="up-btn-edit"
-                  onClick={() => setIsEditOpen(true)}
-                  title="Edit Profile"
-                >
-                  <Pencil size={15} />
-                  <span>Edit Profile</span>
-                </button>
+              <div className="flex shrink-0 gap-2">
+                <Button variant="secondary" size="sm" leftIcon={<Share2 size={14} />} onClick={handleShareProfile}>
+                  Share Profile
+                </Button>
+                <Button size="sm" leftIcon={<Pencil size={14} />} onClick={() => setIsEditOpen(true)}>
+                  Edit Profile
+                </Button>
               </div>
             </div>
 
-            {/* Inset Sub-bar */}
-            <div className="up-hero-subbar">
-              <div className="up-subbar-col">
-                <span className="up-subbar-label">User ID</span>
-                <span className="up-subbar-val" title={user.id}>
+            <dl className="grid grid-cols-2 gap-px border-t border-border-subtle bg-border-subtle lg:grid-cols-4">
+              <div className="bg-surface-muted px-5 py-3">
+                <dt className="text-xs text-muted-foreground">User ID</dt>
+                <dd className="mt-0.5 truncate text-sm font-medium text-foreground" title={user.id}>
                   {user.id}
-                </span>
+                </dd>
               </div>
-              <div className="up-subbar-col">
-                <span className="up-subbar-label">Status</span>
-                <span className="up-subbar-val up-subbar-val--status">
-                  {user.status?.toLowerCase() || "active"}
-                </span>
+              <div className="bg-surface-muted px-5 py-3">
+                <dt className="text-xs text-muted-foreground">Status</dt>
+                <dd className="mt-1">
+                  <Badge status={user.status || "ACTIVE"} />
+                </dd>
               </div>
-              <div className="up-subbar-col">
-                <span className="up-subbar-label">Joined</span>
-                <span className="up-subbar-val">{formatDate(user.createdAt)}</span>
+              <div className="bg-surface-muted px-5 py-3">
+                <dt className="text-xs text-muted-foreground">Joined</dt>
+                <dd className="mt-0.5 text-sm font-medium text-foreground">{formatDate(user.createdAt)}</dd>
               </div>
-              <div className="up-subbar-col">
-                <span className="up-subbar-label">Last Active</span>
-                <span className="up-subbar-val">{timeAgo(user.updatedAt)}</span>
+              <div className="bg-surface-muted px-5 py-3">
+                <dt className="text-xs text-muted-foreground">Last Active</dt>
+                <dd className="mt-0.5 text-sm font-medium text-foreground">{timeAgo(user.updatedAt)}</dd>
               </div>
-            </div>
-          </div>
+            </dl>
+          </Card>
 
-          {/* ── TOP 5 STAT CARDS (Loop) ── */}
-          <div className="up-stats-row">
+          {/* ── TOP 5 STAT CARDS ── */}
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {topStats.map((s) => (
-              <div key={s.label} className="up-stat-card">
-                <div className="up-stat-icon-wrap" style={{ background: `${s.color}18` }}>
-                  <s.icon
-                    size={18}
-                    style={{ color: s.color, transform: s.rotate ? "rotate(45deg)" : "none" }}
-                  />
-                </div>
-                <span className="up-stat-label">{s.label}</span>
-                <span className="up-stat-val">{s.val}</span>
-              </div>
+              <KpiCard
+                key={s.label}
+                label={s.label}
+                value={s.val.toLocaleString()}
+                tone={s.tone}
+                icon={<s.icon size={18} className={s.rotate ? "rotate-45" : undefined} />}
+              />
             ))}
           </div>
 
           {/* ── LOWER 2-COLUMN SECTION ── */}
-          <div className="up-main-grid">
-            {/* Left Column: User Info & 4 Quick Actions */}
-            <div className="up-left-col">
-              <div className="up-sidebar-card">
-                <h3 className="up-sidebar-title">User Info</h3>
-                <div className="up-userinfo-text">
-                  <div>
-                    <strong>Email:</strong> {user.email || "—"}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+            <div className="space-y-4">
+              <Card>
+                <CardHeader title="User Info" />
+                <dl className="space-y-2.5 text-[0.8125rem]">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Email</dt>
+                    <dd className="truncate font-medium text-foreground">{user.email || "—"}</dd>
                   </div>
-                  <div style={{ marginTop: "4px" }}>
-                    <strong>Status:</strong>{" "}
-                    <span style={{ textTransform: "capitalize" }}>
-                      {user.status?.toLowerCase() || "active"}
-                    </span>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Status</dt>
+                    <dd className="font-medium capitalize text-foreground">{user.status?.toLowerCase() || "active"}</dd>
                   </div>
                   {user.company && (
-                    <div style={{ marginTop: "4px" }}>
-                      <strong>Company:</strong> {user.company}
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Company</dt>
+                      <dd className="truncate font-medium text-foreground">{user.company}</dd>
                     </div>
                   )}
                   {user.plan && (
-                    <div style={{ marginTop: "4px" }}>
-                      <strong>Plan:</strong> {user.plan}
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Plan</dt>
+                      <dd>
+                        <KitBadge variant={planVariant(user.plan)}>{user.plan}</KitBadge>
+                      </dd>
                     </div>
                   )}
-                </div>
-              </div>
+                </dl>
+              </Card>
 
-              {/* Quick Actions (Exact 4 buttons) */}
-              <div className="up-sidebar-card">
-                <h3 className="up-sidebar-title">Quick Actions</h3>
-                <div className="up-action-buttons">
+              <Card>
+                <CardHeader title="Quick Actions" />
+                <div className="space-y-2">
                   {quickActions.map((act) => (
-                    <button
+                    <Button
                       key={act.label}
-                      className={`up-quick-btn ${act.cls}`}
+                      variant={act.variant}
+                      className="w-full justify-start"
+                      leftIcon={<act.icon size={15} />}
                       onClick={act.onClick}
                       disabled={actionLoading}
                     >
-                      {act.icon && <act.icon size={16} className="up-quick-icon" />}
-                      <span>{act.label}</span>
-                    </button>
+                      {act.label}
+                    </Button>
                   ))}
                 </div>
-              </div>
+              </Card>
             </div>
 
-            {/* Right Column: Tab Navigation & Content */}
-            <div className="up-right-col">
-              <div className="up-tabs-bar">
-                {(["Overview", "Activity Log", "Campaigns", "Plan"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    className={`up-tab-pill ${activeTab === tab ? "up-tab-pill--active" : ""}`}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab 1: Overview Grid (9 Metric Cards) */}
-              {activeTab === "Overview" && (
-                <div className="up-overview-grid">
-                  {overviewMetrics.map((m) => (
-                    <div key={m.label} className="up-grid-card">
-                      <span className="up-grid-label">{m.label}</span>
-                      <span className="up-grid-val">{m.val}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Tab 2: Activity Log */}
-              {activeTab === "Activity Log" && (
-                <div className="up-tab-content-card">
-                  <h4 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>
-                    Activity & Audit History
-                  </h4>
-                  <p style={{ color: "var(--up-muted)", fontSize: "14px", lineHeight: "1.8" }}>
-                    • User account created on {formatDate(user.createdAt)}
-                    <br />
-                    • Last updated on {formatDate(user.updatedAt)} ({timeAgo(user.updatedAt)})
-                    <br />• Current account status:{" "}
-                    <strong style={{ textTransform: "uppercase" }}>{user.status}</strong>
-                  </p>
-                </div>
-              )}
-
-              {/* Tab 3: Campaigns */}
-              {activeTab === "Campaigns" && (
-                <div className="up-tab-content-card">
-                  <h4 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>
-                    User Campaigns
-                  </h4>
-                  <p style={{ color: "var(--up-muted)", fontSize: "14px" }}>
-                    Total Campaigns launched: <strong>{stats.totalCampaigns}</strong>
-                  </p>
-                  {stats.totalCampaigns === 0 && (
-                    <div style={{ marginTop: "14px", color: "var(--up-muted)", fontSize: "13px" }}>
-                      No active or past campaigns recorded for this user yet.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Tab 4: Plan Tab (Matching Screenshot Layout) */}
-              {activeTab === "Plan" && (
-                <div className="up-plan-wrapper">
-                  {(() => {
-                    const currentPlanKey = user.plan || "Free";
-                    const planInfo = PLAN_META[currentPlanKey] || PLAN_META["Free"];
-                    const usages = [
-                      { label: "Contact", count: stats.totalContacts, max: planInfo.maxContacts },
-                      { label: "Campaign", count: stats.totalCampaigns, max: planInfo.maxCampaigns },
-                    ];
-
-                    return (
-                      <>
-                        <div className="up-plan-card">
-                          <div className="up-plan-card-top">
-                            <div>
-                              <h3 className="up-plan-card-title">{planInfo.title}</h3>
-                              <p className="up-plan-card-sub">{planInfo.sub}</p>
-                            </div>
-                            <span className="up-plan-active-badge">Active</span>
-                          </div>
-
-                          <div className="up-plan-dates-row">
-                            <div className="up-plan-date-col">
-                              <span className="up-plan-date-label">Start Date</span>
-                              <span className="up-plan-date-val">{formatPlanDateTime(user.createdAt)}</span>
-                            </div>
-                            <div className="up-plan-date-col">
-                              <span className="up-plan-date-label">End Date</span>
-                              <span className="up-plan-date-val">
-                                {formatPlanDateTime(user.createdAt, 10)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Usage Statistics */}
-                        <div className="up-plan-usage-sec">
-                          <div className="up-plan-sec-title">
-                            <TrendingUp size={16} />
-                            <span>Usage Statistics</span>
-                          </div>
-
-                          {usages.map((u) => (
-                            <div key={u.label} className="up-plan-usage-item">
-                              <div className="up-plan-usage-row">
-                                <span>{u.label}</span>
-                                <span>
-                                  {u.count} / {u.max}
-                                </span>
-                              </div>
-                              <div className="up-plan-progress-track">
-                                <div
-                                  className="up-plan-progress-fill"
-                                  style={{
-                                    width: `${Math.min(
-                                      100,
-                                      u.max > 0 ? (u.count / u.max) * 100 : 0
-                                    )}%`,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Plan Features */}
-                        <div className="up-plan-features-box">
-                          <div className="up-plan-sec-title">
-                            <Zap size={16} />
-                            <span>Plan Features</span>
-                          </div>
-
-                          <div className="up-plan-features-list">
-                            {planInfo.features.map((feat, i) => (
-                              <div key={i} className="up-plan-feature-item">
-                                <CheckCircle2 size={16} className="up-plan-check-icon" />
-                                <span>{feat}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Upgrade Button */}
-                        <button
-                          className="up-plan-upgrade-btn"
-                          onClick={() => {
-                            setSelectedPlan(user.plan || "Starter");
-                            setIsPlanModalOpen(true);
-                          }}
-                        >
-                          Upgrade / Change Plan
-                        </button>
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
+            <Card>
+              <Tabs
+                variant="pills"
+                activeTab={activeTab}
+                onChange={(id) => setActiveTab(id as typeof activeTab)}
+                tabs={(["Overview", "Activity Log", "Campaigns", "Plan"] as const).map((tab) => ({
+                  id: tab,
+                  label: tab,
+                  content: activeTab === tab ? tabContent : null,
+                }))}
+              />
+            </Card>
           </div>
         </>
       )}
@@ -765,95 +763,52 @@ export default function UserProfilePage() {
       )}
 
       {/* Plan Selection Modal */}
-      {isPlanModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={() => setIsPlanModalOpen(false)}
-        >
-          <div
-            style={{
-              background: "var(--up-surf, #ffffff)",
-              border: "1px solid var(--up-border, #e2e8f0)",
-              padding: "24px",
-              borderRadius: "16px",
-              width: "100%",
-              maxWidth: "420px",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>
-              Update Subscription Plan
-            </h3>
-            <p style={{ color: "var(--up-muted)", fontSize: "13px", marginBottom: "16px" }}>
-              Select a new plan for {user?.name}:
-            </p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
-              {["Starter", "Basic", "Pro", "Enterprise"].map((planOption) => (
-                <label
-                  key={planOption}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 14px",
-                    borderRadius: "10px",
-                    border: `1px solid ${
-                      selectedPlan === planOption ? "var(--up-accent, #10b981)" : "var(--up-border, #e2e8f0)"
-                    }`,
-                    background:
-                      selectedPlan === planOption
-                        ? "var(--up-accent-subtle, rgba(16, 185, 129, 0.12))"
-                        : "transparent",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", fontWeight: "600" }}>{planOption}</span>
-                  <input
-                    type="radio"
-                    name="plan"
-                    checked={selectedPlan === planOption}
-                    onChange={() => setSelectedPlan(planOption)}
-                    style={{ accentColor: "var(--up-accent, #10b981)" }}
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <button
-                className="up-btn-share"
-                onClick={() => setIsPlanModalOpen(false)}
-                disabled={actionLoading}
+      <Modal
+        isOpen={isPlanModalOpen}
+        onClose={() => setIsPlanModalOpen(false)}
+        size="sm"
+        title="Update Subscription Plan"
+        description={`Select a new plan for ${user?.name ?? "this user"}:`}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsPlanModalOpen(false)} disabled={actionLoading}>
+              Cancel
+            </Button>
+            <Button
+              isLoading={actionLoading}
+              onClick={() => updateUserData({ plan: selectedPlan }, `Plan updated to ${selectedPlan}`)}
+            >
+              Save Plan
+            </Button>
+          </>
+        }
+      >
+        <div role="radiogroup" aria-label="Plan" className="space-y-2">
+          {["Starter", "Basic", "Pro", "Enterprise"].map((planOption) => {
+            const selected = selectedPlan === planOption;
+            return (
+              <label
+                key={planOption}
+                className={cn(
+                  "flex cursor-pointer items-center justify-between rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors",
+                  selected
+                    ? "border-primary bg-primary-lighter text-primary-text"
+                    : "border-border text-foreground hover:border-primary-soft hover:bg-surface-hover",
+                )}
               >
-                Cancel
-              </button>
-              <button
-                className="up-btn-edit"
-                onClick={() =>
-                  updateUserData(
-                    { plan: selectedPlan },
-                    `Plan updated to ${selectedPlan}`
-                  )
-                }
-                disabled={actionLoading}
-              >
-                {actionLoading ? "Updating..." : "Save Plan"}
-              </button>
-            </div>
-          </div>
+                {planOption}
+                <input
+                  type="radio"
+                  name="plan"
+                  checked={selected}
+                  onChange={() => setSelectedPlan(planOption)}
+                  className="accent-primary"
+                />
+              </label>
+            );
+          })}
         </div>
-      )}
-    </div>
+      </Modal>
+    </PageContainer>
   );
 }

@@ -1,0 +1,58 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .root {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    cursor: pointer;
+  }
+  .root[data-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .track {
+    position: relative;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 1.25rem;
+    border-radius: var(--radius-full);
+    background-color: var(--color-border-strong);
+    transition: background-color var(--duration-base) var(--ease-out);
+  }
+  .thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1rem;
+    height: 1rem;
+    border-radius: var(--radius-full);
+    background-color: var(--color-white);
+    box-shadow: var(--elevation-sm);
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+  .input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .input:checked + .track {
+    background-color: var(--color-primary);
+  }
+  .input:checked + .track .thumb {
+    transform: translateX(1rem);
+  }
+  .input:focus-visible + .track {
+    box-shadow: 0 0 0 3px var(--color-primary-ring);
+  }
+  .label {
+    font: var(--type-body);
+    color: var(--color-text);
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.label) {
+    margin: 0;
+  }
+}

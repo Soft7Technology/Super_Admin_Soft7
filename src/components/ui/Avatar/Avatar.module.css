@@ -1,0 +1,74 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .avatar {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    user-select: none;
+  }
+  .image {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+  .brand {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-text);
+  }
+  .neutral {
+    background-color: var(--color-surface-active);
+    color: var(--color-text-secondary);
+  }
+  .xs {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.625rem;
+  }
+  .sm {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+  .md {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+  }
+  .lg {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1rem;
+  }
+  .xl {
+    width: 4rem;
+    height: 4rem;
+    font-size: 1.25rem;
+  }
+  .status {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 28%;
+    height: 28%;
+    min-width: 0.5rem;
+    min-height: 0.5rem;
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+  .online {
+    background-color: var(--color-success);
+  }
+  .away {
+    background-color: var(--color-warning);
+  }
+  .offline {
+    background-color: var(--color-text-disabled);
+  }
+}

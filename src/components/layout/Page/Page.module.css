@@ -1,0 +1,64 @@
+@layer theme, base, components, utilities;
+/* Page frame — same metrics as WA_DASHBOARD's screens (DashboardScreen .page/.header). */
+@layer components.ui {
+  .page {
+    width: 100%;
+    max-width: var(--layout-content-max);
+    margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-12);
+  }
+  .wide {
+    max-width: none;
+  }
+  .narrow {
+    max-width: 60rem;
+  }
+  @media (min-width: 768px) {
+    .page {
+      padding: var(--space-8) var(--space-6) var(--space-12);
+    }
+  }
+  .stack > * + * {
+    margin-top: var(--space-6);
+  }
+
+  .header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+  .heading {
+    min-width: 0;
+  }
+  .eyebrow {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-primary-text);
+  }
+  .title {
+    margin-top: 2px;
+    font: var(--type-page-title);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text);
+  }
+  .description {
+    margin-top: 2px;
+    font: var(--type-secondary);
+    color: var(--color-text-muted);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.title, .description) {
+    margin: 0;
+  }
+}

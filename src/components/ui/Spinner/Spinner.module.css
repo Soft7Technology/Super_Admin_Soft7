@@ -1,0 +1,66 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .spinner {
+    display: inline-block;
+    border-radius: var(--radius-full);
+    border-style: solid;
+    border-right-color: transparent !important;
+    animation: rotate 0.7s linear infinite;
+  }
+  .sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 2px;
+  }
+  .md {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-width: 2px;
+  }
+  .lg {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-width: 3px;
+  }
+  .xl {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-width: 3px;
+  }
+  .primary {
+    border-color: var(--color-primary);
+  }
+  .white {
+    border-color: var(--color-primary-foreground);
+  }
+  .gray {
+    border-color: var(--color-text-muted);
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-overlay);
+  }
+  .overlayCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-surface-raised);
+    box-shadow: var(--elevation-xl);
+    font: var(--type-secondary);
+    color: var(--color-text-secondary);
+  }
+  @keyframes rotate {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}

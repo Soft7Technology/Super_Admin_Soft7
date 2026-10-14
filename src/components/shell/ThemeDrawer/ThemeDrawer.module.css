@@ -1,0 +1,414 @@
+@layer theme, base, components, utilities;
+@layer components {
+  .section + .section {
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .sectionHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .sectionTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font: var(--type-card-title);
+    color: var(--color-text);
+  }
+  .sectionText {
+    margin: 2px 0 var(--space-4);
+    font: var(--type-secondary);
+    color: var(--color-text-muted);
+  }
+  .modeTag {
+    padding: 1px 0.375rem;
+    border-radius: var(--radius-full);
+    background-color: var(--color-surface-muted);
+    border: 1px solid var(--color-border-subtle);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  /* Basic / Advanced switch */
+  .toggle {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-2);
+    font: var(--type-secondary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle input {
+    width: 0.875rem;
+    height: 0.875rem;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+
+  /* ── Color rows ── */
+  .rows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: var(--space-2);
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: background-color var(--motion-fast);
+  }
+  .row:hover {
+    background-color: var(--color-surface-hover);
+  }
+  .rowSwatch {
+    position: relative;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: transform var(--motion-fast), box-shadow var(--motion-fast);
+  }
+  .rowSwatch:hover {
+    transform: scale(1.08);
+    box-shadow: var(--elevation-sm);
+  }
+  .rowSwatch:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary-ring);
+  }
+  .nativeInput {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .rowLabel {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+  .rowName {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font: var(--type-label);
+    color: var(--color-text);
+  }
+  .rowDot {
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-brand);
+  }
+  .rowHint {
+    font: var(--type-meta);
+    color: var(--color-text-muted);
+  }
+  .rowHex {
+    width: 5.25rem;
+    flex-shrink: 0;
+    height: 1.75rem;
+    padding: 0 var(--space-2);
+    font-family: var(--font-family-mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    background-color: var(--color-input);
+    border: 1px solid var(--color-input-border);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+  }
+  .rowHex:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-ring);
+  }
+  .rowHexInvalid {
+    border-color: var(--color-error);
+  }
+  .rowReset {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--motion-fast), color var(--motion-fast),
+      opacity var(--motion-fast);
+  }
+  .rowReset:hover:not(:disabled) {
+    background-color: var(--color-surface-active);
+    color: var(--color-text);
+  }
+  .rowReset:disabled {
+    opacity: 0;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* ── Contrast warnings ── */
+  .warnings {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    background-color: var(--color-warning-bg);
+    border: 1px solid var(--color-warning-border);
+    border-radius: var(--radius-lg);
+  }
+  .warningIcon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--color-warning);
+  }
+  .warningTitle {
+    font: var(--type-label);
+    color: var(--color-text);
+  }
+  .warningList {
+    margin: var(--space-1) 0 0;
+    padding-left: var(--space-4);
+    font: var(--type-meta);
+    color: var(--color-text-secondary);
+    list-style: disc;
+  }
+
+  .overrideNote {
+    margin-top: var(--space-5);
+    font: var(--type-meta);
+    color: var(--color-text-muted);
+  }
+
+  /* ── Footer actions ── */
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    width: 100%;
+  }
+  .footerRight {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* ── Miniature app preview ── */
+  .preview {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--elevation-sm);
+  }
+  .previewApp {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    min-height: 13rem;
+    background-color: var(--color-background);
+  }
+  .previewSidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: var(--space-2);
+    background-color: var(--color-sidebar);
+    border-right: 1px solid var(--color-border-subtle);
+  }
+  .previewBrand {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0 0.25rem var(--space-2);
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .previewLogo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    font-size: 0.5625rem;
+    font-weight: 700;
+  }
+  .previewBrandName {
+    overflow: hidden;
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: var(--color-sidebar-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .previewNavItem {
+    display: flex;
+    align-items: center;
+    gap: 0.3125rem;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.5625rem;
+    font-weight: 500;
+    color: var(--color-sidebar-text);
+  }
+  .previewNavItem svg {
+    flex-shrink: 0;
+    color: var(--color-sidebar-icon);
+  }
+  .previewNavActive {
+    background-color: var(--color-sidebar-active-bg);
+    color: var(--color-sidebar-active-text);
+    font-weight: 600;
+  }
+  .previewNavActive svg {
+    color: var(--color-sidebar-active-icon);
+  }
+
+  .previewMain {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+  .previewHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0.375rem var(--space-2);
+    background-color: var(--color-header);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .previewSearch {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1875rem 0.375rem;
+    background-color: var(--color-input);
+    border: 1px solid var(--color-input-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.5625rem;
+    color: var(--color-header-icon);
+  }
+  .previewHeaderIcon {
+    flex-shrink: 0;
+    color: var(--color-header-icon);
+  }
+  .previewAvatar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: var(--radius-full);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-text);
+    font-size: 0.5rem;
+    font-weight: 700;
+  }
+
+  .previewBody {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+  .previewCards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+  .previewCard {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1875rem;
+    padding: 0.375rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+  .previewCardLabel {
+    font-size: 0.5rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .previewCardValue {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+  .previewTrack {
+    height: 3px;
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background-color: var(--color-primary-light);
+  }
+  .previewFill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-full);
+    background-color: var(--color-brand);
+  }
+
+
+  .previewActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .previewBtnPrimary,
+  .previewBtnOutline,
+  .previewBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1875rem 0.4375rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.5625rem;
+    font-weight: 600;
+  }
+  .previewBtnPrimary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+  .previewBtnOutline {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+  }
+  .previewBadge {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-text);
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.sectionTitle, .previewCardLabel, .sectionText, .overrideNote, .warningTitle, .warningList, .modeTag, .rowLabel, .rowHint) {
+    margin: 0;
+  }
+}

@@ -1,12 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import "./manage-transaction.css";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { RefreshCw } from "lucide-react";
-import { useTheme } from "../../../context/ThemeContext";
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Building2,
+  RefreshCw,
+  Search,
+} from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
+import { PageContainer, PageHeader } from "@/components/layout";
+import KpiCard from "@/components/admin/KpiCard";
+import Alert from "@/components/ui/Alert";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import Input from "@/components/ui/Input";
+import Pagination from "@/components/ui/Pagination";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import Table from "@/components/ui/Table";
+import type { Column } from "@/components/ui/Table";
+import { cn } from "@/lib/utils";
+
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
@@ -90,126 +110,20 @@ function shortId(id: string) {
   return id.length > 10 ? `${id.slice(0, 8)}…` : id;
 }
 
-// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
+/// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
 function TypeBadge({ type }: { type: TxType }) {
   return (
-    <span className={`tx-badge tx-badge--${type}`}>
-      <span className="tx-badge__dot" />
+    <Badge variant={type === "credit" ? "success" : "error"} dot>
       {type[0].toUpperCase() + type.slice(1)}
-    </span>
-  );
-}
-
-function KPI({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: string;
-  color: string;
-}) {
-  return (
-    <div className="tx-kpi">
-      <div className="tx-kpi__orb" style={{ background: `${color}10` }} />
-      <div className="tx-kpi__top">
-        <span className="tx-kpi__label">{label}</span>
-        <div className="tx-kpi__icon" style={{ background: `${color}18` }}>
-          {icon}
-        </div>
-      </div>
-      <div className="tx-kpi__value" style={{ color }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// ─── PAGINATION ───────────────────────────────────────────────────────────────
-
-function Pagination({
-  currentPage,
-  totalPages,
-  totalItems,
-  pageSize,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  pageSize: number;
-  onPageChange: (page: number) => void;
-}) {
-  if (totalItems === 0) return null;
-
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-
-  const pages: (number | "...")[] = [];
-  const windowSize = 1;
-
-  for (let p = 1; p <= totalPages; p++) {
-    const inWindow = p >= currentPage - windowSize && p <= currentPage + windowSize;
-    if (p === 1 || p === totalPages || inWindow) {
-      pages.push(p);
-    } else if (pages[pages.length - 1] !== "...") {
-      pages.push("...");
-    }
-  }
-
-  return (
-    <div className="tx-pagination">
-      <div className="tx-pagination__summary">
-        Showing <strong>{startItem}</strong>–<strong>{endItem}</strong> of{" "}
-        <strong>{totalItems}</strong> transactions
-      </div>
-
-      <div className="tx-pagination__controls">
-        <button
-          type="button"
-          className="tx-page-btn"
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-        >
-          ‹ Prev
-        </button>
-
-        {pages.map((p, i) =>
-          p === "..." ? (
-            <span key={`ellipsis-${i}`} className="tx-pagination__ellipsis">
-              …
-            </span>
-          ) : (
-            <button
-              key={p}
-              type="button"
-              onClick={() => onPageChange(p)}
-              className={`tx-page-num ${p === currentPage ? "tx-page-num--active" : ""}`}
-            >
-              {p}
-            </button>
-          )
-        )}
-
-        <button
-          type="button"
-          className="tx-page-btn"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-        >
-          Next ›
-        </button>
-      </div>
-    </div>
+    </Badge>
   );
 }
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function ManageTransactions() {
+
   const { isDark } = useTheme();
 
   const [search, setSearch] = useState("");
@@ -297,156 +211,139 @@ export default function ManageTransactions() {
   const pageStart = (safePage - 1) * ITEMS_PER_PAGE;
   const paginated = filtered.slice(pageStart, pageStart + ITEMS_PER_PAGE);
 
-  // ─── Theme-aware CSS variables ──────────────────────────────────────────
-  // These override the --mc-* fallbacks used throughout manage-transaction.css
-  const themeVars = isDark
-    ? {
-        "--mc-text": "#e8e6e1",
-        "--mc-muted": "#8890a0",
-        "--mc-surface": "#1a1a2e",
-        "--mc-border": "#2c3657",
-        "--mc-hover": "rgba(255,255,255,0.03)",
-      }
-    : {
-        "--mc-text": "#111827",
-        "--mc-muted": "#64748b",
-        "--mc-surface": "#ffffff",
-        "--mc-border": "#d1fae5",
-        "--mc-hover": "#f0fdf4",
-      };
+  const columns: Column<Transaction>[] = [
+    {
+      key: "companyName",
+      header: "Company",
+      render: (t) => (
+        <div>
+          <p className="font-medium text-foreground">{t.companyName}</p>
+          <p className="font-mono text-[0.6875rem] text-muted-foreground">{shortId(t.companyId)}</p>
+        </div>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      render: (t) => <TypeBadge type={t.type} />,
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      align: "right",
+      render: (t) => (
+        <span className={cn("font-semibold tabular-nums", t.type === "credit" ? "text-success" : "text-error")}>
+          {t.type === "credit" ? "+" : "−"}₹{money(t.amount)}
+        </span>
+      ),
+    },
+    {
+      key: "balanceFlow",
+      header: "Balance Flow",
+      render: (t) => (
+        <div className="flex items-center gap-1.5 whitespace-nowrap text-[0.8125rem] tabular-nums">
+          <span className="text-muted-foreground">₹{money(t.balanceBefore)}</span>
+          <ArrowRight size={13} className="text-disabled-foreground" />
+          <span className="font-medium text-foreground">₹{money(t.balanceAfter)}</span>
+        </div>
+      ),
+    },
+    {
+      key: "description",
+      header: "Description",
+      render: (t) => (
+        <span className="block max-w-xs truncate text-secondary-foreground" title={t.description}>
+          {t.description}
+        </span>
+      ),
+    },
+    {
+      key: "referenceType",
+      header: "Reference",
+      render: (t) => <span className="text-secondary-foreground">{t.referenceType}</span>,
+    },
+    {
+      key: "createdAt",
+      header: "Created",
+      render: (t) => <span className="whitespace-nowrap text-muted-foreground">{t.createdAt}</span>,
+    },
+  ];
 
   return (
-    <div className="tx-root" style={themeVars as React.CSSProperties}>
-      {/* HEADER */}
-      <div className="tx-header">
-        <div>
-          <h1 className="tx-header__title">Superadmin Transactions</h1>
-          <p className="tx-header__sub">
-            Full credit ledger across every company on the platform.
-          </p>
-        </div>
-        <button
-          className="tx-btn tx-btn--primary"
-          onClick={() => fetchTransactions(true)}
-          disabled={refreshing}
-        >
-          <RefreshCw size={15} className={refreshing ? "tx-spin" : ""} />
-          {refreshing ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Superadmin Transactions"
+        description="Full credit ledger across every company on the platform."
+        actions={
+          <Button
+            onClick={() => fetchTransactions(true)}
+            isLoading={refreshing}
+            leftIcon={<RefreshCw size={15} />}
+          >
+            Refresh
+          </Button>
+        }
+      />
 
       {/* KPIs */}
-      <div className="tx-kpi-grid">
-        <KPI
-          label="Transactions"
-          value={String(transactions.length)}
-          icon="📒"
-          color="#10B981"
-        />
-        <KPI label="Total Credited" value={`₹${money(totalCredit)}`} icon="⬆️" color="#00CBA4" />
-        <KPI label="Total Debited" value={`₹${money(totalDebit)}`} icon="⬇️" color="#FF6B6B" />
-        <KPI label="Companies" value={String(companyCount)} icon="🏢" color="#FDCB6E" />
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard label="Transactions" value={String(transactions.length)} icon={<BookOpen size={18} />} />
+        <KpiCard label="Total Credited" value={`₹${money(totalCredit)}`} icon={<ArrowUpRight size={18} />} tone="success" />
+        <KpiCard label="Total Debited" value={`₹${money(totalDebit)}`} icon={<ArrowDownRight size={18} />} tone="error" />
+        <KpiCard label="Companies" value={String(companyCount)} icon={<Building2 size={18} />} tone="warning" />
       </div>
 
       {/* FILTER BAR */}
-      <div className="tx-filter-bar">
-        <div className="tx-search-wrap">
-          <span className="tx-search-icon">🔍</span>
-          <input
-            className="tx-search-input"
+      <Card padding="sm" className="mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            wrapperClassName="min-w-0 flex-[1_1_16rem]"
+            leftIcon={<Search size={15} />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search company, description, id…"
             autoComplete="off"
+            aria-label="Search transactions"
           />
+          <SegmentedControl<"ALL" | TxType>
+            aria-label="Filter by type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={(["ALL", "credit", "debit"] as const).map((f) => ({
+              value: f,
+              label: f === "ALL" ? "All" : f[0].toUpperCase() + f.slice(1),
+              icon:
+                f === "ALL" ? undefined : (
+                  <span className={cn("h-1.5 w-1.5 rounded-full", f === "credit" ? "bg-success" : "bg-error")} aria-hidden />
+                ),
+            }))}
+          />
+          <span className="text-sm whitespace-nowrap text-muted-foreground">{filtered.length} transactions</span>
         </div>
-        <div className="tx-filter-group">
-          {(["ALL", "credit", "debit"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setTypeFilter(f)}
-              className={`tx-filter-btn ${typeFilter === f ? "tx-filter-btn--active" : ""}`}
-            >
-              {f !== "ALL" && (
-                <span
-                  className="tx-filter-btn__dot"
-                  style={{ background: f === "credit" ? "#00cba4" : "#ff6b6b" }}
-                />
-              )}
-              {f === "ALL" ? "All" : f[0].toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
-        <span className="tx-filter-count">{filtered.length} transactions</span>
-      </div>
+      </Card>
 
       {/* TABLE */}
       {fetchError ? (
-        <div className="tx-empty">⚠️ {fetchError}</div>
+        <Alert variant="error" message={fetchError} />
       ) : (
-        <div className="tx-table-wrapper">
-          <table className="tx-table">
-            <thead>
-              <tr>
-                <th>COMPANY</th>
-                <th>TYPE</th>
-                <th>AMOUNT</th>
-                <th>BALANCE FLOW</th>
-                <th>DESCRIPTION</th>
-                <th>REFERENCE</th>
-                <th>CREATED</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr className="tx-empty-row">
-                  <td colSpan={7}>Loading transactions…</td>
-                </tr>
-              ) : paginated.length === 0 ? (
-                <tr className="tx-empty-row">
-                  <td colSpan={7}>No transactions match your filters.</td>
-                </tr>
-              ) : (
-                paginated.map((t) => (
-                  <tr key={t.id}>
-                    <td>
-                      <div className="tx-company-name">{t.companyName}</div>
-                      <div className="tx-company-id">{shortId(t.companyId)}</div>
-                    </td>
-                    <td>
-                      <TypeBadge type={t.type} />
-                    </td>
-                    <td>
-                      <span className={`tx-amount tx-amount--${t.type}`}>
-                        {t.type === "credit" ? "+" : "−"}₹{money(t.amount)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="tx-flow">
-                        <span className="tx-flow__before">₹{money(t.balanceBefore)}</span>
-                        <span className="tx-flow__arrow">→</span>
-                        <span className="tx-flow__after">₹{money(t.balanceAfter)}</span>
-                      </div>
-                    </td>
-                    <td className="tx-desc">{t.description}</td>
-                    <td className="tx-reference">{t.referenceType}</td>
-                    <td className="tx-created">{t.createdAt}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          columns={columns}
+          data={paginated}
+          rowKey={(t) => t.id}
+          loading={loading}
+          emptyMessage="No transactions match your filters."
+        />
       )}
 
       {/* PAGINATION */}
       {!loading && !fetchError && filtered.length > 0 && (
         <Pagination
+          className="mt-4"
           currentPage={safePage}
           totalPages={totalPages}
           totalItems={filtered.length}
-          pageSize={ITEMS_PER_PAGE}
+          itemsPerPage={ITEMS_PER_PAGE}
+          showInfo
           onPageChange={(page) => setCurrentPage(page)}
         />
       )}
@@ -460,6 +357,6 @@ export default function ManageTransactions() {
         pauseOnHover
         theme={isDark ? "dark" : "light"}
       />
-    </div>
+    </PageContainer>
   );
 }

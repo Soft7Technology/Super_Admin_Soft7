@@ -1,8 +1,36 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import "./audit-logs.css";
+import type { ReactNode } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  Download,
+  Info,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+  XCircle,
+} from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
+import { PageContainer, PageHeader } from "@/components/layout";
+import KpiCard from "@/components/admin/KpiCard";
+import type { KpiTone } from "@/components/admin/KpiCard";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import IconButton from "@/components/ui/IconButton";
+import Input from "@/components/ui/Input";
+import Pagination from "@/components/ui/Pagination";
+import Select from "@/components/ui/Select";
+import Table from "@/components/ui/Table";
+import type { Column } from "@/components/ui/Table";
+import { cn } from "@/lib/utils";
+
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type ActionType =
   | "LOGIN"
@@ -206,23 +234,27 @@ function severityBucket(
   return "info";
 }
 
-// ─── ACTIVITY ICON (small wave/pulse glyph, colored by severity) ──────────────
-function ActivityIcon({
-  bucket,
-}: {
-  bucket: "info" | "success" | "warning" | "error";
-}) {
+/// ─── ACTIVITY ICON (small wave/pulse glyph, colored by severity) ──────────────
+type Bucket = "info" | "success" | "warning" | "error";
+
+const BUCKET_TONE: Record<Bucket, string> = {
+  info: "bg-info-bg text-info",
+  success: "bg-success-bg text-success",
+  warning: "bg-warning-bg text-warning",
+  error: "bg-error-bg text-error",
+};
+
+const BUCKET_TEXT: Record<Bucket, string> = {
+  info: "text-info",
+  success: "text-success",
+  warning: "text-warning",
+  error: "text-error",
+};
+
+function ActivityIcon({ bucket }: { bucket: Bucket }) {
   return (
-    <div className={`al-log-row__icon al-log-row__icon--${bucket}`}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M3 12h4l2 7 4-14 2 7h6"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", BUCKET_TONE[bucket])}>
+      <Activity size={14} strokeWidth={2.2} />
     </div>
   );
 }
@@ -523,392 +555,288 @@ export default function AuditLogs() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  return (
-    <div className="al-root">
-      {/* HEADER */}
-      <div className="al-header">
-        <div>
-          <h1 className="al-header__title">Activity Logs</h1>
-          <p className="al-header__sub">
-            Monitor all system activities and user actions
-          </p>
-        </div>
-        <div className="al-header__right">
-          <button
-            onClick={handleExportCSV}
-            disabled={exporting || filtered.length === 0}
-            className={`al-btn-export ${
-              exportDone ? "al-btn-export--done" : ""
-              }`}
-          >
-            {exporting ? (
-              <>
-                <span className="al-btn-spinner" /> Exporting…
-              </>
-            ) : exportDone ? (
-              <>✓ Downloaded</>
-            ) : (
-              <>⬇ Export</>
-            )}
-          </button>
-          <button
-            onClick={handleClearLogs}
-            disabled={clearing || logs.length === 0}
-            className="al-btn-clear"
-          >
-            {clearing ? (
-              <>
-                <span className="al-btn-spinner" /> Clearing…
-              </>
-            ) : (
-              <>🗑 Clear Logs</>
-            )}
-          </button>
-        </div>
-      </div>
+  const columns: Column<LogEntry>[] = [
+    {
+      key: "activity",
+      header: "Activity",
+      render: (log) => {
+        const m = ACTION_META[log.action] ?? { icon: "•", label: log.action };
+        const bucket = severityBucket(log.severity);
+        return (
+          <div className="flex min-w-[16rem] items-start gap-3">
+            <ActivityIcon bucket={bucket} />
+            <div className="min-w-0">
+              <p className={cn("text-xs font-semibold uppercase tracking-wide", BUCKET_TEXT[bucket])}>
+                {m.label.toUpperCase()}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[0.8125rem] text-secondary-foreground">{log.detail}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: "userId",
+      header: "User ID",
+      render: (log) => (
+        <span className="font-mono text-xs text-muted-foreground" title={log.userId}>
+          {shortenId(log.userId)}
+        </span>
+      ),
+    },
+    {
+      key: "entityType",
+      header: "Type",
+      render: (log) => <Badge>{log.entityType}</Badge>,
+    },
+    {
+      key: "action",
+      header: "Action",
+      render: (log) => <span className="text-secondary-foreground">{log.action || "—"}</span>,
+    },
+    {
+      key: "time",
+      header: "Time",
+      render: (log) => (
+        <span className="whitespace-nowrap text-muted-foreground" title={log.date}>
+          {log.time}
+        </span>
+      ),
+    },
+  ];
 
-      {/* STAT CARDS — by severity, matches reference (Info / Success / Warnings / Errors) */}
-      <div className="al-stat-grid">
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--info">ⓘ</div>
-          <div>
-            <div className="al-stat__value">{infoCount}</div>
-            <div className="al-stat__label">Info</div>
-          </div>
-        </div>
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--success">✓</div>
-          <div>
-            <div className="al-stat__value">{successCount}</div>
-            <div className="al-stat__label">Success</div>
-          </div>
-        </div>
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--warning">⚠</div>
-          <div>
-            <div className="al-stat__value">{warningCount}</div>
-            <div className="al-stat__label">Warnings</div>
-          </div>
-        </div>
-        <div className="al-stat">
-          <div className="al-stat__icon al-stat__icon--error">✕</div>
-          <div>
-            <div className="al-stat__value">{errorCount}</div>
-            <div className="al-stat__label">Errors</div>
-          </div>
-        </div>
+  const statCards: { label: string; value: number; icon: ReactNode; tone: KpiTone }[] = [
+    { label: "Info", value: infoCount, icon: <Info size={18} />, tone: "info" },
+    { label: "Success", value: successCount, icon: <CheckCircle2 size={18} />, tone: "success" },
+    { label: "Warnings", value: warningCount, icon: <AlertTriangle size={18} />, tone: "warning" },
+    { label: "Errors", value: errorCount, icon: <XCircle size={18} />, tone: "error" },
+  ];
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Activity Logs"
+        description="Monitor all system activities and user actions"
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              onClick={handleExportCSV}
+              disabled={exporting || filtered.length === 0}
+              isLoading={exporting}
+              leftIcon={exportDone ? <Check size={15} /> : <Download size={15} />}
+            >
+              {exportDone ? "Downloaded" : "Export"}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleClearLogs}
+              disabled={clearing || logs.length === 0}
+              isLoading={clearing}
+              leftIcon={<Trash2 size={15} />}
+            >
+              Clear Logs
+            </Button>
+          </>
+        }
+      />
+
+      {/* STAT CARDS — by severity (Info / Success / Warnings / Errors) */}
+      <div className="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+        {statCards.map((s) => (
+          <KpiCard key={s.label} label={s.label} value={s.value} icon={s.icon} tone={s.tone} />
+        ))}
       </div>
 
       {/* FILTER BAR */}
-      <div className="al-filter-bar">
-        <div
-          className="al-search-wrap"
-          ref={searchWrapRef}
-          style={{ position: "relative" }}
-        >
-          <span className="al-search-icon">🔍</span>
-          <input
-            className="al-search-input"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              if (selectedUser) {
-                setSelectedUser(null);
-                setSelectedUserId("");
-              }
-            }}
-            onFocus={() =>
-              userSuggestions.length > 0 && setShowSuggestions(true)
-            }
-            placeholder="Search activities, or type an email to filter by user…"
-            autoComplete="off"
-          />
-          {selectedUser && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedUser(null);
-                setSelectedUserId("");
-                setSearch("");
-              }}
-              style={{ background: "none", border: "none", cursor: "pointer" }}
-              aria-label="Clear user filter"
-              title={`Filtering by ${selectedUser.email}`}
-            >
-              ✕
-            </button>
-          )}
-
-          {showSuggestions && !selectedUser && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                zIndex: 30,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                marginTop: 4,
-                maxHeight: 240,
-                overflowY: "auto",
-                boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
-              }}
-            >
-              {suggestLoading ? (
-                <div style={{ padding: 10, fontSize: 13, color: "#6b7280" }}>
-                  Searching users…
-                </div>
-              ) : userSuggestions.length === 0 ? (
-                <div style={{ padding: 10, fontSize: 13, color: "#6b7280" }}>
-                  No matching users
-                </div>
-              ) : (
-                userSuggestions.map((u) => (
-                  <div
-                    key={u.id}
-                    onMouseDown={(e) => e.preventDefault()}
+      <Card padding="sm" className="mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-0 flex-[1_1_16rem]" ref={searchWrapRef}>
+            <Input
+              leftIcon={<Search size={15} />}
+              rightIcon={
+                selectedUser ? (
+                  <button
+                    type="button"
                     onClick={() => {
-                      setSelectedUser(u);
-                      setSelectedUserId(u.id);
-                      setSearch(u.email);
-                      setUserSuggestions([]);
-                      setShowSuggestions(false);
+                      setSelectedUser(null);
+                      setSelectedUserId("");
+                      setSearch("");
                     }}
-                    style={{
-                      padding: "8px 10px",
-                      cursor: "pointer",
-                      fontSize: 13,
-                    }}
+                    className="pointer-events-auto flex items-center text-muted-foreground hover:text-foreground"
+                    aria-label="Clear user filter"
+                    title={`Filtering by ${selectedUser.email}`}
                   >
-                    <div style={{ fontWeight: 600 }}>{u.name}</div>
-                    <div style={{ color: "#6b7280" }}>{u.email}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-        <div className="al-dropdown-inner">
-          <select
-            className="al-dropdown"
-            value={selectedUserId}
-            onChange={(e) => {
-              const id = e.target.value;
-              setSelectedUserId(id);
-              if (id === "") {
-                setSelectedUser(null);
-                setSearch("");
-              } else {
-                const u = users.find((usr) => usr.id === id) || null;
-                setSelectedUser(u);
-                setSearch(u?.email || "");
+                    <X size={15} />
+                  </button>
+                ) : undefined
               }
-            }}
-          >
-            <option value="">All Users</option>
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                if (selectedUser) {
+                  setSelectedUser(null);
+                  setSelectedUserId("");
+                }
+              }}
+              onFocus={() => userSuggestions.length > 0 && setShowSuggestions(true)}
+              placeholder="Search activities, or type an email to filter by user…"
+              autoComplete="off"
+              aria-label="Search activities"
+            />
 
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name} ({user.email})
-              </option>
-            ))}
-          </select>
+            {showSuggestions && !selectedUser && (
+              <div className="absolute inset-x-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover py-1 shadow-lg">
+                {suggestLoading ? (
+                  <p className="px-3 py-2 text-[0.8125rem] text-muted-foreground">Searching users…</p>
+                ) : userSuggestions.length === 0 ? (
+                  <p className="px-3 py-2 text-[0.8125rem] text-muted-foreground">No matching users</p>
+                ) : (
+                  userSuggestions.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setSelectedUser(u);
+                        setSelectedUserId(u.id);
+                        setSearch(u.email);
+                        setUserSuggestions([]);
+                        setShowSuggestions(false);
+                      }}
+                      className="block w-full px-3 py-2 text-left text-[0.8125rem] hover:bg-surface-hover"
+                    >
+                      <span className="block font-semibold text-foreground">{u.name}</span>
+                      <span className="block text-muted-foreground">{u.email}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
-          <span className="al-dropdown-arrow">▾</span>
-        </div>
-        <div className="al-dropdowns-group">
-          <div className="al-dropdown-inner">
-            <select
-              className="al-dropdown"
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              aria-label="Filter by user"
+              wrapperClassName="w-52"
+              value={selectedUserId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedUserId(id);
+                if (id === "") {
+                  setSelectedUser(null);
+                  setSearch("");
+                } else {
+                  const u = users.find((usr) => usr.id === id) || null;
+                  setSelectedUser(u);
+                  setSearch(u?.email || "");
+                }
+              }}
+              options={[
+                { value: "", label: "All Users" },
+                ...users.map((user) => ({ value: user.id, label: `${user.name} (${user.email})` })),
+              ]}
+            />
+            <Select
+              aria-label="Filter by type"
+              wrapperClassName="w-36"
               value={typeFilter}
-              onChange={(e) =>
-                setTypeFilter(e.target.value as TypeFilter | "ALL")
-              }
-            >
-              <option value="ALL">All Types</option>
-              {TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <span className="al-dropdown-arrow">▾</span>
-          </div>
-
-          <div className="al-dropdown-inner">
-            <select
-              className="al-dropdown"
+              onChange={(e) => setTypeFilter(e.target.value as TypeFilter | "ALL")}
+              options={[{ value: "ALL", label: "All Types" }, ...TYPE_OPTIONS]}
+            />
+            <Select
+              aria-label="Filter by action"
+              wrapperClassName="xl:w-36"
               value={actionFilter}
-              onChange={(e) =>
-                setActionFilter(e.target.value as ActionType | "ALL")
-              }
-            >
-              <option value="ALL">All Actions</option>
-              {ACTION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <span className="al-dropdown-arrow">▾</span>
-          </div>
-
-          <div className="al-dropdown-inner">
-            <select
-              className="al-dropdown"
+              onChange={(e) => setActionFilter(e.target.value as ActionType | "ALL")}
+              options={[{ value: "ALL", label: "All Actions" }, ...ACTION_OPTIONS]}
+            />
+            <Select
+              aria-label="Time frame"
+              wrapperClassName="xl:w-40"
               value={timeFrame}
               onChange={(e) => setTimeFrame(e.target.value as TimeFrame)}
-            >
-              {TIME_FRAME_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <span className="al-dropdown-arrow">▾</span>
+              options={TIME_FRAME_OPTIONS}
+            />
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* TABLE — columns are now: ACTIVITY · USER ID · TYPE · ACTION · TIME
-        to match. */}
-      <div className="al-table">
-        <div className="al-table__head">
-          <div className="al-table__head-cell" />
-          <div className="al-table__head-cell">ACTIVITY</div>
-          <div className="al-table__head-cell">USER ID</div>
-          <div className="al-table__head-cell">TYPE</div>
-          <div className="al-table__head-cell">ACTION</div>
-          <div className="al-table__head-cell">TIME</div>
-        </div>
-
-        {loading ? (
-          <div className="al-empty">
-            <div className="al-empty__icon">⏳</div>
-            <div className="al-empty__title">Loading activity logs…</div>
-          </div>
-        ) : fetchError ? (
-          <div className="al-empty">
-            <div className="al-empty__icon">⚠️</div>
-            <div className="al-empty__title">Failed to load logs</div>
-            <div className="al-empty__desc">{fetchError}</div>
-            <button onClick={fetchLogs} className="al-empty__retry">
-              Retry
-            </button>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="al-empty">
-            <div className="al-empty__icon">🔍</div>
-            <div className="al-empty__title">No activity found</div>
-            <div className="al-empty__desc">
-              Try adjusting your search or filters.
-            </div>
-          </div>
-        ) : (
-          filtered.map((log) => {
-            const m = ACTION_META[log.action] ?? {
-              icon: "•",
-              label: log.action,
-            };
-            const bucket = severityBucket(log.severity);
-
-            return (
-              <div key={log.id} className="al-log-row">
-                <div className="al-log-row__main">
-                  <ActivityIcon bucket={bucket} />
-
-                  <div className="al-log-row__activity">
-                    <div
-                      className={`al-log-row__name al-log-row__name--${bucket}`}
-                    >
-                      {m.label.toUpperCase()}
-                    </div>
-                    <div className="al-log-row__detail">{log.detail}</div>
-                  </div>
-
-                  <div className="al-log-row__user-col">
-                    <div className="al-log-row__user" title={log.userId}>
-                      {shortenId(log.userId)}
-                    </div>
-                  </div>
-
-                  <div className="al-log-row__ip">{log.entityType}</div>
-
-                  <div className="al-log-row__ip">{log.action || "—"}</div>
-
-                  <div className="al-log-row__time-col">
-                    <div className="al-log-row__time-rel">{log.time}</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* PAGINATION (unchanged behavior, restyled) */}
-      {!loading && !fetchError && totalPages > 1 && (
-        <div className="al-pagination">
-          <div className="al-pagination__info">
-            Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>{" "}
-            · {totalItems} total events
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="al-pagination__btn"
-            >
-              ‹ Prev
-            </button>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="al-pagination__btn"
-            >
-              Next ›
-            </button>
-          </div>
-        </div>
+      {/* TABLE — ACTIVITY · USER ID · TYPE · ACTION · TIME */}
+      {fetchError && !loading ? (
+        <Card padding="none">
+          <EmptyState
+            icon={<AlertTriangle size={20} />}
+            title="Failed to load logs"
+            description={fetchError}
+            action={
+              <Button variant="secondary" leftIcon={<RefreshCw size={15} />} onClick={fetchLogs}>
+                Retry
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <Table
+          columns={columns}
+          data={filtered}
+          rowKey={(log) => String(log.id)}
+          loading={loading}
+          emptyMessage="No activity found"
+          emptyDescription="Try adjusting your search or filters."
+        />
       )}
 
-      {/* TOASTS — replaces window.confirm/alert. "confirm" toasts show
-          Confirm/Cancel buttons inline; others auto-dismiss after 3s. */}
-      <div className="al-toast-stack">
+      {/* PAGINATION */}
+      {!loading && !fetchError && totalPages > 1 && (
+        <Pagination
+          className="mt-4"
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={LIMIT}
+          showInfo
+          onPageChange={setCurrentPage}
+        />
+      )}
+
+      {/* TOASTS — "confirm" toasts show Confirm/Cancel inline; others auto-dismiss after 3s. */}
+      <div className="fixed bottom-4 right-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={`al-toast al-toast--${t.kind}`}>
-            <span className="al-toast__msg">{t.message}</span>
+          <div
+            key={t.id}
+            role={t.kind === "error" || t.kind === "confirm" ? "alert" : "status"}
+            className={cn(
+              "flex items-start gap-3 rounded-xl border bg-popover p-3 text-[0.8125rem] text-foreground shadow-lg",
+              t.kind === "success" && "border-success-border",
+              t.kind === "error" && "border-error-border",
+              t.kind === "confirm" && "border-warning-border",
+              t.kind === "info" && "border-border",
+            )}
+          >
+            <span className="flex-1">{t.message}</span>
             {t.kind === "confirm" ? (
-              <div className="al-toast__actions">
-                <button
-                  className="al-toast__btn al-toast__btn--confirm"
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  size="sm"
+                  variant="danger"
                   onClick={() => {
                     t.onConfirm?.();
                     dismissToast(t.id);
                   }}
                 >
                   Confirm
-                </button>
-                <button
-                  className="al-toast__btn al-toast__btn--cancel"
-                  onClick={() => dismissToast(t.id)}
-                >
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => dismissToast(t.id)}>
                   Cancel
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
-                className="al-toast__close"
-                onClick={() => dismissToast(t.id)}
-              >
-                ✕
-              </button>
+              <IconButton size="sm" aria-label="Dismiss" icon={<X size={14} />} onClick={() => dismissToast(t.id)} />
             )}
           </div>
         ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -1,0 +1,45 @@
+@layer theme, base, components, utilities;
+@layer components {
+  .shell {
+    display: flex;
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--color-background);
+  }
+  .main {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .content {
+    position: relative;
+    min-height: 0;
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  /* Page entrance — opacity + a short rise; transform/opacity only. */
+  .enterA {
+    animation: pageInA var(--duration-slow) var(--ease-emphasized);
+  }
+  .enterB {
+    animation: pageInB var(--duration-slow) var(--ease-emphasized);
+  }
+  @keyframes pageInA {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  @keyframes pageInB {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+}

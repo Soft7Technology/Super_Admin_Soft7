@@ -1,0 +1,47 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-10) var(--space-6);
+    text-align: center;
+  }
+  .compact {
+    padding: var(--space-6) var(--space-4);
+  }
+  .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: var(--space-3);
+    border-radius: var(--radius-full);
+    color: var(--color-primary-text);
+    background-color: var(--color-primary-light);
+  }
+  .compact .icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .title {
+    font: var(--type-card-title);
+    color: var(--color-text);
+  }
+  .description {
+    max-width: 22rem;
+    font: var(--type-secondary);
+    color: var(--color-text-muted);
+  }
+  .action {
+    margin-top: var(--space-4);
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.title, .description) {
+    margin: 0;
+  }
+}

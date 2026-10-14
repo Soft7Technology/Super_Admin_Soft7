@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { User } from "../types";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
 
 interface ResetPasswordModalProps {
   user: User;
@@ -47,52 +51,40 @@ export function ResetPasswordModal({ user, onClose }: ResetPasswordModalProps) {
   };
 
   return (
-    <div className="au-overlay" onClick={onClose}>
-      <div className="au-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="au-modal__header">
-          <div>
-            <div className="au-modal__title">Reset Password</div>
-            <div className="au-modal__sub">Update password for {user.name}</div>
-          </div>
-          <button className="au-modal__close" onClick={onClose}>×</button>
-        </div>
-
-        <div className="au-modal__body">
-          {/* NEW PASSWORD */}
-          <div className="au-field">
-            <div className="au-field__label">NEW PASSWORD</div>
-            <div className="au-password-wrap">
-              <input
-                type={showNew ? "text" : "password"}
-                className="au-input"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                className="au-password-toggle"
-                onClick={() => setShowNew(!showNew)}
-              >
-                👁
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="au-modal__actions">
-          <button
-            className="au-btn au-btn--primary"
-            onClick={handlePasswordChange}
-            disabled={loading}
-          >
-            {loading ? "Resetting..." : "Reset Password"}
-          </button>
-          <button className="au-btn au-btn--ghost" onClick={onClose}>
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="sm"
+      title="Reset Password"
+      description={`Update password for ${user.name}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
             Cancel
+          </Button>
+          <Button onClick={handlePasswordChange} isLoading={loading} leftIcon={<KeyRound size={15} />}>
+            Reset Password
+          </Button>
+        </>
+      }
+    >
+      <Input
+        label="New Password"
+        type={showNew ? "text" : "password"}
+        placeholder="Enter new password"
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+        rightIcon={
+          <button
+            type="button"
+            onClick={() => setShowNew(!showNew)}
+            aria-label={showNew ? "Hide password" : "Show password"}
+            className="pointer-events-auto flex items-center text-muted-foreground hover:text-foreground"
+          >
+            {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
-        </div>
-      </div>
-    </div>
+        }
+      />
+    </Modal>
   );
 }

@@ -1,9 +1,46 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { axiosInstance } from "@/lib/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
-import "./company-details.css";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  Check,
+  CheckCheck,
+  CheckCircle2,
+  FileText,
+  Inbox,
+  LayoutTemplate,
+  Layers,
+  Loader,
+  Megaphone,
+  MessageSquare,
+  PauseCircle,
+  Pencil,
+  Plus,
+  Share2,
+  XCircle,
+} from "lucide-react";
+import { PageContainer, PageHeader } from "@/components/layout";
+import KpiCard from "@/components/admin/KpiCard";
+import type { KpiTone } from "@/components/admin/KpiCard";
+import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
+import type { BadgeVariant } from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import Skeleton from "@/components/ui/Skeleton";
+import Table from "@/components/ui/Table";
+import type { Column } from "@/components/ui/Table";
+import Tabs from "@/components/ui/Tabs";
+import { cn } from "@/lib/utils";
+
 
 type CompanyStatus = "active" | "suspended";
 
@@ -338,698 +375,476 @@ const handleStatusChange = () => {
   };
 
 
+  const backToList = () => router.push("/user/manage-companies");
+
   if (loading) {
     return (
-      <div className="company-details-page">
-        <div className="company-details-loading">
-          Loading company details...
+      <PageContainer>
+        <Skeleton className="mb-3 h-8 w-40 rounded-lg" />
+        <Skeleton className="mb-6 h-10 w-72 rounded-lg" />
+        <div className="space-y-4">
+          <Skeleton className="h-56 w-full rounded-xl" />
+          <Skeleton className="h-80 w-full rounded-xl" />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   if (error || !company) {
     return (
-      <div className="company-details-page">
-        <div className="company-details-error">
-          <h2>Unable to load company</h2>
-          <p>{error || "Company details not found."}</p>
-
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => router.push("/user/manage-companies")}
-          >
-            Back to Companies
-          </button>
-        </div>
-      </div>
+      <PageContainer>
+        <Card padding="none">
+          <EmptyState
+            icon={<Building2 size={20} />}
+            title="Unable to load company"
+            description={error || "Company details not found."}
+            action={
+              <Button leftIcon={<ArrowLeft size={15} />} onClick={backToList}>
+                Back to Companies
+              </Button>
+            }
+          />
+        </Card>
+      </PageContainer>
     );
   }
-  return (
-    <div className="company-details-page">
-      {/* Header */}
-      <div className="company-details-header">
+
+  const isActive = company.status === "active";
+
+  const profileMeta: [string, string][] = [
+    ["Joined", company.joinedDate],
+    ["Last Active", company.lastActive],
+    ["Plan", company.plan],
+    ["Credits", company.credits.toLocaleString("en-IN")],
+  ];
+
+  const quickActions = [
+    {
+      label: isActive ? "Suspend Company" : "Activate Company",
+      icon: isActive ? <PauseCircle size={16} /> : <CheckCircle2 size={16} />,
+      tone: isActive ? "bg-error-bg text-error" : "bg-success-bg text-success",
+      onClick: handleStatusChange,
+    },
+    {
+      label: "Change Plan",
+      icon: <Layers size={16} />,
+      tone: "bg-primary-lighter text-primary-text",
+      onClick: () => setShowPlanModal(true),
+    },
+    {
+      label: "Add Credits",
+      icon: <Plus size={16} />,
+      tone: "bg-primary-lighter text-primary-text",
+      onClick: () => setShowCreditModal(true),
+    },
+  ];
+
+  const overviewKpis: { label: string; value: number; icon: ReactNode; tone?: KpiTone }[] = [
+    { label: "Total Messages", value: MOCK_STATS.totalMessages, icon: <MessageSquare size={18} /> },
+    { label: "Delivered Messages", value: MOCK_STATS.deliveredMessages, icon: <CheckCheck size={18} />, tone: "success" },
+    { label: "Failed Messages", value: MOCK_STATS.failedMessages, icon: <XCircle size={18} />, tone: "error" },
+    { label: "Received Messages", value: MOCK_STATS.receivedMessages, icon: <Inbox size={18} />, tone: "info" },
+    { label: "In Progress", value: MOCK_STATS.inProgressMessages, icon: <Loader size={18} />, tone: "warning" },
+    { label: "Total Campaigns", value: MOCK_STATS.totalCampaigns, icon: <Megaphone size={18} /> },
+    { label: "Templates", value: MOCK_STATS.templates, icon: <LayoutTemplate size={18} /> },
+    { label: "Message Templates", value: MOCK_STATS.messageTemplates, icon: <FileText size={18} /> },
+  ];
+
+  const viewMore = (
+    <Button
+      variant="ghost"
+      size="sm"
+      rightIcon={<ArrowRight size={14} />}
+      onClick={() => {
+        // TODO: Navigate to full history
+      }}
+    >
+      View More
+    </Button>
+  );
+
+  const tabs = [
+    {
+      id: "overview",
+      label: "Overview",
+      content: (
         <div>
-          <button
-            type="button"
-            className="back-button"
-            onClick={() => router.push("/user/manage-companies")}
-          >
-            ← Back to Companies
-          </button>
-
-          <h1>Company Details</h1>
-          <p>
-            View and manage company information, campaigns, activity and plan
-            usage.
-          </p>
-        </div>
-      </div>
-
-      {/* ============================================================= */}
-      {/* COMPANY PROFILE + QUICK ACTIONS */}
-      {/* ============================================================= */}
-
-      <section className="company-profile-card">
-        {/* LEFT — Company information */}
-        <div className="company-profile-left">
-          <div className="company-logo">
-            {company.name.charAt(0).toUpperCase()}
-          </div>
-
-          <div className="company-profile-info">
-            <div className="company-name-row">
-              <h2>{company.name}</h2>
-
-              <span className={`status-badge ${company.status}`}>
-                {company.status === "active" ? "Active" : "Suspended"}
-              </span>
-            </div>
-
-            <p className="company-email">{company.email}</p>
-
-            <div className="company-contact-row">
-              <span>{company.phone}</span>
-              <span className="separator">•</span>
-              <span>Business ID: {company.businessId}</span>
-            </div>
-
-            {/* Profile metadata — 2 x 2 */}
-            <div className="company-profile-meta">
-              <div>
-                <span>Joined</span>
-                <strong>{company.joinedDate}</strong>
-              </div>
-
-              <div>
-                <span>Last Active</span>
-                <strong>{company.lastActive}</strong>
-              </div>
-
-              <div>
-                <span>Plan</span>
-                <strong>{company.plan}</strong>
-              </div>
-
-              <div>
-                <span>Credits</span>
-                <strong className="credit-value">
-                  {company.credits.toLocaleString("en-IN")}
-                </strong>
-              </div>
-            </div>
+          <SectionHeading title="Overview" description="Company messaging and campaign performance." />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {overviewKpis.map((kpi) => (
+              <KpiCard
+                key={kpi.label}
+                label={kpi.label}
+                value={kpi.value.toLocaleString("en-IN")}
+                icon={kpi.icon}
+                tone={kpi.tone}
+              />
+            ))}
           </div>
         </div>
-
-        {/* RIGHT — Profile buttons + Quick Actions */}
-        <div className="company-profile-right">
-          <div className="profile-top-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setShowEditModal(true)}
-            >
-              Edit Profile
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                navigator.clipboard?.writeText(window.location.href);
-              }}
-            >
-              Share Profile
-            </button>
-          </div>
-
-          <div className="company-quick-actions">
-            <span className="quick-actions-label">QUICK ACTIONS</span>
-
-            <div className="quick-action-list">
-              <button
-                type="button"
-                className={
-                  company.status === "active"
-                    ? "quick-action-item danger"
-                    : "quick-action-item success"
-                }
-                onClick={handleStatusChange}
-              >
-                <span className="quick-action-icon">
-                  {company.status === "active" ? "⏸" : "✓"}
-                </span>
-
-                <span className="quick-action-text">
-                  <strong>
-                    {company.status === "active"
-                      ? "Suspend Company"
-                      : "Activate Company"}
-                  </strong>
-                </span>
-
-                <span className="quick-action-arrow">→</span>
-              </button>
-
-              <button
-                type="button"
-                className="quick-action-item"
-                onClick={() => setShowPlanModal(true)}
-              >
-                <span className="quick-action-icon">◆</span>
-
-                <span className="quick-action-text">
-                  <strong>Change Plan</strong>
-                </span>
-
-                <span className="quick-action-arrow">→</span>
-              </button>
-
-              <button
-                type="button"
-                className="quick-action-item"
-                onClick={() => setShowCreditModal(true)}
-              >
-                <span className="quick-action-icon">＋</span>
-
-                <span className="quick-action-text">
-                  <strong>Add Credits</strong>
-                </span>
-
-                <span className="quick-action-arrow">→</span>
-              </button>
-            </div>
-          </div>
+      ),
+    },
+    {
+      id: "campaigns",
+      label: "Campaigns",
+      content: (
+        <div>
+          <SectionHeading
+            title="Campaigns"
+            description="Campaign history and performance for this company."
+            action={viewMore}
+          />
+          <CampaignTable campaigns={MOCK_CAMPAIGNS} />
         </div>
-      </section>
-
-      {/* Tabs */}
-      <section className="company-content-card">
-        <div className="company-tabs">
-          <button
-            type="button"
-            className={
-              activeTab === "overview" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("overview")}
-          >
-            Overview
-          </button>
-
-          <button
-            type="button"
-            className={
-              activeTab === "campaigns" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("campaigns")}
-          >
-            Campaigns
-          </button>
-
-          <button
-            type="button"
-            className={
-              activeTab === "activity" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("activity")}
-          >
-            Activity
-          </button>
-
-          <button
-            type="button"
-            className={
-              activeTab === "plan" ? "tab-button active" : "tab-button"
-            }
-            onClick={() => setActiveTab("plan")}
-          >
-            Plan & Usage
-          </button>
-        </div>
-
-        <div className="tab-content">
-          {/* ========================================================= */}
-          {/* OVERVIEW */}
-          {/* ========================================================= */}
-
-          {activeTab === "overview" && (
-            <div>
-              <div className="overview-header">
-                <div>
-                  <h3>Overview</h3>
-                  <p>Company messaging and campaign performance.</p>
-                </div>
-              </div>
-
-              <div className="kpi-grid">
-                <KpiCard
-                  title="Total Messages"
-                  value={MOCK_STATS.totalMessages}
-                />
-
-                <KpiCard
-                  title="Delivered Messages"
-                  value={MOCK_STATS.deliveredMessages}
-                />
-
-                <KpiCard
-                  title="Failed Messages"
-                  value={MOCK_STATS.failedMessages}
-                />
-
-                <KpiCard
-                  title="Received Messages"
-                  value={MOCK_STATS.receivedMessages}
-                />
-
-                <KpiCard
-                  title="In Progress"
-                  value={MOCK_STATS.inProgressMessages}
-                />
-
-                <KpiCard
-                  title="Total Campaigns"
-                  value={MOCK_STATS.totalCampaigns}
-                />
-
-                <KpiCard title="Templates" value={MOCK_STATS.templates} />
-
-                <KpiCard
-                  title="Message Templates"
-                  value={MOCK_STATS.messageTemplates}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* CAMPAIGNS */}
-          {/* ========================================================= */}
-
-          {activeTab === "campaigns" && (
-            <div>
-              <div className="overview-header">
-                <div>
-                  <h3>Campaigns</h3>
-                  <p>Campaign history and performance for this company.</p>
-                </div>
-
-                <button
-                  type="button"
-                  className="view-more-button"
-                  onClick={() => {
-                    // TODO: Navigate to full campaign history
-                  }}
+      ),
+    },
+    {
+      id: "activity",
+      label: "Activity",
+      content: (
+        <div>
+          <SectionHeading
+            title="Activity"
+            description="Recent actions and changes made to this company account."
+            action={viewMore}
+          />
+          <ol className="relative space-y-5 border-l border-border pl-6">
+            {MOCK_ACTIVITIES.map((activity) => (
+              <li key={activity.id} className="relative">
+                <span
+                  className="absolute -left-[2.35rem] top-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary-lighter text-primary-text ring-4 ring-surface"
+                  aria-hidden
                 >
-                  View More →
-                </button>
-              </div>
-
-              <CampaignTable campaigns={MOCK_CAMPAIGNS} />
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* ACTIVITY */}
-          {/* ========================================================= */}
-
-          {activeTab === "activity" && (
-            <div>
-              <div className="overview-header">
-                <div>
-                  <h3>Activity</h3>
-                  <p>
-                    Recent actions and changes made to this company account.
-                  </p>
+                  {getActivityIcon(activity.type)}
+                </span>
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                  <p className="text-sm font-medium text-foreground">{activity.title}</p>
+                  <p className="text-xs text-muted-foreground">{activity.date}</p>
                 </div>
+                <p className="mt-0.5 text-[0.8125rem] text-secondary-foreground">{activity.description}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ),
+    },
+    {
+      id: "plan",
+      label: "Plan & Usage",
+      content: (
+        <div>
+          <SectionHeading
+            title="Plan & Usage"
+            description="Current subscription and resource usage."
+            action={
+              <Button size="sm" leftIcon={<Layers size={14} />} onClick={() => setShowPlanModal(true)}>
+                Change Plan
+              </Button>
+            }
+          />
 
-                <button
-                  type="button"
-                  className="view-more-button"
-                  onClick={() => {
-                    // TODO: Navigate to full activity history
-                  }}
-                >
-                  View More →
-                </button>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Current Plan</p>
+                  <p className="mt-0.5 text-lg font-semibold text-foreground">{MOCK_PLAN.name}</p>
+                </div>
+                <Badge variant={MOCK_PLAN.status === "Active" ? "success" : "neutral"} dot>
+                  {MOCK_PLAN.status}
+                </Badge>
               </div>
 
-              <div className="activity-timeline">
-                {MOCK_ACTIVITIES.map((activity) => (
-                  <div className="activity-item" key={activity.id}>
-                    <div className={`activity-icon ${activity.type}`}>
-                      {getActivityIcon(activity.type)}
-                    </div>
-
-                    <div className="activity-content">
-                      <div className="activity-title-row">
-                        <strong>{activity.title}</strong>
-                        <span>{activity.date}</span>
-                      </div>
-
-                      <p>{activity.description}</p>
-                    </div>
+              <dl className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border-subtle bg-border-subtle">
+                {(
+                  [
+                    ["Monthly", `₹${MOCK_PLAN.monthlyPrice.toLocaleString("en-IN")}`],
+                    ["Yearly", `₹${MOCK_PLAN.yearlyPrice.toLocaleString("en-IN")}`],
+                    ["Start Date", MOCK_PLAN.startDate],
+                    ["End Date", MOCK_PLAN.endDate],
+                  ] as [string, string][]
+                ).map(([label, value]) => (
+                  <div key={label} className="bg-surface px-4 py-3">
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{value}</dd>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
+              </dl>
 
-          {/* ========================================================= */}
-          {/* PLAN & USAGE */}
-          {/* ========================================================= */}
+              <p className="mb-2 text-[0.8125rem] font-semibold text-foreground">Plan Features</p>
+              <ul className="space-y-2">
+                {MOCK_PLAN.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-[0.8125rem] text-secondary-foreground">
+                    <Check size={14} className="shrink-0 text-success" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </Card>
 
-          {activeTab === "plan" && (
-            <div>
-              <div className="overview-header">
-                <div>
-                  <h3>Plan & Usage</h3>
-                  <p>Current subscription and resource usage.</p>
-                </div>
+            <Card>
+              <CardHeader title="Usage" description="Current billing period" />
+              <div className="space-y-5">
+                {MOCK_USAGE.map((item) => {
+                  const percentage = Math.min((item.used / item.limit) * 100, 100);
 
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => setShowPlanModal(true)}
-                >
-                  Change Plan
-                </button>
-              </div>
-
-              <div className="plan-layout">
-                <div className="plan-card">
-                  <div className="plan-card-header">
-                    <div>
-                      <span className="small-label">Current Plan</span>
-
-                      <h3>{MOCK_PLAN.name}</h3>
-                    </div>
-
-                    <span className="status-badge active">
-                      {MOCK_PLAN.status}
-                    </span>
-                  </div>
-
-                  <div className="plan-pricing">
-                    <div>
-                      <span>Monthly</span>
-                      <strong>
-                        ₹{MOCK_PLAN.monthlyPrice.toLocaleString("en-IN")}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>Yearly</span>
-                      <strong>
-                        ₹{MOCK_PLAN.yearlyPrice.toLocaleString("en-IN")}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="plan-dates">
-                    <div>
-                      <span>Start Date</span>
-                      <strong>{MOCK_PLAN.startDate}</strong>
-                    </div>
-
-                    <div>
-                      <span>End Date</span>
-                      <strong>{MOCK_PLAN.endDate}</strong>
-                    </div>
-                  </div>
-
-                  <div className="plan-features">
-                    <h4>Plan Features</h4>
-
-                    {MOCK_PLAN.features.map((feature) => (
-                      <div className="feature-item" key={feature}>
-                        <span>✓</span>
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="usage-card">
-                  <div className="usage-card-header">
-                    <h3>Usage</h3>
-                    <span>Current billing period</span>
-                  </div>
-
-                  {MOCK_USAGE.map((item) => {
-                    const percentage = Math.min(
-                      (item.used / item.limit) * 100,
-                      100,
-                    );
-
-                    return (
-                      <div className="usage-item" key={item.label}>
-                        <div className="usage-label-row">
-                          <span>{item.label}</span>
-
-                          <strong>
-                            {item.used.toLocaleString("en-IN")} /{" "}
-                            {item.limit.toLocaleString("en-IN")}
-                          </strong>
-                        </div>
-
-                        <div className="usage-progress">
-                          <div
-                            className="usage-progress-bar"
-                            style={{
-                              width: `${percentage}%`,
-                            }}
-                          />
-                        </div>
-
-                        <span className="usage-percentage">
-                          {Math.round(percentage)}% used
+                  return (
+                    <div key={item.label}>
+                      <div className="mb-1.5 flex items-baseline justify-between gap-3 text-[0.8125rem]">
+                        <span className="text-secondary-foreground">{item.label}</span>
+                        <span className="font-medium tabular-nums text-foreground">
+                          {item.used.toLocaleString("en-IN")} / {item.limit.toLocaleString("en-IN")}
                         </span>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div
+                        className="h-2 overflow-hidden rounded-full bg-surface-muted"
+                        role="progressbar"
+                        aria-label={`${item.label} usage`}
+                        aria-valuenow={Math.round(percentage)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${percentage}%` }} />
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{Math.round(percentage)}% used</p>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ============================================================= */}
-      {/* EDIT PROFILE MODAL */}
-      {/* ============================================================= */}
-
-      {showEditModal && (
-        <div className="modal-overlay">
-          <div className="modal-card">
-            <div className="modal-header">
-              <div>
-                <h3>Edit Profile</h3>
-                <p>Update company information.</p>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setShowEditModal(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="form-grid">
-              <label>
-                Company Name
-                <input
-                  type="text"
-                  value={company.name}
-                  onChange={(e) =>
-                    setCompany({
-                      ...company,
-                      name: e.target.value,
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={company.email}
-                  onChange={(e) =>
-                    setCompany({
-                      ...company,
-                      email: e.target.value,
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                Phone
-                <input
-                  type="text"
-                  value={company.phone}
-                  onChange={(e) =>
-                    setCompany({
-                      ...company,
-                      phone: e.target.value,
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                Business ID
-                <input type="text" value={company.businessId} disabled />
-              </label>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setShowEditModal(false)}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                className="primary-button"
-                onClick={handleEditProfile}
-              >
-                Save Changes
-              </button>
-            </div>
+            </Card>
           </div>
         </div>
-      )}
+      ),
+    },
+  ];
 
-      {/* ============================================================= */}
-      {/* CHANGE PLAN MODAL */}
-      {/* ============================================================= */}
+  return (
+    <PageContainer>
+      <Button variant="ghost" size="sm" className="-ml-2 mb-3" leftIcon={<ArrowLeft size={15} />} onClick={backToList}>
+        Back to Companies
+      </Button>
+      <PageHeader
+        title="Company Details"
+        description="View and manage company information, campaigns, activity and plan usage."
+      />
 
-      {showPlanModal && (
-        <div className="modal-overlay">
-          <div className="modal-card small">
-            <div className="modal-header">
-              <div>
-                <h3>Change Plan</h3>
-                <p>Select a new plan for this company.</p>
+      {/* COMPANY PROFILE + QUICK ACTIONS */}
+      <Card className="mb-4">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <div className="flex min-w-0 flex-1 items-start gap-4">
+            <Avatar name={company.name} src={company.logo} size="lg" />
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-lg font-semibold text-foreground">{company.name}</h2>
+                <Badge variant={isActive ? "success" : "error"} dot>
+                  {isActive ? "Active" : "Suspended"}
+                </Badge>
               </div>
 
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setShowPlanModal(false)}
+              <p className="mt-0.5 truncate text-[0.8125rem] text-muted-foreground">{company.email}</p>
+
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-secondary-foreground">
+                <span>{company.phone}</span>
+                <span className="text-disabled-foreground">•</span>
+                <span>Business ID: {company.businessId}</span>
+              </p>
+
+              <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border-subtle bg-border-subtle">
+                {profileMeta.map(([label, value]) => (
+                  <div key={label} className="bg-surface px-4 py-3">
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd
+                      className={cn(
+                        "mt-0.5 truncate text-sm font-semibold text-foreground",
+                        label === "Credits" && "tabular-nums text-primary-text",
+                      )}
+                    >
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+
+          <div className="w-full shrink-0 lg:w-72">
+            <div className="mb-4 flex gap-2">
+              <Button variant="secondary" size="sm" className="flex-1" leftIcon={<Pencil size={14} />} onClick={() => setShowEditModal(true)}>
+                Edit Profile
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1"
+                leftIcon={<Share2 size={14} />}
+                onClick={() => {
+                  navigator.clipboard?.writeText(window.location.href);
+                }}
               >
-                ×
-              </button>
+                Share Profile
+              </Button>
             </div>
 
-            <div className="plan-options">
-              {["Starter", "Professional", "Enterprise"].map((plan) => (
+            <p className="mb-2 text-[0.6875rem] font-medium uppercase tracking-wider text-muted-foreground">Quick Actions</p>
+            <div className="space-y-2">
+              {quickActions.map((action) => (
                 <button
+                  key={action.label}
                   type="button"
-                  key={plan}
-                  className={
-                    company.plan === plan
-                      ? "plan-option selected"
-                      : "plan-option"
-                  }
-                  onClick={() => {
-                    setCompany({
-                      ...company,
-                      plan,
-                    });
-
-                    setShowPlanModal(false);
-                  }}
+                  onClick={action.onClick}
+                  className="group flex w-full items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-left transition-colors hover:border-primary-soft hover:bg-surface-hover"
                 >
-                  <strong>{plan}</strong>
-
-                  {company.plan === plan && <span>Current</span>}
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", action.tone)}>
+                    {action.icon}
+                  </span>
+                  <span className="flex-1 text-sm font-medium text-foreground">{action.label}</span>
+                  <ArrowRight size={15} className="text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                 </button>
               ))}
             </div>
           </div>
         </div>
-      )}
+      </Card>
 
-      {/* ============================================================= */}
-      {/* ADD CREDITS MODAL */}
-      {/* ============================================================= */}
+      {/* TABS */}
+      <Card>
+        <Tabs tabs={tabs} activeTab={activeTab} onChange={(id) => setActiveTab(id as Tab)} />
+      </Card>
 
-      {showCreditModal && (
-        <div className="modal-overlay">
-          <div className="modal-card small">
-            <div className="modal-header">
-              <div>
-                <h3>Add Credits</h3>
-                <p>Add credits to the company account.</p>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setShowCreditModal(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <label className="credit-input">
-              Credit Amount
-              <input
-                type="number"
-                min="1"
-                placeholder="Enter amount"
-                value={creditAmount}
-                onChange={(e) => setCreditAmount(e.target.value)}
-              />
-            </label>
-
-            <div className="current-credit-info">
-              Current balance:{" "}
-              <strong>{company.credits.toLocaleString("en-IN")}</strong>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setShowCreditModal(false)}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                className="primary-button"
-                onClick={handleAddCredits}
-              >
-                Add Credits
-              </button>
-            </div>
-          </div>
+      {/* EDIT PROFILE MODAL */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Profile"
+        description="Update company information."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditProfile}>Save Changes</Button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Input
+            label="Company Name"
+            type="text"
+            value={company.name}
+            onChange={(e) => setCompany({ ...company, name: e.target.value })}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={company.email}
+            onChange={(e) => setCompany({ ...company, email: e.target.value })}
+          />
+          <Input
+            label="Phone"
+            type="text"
+            value={company.phone}
+            onChange={(e) => setCompany({ ...company, phone: e.target.value })}
+          />
+          <Input label="Business ID" type="text" value={company.businessId} disabled />
         </div>
-      )}
-    </div>
+      </Modal>
+
+      {/* CHANGE PLAN MODAL */}
+      <Modal
+        isOpen={showPlanModal}
+        onClose={() => setShowPlanModal(false)}
+        size="sm"
+        title="Change Plan"
+        description="Select a new plan for this company."
+      >
+        <div className="space-y-2">
+          {["Starter", "Professional", "Enterprise"].map((plan) => {
+            const selected = company.plan === plan;
+
+            return (
+              <button
+                type="button"
+                key={plan}
+                aria-pressed={selected}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors",
+                  selected
+                    ? "border-primary bg-primary-lighter text-primary-text"
+                    : "border-border bg-surface text-foreground hover:border-primary-soft hover:bg-surface-hover",
+                )}
+                onClick={() => {
+                  setCompany({ ...company, plan });
+                  setShowPlanModal(false);
+                }}
+              >
+                {plan}
+                {selected && <Badge variant="primary">Current</Badge>}
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
+
+      {/* ADD CREDITS MODAL */}
+      <Modal
+        isOpen={showCreditModal}
+        onClose={() => setShowCreditModal(false)}
+        size="sm"
+        title="Add Credits"
+        description="Add credits to the company account."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowCreditModal(false)}>
+              Cancel
+            </Button>
+            <Button leftIcon={<Plus size={15} />} onClick={handleAddCredits}>
+              Add Credits
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Input
+            label="Credit Amount"
+            type="number"
+            min="1"
+            placeholder="Enter amount"
+            value={creditAmount}
+            onChange={(e) => setCreditAmount(e.target.value)}
+          />
+          <p className="text-[0.8125rem] text-muted-foreground">
+            Current balance:{" "}
+            <span className="font-semibold tabular-nums text-foreground">
+              {company.credits.toLocaleString("en-IN")}
+            </span>
+          </p>
+        </div>
+      </Modal>
+    </PageContainer>
   );
 }
 
 // -----------------------------------------------------------------------------
-// KPI CARD
+// SECTION HEADING
 // -----------------------------------------------------------------------------
 
-function KpiCard({ title, value }: { title: string; value: number }) {
+function SectionHeading({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
   return (
-    <div className="kpi-card">
-      <span>{title}</span>
-      <strong>{value.toLocaleString("en-IN")}</strong>
+    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h3 className="text-[0.9375rem] font-semibold text-foreground">{title}</h3>
+        <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">{description}</p>
+      </div>
+      {action}
     </div>
   );
 }
@@ -1038,56 +853,45 @@ function KpiCard({ title, value }: { title: string; value: number }) {
 // CAMPAIGN TABLE
 // -----------------------------------------------------------------------------
 
+const CAMPAIGN_STATUS_VARIANT: Record<Campaign["status"], BadgeVariant> = {
+  Completed: "success",
+  Running: "info",
+  Scheduled: "warning",
+  Failed: "error",
+};
+
 function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
-  return (
-    <div className="table-section">
-      <div className="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Campaign</th>
-              <th>Created</th>
-              <th>Contacts</th>
-              <th>Messages</th>
-              <th>Delivered</th>
-              <th>Failed</th>
-              <th>Status</th>
-            </tr>
-          </thead>
+  const columns: Column<Campaign>[] = [
+    {
+      key: "title",
+      header: "Campaign",
+      render: (campaign) => <span className="font-medium text-foreground">{campaign.title}</span>,
+    },
+    {
+      key: "createdDate",
+      header: "Created",
+      render: (campaign) => <span className="text-muted-foreground">{campaign.createdDate}</span>,
+    },
+    ...(["contacts", "messages", "delivered", "failed"] as const).map((key) => ({
+      key,
+      header: key[0].toUpperCase() + key.slice(1),
+      align: "right" as const,
+      render: (campaign: Campaign) => (
+        <span className="tabular-nums">{campaign[key].toLocaleString("en-IN")}</span>
+      ),
+    })),
+    {
+      key: "status",
+      header: "Status",
+      render: (campaign) => (
+        <Badge variant={CAMPAIGN_STATUS_VARIANT[campaign.status]} dot>
+          {campaign.status}
+        </Badge>
+      ),
+    },
+  ];
 
-          <tbody>
-            {campaigns.map((campaign) => (
-              <tr key={campaign.id}>
-                <td>
-                  <strong>{campaign.title}</strong>
-                </td>
-
-                <td>{campaign.createdDate}</td>
-
-                <td>{campaign.contacts.toLocaleString("en-IN")}</td>
-
-                <td>{campaign.messages.toLocaleString("en-IN")}</td>
-
-                <td>{campaign.delivered.toLocaleString("en-IN")}</td>
-
-                <td>{campaign.failed.toLocaleString("en-IN")}</td>
-
-                <td>
-                  <span
-                    className={`campaign-status ${campaign.status
-                      .toLowerCase()
-                      .replace(" ", "-")}`}
-                  >
-                    {campaign.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return <Table columns={columns} data={campaigns} rowKey={(campaign) => campaign.id} />;
 }
 
 // -----------------------------------------------------------------------------
@@ -1097,21 +901,21 @@ function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
 function getActivityIcon(type: Activity["type"]) {
   switch (type) {
     case "campaign":
-      return "↗";
+      return <Megaphone size={13} />;
 
     case "plan":
-      return "◆";
+      return <Layers size={13} />;
 
     case "credit":
-      return "+";
+      return <Plus size={13} />;
 
     case "profile":
-      return "✎";
+      return <Pencil size={13} />;
 
     case "status":
-      return "✓";
+      return <Check size={13} />;
 
     default:
-      return "•";
+      return <span>•</span>;
   }
 }

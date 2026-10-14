@@ -1,0 +1,98 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--elevation-xs);
+    color: var(--color-text);
+  }
+  .hover {
+    transition: border-color var(--motion-normal), box-shadow var(--motion-normal), transform var(--motion-normal);
+  }
+  .hover:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--elevation-md);
+    transform: translateY(-1px);
+  }
+  .interactive {
+    cursor: pointer;
+  }
+  .interactive:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-primary-ring);
+  }
+
+  .pad-none {
+    padding: 0;
+  }
+  .pad-sm {
+    padding: var(--space-3);
+  }
+  .pad-md {
+    padding: var(--space-5);
+  }
+  .pad-lg {
+    padding: var(--space-6);
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+  .headerDivided {
+    margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) var(--space-5);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .headerMain {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .headerIcon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-md);
+    color: var(--color-primary-text);
+    background-color: var(--color-primary-light);
+  }
+  .title {
+    font: var(--type-card-title);
+    color: var(--color-text);
+  }
+  .description {
+    margin-top: 2px;
+    font: var(--type-secondary);
+    color: var(--color-text-muted);
+  }
+  .action {
+    flex-shrink: 0;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+  .footerDivided {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  /* No Tailwind preflight in SuperAdmin: reset UA margins on text elements (zero specificity: never beats a real margin) */
+  :where(.title, .description) {
+    margin: 0;
+  }
+}

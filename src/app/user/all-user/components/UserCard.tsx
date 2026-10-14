@@ -1,6 +1,11 @@
-import { User, STATUS_DOT, roleColor, planColor } from "../types";
+import { ArrowRight, AtSign, Check } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
+import KitBadge from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import Checkbox from "@/components/ui/Checkbox";
+import { cn } from "@/lib/utils";
+import { User, planVariant, roleVariant } from "../types";
 import { Badge } from "./Badge";
-
 
 interface UserCardProps {
   user: User;
@@ -18,66 +23,42 @@ export function UserCard({
   onClick,
 }: UserCardProps) {
   return (
-   <div
-  onClick={onClick}
-  className={`au-card ${isSelected ? "au-card--selected" : ""}`}
->
-  <div className="au-card__checkbox">
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={onCheck}
-      onClick={(e) => e.stopPropagation()}
-    />
-  </div>
-      <div className="au-card__top">
-        <div className="au-card__identity">
-          <div className="au-avatar-wrap">
-            <div className="au-avatar au-avatar--44" style={{ background: user.av }}>
-              {user.name
-                .split(" ")
-                .map((n: string) => n[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
-            <div
-              className={`au-status-dot au-status-dot--card ${
-                STATUS_DOT[user.status] ?? "au-status-dot--other"
-              }`}
-            />
+    <Card
+      hover
+      onClick={onClick}
+      className={cn("relative cursor-pointer", isSelected && "border-primary ring-2 ring-primary-ring")}
+    >
+      <div className="absolute right-4 top-4">
+        <Checkbox
+          aria-label={`Select ${user.name}`}
+          checked={checked}
+          onChange={onCheck}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+
+      <div className="mb-3 flex items-start gap-3 pr-8">
+        <Avatar name={user.name} size="md" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-semibold text-foreground">{user.name}</span>
+            {user.pro && <KitBadge variant="warning" size="sm">PRO</KitBadge>}
           </div>
-          <div>
-            <div className="au-card__name-row">
-              <span className="au-card__name">{user.name}</span>
-              {user.pro && <span className="au-pro-badge">PRO</span>}
-            </div>
-            <div className="au-card__company">{user.company}</div>
-          </div>
+          <p className="truncate text-[0.8125rem] text-muted-foreground">{user.company}</p>
         </div>
+      </div>
+
+      <div className="mb-3 flex items-center gap-1.5 truncate text-[0.8125rem] text-secondary-foreground">
+        <AtSign size={13} className="shrink-0 text-muted-foreground" /> {user.email}
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-1.5">
         <Badge status={user.status} />
+        <KitBadge variant={roleVariant(user.role)}>{user.role}</KitBadge>
+        <KitBadge variant={planVariant(user.plan)}>{user.plan}</KitBadge>
       </div>
 
-      <div className="au-card__email">
-        <span className="au-card__email-icon">@</span> {user.email}
-      </div>
-
-      <div className="au-card__meta">
-        <span
-          className="au-chip"
-          style={{ background: `${roleColor(user.role)}15`, color: roleColor(user.role) }}
-        >
-          {user.role}
-        </span>
-        <span
-          className="au-chip"
-          style={{ background: `${planColor(user.plan)}15`, color: planColor(user.plan) }}
-        >
-          {user.plan}
-        </span>
-      </div>
-
-      <div className="au-card__stats">
+      <div className="mb-3 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-border-subtle bg-border-subtle">
         {(
           [
             ["msgs",      user.msgs.toLocaleString(), "msgs"],
@@ -85,19 +66,27 @@ export function UserCard({
             ["chatbots",  String(user.chatbots),      "bots"],
           ] as [string, string, string][]
         ).map(([key, val, lbl]) => (
-          <div key={key} className="au-stat-box">
-            <div className="au-stat-box__val">{val}</div>
-            <div className="au-stat-box__lbl">{lbl}</div>
+          <div key={key} className="bg-surface px-2 py-2 text-center">
+            <div className="text-sm font-semibold tabular-nums text-foreground">{val}</div>
+            <div className="text-[0.6875rem] text-muted-foreground">{lbl}</div>
           </div>
         ))}
       </div>
 
-      <div className="au-card__footer">
-        <span className="au-card__login">{user.login}</span>
-        <span className={isSelected ? "au-card__cta--sel" : "au-card__cta"}>
-          {isSelected ? "Selected ✓" : "View Details →"}
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{user.login}</span>
+        <span className="flex items-center gap-1 font-medium text-primary-text">
+          {isSelected ? (
+            <>
+              Selected <Check size={13} />
+            </>
+          ) : (
+            <>
+              View Details <ArrowRight size={13} />
+            </>
+          )}
         </span>
       </div>
-    </div>
+    </Card>
   );
 }

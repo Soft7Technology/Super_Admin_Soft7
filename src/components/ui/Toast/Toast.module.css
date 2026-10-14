@@ -1,0 +1,21 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .toast {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: var(--z-toast);
+    min-width: 18rem;
+    max-width: calc(100vw - 2rem);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface-raised);
+    box-shadow: var(--elevation-lg);
+    animation: toastIn var(--duration-slow) var(--ease-out);
+  }
+  @keyframes toastIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+}

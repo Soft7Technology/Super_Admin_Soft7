@@ -1,9 +1,11 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Button from "@/components/ui/Button";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import CompanyOverview from "../../../../components/CompanyOverview";
-import { useTheme, tokens } from "../../../../context/ThemeContext";
 
 interface CompanyRow {
   id: string;
@@ -21,8 +23,6 @@ interface CompaniesResponse {
 }
 
 export default function DashboardCompaniesPage() {
-  const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
   const router = useRouter();
 
   const [companies, setCompanies] = useState<CompanyRow[]>([]);
@@ -78,37 +78,11 @@ export default function DashboardCompaniesPage() {
   };
 
   return (
-    <div style={{ padding: "28px 28px 48px", background: t.bg, minHeight: "100%", transition: "background 0.3s ease" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: "1.45rem", color: t.text, margin: 0, letterSpacing: "-0.02em" }}>
-            All Companies
-          </h1>
-          <p style={{ margin: "6px 0 0", fontSize: "0.875rem", color: t.textMuted }}>
-            Complete company list in tabular view.
-          </p>
-        </div>
-
-        <button
-          onClick={handleBack}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "7px",
-            padding: "9px 14px",
-            borderRadius: "9px",
-            border: `1px solid ${t.border}`,
-            background: t.surface,
-            color: t.textSub,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          ← Back
-        </button>
-      </div>
+    <PageContainer>
+      <Button variant="ghost" size="sm" className="-ml-2 mb-3" leftIcon={<ArrowLeft size={15} />} onClick={handleBack}>
+        Back
+      </Button>
+      <PageHeader title="All Companies" description="Complete company list in tabular view." />
 
       <CompanyOverview
         title="Company Overview"
@@ -118,6 +92,6 @@ export default function DashboardCompaniesPage() {
         error={error}
         onCompanyClick={(company) => router.push(`/user/dashboard/companies/${company.id}`)}
       />
-    </div>
+    </PageContainer>
   );
 }

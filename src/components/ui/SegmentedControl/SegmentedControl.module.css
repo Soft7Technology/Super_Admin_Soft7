@@ -1,0 +1,50 @@
+@layer theme, base, components, utilities;
+@layer components.ui {
+  .root {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    overflow-x: auto;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface-muted);
+    scrollbar-width: none;
+  }
+  .root::-webkit-scrollbar {
+    display: none;
+  }
+  .item {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-1);
+    height: 1.875rem;
+    padding: 0 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    transition: background-color var(--motion-normal), color var(--motion-fast), box-shadow var(--motion-normal);
+  }
+  .sm .item {
+    height: 1.625rem;
+    padding: 0 0.625rem;
+    font-size: 0.75rem;
+  }
+  .item:hover {
+    color: var(--color-text);
+  }
+  .item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary-ring);
+  }
+  .item[aria-checked="true"] {
+    background-color: var(--color-surface-raised);
+    color: var(--color-primary-text);
+    font-weight: 600;
+    box-shadow: var(--elevation-sm);
+  }
+}

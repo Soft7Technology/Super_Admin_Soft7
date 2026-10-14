@@ -1,0 +1,60 @@
+/* =============================================================================
+   THIRD-PARTY WIDGETS + ELEMENT DEFAULTS — themed via tokens only.
+   No hex values here: every color resolves from tokens.css.
+   ========================================================================== */
+
+/* ── Element defaults for tables inside the app shell (lowest specificity) ── */
+@layer base {
+  :where(#app-main) :where(table) {
+    border-collapse: collapse;
+  }
+  :where(#app-main) :where(thead th) {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-align: left;
+    white-space: nowrap;
+  }
+  :where(#app-main) :where(tbody td) {
+    color: var(--color-text);
+  }
+}
+
+/* ── react-toastify ── */
+:root {
+  --toastify-color-light: var(--color-surface-raised);
+  --toastify-color-dark: var(--color-surface-raised);
+  --toastify-text-color-light: var(--color-text);
+  --toastify-text-color-dark: var(--color-text);
+  --toastify-color-info: var(--color-info);
+  --toastify-color-success: var(--color-success);
+  --toastify-color-warning: var(--color-warning);
+  --toastify-color-error: var(--color-error);
+  --toastify-color-progress-light: var(--color-primary);
+  --toastify-color-progress-dark: var(--color-primary);
+  --toastify-font-family: var(--font-family-sans);
+}
+.Toastify__toast {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--elevation-lg) !important;
+}
+
+/* ── recharts (SVG) ── */
+.recharts-cartesian-grid line {
+  stroke: var(--color-border-subtle);
+}
+.recharts-cartesian-axis-tick text,
+.recharts-legend-item-text {
+  fill: var(--color-text-muted);
+}
+.recharts-default-tooltip {
+  background-color: var(--color-surface-raised) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-lg);
+  color: var(--color-text);
+}
+.recharts-tooltip-cursor {
+  fill: var(--color-surface-hover);
+}

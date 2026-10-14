@@ -1,4 +1,5 @@
-import { STATUS_CSS } from "../types";
+import KitBadge from "@/components/ui/Badge";
+import { statusVariant } from "../types";
 
 interface BadgeProps {
   status: string;
@@ -7,9 +8,8 @@ interface BadgeProps {
 export function Badge({ status }: BadgeProps) {
   const label = status[0] + status.slice(1).toLowerCase();
   return (
-    <span className={`au-badge ${STATUS_CSS[status] ?? "au-badge--inactive"}`}>
-      <span className="au-badge__dot" />
+    <KitBadge variant={statusVariant(status)} dot>
       {label}
-    </span>
+    </KitBadge>
   );
 }

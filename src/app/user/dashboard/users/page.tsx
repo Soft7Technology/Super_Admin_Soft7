@@ -1,9 +1,11 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+import { PageContainer, PageHeader } from "@/components/layout";
+import Button from "@/components/ui/Button";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import UserManagement from "../../../../components/UserManagement";
-import { useTheme, tokens } from "../../../../context/ThemeContext";
 import { axiosInstance } from "@/lib/axiosInstance";
 
 const USERS_API = "/v1/admin/companies/user";
@@ -25,11 +27,11 @@ interface UserRow {
 }
 
 const USER_COLORS = [
-  "linear-gradient(135deg,#3b5bdb,#6741d9)",
-  "linear-gradient(135deg,#0ca678,#2f9e44)",
-  "linear-gradient(135deg,#f59f00,#e67700)",
-  "linear-gradient(135deg,#6741d9,#862e9c)",
-  "linear-gradient(135deg,#e03131,#c92a2a)",
+  "var(--color-primary)",
+  "var(--color-primary)",
+  "var(--color-warning)",
+  "var(--color-primary)",
+  "var(--color-error)",
 ];
 
 // Same header pattern used across the dashboard for external API calls.
@@ -88,8 +90,6 @@ function toUsername(name: string) {
 }
 
 export default function DashboardUsersPage() {
-  const { isDark } = useTheme();
-  const t = isDark ? tokens.dark : tokens.light;
   const router = useRouter();
 
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -167,37 +167,11 @@ export default function DashboardUsersPage() {
   };
 
   return (
-    <div style={{ padding: "28px 28px 48px", background: t.bg, minHeight: "100%", transition: "background 0.3s ease" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: "1.45rem", color: t.text, margin: 0, letterSpacing: "-0.02em" }}>
-            All Users
-          </h1>
-          <p style={{ margin: "6px 0 0", fontSize: "0.875rem", color: t.textMuted }}>
-            Complete user list in tabular view.
-          </p>
-        </div>
-
-        <button
-          onClick={handleBack}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "7px",
-            padding: "9px 14px",
-            borderRadius: "9px",
-            border: `1px solid ${t.border}`,
-            background: t.surface,
-            color: t.textSub,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          ← Back
-        </button>
-      </div>
+    <PageContainer>
+      <Button variant="ghost" size="sm" className="-ml-2 mb-3" leftIcon={<ArrowLeft size={15} />} onClick={handleBack}>
+        Back
+      </Button>
+      <PageHeader title="All Users" description="Complete user list in tabular view." />
 
       <UserManagement
         title="User Management"
@@ -207,6 +181,6 @@ export default function DashboardUsersPage() {
         error={error}
         onUserClick={(user) => router.push(`/user/dashboard/users/${user.id}`)}
       />
-    </div>
+    </PageContainer>
   );
 }
