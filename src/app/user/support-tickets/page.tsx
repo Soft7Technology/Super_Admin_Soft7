@@ -59,6 +59,7 @@ interface Ticket {
   companyCol: string;
   user: string;
   userEmail: string;
+  userPhone?: string;
   status: TicketStatus;
   priority: TicketPriority;
   category: string;
@@ -98,6 +99,12 @@ const PRIORITY_META: Record<TicketPriority, { label: string; variant: BadgeVaria
 };
 
 const PAGE_SIZE = 8;
+
+// Unknown server statuses (e.g. "pending") fall back to OPEN so status lookups never miss.
+const toTicketStatus = (raw: unknown): TicketStatus => {
+  const s = String(raw || "OPEN").toUpperCase();
+  return s in STATUS_META ? (s as TicketStatus) : "OPEN";
+};
 
 const safeMessages = (ticket: Ticket): Message[] =>
   Array.isArray(ticket.messages) ? ticket.messages : [];
@@ -229,6 +236,12 @@ function ConvPanel({
             <>
               <span aria-hidden>·</span>
               <span>{ticket.userEmail}</span>
+            </>
+          )}
+          {ticket.userPhone && (
+            <>
+              <span aria-hidden>·</span>
+              <span>{ticket.userPhone}</span>
             </>
           )}
           <span aria-hidden>·</span>
@@ -426,6 +439,7 @@ export default function SupportTickets() {
 
         const user = t.user_name || t.user?.name || t.name || matched?.name || cachedUser || (uId ? `User ${uId.slice(0, 8)}` : "Unknown User");
         const userEmail = t.user_email || t.user?.email || t.email || matched?.email || cachedEmail || "";
+        const userPhone = t.user_phone || t.user?.phone || t.phone || "";
 
         return {
           id: String(t.id),
@@ -435,7 +449,8 @@ export default function SupportTickets() {
           companyCol: "var(--color-primary-text)",
           user,
           userEmail,
-          status: (t.status || "OPEN").toUpperCase() as TicketStatus,
+          userPhone,
+          status: toTicketStatus(t.status),
           priority: "MEDIUM",
           category: t.category || "Support",
           created: t.created_at ? new Date(t.created_at).toLocaleDateString() : "-",
@@ -455,6 +470,7 @@ export default function SupportTickets() {
             subject: ex.subject && !ex.subject.startsWith("Support Ticket #") ? ex.subject : ticket.subject,
             user: ex.user && !ex.user.startsWith("User ") && ex.user !== "Unknown User" ? ex.user : ticket.user,
             userEmail: ex.userEmail || ticket.userEmail,
+            userPhone: ex.userPhone || ticket.userPhone,
           };
         })
       );
@@ -504,6 +520,7 @@ export default function SupportTickets() {
               t.company.toLowerCase().includes(q) ||
               t.user.toLowerCase().includes(q) ||
               t.userEmail.toLowerCase().includes(q) ||
+              (t.userPhone ?? "").toLowerCase().includes(q) ||
               t.category.toLowerCase().includes(q) ||
               t.id.toLowerCase().includes(q)
             )
@@ -601,8 +618,9 @@ export default function SupportTickets() {
         companyLogo: "S",
         companyCol: "var(--color-primary-text)",
         user: resolvedUserName,
-        userEmail: "",
-        status: (ticketData.status || "OPEN").toUpperCase() as TicketStatus,
+        userEmail: firstMessage?.user_email || firstMessage?.email || "",
+        userPhone: firstMessage?.user_phone || firstMessage?.phone || "",
+        status: toTicketStatus(ticketData.status),
         priority: "MEDIUM",
         category: "Support",
         created: ticketData.created_at ? new Date(ticketData.created_at).toLocaleDateString() : "-",
@@ -620,6 +638,7 @@ export default function SupportTickets() {
         const mergedTicket: Ticket = {
           ...formattedTicket,
           userEmail: existing?.userEmail || formattedTicket.userEmail,
+          userPhone: existing?.userPhone || formattedTicket.userPhone,
         };
         return existing
           ? prev.map(t => (t.id === formattedTicket.id ? mergedTicket : t))
@@ -735,7 +754,12 @@ export default function SupportTickets() {
     {
       key: "userEmail",
       header: "Email",
-      render: ticket => <span className="text-secondary-foreground">{ticket.userEmail || "—"}</span>,
+      render: ticket => (
+        <span className="flex flex-col">
+          <span className="text-secondary-foreground">{ticket.userEmail || "—"}</span>
+          {ticket.userPhone && <span className="text-xs text-muted-foreground">{ticket.userPhone}</span>}
+        </span>
+      ),
     },
     {
       key: "status",
@@ -796,7 +820,7 @@ export default function SupportTickets() {
             leftIcon={<Search size={15} />}
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by subject, user, or email…"
+            placeholder="Search by subject, user, email, or phone…"
             aria-label="Search tickets"
           />
           <div className="overflow-x-auto">
